@@ -14,6 +14,7 @@ AMKCharacter::AMKCharacter()
 
 	SpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSpriteComponent"));
 	SpriteComponent->SetupAttachment(RootComponent);
+	SpriteComponent->SetRelativeLocation(FVector::ZeroVector);
 
 	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
 	CameraComponent->SetupAttachment(SpriteComponent);
