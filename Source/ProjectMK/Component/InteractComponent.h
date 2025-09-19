@@ -16,14 +16,12 @@ public:
 
 	bool TryInteract();
 
-protected:
-	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+	void UpdateCharacterDirection(const FVector& NewDir);
 
 private:
-	void CheckInteractableActor();
 
 	UPROPERTY(EditAnywhere)
-	float InteractDistance = 100.f;
+	float InteractDistance = 20.f;
 
 	TWeakObjectPtr<AActor> InteractingActor;
 };

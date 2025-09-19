@@ -6,8 +6,9 @@
 #include "GameFramework/Character.h"
 #include "MKCharacter.generated.h"
 
-class UPaperSpriteComponent;
 class UCameraComponent;
+class UInteractComponent;
+class UPaperSpriteComponent;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public ACharacter
@@ -23,6 +24,8 @@ protected:
 
 private:
 	void MoveRight(float Value);
+	void LookRight(float Value);
+	void LookUp(float Value);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -30,6 +33,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UCameraComponent> CameraComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UInteractComponent> InteractComponent;
 
 	UPROPERTY(EditAnywhere)
 	float MoveSpeed = 1.f;

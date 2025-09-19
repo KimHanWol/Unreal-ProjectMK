@@ -26,7 +26,7 @@ struct FBlockDataTableRow : public FTableRowBase
     int32 TileIndex;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bHasCollision;
+    bool bHasCollision = true;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftObjectPtr<UPaperSprite> TileSprite;

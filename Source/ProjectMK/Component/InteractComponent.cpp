@@ -26,35 +26,37 @@ bool UInteractComponent::TryInteract()
 	return false;
 }
 
-void UInteractComponent::TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction)
+void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 {
-	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
+	if (NewDir == FVector::ZeroVector)
+	{
+		return;
+	}
 
-	CheckInteractableActor();
-}
-
-void UInteractComponent::CheckInteractableActor()
-{
 	AActor* Owner = GetOwner();
 	if (::IsValid(Owner) == false)
 	{
 		return;
 	}
 
-	FVector ForwardDir = Owner->GetActorForwardVector(); // 또는 입력 방향
 	FVector Start = Owner->GetActorLocation();
-	FVector End = Start + ForwardDir * InteractDistance; // 블록 탐지 거리
+	FVector End = Start + NewDir * InteractDistance;
 
-	FHitResult Hit;
+	TArray<FHitResult> Hits;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
 
-	if (GetWorld()->LineTraceSingleByChannel(Hit, Start, End, ECC_Visibility, Params))
+	if (GetWorld()->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
 	{
-		IInteractable* InteractableActor = Cast<IInteractable>(Hit.GetActor());
-		if (InteractableActor)
+		for (const auto& Hit : Hits)
 		{
-			InteractingActor = Hit.GetActor();
+			IInteractable* InteractableActor = Cast<IInteractable>(Hit.GetActor());
+			if (InteractableActor)
+			{
+				InteractingActor = Hit.GetActor();
+				TryInteract();
+				break;
+			}
 		}
 	}
 }

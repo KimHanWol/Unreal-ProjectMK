@@ -4,6 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ProjectMK/Interface/Interactable.h"
 #include "BlockBase.generated.h"
 
 class UBoxComponent;
@@ -25,7 +26,7 @@ struct FBlockData
 };
 
 UCLASS()
-class PROJECTMK_API ABlockBase : public AActor
+class PROJECTMK_API ABlockBase : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 	
@@ -33,6 +34,10 @@ public:
     ABlockBase();
 
 	void InitializeBlock(const FBlockData& InBlockData);
+
+    //IInteractable
+    virtual bool Interact(AActor* Caller) override;
+    //~IInteractable
 
 private:
     void OnPaperSpriteLoaded();

@@ -111,6 +111,11 @@ void ABlockBase::InitializeBlock(const FBlockData& InBlockData)
     }
 }
 
+bool ABlockBase::Interact(AActor* Caller)
+{
+    return true;
+}
+
 void ABlockBase::OnPaperSpriteLoaded()
 {
 	InitializeBlock(BlockData);
