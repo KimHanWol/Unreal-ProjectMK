@@ -9,7 +9,7 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileSet.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
-#include "ProjectMK/Data/DataManager.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 
 void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {

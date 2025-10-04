@@ -2,14 +2,16 @@
 
 #include "ProjectMK/Core/MKGameInstance.h"
 
-#include "ProjectMK/Data/DataManager.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 
 void UMKGameInstance::Init()
 {
 	Super::Init();
 
-	DataManager = NewObject<UDataManager>();
-	DataManager->InitializeManager(DataTableAsset);
+	if (::IsValid(DataManagerClass))
+	{
+		DataManager = NewObject<UDataManager>(this, DataManagerClass);
+	}
 }
 
 UDataManager* UMKGameInstance::GetDataManager()

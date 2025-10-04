@@ -3,31 +3,33 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "ProjectMK/Data/DataAsset/MKDataAsset.h"
+#include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "UObject/NoExportTypes.h"
 
 #include "DataManager.generated.h"
 
-UCLASS()
+class UGameplayEffectDataAsset;
+enum class EGameplayEffectType : uint8;
+
+UCLASS(Blueprintable)
 class PROJECTMK_API UDataManager : public UObject
 {
     GENERATED_BODY()
 
 public:
     static UDataManager* Get(UObject* WorldContextObject);
-    void InitializeManager(UMKDataAsset* InDataTableAsset);
 
     template<typename T>
     const T* GetDataTableRow(EDataTableType DataTableType, FName Key) const
     {
-        if (::IsValid(DataTableAsset) == false)
+        if (::IsValid(DataTableDataAsset) == false)
         {
             return nullptr;
         }
 
-        UDataTable* DataTable = DataTableAsset->GetDataTable(DataTableType);
+        UDataTable* DataTable = DataTableDataAsset->GetDataTable(DataTableType);
         if (DataTable == nullptr)
         {
             return nullptr;
@@ -38,8 +40,12 @@ public:
 
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
 
+    TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
 
-private:
-    UPROPERTY(Transient)
-    UMKDataAsset* DataTableAsset;
+protected:
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UDataTableDataAsset* DataTableDataAsset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<UGameplayEffectDataAsset> GameplayEffectDataAsset;
 };

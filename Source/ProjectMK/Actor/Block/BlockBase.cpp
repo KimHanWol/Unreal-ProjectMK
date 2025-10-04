@@ -3,12 +3,13 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 
 #include "Components/BoxComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "PaperSpriteComponent.h"
-#include "ProjectMK/Data/DataManager.h"
-
-#include "DrawDebugHelpers.h"
+#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "AbilitySystemComponent.h"
 
 ABlockBase::ABlockBase()
 {
@@ -20,9 +21,11 @@ ABlockBase::ABlockBase()
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
 	PaperSpriteComponent->SetRelativeLocation(FVector::ZeroVector);
+
+    AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
-void ABlockBase::InitializeBlock(const FBlockData& InBlockData)
+void ABlockBase::InitializeBlock(FBlockData InBlockData)
 {
 	if (::IsValid(BoxCollision) == false)
 	{
@@ -109,6 +112,8 @@ void ABlockBase::InitializeBlock(const FBlockData& InBlockData)
             );
         }
     }
+
+    InitializeBlockAttribute();
 }
 
 bool ABlockBase::Interact(AActor* Caller)
@@ -116,7 +121,35 @@ bool ABlockBase::Interact(AActor* Caller)
     return true;
 }
 
+UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
+{
+    return AbilitySystemComponent;
+}
+
 void ABlockBase::OnPaperSpriteLoaded()
 {
 	InitializeBlock(BlockData);
+}
+
+void ABlockBase::InitializeBlockAttribute()
+{
+    if (::IsValid(AbilitySystemComponent) == false)
+    {
+        return;
+    }
+
+    UDataManager* DataManager = UDataManager::Get(this);
+    if (::IsValid(DataManager) == false)
+    {
+        return;
+    }
+
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockData.TileSetIndex);
+    if (BlockDataTableRow == nullptr)
+    {
+        return;
+    }
+
+    //FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(BlockDataTableRow->BlockInitEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
+    //AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 }

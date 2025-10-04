@@ -1,18 +1,11 @@
 // LINK
 
-#include "ProjectMK/Data/DataAsset/MKDataAsset.h"
+#include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 
-void UMKDataAsset::PostLoad()
-{
-	Super::PostLoad();
-
-	AsyncLoadAsset();
-}
-
-UDataTable* UMKDataAsset::GetDataTable(EDataTableType Type) const
+UDataTable* UDataTableDataAsset::GetDataTable(EDataTableType Type) const
 {
 	const TSoftObjectPtr<UDataTable>* FoundPtr = DataTableList.Find(Type);
 	if (FoundPtr && FoundPtr->IsNull() == false)
@@ -23,8 +16,10 @@ UDataTable* UMKDataAsset::GetDataTable(EDataTableType Type) const
 	return nullptr;
 }
 
-void UMKDataAsset::AsyncLoadAsset()
+void UDataTableDataAsset::AsyncLoadAsset()
 {
+	Super::AsyncLoadAsset();
+
 	FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
 
 	for (const auto& InDataTable : DataTableList)

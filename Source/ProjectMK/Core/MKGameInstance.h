@@ -6,7 +6,6 @@
 #include "Engine/GameInstance.h"
 #include "MKGameInstance.generated.h"
 
-class UMKDataAsset;
 class UDataManager;
 
 UCLASS(Blueprintable)
@@ -20,10 +19,11 @@ protected:
 public:
 	UDataManager* GetDataManager();
 
-public:
+protected:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	UMKDataAsset* DataTableAsset;
+	TSubclassOf<UDataManager> DataManagerClass;
 
+private:
 	UPROPERTY()
 	UDataManager* DataManager;
 };

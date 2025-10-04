@@ -1,11 +1,11 @@
 // LINK
 
-#include "ProjectMK/Data/DataManager.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 
-#include "../Core/MKGameInstance.h"
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
-#include "ProjectMK/Data/DataAsset/MKDataAsset.h"
+#include "ProjectMK/Core/MKGameInstance.h"
+#include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 
 UDataManager* UDataManager::Get(UObject* WorldContextObject)
 {
@@ -18,19 +18,14 @@ UDataManager* UDataManager::Get(UObject* WorldContextObject)
     return nullptr; 
 }
 
-void UDataManager::InitializeManager(UMKDataAsset* InDataTableAsset)
-{
-    DataTableAsset = InDataTableAsset;
-}
-
 const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) const
 {
-    if (::IsValid(DataTableAsset) == false)
+    if (::IsValid(DataTableDataAsset) == false)
     {
         return nullptr;
     }
 
-    UDataTable* BlockDataTable  = DataTableAsset->GetDataTable(EDataTableType::Block);
+    UDataTable* BlockDataTable  = DataTableDataAsset->GetDataTable(EDataTableType::Block);
     if (BlockDataTable == nullptr)
     {
         return nullptr;
@@ -47,5 +42,15 @@ const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) co
         }
     }
     
+    return nullptr;
+}
+
+TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType)
+{
+    //if (::IsValid(GameplayEffectDataAsset))
+    //{
+    //    return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
+    //}
+
     return nullptr;
 }

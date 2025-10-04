@@ -2,11 +2,14 @@
 
 #pragma once
 
+#include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
 #include "ProjectMK/Interface/Interactable.h"
 #include "BlockBase.generated.h"
 
+class UAbilitySystemComponent;
+class UAttributeSet_Block;
 class UBoxComponent;
 class UPaperSpriteComponent;
 
@@ -26,21 +29,27 @@ struct FBlockData
 };
 
 UCLASS()
-class PROJECTMK_API ABlockBase : public AActor, public IInteractable
+class PROJECTMK_API ABlockBase : public AActor, public IInteractable, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
-	
+
 public:	
     ABlockBase();
 
-	void InitializeBlock(const FBlockData& InBlockData);
+	void InitializeBlock(FBlockData InBlockData);
 
     //IInteractable
     virtual bool Interact(AActor* Caller) override;
     //~IInteractable
 
+    //IAbilitySystemInterface
+    virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+    //~IAbilitySystemInterface
+
 private:
     void OnPaperSpriteLoaded();
+
+    void InitializeBlockAttribute();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -48,6 +57,12 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
+    UPROPERTY()
+    UAttributeSet_Block* AttributeSet_Block;
 
     FBlockData BlockData;
 };

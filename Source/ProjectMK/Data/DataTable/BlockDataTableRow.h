@@ -5,6 +5,8 @@
 #include "PaperSprite.h"
 #include "BlockDataTableRow.generated.h"
 
+class UGameplayEffect;
+
 UENUM(BlueprintType)
 enum class ETileType : uint8
 {
@@ -30,4 +32,7 @@ struct FBlockDataTableRow : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftObjectPtr<UPaperSprite> TileSprite;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<UGameplayEffect> BlockInitEffect;
 };
