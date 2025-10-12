@@ -20,6 +20,7 @@ public:
 	void GenerateTileActors();
 
 private:
+	void OnGenerateFinished();
 	
 	TWeakObjectPtr<APaperTileMapActor> TileMapActor;
 

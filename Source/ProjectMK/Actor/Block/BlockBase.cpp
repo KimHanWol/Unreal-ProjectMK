@@ -2,14 +2,17 @@
 
 #include "ProjectMK/Actor/Block/BlockBase.h"
 
+#include "AbilitySystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "GameplayTagContainer.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
-#include "AbilitySystemComponent.h"
+#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
 ABlockBase::ABlockBase()
 {
@@ -114,16 +117,66 @@ void ABlockBase::InitializeBlock(FBlockData InBlockData)
     }
 
     InitializeBlockAttribute();
+    if (::IsValid(AbilitySystemComponent))
+    {
+        AbilitySystemComponent->InitAbilityActorInfo(this, this);
+    }
 }
 
-bool ABlockBase::Interact(AActor* Caller)
+const FGameplayTag ABlockBase::GetInteractEventTag()
 {
-    return true;
+    UDataManager* DataManager = UDataManager::Get(this);
+    if (::IsValid(DataManager) == false)
+    {
+        return FGameplayTag::EmptyTag;
+    }
+
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockData.TileSetIndex);
+    if (BlockDataTableRow == nullptr)
+    {
+        return FGameplayTag::EmptyTag;
+    }
+
+    return BlockDataTableRow->InteractEventTag;
 }
 
 UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
 {
     return AbilitySystemComponent;
+}
+
+void ABlockBase::BeginPlay()
+{
+    Super::BeginPlay();
+
+    BindEvents();
+}
+
+void ABlockBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+    Super::EndPlay(EndPlayReason);
+
+    UnbindEvents();
+}
+
+void ABlockBase::BindEvents()
+{
+    if (::IsValid(AbilitySystemComponent) == false)
+    {
+        return;
+    }
+
+    AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).AddUObject(this, &ABlockBase::OnDurationChanged);
+}
+
+void ABlockBase::UnbindEvents()
+{
+    if (::IsValid(AbilitySystemComponent) == false)
+    {
+        return;
+    }
+
+    AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
 }
 
 void ABlockBase::OnPaperSpriteLoaded()
@@ -138,6 +191,8 @@ void ABlockBase::InitializeBlockAttribute()
         return;
     }
 
+    AbilitySystemComponent->AddAttributeSetSubobject(NewObject<UAttributeSet_Block>());
+
     UDataManager* DataManager = UDataManager::Get(this);
     if (::IsValid(DataManager) == false)
     {
@@ -150,6 +205,27 @@ void ABlockBase::InitializeBlockAttribute()
         return;
     }
 
-    //FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(BlockDataTableRow->BlockInitEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
-    //AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+    TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Block_Init);
+    if (::IsValid(EffectClass) == false)
+    {
+        return;
+    }
+
+    FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+    if (SpecHandle.IsValid())
+    {
+        FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
+        SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("SetByCaller.Block.Durability")), BlockDataTableRow->BlockDurability);
+        AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+    }
+}
+
+void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
+{
+    UE_LOG(LogTemp, Warning, TEXT("Block duration changed (%f -> %f)"), Data.OldValue, Data.NewValue);
+
+    if (Data.NewValue <= 0)
+    {
+        Destroy();
+    }
 }

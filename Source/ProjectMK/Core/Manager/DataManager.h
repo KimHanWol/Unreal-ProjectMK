@@ -11,7 +11,10 @@
 #include "DataManager.generated.h"
 
 class UGameplayEffectDataAsset;
+class UGameplayAbility;
+
 enum class EGameplayEffectType : uint8;
+enum class EGameplayAbilityType : uint8;
 
 UCLASS(Blueprintable)
 class PROJECTMK_API UDataManager : public UObject
@@ -47,5 +50,10 @@ protected:
     UDataTableDataAsset* DataTableDataAsset;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<UGameplayEffectDataAsset> GameplayEffectDataAsset;
+    UGameplayEffectDataAsset* GameplayEffectDataAsset;
+
+    // GameplayAbility 관련해서 DataAsset 으로 하나로 묶고
+    // Ability 불러와서 적용
+    // 대미지 입으면 파괴
+    // 모든 블록 로딩되면 기존에 있던 맵 화면 가리도록 함
 };

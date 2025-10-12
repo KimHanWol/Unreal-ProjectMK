@@ -8,6 +8,7 @@
 UENUM(BlueprintType)
 enum class EDataTableType : uint8
 {
+    None,
     Block,
     Item,
 };

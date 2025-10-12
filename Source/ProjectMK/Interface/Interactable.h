@@ -3,7 +3,10 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "GameplayTagContainer.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "UObject/Interface.h" 
+
 #include "Interactable.generated.h"
 
 UINTERFACE(Blueprintable)
@@ -17,9 +20,9 @@ class IInteractable
     GENERATED_BODY()
 
 public:
-    virtual bool TryInteract(AActor* Interactor);
     virtual bool CanInteract(AActor* Interactor);
+    virtual bool TryInteract(AActor* Interactor);
 
-private:
-    virtual bool Interact(AActor* Interactor) = 0;
+protected:
+    virtual const FGameplayTag GetInteractEventTag() = 0;
 };

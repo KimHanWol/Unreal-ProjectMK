@@ -3,24 +3,31 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "AbilitySystemInterface.h"
 #include "GameFramework/Character.h"
 #include "MKCharacter.generated.h"
 
 class UCameraComponent;
+class UGameplayAbility;
 class UInteractComponent;
 class UPaperSpriteComponent;
 
 UCLASS()
-class PROJECTMK_API AMKCharacter : public ACharacter
+class PROJECTMK_API AMKCharacter : public ACharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 	
 public:	
 	AMKCharacter();
 
+	//IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//~IAbilitySystemInterface
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	void GiveAbilities();
 
 private:
 	void MoveRight(float Value);
@@ -37,6 +44,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInteractComponent> InteractComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+
 	UPROPERTY(EditAnywhere)
 	float MoveSpeed = 1.f;
+
+	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
+	UPROPERTY(EditAnywhere)
+	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
 };

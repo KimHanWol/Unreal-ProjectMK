@@ -2,7 +2,12 @@
 
 #include "ProjectMK/Component/InteractComponent.h"
 
+#include "AbilitySystemComponent.h"
+#include "GameplayTagContainer.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Interface/Interactable.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 
 UInteractComponent::UInteractComponent()
 {
@@ -18,12 +23,12 @@ bool UInteractComponent::TryInteract()
 	}
 
 	IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
-	if (InteractableActor)
+	if (!InteractableActor)
 	{
-		return InteractableActor->TryInteract(GetOwner());
+		return false;
 	}
 
-	return false;
+	return InteractableActor->TryInteract(GetOwner());
 }
 
 void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
@@ -45,6 +50,8 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 	TArray<FHitResult> Hits;
 	FCollisionQueryParams Params;
 	Params.AddIgnoredActor(GetOwner());
+
+	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false);
 
 	if (GetWorld()->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
 	{

@@ -5,13 +5,19 @@
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "GameplayEffectTypes.h"
+#include "GameplayTagContainer.h"
 #include "ProjectMK/Interface/Interactable.h"
+
 #include "BlockBase.generated.h"
 
 class UAbilitySystemComponent;
 class UAttributeSet_Block;
 class UBoxComponent;
+class UGameplayAbility;
 class UPaperSpriteComponent;
+
+enum class EGameplayAbilityType : uint8;
 
 USTRUCT(BlueprintType)
 struct FBlockData
@@ -39,17 +45,24 @@ public:
 	void InitializeBlock(FBlockData InBlockData);
 
     //IInteractable
-    virtual bool Interact(AActor* Caller) override;
+    virtual const FGameplayTag GetInteractEventTag() override;
     //~IInteractable
 
     //IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
     //~IAbilitySystemInterface
 
+protected:
+    virtual void BeginPlay() override;
+    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+    void BindEvents();
+    void UnbindEvents();
+
 private:
     void OnPaperSpriteLoaded();
-
     void InitializeBlockAttribute();
+
+    void OnDurationChanged(const FOnAttributeChangeData& Data);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -60,9 +73,6 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
-
-    UPROPERTY()
-    UAttributeSet_Block* AttributeSet_Block;
 
     FBlockData BlockData;
 };

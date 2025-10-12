@@ -6,6 +6,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Core/MKGameInstance.h"
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
+#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
 UDataManager* UDataManager::Get(UObject* WorldContextObject)
 {
@@ -47,10 +48,10 @@ const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) co
 
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType)
 {
-    //if (::IsValid(GameplayEffectDataAsset))
-    //{
-    //    return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
-    //}
+    if (::IsValid(GameplayEffectDataAsset))
+    {
+        return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
+    }
 
     return nullptr;
 }

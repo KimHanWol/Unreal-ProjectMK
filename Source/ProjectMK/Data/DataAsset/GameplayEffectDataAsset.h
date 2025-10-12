@@ -12,8 +12,13 @@ UENUM()
 enum class EGameplayEffectType : uint8
 {
     None = 0,
-    Block_Add_Durability,
+    Block_Init,
+    Duration_Add,
 };
+
+enum class EGameplayAbilityType : uint8;
+
+class UGameplayAbility;
 
 UCLASS(BlueprintType)
 class PROJECTMK_API UGameplayEffectDataAsset : public UMKDataAssetBase

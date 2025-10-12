@@ -2,6 +2,7 @@
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 
+#include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "PaperSpriteComponent.h"
@@ -21,11 +22,20 @@ AMKCharacter::AMKCharacter()
 	CameraComponent->SetupAttachment(SpriteComponent);
 
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>(TEXT("InteractComponent"));
+
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+}
+
+UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
 }
 
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	GiveAbilities();
 }
 
 void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -38,6 +48,19 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::LookRight);
 	PlayerInputComponent->BindAxis("LookUp", this, &AMKCharacter::LookUp);
+}
+
+void AMKCharacter::GiveAbilities()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	for (const auto& InitialGameplayAbility : InitialGameplayAbilities)
+	{
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(InitialGameplayAbility));
+	}
 }
 
 void AMKCharacter::MoveRight(float Value)

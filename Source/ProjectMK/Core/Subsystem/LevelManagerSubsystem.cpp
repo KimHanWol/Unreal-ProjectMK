@@ -131,4 +131,16 @@ void ULevelManagerSubsystem::GenerateTileActors()
             SpawnedActor->InitializeBlock(BlockData);
         }
     }
+
+    OnGenerateFinished();
+}
+
+void ULevelManagerSubsystem::OnGenerateFinished()
+{
+    if (TileMapActor.IsValid() == false)
+    {
+        return;
+    }
+
+    TileMapActor->SetActorHiddenInGame(true);
 }

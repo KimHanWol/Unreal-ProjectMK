@@ -2,7 +2,9 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
 #include "PaperSprite.h"
+
 #include "BlockDataTableRow.generated.h"
 
 class UGameplayEffect;
@@ -34,5 +36,8 @@ struct FBlockDataTableRow : public FTableRowBase
     TSoftObjectPtr<UPaperSprite> TileSprite;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSubclassOf<UGameplayEffect> BlockInitEffect;
+    float BlockDurability = 0.f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FGameplayTag InteractEventTag;
 };
