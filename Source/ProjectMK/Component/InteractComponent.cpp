@@ -33,11 +33,6 @@ bool UInteractComponent::TryInteract()
 
 void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 {
-	if (NewDir == FVector::ZeroVector)
-	{
-		return;
-	}
-
 	AActor* Owner = GetOwner();
 	if (::IsValid(Owner) == false)
 	{
@@ -53,17 +48,33 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 
 	DrawDebugLine(GetWorld(), Start, End, FColor::Red, false);
 
+	AActor* NewInteractingActor = nullptr;
 	if (GetWorld()->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
 	{
 		for (const auto& Hit : Hits)
 		{
 			IInteractable* InteractableActor = Cast<IInteractable>(Hit.GetActor());
-			if (InteractableActor)
+			if (InteractableActor == nullptr)
 			{
-				InteractingActor = Hit.GetActor();
-				TryInteract();
-				break;
+				continue;
 			}
+			NewInteractingActor = Hit.GetActor();
+			break;
 		}
+	}
+
+	if (InteractingActor.IsValid() && NewInteractingActor != InteractingActor)
+	{
+		IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
+		if (InteractableActor)
+		{
+			InteractableActor->EndInteract();
+		}
+	}
+
+	InteractingActor = NewInteractingActor;
+	if (InteractingActor.IsValid())
+	{
+		TryInteract();
 	}
 }

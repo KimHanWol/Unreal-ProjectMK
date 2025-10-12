@@ -70,17 +70,21 @@ void AMKCharacter::MoveRight(float Value)
 
 void AMKCharacter::LookRight(float Value)
 {
+	CharacterDir.X = Value;
+
 	if (::IsValid(InteractComponent))
 	{
-		InteractComponent->UpdateCharacterDirection(FVector(Value, 0.f, 0.f));
+		InteractComponent->UpdateCharacterDirection(CharacterDir);
 	}
 }
 
 void AMKCharacter::LookUp(float Value)
 {
+	CharacterDir.Z = Value;
+
 	if (::IsValid(InteractComponent))
 	{
-		InteractComponent->UpdateCharacterDirection(FVector(0.f, 0.f, Value));
+		InteractComponent->UpdateCharacterDirection(CharacterDir);
 	}
 }
 

@@ -46,7 +46,11 @@ public:
 
     //IInteractable
     virtual const FGameplayTag GetInteractEventTag() override;
+    virtual bool TryInteract(AActor* Interactor) override;
+    virtual void EndInteract() override;
     //~IInteractable
+
+    void TryInteract_Internal(AActor* Interactor);
 
     //IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
@@ -74,5 +78,14 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mining")
+    float MiningDuration = 0.5f;
+
     FBlockData BlockData;
+
+private:
+    UPROPERTY(Transient)
+    bool bIsInteracting = false;
+
+    FTimerHandle InteractingTimerHandle;
 };

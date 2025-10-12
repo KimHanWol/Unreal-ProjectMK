@@ -53,4 +53,8 @@ protected:
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
+
+private:
+	UPROPERTY(Transient)
+	FVector CharacterDir;
 };

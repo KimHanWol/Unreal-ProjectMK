@@ -140,6 +140,51 @@ const FGameplayTag ABlockBase::GetInteractEventTag()
     return BlockDataTableRow->InteractEventTag;
 }
 
+bool ABlockBase::TryInteract(AActor* Interactor)
+{
+    if (bIsInteracting)
+    {
+        return false;
+    }
+    bIsInteracting = true;
+
+    TWeakObjectPtr<ABlockBase> WeakThis(this);
+    GetWorld()->GetTimerManager().SetTimer(InteractingTimerHandle, [WeakThis, Interactor]()
+        {
+            if (WeakThis.IsValid())
+            {
+                ABlockBase* StrongThis = WeakThis.Get();
+                if (::IsValid(StrongThis))
+                {
+                    StrongThis->TryInteract_Internal(Interactor);
+                }
+            }
+        }, MiningDuration, true, MiningDuration);
+
+    return true;
+}
+
+void ABlockBase::EndInteract()
+{
+    if (!bIsInteracting)
+    {
+        return;
+    }
+    bIsInteracting = false;
+
+    GetWorld()->GetTimerManager().ClearTimer(InteractingTimerHandle);
+}
+
+void ABlockBase::TryInteract_Internal(AActor* Interactor)
+{
+    if (!bIsInteracting)
+    {
+        return;
+    }
+
+    IInteractable::TryInteract(Interactor);
+}
+
 UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
 {
     return AbilitySystemComponent;

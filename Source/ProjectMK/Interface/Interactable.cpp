@@ -1,7 +1,8 @@
 // LINK
 
-#include "AbilitySystemComponent.h"
 #include "ProjectMK/Interface/Interactable.h"
+
+#include "AbilitySystemComponent.h"
 
 bool IInteractable::CanInteract(AActor* Interactor)
 {

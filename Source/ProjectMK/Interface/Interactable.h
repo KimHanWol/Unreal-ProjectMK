@@ -22,6 +22,7 @@ class IInteractable
 public:
     virtual bool CanInteract(AActor* Interactor);
     virtual bool TryInteract(AActor* Interactor);
+    virtual void EndInteract() {}
 
 protected:
     virtual const FGameplayTag GetInteractEventTag() = 0;
