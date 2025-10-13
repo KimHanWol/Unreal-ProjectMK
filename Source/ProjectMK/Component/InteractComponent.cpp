@@ -17,18 +17,17 @@ UInteractComponent::UInteractComponent()
 
 bool UInteractComponent::TryInteract()
 {
-	if (InteractingActor.IsValid() == false)
-	{
-		return false;
-	}
-
 	IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
 	if (!InteractableActor)
 	{
 		return false;
 	}
 
-	return InteractableActor->TryInteract(GetOwner());
+	InteractableActor->TryInteract(GetOwner());
+	InteractingTime += GetWorld()->GetDeltaSeconds();
+	UpdateInteractPosition();
+	
+	return true;
 }
 
 void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
@@ -38,6 +37,8 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 	{
 		return;
 	}
+
+	InteractDir = NewDir;
 
 	FVector Start = Owner->GetActorLocation();
 	FVector End = Start + NewDir * InteractDistance;
@@ -63,18 +64,58 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 		}
 	}
 
-	if (InteractingActor.IsValid() && NewInteractingActor != InteractingActor)
+	if (NewInteractingActor != InteractingActor)
 	{
-		IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
-		if (InteractableActor)
+		if (InteractingActor.IsValid())
 		{
-			InteractableActor->EndInteract();
+			IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
+			if (InteractableActor)
+			{
+				InteractableActor->EndInteract();
+			}
 		}
+
+		InteractingActor = NewInteractingActor;
+
+		if (InteractingActor.IsValid())
+		{
+			InteractStartPoint = GetOwner()->GetActorLocation();
+		}
+		else
+		{
+			InteractStartPoint = FVector::ZeroVector;
+		}
+
+		InteractingTime = 0.f;
 	}
 
-	InteractingActor = NewInteractingActor;
-	if (InteractingActor.IsValid())
+	TryInteract();
+}
+
+void UInteractComponent::UpdateInteractPosition()
+{
+	if (::IsValid(GetOwner()) == false)
 	{
-		TryInteract();
+		return;
 	}
+
+	if (InteractingActor.IsValid() == false)
+	{
+		return;
+	}
+
+	//TODO: 하드코딩 수정
+	int32 BlockSize = 16;
+
+	const FVector& InteractingActorLocation = InteractingActor->GetActorLocation();
+	FVector TargetLocation = InteractingActorLocation - InteractDir * BlockSize;
+
+	if (GetOwner()->GetActorLocation() == TargetLocation)
+	{
+		return;
+	}
+
+	float Alpha = FMath::Clamp(InteractingTime / InteractPositionMoveDuration, 0.0f, 1.0f);
+	FVector NewLocation = FMath::Lerp(InteractStartPoint, TargetLocation, Alpha);
+	GetOwner()->SetActorLocation(NewLocation);
 }

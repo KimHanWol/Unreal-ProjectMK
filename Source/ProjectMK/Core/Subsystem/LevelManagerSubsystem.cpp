@@ -135,6 +135,29 @@ void ULevelManagerSubsystem::GenerateTileActors()
     OnGenerateFinished();
 }
 
+int32 ULevelManagerSubsystem::GetTileSize()
+{
+    if (TileMapActor.IsValid() == false)
+    {
+        return 0;
+    }
+
+    UPaperTileMapComponent* TileMapComp = TileMapActor->GetRenderComponent();
+    if (::IsValid(TileMapComp) == false)
+    {
+        return 0;
+    }
+
+    UPaperTileMap* TileMap = TileMapComp->TileMap;
+    if (::IsValid(TileMap) == false)
+    {
+        return 0;
+    }
+
+    //가로 세로 동일하다고 가정
+    return TileMap->TileWidth;
+}
+
 void ULevelManagerSubsystem::OnGenerateFinished()
 {
     if (TileMapActor.IsValid() == false)

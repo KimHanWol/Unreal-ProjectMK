@@ -19,9 +19,24 @@ public:
 	void UpdateCharacterDirection(const FVector& NewDir);
 
 private:
+	void UpdateInteractPosition();
 
 	UPROPERTY(EditAnywhere)
 	float InteractDistance = 20.f;
 
+	UPROPERTY(EditAnywhere)
+	float InteractPositionMoveDuration = 0.5f;
+
+	UPROPERTY(Transient)
+	float InteractingTime = 0.f;
+
+	UPROPERTY(Transient)
+	FVector InteractStartPoint = FVector::ZeroVector;
+
+	UPROPERTY(Transient)
+	FVector InteractDir = FVector::ZeroVector;
+
 	TWeakObjectPtr<AActor> InteractingActor;
+
+	FTimerHandle UpdateInteractPositionTimerHandle;
 };

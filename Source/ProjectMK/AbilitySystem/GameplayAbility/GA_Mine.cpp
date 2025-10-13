@@ -45,8 +45,6 @@ void UGA_Mine::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FG
         return;
     }
 
-    //SourceASC->GetAttributeSet()
-
     FGameplayEffectContextHandle Context = SourceASC->MakeEffectContext();
     Context.AddSourceObject(this);
 

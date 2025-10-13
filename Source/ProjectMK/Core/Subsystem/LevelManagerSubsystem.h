@@ -19,6 +19,8 @@ public:
 	void LoadTileMap(bool bForce = false);
 	void GenerateTileActors();
 
+	int32 GetTileSize();
+
 private:
 	void OnGenerateFinished();
 	
