@@ -17,6 +17,7 @@ protected:
 	virtual void Init() override;
 
 public:
+	UFUNCTION(BlueprintCallable)
 	UDataManager* GetDataManager();
 
 protected:

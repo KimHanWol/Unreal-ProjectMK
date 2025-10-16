@@ -46,6 +46,24 @@ const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) co
     return nullptr;
 }
 
+FItemDataTableRow UDataManager::BP_GetItemDataTableRow(FName ItemUID) const
+{
+    FItemDataTableRow DataTableRow;
+    if (::IsValid(DataTableDataAsset) == false)
+    {
+        return DataTableRow;
+    }
+
+    UDataTable* BlockDataTable = DataTableDataAsset->GetDataTable(EDataTableType::Block);
+    if (BlockDataTable == nullptr)
+    {
+        return DataTableRow;
+    }
+
+    DataTableRow = *BlockDataTable->FindRow<FItemDataTableRow>(ItemUID, TEXT("GetItemDataTableRow"));
+    return DataTableRow;
+}
+
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType)
 {
     if (::IsValid(GameplayEffectDataAsset))
