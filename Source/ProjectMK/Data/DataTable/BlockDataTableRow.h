@@ -14,8 +14,6 @@ enum class ETileType : uint8
 {
     Dirt,
     Stone,
-    Ore_Copper,
-    Ore_Iron,
 };
 
 USTRUCT(BlueprintType)
@@ -39,5 +37,11 @@ struct FBlockDataTableRow : public FTableRowBase
     float BlockDurability = 0.f;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bIsMineable = true;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     FGameplayTag InteractEventTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TMap<FName, float> SpawnableItem;
 };

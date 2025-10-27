@@ -12,4 +12,7 @@ struct FItemDataTableRow : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftObjectPtr<UTexture2D> ItemIcon;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bIsOre;
 };

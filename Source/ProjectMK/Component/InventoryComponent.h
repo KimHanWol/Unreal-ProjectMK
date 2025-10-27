@@ -3,7 +3,7 @@
 #pragma once
 
 #include "CoreMinimal.h"
-#include "Components/ActorComponent.h"
+#include "Components/SphereComponent.h"
 #include "InventoryComponent.generated.h"
 
 UCLASS(BlueprintType)
@@ -20,10 +20,14 @@ public:
 };
 
 UCLASS(BlueprintType)
-class PROJECTMK_API UInventoryComponent : public UActorComponent
+class PROJECTMK_API UInventoryComponent : public USphereComponent
 {
 	GENERATED_BODY()
 	
+protected:
+	virtual void BeginPlay() override;
+	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
+
 public:
 	UInventoryComponent();
 
@@ -33,9 +37,18 @@ public:
 	UFUNCTION(BlueprintCallable)
 	TMap<FName, int32> GetInventoryItems() { return InventoryItemMap; }
 
+	bool CanGainItem(FName ItemUID, int32 ItemCount);
+
 private:
-	void OnGainItem(FName ItemUID, int32 ItemCount);
-	void OnSpendItem(FName ItemUID, int32 ItemCount);
+	void SetGainRadius(float NewRadius);
+
+	UFUNCTION()
+	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
+						 UPrimitiveComponent* OtherComp, int32 OtherBodyIndex,
+						 bool bFromSweep, const FHitResult& SweepResult);
+
+	void GainItem(FName ItemUID, int32 ItemCount);
+	void SpendItem(FName ItemUID, int32 ItemCount);
 
 	int32 GetInventoryCount();
 	void OnInventoryUpdated();
@@ -49,6 +62,12 @@ private:
 	UPROPERTY(Transient)
 	TMap<FName, int32> InventoryItemMap;
 
+	UPROPERTY(Transient)
+	float ItemCollectRange = 0.f;
+
 	UPROPERTY(EditAnywhere)
 	int32 MaxInventoryCount = 10;
+
+	UPROPERTY(EditAnywhere)
+	float LootableDistance = 0.f;
 };

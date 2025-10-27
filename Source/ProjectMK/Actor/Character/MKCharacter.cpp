@@ -6,7 +6,11 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "PaperSpriteComponent.h"
+#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/InteractComponent.h"
+#include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
 AMKCharacter::AMKCharacter()
 {
@@ -23,6 +27,9 @@ AMKCharacter::AMKCharacter()
 
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>(TEXT("InteractComponent"));
 
+	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
+	InventoryComponent->SetupAttachment(SpriteComponent);
+
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
@@ -34,8 +41,14 @@ UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AMKCharacter::PostInitializeComponents()
+{
+	Super::PostInitializeComponents();
 
 	GiveAbilities();
+	InitializeCharacterAttribute();
 }
 
 void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -60,6 +73,34 @@ void AMKCharacter::GiveAbilities()
 	for (const auto& InitialGameplayAbility : InitialGameplayAbilities)
 	{
 		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(InitialGameplayAbility));
+	}
+}
+
+void AMKCharacter::InitializeCharacterAttribute()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->AddAttributeSetSubobject(NewObject<UAttributeSet_Character>());
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Character_Init);
+	if (::IsValid(EffectClass) == false)
+	{
+		return;
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
 }
 

@@ -28,7 +28,7 @@ ABlockBase::ABlockBase()
     AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
-void ABlockBase::InitializeBlock(FBlockData InBlockData)
+void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 {
 	if (::IsValid(BoxCollision) == false)
 	{
@@ -46,9 +46,9 @@ void ABlockBase::InitializeBlock(FBlockData InBlockData)
 		return;
 	}
 
-	BlockData = InBlockData;
+	BlockTileData = InBlockTileData;
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockData.TileSetIndex);
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
     if (BlockDataTableRow == nullptr)
     {
         return;
@@ -70,7 +70,7 @@ void ABlockBase::InitializeBlock(FBlockData InBlockData)
 
         PaperSpriteComponent->SetSprite(Sprite);
 
-        FVector2D TileSize = FVector2D(BlockData.TileSize.X, BlockData.TileSize.Y);
+        FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
         FVector2D SpriteSize = Sprite->GetSourceSize();
 
         float PixelsPerUnit = Sprite->GetPixelsPerUnrealUnit();
@@ -101,7 +101,7 @@ void ABlockBase::InitializeBlock(FBlockData InBlockData)
             BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
         }
 
-        SetActorLocation(BlockData.WorldLocation);
+        SetActorLocation(BlockTileData.WorldLocation);
     }
     else
     {
@@ -131,7 +131,7 @@ const FGameplayTag ABlockBase::GetInteractEventTag()
         return FGameplayTag::EmptyTag;
     }
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockData.TileSetIndex);
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
     if (BlockDataTableRow == nullptr)
     {
         return FGameplayTag::EmptyTag;
@@ -226,7 +226,7 @@ void ABlockBase::UnbindEvents()
 
 void ABlockBase::OnPaperSpriteLoaded()
 {
-	InitializeBlock(BlockData);
+	InitializeBlock(BlockTileData);
 }
 
 void ABlockBase::InitializeBlockAttribute()
@@ -244,7 +244,7 @@ void ABlockBase::InitializeBlockAttribute()
         return;
     }
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockData.TileSetIndex);
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
     if (BlockDataTableRow == nullptr)
     {
         return;
@@ -267,6 +267,23 @@ void ABlockBase::InitializeBlockAttribute()
 
 void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 {
+    UDataManager* DataManager = UDataManager::Get(this);
+    if (::IsValid(DataManager) == false)
+    {
+        return;
+    }
+
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+    if (BlockDataTableRow == nullptr)
+    {
+        return;
+    }
+
+    if (BlockDataTableRow->bIsMineable == false)
+    {
+        return;
+    }
+
     UE_LOG(LogTemp, Warning, TEXT("Block duration changed (%f -> %f)"), Data.OldValue, Data.NewValue);
 
     if (Data.NewValue <= 0)

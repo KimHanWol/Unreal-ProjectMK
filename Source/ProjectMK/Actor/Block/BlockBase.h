@@ -20,7 +20,7 @@ class UPaperSpriteComponent;
 enum class EGameplayAbilityType : uint8;
 
 USTRUCT(BlueprintType)
-struct FBlockData
+struct FBlockTileData
 {
     GENERATED_BODY()
 
@@ -42,7 +42,7 @@ class PROJECTMK_API ABlockBase : public AActor, public IInteractable, public IAb
 public:	
     ABlockBase();
 
-	void InitializeBlock(FBlockData InBlockData);
+	void InitializeBlock(FBlockTileData InBlockData);
 
     //IInteractable
     virtual const FGameplayTag GetInteractEventTag() override;
@@ -64,7 +64,7 @@ protected:
 
 private:
     void OnPaperSpriteLoaded();
-    void InitializeBlockAttribute();
+    void InitializeBlockAttribute(); 
 
     void OnDurationChanged(const FOnAttributeChangeData& Data);
 
@@ -81,7 +81,7 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mining")
     float MiningDuration = 0.5f;
 
-    FBlockData BlockData;
+    FBlockTileData BlockTileData;
 
 private:
     UPROPERTY(Transient)

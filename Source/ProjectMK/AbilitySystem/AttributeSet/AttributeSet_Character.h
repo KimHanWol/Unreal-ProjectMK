@@ -5,16 +5,16 @@
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/MKAttributeSetBase.h"
-#include "AttributeSet_Block.generated.h"
+#include "AttributeSet_Character.generated.h"
 
 UCLASS()
-class PROJECTMK_API UAttributeSet_Block : public UMKAttributeSetBase
+class PROJECTMK_API UAttributeSet_Character : public UMKAttributeSetBase
 {
 	GENERATED_BODY()
 	
 public:
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-    FGameplayAttributeData Durability;
-	ATTRIBUTE_ACCESSORS(UAttributeSet_Block, Durability)
+    FGameplayAttributeData ItemCollectRange;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, ItemCollectRange)
 };

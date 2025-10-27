@@ -121,7 +121,7 @@ void ULevelManagerSubsystem::GenerateTileActors()
 
             ABlockBase* SpawnedActor = GetWorld()->SpawnActor<ABlockBase>(ABlockBase::StaticClass(), WorldPos, FRotator::ZeroRotator, SpawnParams);
 
-            FBlockData BlockData;
+            FBlockTileData BlockData;
             BlockData.TileSetIndex = TileInfo.GetTileIndex();
             BlockData.TileSize = FIntPoint(TileMap->TileWidth, TileMap->TileHeight);
 
