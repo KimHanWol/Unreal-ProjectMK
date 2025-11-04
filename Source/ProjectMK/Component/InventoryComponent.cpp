@@ -36,6 +36,7 @@ void UInventoryComponent::BeginPlay()
 	}
 
 	ItemCollectRange = AttributeSet_Character->GetItemCollectRange();
+	SetGainRadius(ItemCollectRange);
 
 	OnComponentBeginOverlap.AddDynamic(this, &UInventoryComponent::OnSphereOverlap);
 }
@@ -44,7 +45,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (ItemCollectRange <= 0.f)
+	if (ItemGainRange <= 0.f)
 	{
 		return;
 	}
@@ -56,7 +57,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	UKismetSystemLibrary::SphereOverlapActors(
 		GetWorld(),
 		GetOwner()->GetActorLocation(),
-		ItemCollectRange,
+		GetScaledSphereRadius(),
 		{},
 		AItemBase::StaticClass(),
 		IgnoreActors,
@@ -71,10 +72,22 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 			continue;
 		}
 
+		if (FVector::Dist(OverlappedActor->GetActorLocation(), GetOwner()->GetActorLocation()) > ItemGainRange)
+		{
+			continue;
+		}
+
+		if (OverlappedItem->IsInitialized() == false)
+		{
+			continue;
+		}
+
 		const FName& ItemKey = OverlappedItem->GetItemKey();
 		GainItem(ItemKey, 1);
 		OverlappedItem->OnLootFinished();
 	}
+
+	DrawDebugSphere(GetWorld(), GetOwner()->GetActorLocation(), ItemGainRange, 12, FColor::Red);
 }
 
 int32 UInventoryComponent::GetItemCount(FName ItemUID)
@@ -141,7 +154,7 @@ void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedCompone
 
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 {
-	if (CanGainItem(ItemUID, ItemCount))
+	if (CanGainItem(ItemUID, ItemCount) == false)
 	{
 		ensure(false);
 		return;
@@ -166,15 +179,5 @@ void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 
 void UInventoryComponent::OnInventoryUpdated()
 {
-	//TArray<FInventoryItemData> ItemDataList;
-	//for (const auto& InventoryItem : InventoryItemMap)
-	//{
-	//	FInventoryItemData NewInventoryData;
-	//	NewInventoryData.ItemUID = InventoryItem.Key;
-	//	NewInventoryData.ItemCount = InventoryItem.Value;
-
-	//	ItemDataList.Add(NewInventoryData);
-	//}
-
-	//OnInventoryChangedDelegate.Broadcast(ItemDataList);
+	OnInventoryChangedDelegate.Broadcast();
 }

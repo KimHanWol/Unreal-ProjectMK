@@ -10,6 +10,7 @@
 class UCameraComponent;
 class UGameplayAbility;
 class UInteractComponent;
+class UInventoryComponent;
 class UPaperSpriteComponent;
 
 UCLASS()
@@ -31,10 +32,15 @@ protected:
 	void GiveAbilities();
 	void InitializeCharacterAttribute();
 
+	virtual void BindEvents();
+	virtual void UnbindEvents();
+
 private:
 	void MoveRight(float Value);
 	void LookRight(float Value);
 	void LookUp(float Value);
+
+	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

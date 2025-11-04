@@ -11,6 +11,7 @@
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
@@ -55,6 +56,20 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
     }
 
     TSoftObjectPtr<UPaperSprite> SoftPaperSprite = BlockDataTableRow->TileSprite;
+
+    float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
+    float CurrntItemSpawnProb = 0.f;
+    for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
+    {
+        CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
+        if (SpawnProbabilityValue < CurrntItemSpawnProb)
+        {
+            SoftPaperSprite = SpawnableItemData.TileSprite;
+            SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
+            break;
+        }
+    }
+
     if (SoftPaperSprite.IsNull())
     {
         return;
@@ -204,6 +219,14 @@ void ABlockBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
     UnbindEvents();
 }
 
+void ABlockBase::OnPreDestroy()
+{
+    if (SpawnableItemKey.IsNone() == false)
+    {
+        SpawnItem();
+    }
+}
+
 void ABlockBase::BindEvents()
 {
     if (::IsValid(AbilitySystemComponent) == false)
@@ -288,6 +311,19 @@ void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 
     if (Data.NewValue <= 0)
     {
+        OnPreDestroy();
         Destroy();
     }
+}
+
+void ABlockBase::SpawnItem()
+{
+    AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
+    if (::IsValid(SpawnedItem) == false)
+    {
+        return;
+    }
+
+    SpawnedItem->InitializeItemBase(SpawnableItemKey);
+    SpawnedItem->SetActorLocation(GetActorLocation());
 }

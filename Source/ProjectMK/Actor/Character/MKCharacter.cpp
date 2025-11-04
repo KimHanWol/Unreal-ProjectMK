@@ -104,6 +104,26 @@ void AMKCharacter::InitializeCharacterAttribute()
 	}
 }
 
+void AMKCharacter::BindEvents()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &::AMKCharacter::OnItemCollectRangeChanged);
+}
+
+void AMKCharacter::UnbindEvents()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
+}
+
 void AMKCharacter::MoveRight(float Value)
 {
 	AddMovementInput(FVector::ForwardVector, Value * MoveSpeed);
@@ -126,6 +146,14 @@ void AMKCharacter::LookUp(float Value)
 	if (::IsValid(InteractComponent))
 	{
 		InteractComponent->UpdateCharacterDirection(CharacterDir);
+	}
+}
+
+void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
+{
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->SetGainRadius(Data.NewValue);
 	}
 }
 

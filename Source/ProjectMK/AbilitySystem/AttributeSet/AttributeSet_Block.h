@@ -13,7 +13,6 @@ class PROJECTMK_API UAttributeSet_Block : public UMKAttributeSetBase
 	GENERATED_BODY()
 	
 public:
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
     FGameplayAttributeData Durability;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Block, Durability)

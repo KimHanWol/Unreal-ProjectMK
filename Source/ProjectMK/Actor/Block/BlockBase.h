@@ -59,6 +59,9 @@ public:
 protected:
     virtual void BeginPlay() override;
     virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+
+    virtual void OnPreDestroy();
+
     void BindEvents();
     void UnbindEvents();
 
@@ -67,6 +70,8 @@ private:
     void InitializeBlockAttribute(); 
 
     void OnDurationChanged(const FOnAttributeChangeData& Data);
+
+    void SpawnItem();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -86,6 +91,9 @@ protected:
 private:
     UPROPERTY(Transient)
     bool bIsInteracting = false;
+
+    UPROPERTY(Transient)
+    FName SpawnableItemKey;
 
     FTimerHandle InteractingTimerHandle;
 };

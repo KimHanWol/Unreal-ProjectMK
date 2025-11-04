@@ -60,7 +60,12 @@ FItemDataTableRow UDataManager::BP_GetItemDataTableRow(FName ItemUID) const
         return DataTableRow;
     }
 
-    DataTableRow = *BlockDataTable->FindRow<FItemDataTableRow>(ItemUID, TEXT("GetItemDataTableRow"));
+    const FItemDataTableRow* ItemDataRow = GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
+    if (ItemDataRow)
+    {
+        DataTableRow = *ItemDataRow;
+    }
+
     return DataTableRow;
 }
 

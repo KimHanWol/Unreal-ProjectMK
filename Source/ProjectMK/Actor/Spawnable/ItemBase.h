@@ -20,6 +20,8 @@ class PROJECTMK_API AItemBase : public AActor
 public:
 	AItemBase();
 
+	bool IsInitialized() { return bIsInitialized; }
+
 	void InitializeItemBase(FName InItemKey);
 	FName GetItemKey() const { return ItemKey; }
 	bool IsOccupied();
@@ -42,6 +44,9 @@ protected:
 
 private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
+
+	UPROPERTY(Transient)
+	bool bIsInitialized = false;
 
 	UPROPERTY(Transient)
 	bool bIsOccupied = false;

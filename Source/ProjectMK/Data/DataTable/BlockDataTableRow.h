@@ -17,6 +17,21 @@ enum class ETileType : uint8
 };
 
 USTRUCT(BlueprintType)
+struct FBlockSpawnableItemData
+{
+    GENERATED_BODY()
+    
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    FName SpawnableItemKey;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float SpawnProbability;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UPaperSprite> TileSprite;
+};
+
+USTRUCT(BlueprintType)
 struct FBlockDataTableRow : public FTableRowBase
 {
     GENERATED_BODY()
@@ -43,5 +58,5 @@ struct FBlockDataTableRow : public FTableRowBase
     FGameplayTag InteractEventTag;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TMap<FName, float> SpawnableItem;
+    TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 };

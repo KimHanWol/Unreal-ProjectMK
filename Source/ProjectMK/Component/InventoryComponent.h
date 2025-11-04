@@ -38,9 +38,9 @@ public:
 	TMap<FName, int32> GetInventoryItems() { return InventoryItemMap; }
 
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
+	void SetGainRadius(float NewRadius);
 
 private:
-	void SetGainRadius(float NewRadius);
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -61,6 +61,9 @@ public:
 private:
 	UPROPERTY(Transient)
 	TMap<FName, int32> InventoryItemMap;
+
+	UPROPERTY(EditAnywhere)
+	float ItemGainRange = 5.f;
 
 	UPROPERTY(Transient)
 	float ItemCollectRange = 0.f;

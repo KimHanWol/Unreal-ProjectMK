@@ -11,7 +11,7 @@ struct FItemDataTableRow : public FTableRowBase
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UTexture2D> ItemIcon;
+    TSoftObjectPtr<UPaperSprite> ItemIcon;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsOre;

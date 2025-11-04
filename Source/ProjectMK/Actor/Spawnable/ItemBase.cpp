@@ -5,17 +5,21 @@
 #include "Components/SphereComponent.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 
 AItemBase::AItemBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
+	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	RootComponent = SphereCollision;
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
-	PaperSpriteComponent->SetRelativeLocation(FVector::ZeroVector);
+	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -1.f, -4.f));
+	PaperSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AItemBase::Tick(float DeltaTime)
@@ -28,6 +32,32 @@ void AItemBase::Tick(float DeltaTime)
 void AItemBase::InitializeItemBase(FName InItemKey)
 {
 	ItemKey = InItemKey;
+
+	if (::IsValid(PaperSpriteComponent) == false)
+	{
+		return;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, InItemKey);
+	if (ItemDataTableRow == nullptr)
+	{
+		return;
+	}
+
+	PaperSpriteComponent->SetSprite(ItemDataTableRow->ItemIcon.LoadSynchronous());
+
+	FTimerHandle InitTimerHandle;
+	GetWorld()->GetTimerManager().SetTimer(InitTimerHandle, [this]()
+		{
+			bIsInitialized = true;
+		},
+		0.5f, false);
 }
 
 bool AItemBase::IsOccupied()
@@ -52,6 +82,11 @@ void AItemBase::OnLootFinished()
 
 void AItemBase::UpdatePosition()
 {
+	if (bIsInitialized == false)
+	{
+		return;
+	}
+
 	if (::IsValid(PaperSpriteComponent) == false)
 	{
 		return;

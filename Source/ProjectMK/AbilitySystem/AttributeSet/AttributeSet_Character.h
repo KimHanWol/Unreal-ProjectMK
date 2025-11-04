@@ -13,7 +13,6 @@ class PROJECTMK_API UAttributeSet_Character : public UMKAttributeSetBase
 	GENERATED_BODY()
 	
 public:
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
     FGameplayAttributeData ItemCollectRange;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, ItemCollectRange)
