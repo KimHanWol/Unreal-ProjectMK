@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/InteractComponent.h"
@@ -41,6 +42,20 @@ UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+}
+
+void AMKCharacter::Tick(float DeltaTime)
+{
+	Super::Tick(DeltaTime);
+
+	if (bIsUpDoublePressing)
+	{
+		Fly();
+	}
+	else
+	{
+		FinishFly();
+	}
 }
 
 void AMKCharacter::PostInitializeComponents()
@@ -126,7 +141,8 @@ void AMKCharacter::UnbindEvents()
 
 void AMKCharacter::MoveRight(float Value)
 {
-	AddMovementInput(FVector::ForwardVector, Value * MoveSpeed);
+	float Speed = GetCharacterMovement()->IsFlying() ? FlyingSpeed : MoveSpeed;
+	AddMovementInput(FVector::ForwardVector, Value * Speed);
 }
 
 void AMKCharacter::LookRight(float Value)
@@ -141,12 +157,62 @@ void AMKCharacter::LookRight(float Value)
 
 void AMKCharacter::LookUp(float Value)
 {
+	float CurrentTime = GetWorld()->GetTimeSeconds();
+	if (Value > 0.f)
+	{
+		if (!bIsUpPressing)
+		{
+			if (CurrentTime - LastUpPressedTime <= DoublePressDuration)
+			{
+				bIsUpDoublePressing = true;
+			}
+			LastUpPressedTime = CurrentTime;
+			bIsUpPressing = true;
+		}
+	}
+	else
+	{
+		bIsUpPressing = false;
+		bIsUpDoublePressing = false;
+	}
+
 	CharacterDir.Z = Value;
 
 	if (::IsValid(InteractComponent))
 	{
 		InteractComponent->UpdateCharacterDirection(CharacterDir);
 	}
+}
+
+void AMKCharacter::Fly()
+{
+	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
+	if (::IsValid(CharacterMovementComp) == false)
+	{
+		return;
+	}
+
+	CharacterMovementComp->SetMovementMode(MOVE_Flying);
+	CharacterMovementComp->MaxFlySpeed = 100.f;
+	CharacterMovementComp->GravityScale = 1.f;
+	AddMovementInput(FVector::UpVector, 100.0f);
+}
+
+void AMKCharacter::FinishFly()
+{
+	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
+	if (::IsValid(CharacterMovementComp) == false)
+	{
+		return;
+	}
+
+	if (CharacterMovementComp->MovementMode != MOVE_Flying)
+	{
+		return;
+	}
+
+	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+	GetCharacterMovement()->GravityScale = 1.f;
 }
 
 void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)

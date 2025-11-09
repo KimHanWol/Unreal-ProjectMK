@@ -22,12 +22,16 @@ bool UInteractComponent::TryInteract()
 	{
 		return false;
 	}
-
-	InteractableActor->TryInteract(GetOwner());
-	InteractingTime += GetWorld()->GetDeltaSeconds();
-	UpdateInteractPosition();
 	
-	return true;
+	bool bIsSucceed = InteractableActor->TryInteract(GetOwner());
+	InteractingTime += GetWorld()->GetDeltaSeconds();
+
+	if (bIsSucceed)
+	{
+		UpdateInteractPosition();
+	}
+	
+	return bIsSucceed;
 }
 
 void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
@@ -39,6 +43,11 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 	}
 
 	InteractDir = NewDir;
+
+	if (InteractDir.Size() > 1.f || InteractDir == FVector::UpVector)
+	{
+		return;
+	}
 
 	FVector Start = Owner->GetActorLocation();
 	FVector End = Start + NewDir * InteractDistance;

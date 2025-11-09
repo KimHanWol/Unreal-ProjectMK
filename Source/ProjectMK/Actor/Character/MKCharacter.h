@@ -27,6 +27,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	void GiveAbilities();
@@ -39,6 +40,8 @@ private:
 	void MoveRight(float Value);
 	void LookRight(float Value);
 	void LookUp(float Value);
+	void Fly();
+	void FinishFly();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 
@@ -61,9 +64,27 @@ protected:
 	UPROPERTY(EditAnywhere)
 	float MoveSpeed = 1.f;
 
+	UPROPERTY(EditAnywhere)
+	float FlyingSpeed = 200.f;
+
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
+
+	UPROPERTY(EditAnywhere)
+	float DoublePressDuration = 0.5f;
+
+	UPROPERTY(Transient)
+	float LastUpPressedTime = 0.f;
+
+	UPROPERTY(Transient)
+	bool bIsUpPressing = false;
+
+	UPROPERTY(Transient)
+	bool bIsUpDoublePressing = false;
+
+	UPROPERTY(EditAnywhere)
+	float MaxFlySpeed = 1000.f;
 
 private:
 	UPROPERTY(Transient)
