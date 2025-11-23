@@ -15,4 +15,7 @@ struct FItemDataTableRow : public FTableRowBase
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsOre;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    int32 SellPrice;
 };

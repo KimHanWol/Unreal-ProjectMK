@@ -11,4 +11,5 @@ enum class EDataTableType : uint8
     None,
     Block,
     Item,
+    EquipmentItem,
 };

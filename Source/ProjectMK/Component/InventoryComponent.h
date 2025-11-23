@@ -40,6 +40,11 @@ public:
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	void SetGainRadius(float NewRadius);
 
+	bool EquipItem(FName ItemUID);
+	bool UnEquipItem(FName ItemUID);
+
+	bool CraftEquipmentItem(FName EquipmentItemKey);
+	bool IsCraftable(FName EquipmentItemKey);
 private:
 
 	UFUNCTION()
@@ -60,9 +65,15 @@ public:
 
 private:
 	UPROPERTY(Transient)
-	TMap<FName, int32> InventoryItemMap;
+	TMap<FName, int32> InventoryItemMap; //ItemKey, ItemCount
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(Transient)
+	TMap<EEuipmentType, FName> EquipmentItemMap; // EEuipmentType, EquipmentKey
+
+	UPROPERTY(Transient)
+	TMap<FName, TArray<FActiveGameplayEffectHandle>> ActivatedEquipementEffects;
+
+	UPROPERTY(EditAnywhere) 
 	float ItemGainRange = 5.f;
 
 	UPROPERTY(Transient)

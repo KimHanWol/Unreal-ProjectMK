@@ -133,7 +133,150 @@ void UInventoryComponent::SetGainRadius(float NewRadius)
 	SetSphereRadius(NewRadius);
 }
 
-void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+bool UInventoryComponent::EquipItem(FName EquipmentKey)
+{
+	bool *bItemCountPtr = InventoryItemMap.Find(EquipmentKey);
+	if (bItemCountPtr == nullptr || (*bItemCountPtr) > 0)
+	{
+		return false;
+	}
+
+	(*bItemCountPtr) = true;
+
+	UDataManager *DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	const FEquipmentItemDataTableRow* EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	if (EquipmentItemDataTableRow == nullptr)
+	{
+		return;
+	}
+
+	IAbilitySystemInterface* OwnerAbilitySystemInterface = Cast <IAbilitySystemInterface>(GetOwner());
+	if (OwnerAbilitySystemInterface == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
+	if(OwnerASC == nullptr)
+	{
+		return;
+	}
+
+	FName *EquipmentNamePtr = EquipmentItemMap.Find(EquipmentItemDataTableRow->EquipmentType);
+	if (EquipmentNamePtr)
+	{
+		UnequipItem(*EquipmentNamePtr);
+	}
+
+	for (const auto &EquipEffectClass : EquipmentItemDataTableRow->EqiupEffectClasses)
+	{
+		FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EquipEffectClass, 1.f, OwnerASC->MakeEffectContext());
+		if (SpecHandle.IsValid())
+		{
+			FActiveGameplayEffectHandle Handle = OwnerASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+			ActivatedEquipementEffects.FindOrAdd(EquipmentKey).Add(Handle);
+		}
+	}
+
+	(*EquipmentNamePtr) = EquipmentKey;
+
+	return true;
+}
+
+bool UInventoryComponent::UnequipItem(FName EquipmentKey)
+{
+	IAbilitySystemInterface *OwnerAbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner());
+	if (OwnerAbilitySystemInterface == nullptr)
+	{
+		return false;
+	}
+
+	UAbilitySystemComponent *OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
+	if (OwnerASC == nullptr)
+	{
+		return false;
+	}
+
+	TArray<FActiveGameplayEffectHandle>* ActiveEffectHandlePtr = ActivatedEquipmentEffects.Find(EquipmentKey);
+	if(ActiveEffectHandlePtr == nullptr)
+	{
+		return false;
+	}
+
+	for(const auto& ActiveEffectHandle : (*ActiveEffectHandlePtr))
+	{
+		OwnerASC->RemoveActiveGameplayEffect(ActiveEffectHandle);
+	}
+
+	ActivatedEquipmentEffects.Remove(EquipmentKey);
+}
+
+bool UInventoryComponent::CraftEquipmentItem(FName EquipmentItemKey)
+{
+	if (IsCraftable(EquipmentItemKey) == false)
+	{
+		return false;
+	}
+
+	const UDataManager *DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	if (EquipmentItemDataTableRow == nullptr)
+	{
+		return false;
+	}
+
+	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
+	{
+		int32* InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.Key);
+		(*InventoryItemCountPtr) -= CraftRecipeMaterial.Value;
+	}
+
+	InventoryItemMap.FindOrAdd(EquipmentItemKey) += 1;
+	return true;
+}
+
+void UInventoryComponent::IsCraftable(FName EquipmentItemKey)
+{
+	if(GetItemCount(EquipmentItemKey) > 0)
+	{
+		return false;
+	}
+
+	UDataManager *DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	if (EquipmentItemDataTableRow == nullptr)
+	{
+		return false;
+	}
+
+	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
+	{
+		const int32 *InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.Key);
+		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < CraftRecipeMaterial.Value)
+		{
+			return false;
+		}
+	}
+
+	return true;
+}
+
+void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
 {
 	if (::IsValid(OtherActor) == false || OtherActor == GetOwner())
 	{
