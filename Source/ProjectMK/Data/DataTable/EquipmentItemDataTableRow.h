@@ -3,7 +3,7 @@
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
 
-#include "ItemDataTableRow.generated.h"
+#include "EquipmentItemDataTableRow.generated.h"
 
 UENUM(BlueprintType)
 enum class EEuipmentType : uint8
@@ -14,7 +14,7 @@ enum class EEuipmentType : uint8
     shoes,
 };
 
-USTRUCT(BlueprintType,)
+USTRUCT(BlueprintType)
 struct FEquipmentRecipe
 {
     GENERATED_BODY()
@@ -24,7 +24,7 @@ struct FEquipmentRecipe
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 MaterialCount;
-}
+};
 
 USTRUCT(BlueprintType)
 struct FEquipmentItemDataTableRow : public FItemDataTableRow
@@ -47,5 +47,5 @@ struct FEquipmentItemDataTableRow : public FItemDataTableRow
     TArray<FEquipmentRecipe> CraftRecipe;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<TSubClassOf<UGameplayEffect>> EqiupEffectClasses;
+    TArray<TSubclassOf<UGameplayEffect>> EqiupEffectClasses;
 };

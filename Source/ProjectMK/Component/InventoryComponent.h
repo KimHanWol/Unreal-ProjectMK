@@ -6,6 +6,8 @@
 #include "Components/SphereComponent.h"
 #include "InventoryComponent.generated.h"
 
+enum class EEuipmentType : uint8;
+
 UCLASS(BlueprintType)
 class PROJECTMK_API UInventoryItemData : public UObject
 {
@@ -70,7 +72,6 @@ private:
 	UPROPERTY(Transient)
 	TMap<EEuipmentType, FName> EquipmentItemMap; // EEuipmentType, EquipmentKey
 
-	UPROPERTY(Transient)
 	TMap<FName, TArray<FActiveGameplayEffectHandle>> ActivatedEquipementEffects;
 
 	UPROPERTY(EditAnywhere) 

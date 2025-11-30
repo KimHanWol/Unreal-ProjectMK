@@ -3,10 +3,12 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 
 #include "AbilitySystemComponent.h"
+#include "Kismet/KismetSystemLibrary.h"
+#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
-#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
-#include "Kismet/KismetSystemLibrary.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -135,7 +137,7 @@ void UInventoryComponent::SetGainRadius(float NewRadius)
 
 bool UInventoryComponent::EquipItem(FName EquipmentKey)
 {
-	bool *bItemCountPtr = InventoryItemMap.Find(EquipmentKey);
+	int32 *bItemCountPtr = InventoryItemMap.Find(EquipmentKey);
 	if (bItemCountPtr == nullptr || (*bItemCountPtr) > 0)
 	{
 		return false;
@@ -146,34 +148,34 @@ bool UInventoryComponent::EquipItem(FName EquipmentKey)
 	UDataManager *DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
 	{
-		return;
+		return false;
 	}
 
 	const FEquipmentItemDataTableRow* EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
 	if (EquipmentItemDataTableRow == nullptr)
 	{
-		return;
+		return false;
 	}
 
 	IAbilitySystemInterface* OwnerAbilitySystemInterface = Cast <IAbilitySystemInterface>(GetOwner());
 	if (OwnerAbilitySystemInterface == nullptr)
 	{
-		return;
+		return false;
 	}
 
 	UAbilitySystemComponent* OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
 	if(OwnerASC == nullptr)
 	{
-		return;
+		return false;
 	}
 
 	FName *EquipmentNamePtr = EquipmentItemMap.Find(EquipmentItemDataTableRow->EquipmentType);
 	if (EquipmentNamePtr)
 	{
-		UnequipItem(*EquipmentNamePtr);
+		UnEquipItem(*EquipmentNamePtr);
 	}
 
-	for (const auto &EquipEffectClass : EquipmentItemDataTableRow->EqiupEffectClasses)
+	for (const auto& EquipEffectClass : EquipmentItemDataTableRow->EqiupEffectClasses)
 	{
 		FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EquipEffectClass, 1.f, OwnerASC->MakeEffectContext());
 		if (SpecHandle.IsValid())
@@ -188,7 +190,7 @@ bool UInventoryComponent::EquipItem(FName EquipmentKey)
 	return true;
 }
 
-bool UInventoryComponent::UnequipItem(FName EquipmentKey)
+bool UInventoryComponent::UnEquipItem(FName ItemUID)
 {
 	IAbilitySystemInterface *OwnerAbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner());
 	if (OwnerAbilitySystemInterface == nullptr)
@@ -202,8 +204,8 @@ bool UInventoryComponent::UnequipItem(FName EquipmentKey)
 		return false;
 	}
 
-	TArray<FActiveGameplayEffectHandle>* ActiveEffectHandlePtr = ActivatedEquipmentEffects.Find(EquipmentKey);
-	if(ActiveEffectHandlePtr == nullptr)
+	TArray<FActiveGameplayEffectHandle>* ActiveEffectHandlePtr = ActivatedEquipementEffects.Find(ItemUID);
+	if (ActiveEffectHandlePtr == nullptr)
 	{
 		return false;
 	}
@@ -213,7 +215,9 @@ bool UInventoryComponent::UnequipItem(FName EquipmentKey)
 		OwnerASC->RemoveActiveGameplayEffect(ActiveEffectHandle);
 	}
 
-	ActivatedEquipmentEffects.Remove(EquipmentKey);
+	ActivatedEquipementEffects.Remove(ItemUID);
+
+	return true;
 }
 
 bool UInventoryComponent::CraftEquipmentItem(FName EquipmentItemKey)
@@ -229,7 +233,7 @@ bool UInventoryComponent::CraftEquipmentItem(FName EquipmentItemKey)
 		return false;
 	}
 
-	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentItemKey);
 	if (EquipmentItemDataTableRow == nullptr)
 	{
 		return false;
@@ -237,15 +241,15 @@ bool UInventoryComponent::CraftEquipmentItem(FName EquipmentItemKey)
 
 	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
 	{
-		int32* InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.Key);
-		(*InventoryItemCountPtr) -= CraftRecipeMaterial.Value;
+		int32* InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.MaterialKey);
+		(*InventoryItemCountPtr) -= CraftRecipeMaterial.MaterialCount;
 	}
 
 	InventoryItemMap.FindOrAdd(EquipmentItemKey) += 1;
 	return true;
 }
 
-void UInventoryComponent::IsCraftable(FName EquipmentItemKey)
+bool UInventoryComponent::IsCraftable(FName EquipmentItemKey)
 {
 	if(GetItemCount(EquipmentItemKey) > 0)
 	{
@@ -258,7 +262,7 @@ void UInventoryComponent::IsCraftable(FName EquipmentItemKey)
 		return false;
 	}
 
-	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentItemKey);
 	if (EquipmentItemDataTableRow == nullptr)
 	{
 		return false;
@@ -266,8 +270,8 @@ void UInventoryComponent::IsCraftable(FName EquipmentItemKey)
 
 	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
 	{
-		const int32 *InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.Key);
-		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < CraftRecipeMaterial.Value)
+		const int32 *InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.MaterialKey);
+		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < CraftRecipeMaterial.MaterialCount)
 		{
 			return false;
 		}
