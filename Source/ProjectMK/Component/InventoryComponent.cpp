@@ -88,8 +88,6 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 		GainItem(ItemKey, 1);
 		OverlappedItem->OnLootFinished();
 	}
-
-	DrawDebugSphere(GetWorld(), GetOwner()->GetActorLocation(), ItemGainRange, 12, FColor::Red);
 }
 
 int32 UInventoryComponent::GetItemCount(FName ItemUID)

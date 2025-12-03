@@ -10,17 +10,19 @@ UCLASS()
 class PROJECTMK_API UInteractComponent : public UActorComponent
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	UInteractComponent();
 
 	bool TryInteract();
+	bool IsInteracting() const { return InteractingActor != nullptr; };
 
 	void UpdateCharacterDirection(const FVector& NewDir);
 
 private:
 	void UpdateInteractPosition();
 
+private:
 	UPROPERTY(EditAnywhere)
 	float InteractDistance = 20.f;
 

@@ -19,17 +19,10 @@ AMKCharacter::AMKCharacter()
 	
 	SetRootComponent(GetCapsuleComponent());
 
-	SpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSpriteComponent"));
-	SpriteComponent->SetupAttachment(RootComponent);
-	SpriteComponent->SetRelativeLocation(FVector::ZeroVector);
-
-	CameraComponent = CreateDefaultSubobject<UCameraComponent>(TEXT("CameraComponent"));
-	CameraComponent->SetupAttachment(SpriteComponent);
-
 	InteractComponent = CreateDefaultSubobject<UInteractComponent>(TEXT("InteractComponent"));
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
-	InventoryComponent->SetupAttachment(SpriteComponent);
+	InventoryComponent->SetupAttachment(GetRootComponent());
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
@@ -137,6 +130,16 @@ void AMKCharacter::UnbindEvents()
 	}
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
+}
+
+bool AMKCharacter::IsInteracting()
+{
+	if (::IsValid(InteractComponent) == false)
+	{
+		return false;
+	}
+
+	return InteractComponent->IsInteracting();
 }
 
 void AMKCharacter::MoveRight(float Value)

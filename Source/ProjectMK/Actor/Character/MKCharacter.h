@@ -4,7 +4,7 @@
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
-#include "GameFramework/Character.h"
+#include "PaperZDCharacter.h"
 #include "MKCharacter.generated.h"
 
 class UCameraComponent;
@@ -14,7 +14,7 @@ class UInventoryComponent;
 class UPaperSpriteComponent;
 
 UCLASS()
-class PROJECTMK_API AMKCharacter : public ACharacter, public IAbilitySystemInterface
+class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 	
@@ -36,6 +36,10 @@ protected:
 	virtual void BindEvents();
 	virtual void UnbindEvents();
 
+public:
+	UFUNCTION(BlueprintCallable)
+	bool IsInteracting();
+
 private:
 	void MoveRight(float Value);
 	void LookRight(float Value);
@@ -46,12 +50,6 @@ private:
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UPaperSpriteComponent> SpriteComponent;
-
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UCameraComponent> CameraComponent;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInteractComponent> InteractComponent;
 
