@@ -15,7 +15,7 @@ public:
 	UInteractComponent();
 
 	bool TryInteract();
-	bool IsInteracting() const { return InteractingActor != nullptr; };
+	bool IsInteracting() const { return InteractedActor != nullptr; };
 
 	void UpdateCharacterDirection(const FVector& NewDir);
 
@@ -38,7 +38,10 @@ private:
 	UPROPERTY(Transient)
 	FVector InteractDir = FVector::ZeroVector;
 
-	TWeakObjectPtr<AActor> InteractingActor;
+	UPROPERTY(Transient)
+	bool bIsInteracting = false;
+
+	TWeakObjectPtr<AActor> InteractedActor;
 
 	FTimerHandle UpdateInteractPositionTimerHandle;
 };

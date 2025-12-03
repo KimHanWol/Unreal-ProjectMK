@@ -196,9 +196,9 @@ void AMKCharacter::Fly()
 	}
 
 	CharacterMovementComp->SetMovementMode(MOVE_Flying);
-	CharacterMovementComp->MaxFlySpeed = 100.f;
+	CharacterMovementComp->MaxFlySpeed = MaxFlySpeed;
 	CharacterMovementComp->GravityScale = 1.f;
-	AddMovementInput(FVector::UpVector, 100.0f);
+	AddMovementInput(FVector::UpVector, FlyingSpeed);
 }
 
 void AMKCharacter::FinishFly()

@@ -63,7 +63,7 @@ protected:
 	float MoveSpeed = 1.f;
 
 	UPROPERTY(EditAnywhere)
-	float FlyingSpeed = 200.f;
+	float FlyingSpeed = 100.f;
 
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
@@ -82,7 +82,7 @@ protected:
 	bool bIsUpDoublePressing = false;
 
 	UPROPERTY(EditAnywhere)
-	float MaxFlySpeed = 1000.f;
+	float MaxFlySpeed = 100.f;
 
 private:
 	UPROPERTY(Transient)

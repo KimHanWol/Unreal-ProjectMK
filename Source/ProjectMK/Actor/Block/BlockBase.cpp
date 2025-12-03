@@ -157,6 +157,11 @@ const FGameplayTag ABlockBase::GetInteractEventTag()
 
 bool ABlockBase::TryInteract(AActor* Interactor)
 {
+    if (!CanInteract(Interactor))
+    {
+        return false;
+    }
+
     if (bIsInteracting)
     {
         return false;

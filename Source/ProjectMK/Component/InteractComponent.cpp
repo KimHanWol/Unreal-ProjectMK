@@ -17,9 +17,10 @@ UInteractComponent::UInteractComponent()
 
 bool UInteractComponent::TryInteract()
 {
-	IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
+	IInteractable* InteractableActor = Cast<IInteractable>(InteractedActor);
 	if (!InteractableActor)
 	{
+		bIsInteracting = false;
 		return false;
 	}
 	
@@ -28,7 +29,7 @@ bool UInteractComponent::TryInteract()
 
 	if (bIsSucceed)
 	{
-		UpdateInteractPosition();
+		bIsInteracting = true;
 	}
 	
 	return bIsSucceed;
@@ -73,20 +74,20 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 		}
 	}
 
-	if (NewInteractingActor != InteractingActor)
+	if (NewInteractingActor != InteractedActor)
 	{
-		if (InteractingActor.IsValid())
+		if (InteractedActor.IsValid())
 		{
-			IInteractable* InteractableActor = Cast<IInteractable>(InteractingActor);
+			IInteractable* InteractableActor = Cast<IInteractable>(InteractedActor);
 			if (InteractableActor)
 			{
 				InteractableActor->EndInteract();
 			}
 		}
 
-		InteractingActor = NewInteractingActor;
+		InteractedActor = NewInteractingActor;
 
-		if (InteractingActor.IsValid())
+		if (InteractedActor.IsValid())
 		{
 			InteractStartPoint = GetOwner()->GetActorLocation();
 		}
@@ -99,16 +100,12 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 	}
 
 	TryInteract();
+	UpdateInteractPosition();
 }
 
 void UInteractComponent::UpdateInteractPosition()
 {
-	if (::IsValid(GetOwner()) == false)
-	{
-		return;
-	}
-
-	if (InteractingActor.IsValid() == false)
+	if (bIsInteracting == false)
 	{
 		return;
 	}
@@ -116,8 +113,8 @@ void UInteractComponent::UpdateInteractPosition()
 	//TODO: 하드코딩 수정
 	int32 BlockSize = 16;
 
-	const FVector& InteractingActorLocation = InteractingActor->GetActorLocation();
-	FVector TargetLocation = InteractingActorLocation - InteractDir * BlockSize;
+	const FVector& InteractedActorLocation = InteractedActor->GetActorLocation();
+	FVector TargetLocation = InteractedActorLocation - InteractDir * BlockSize;
 
 	if (GetOwner()->GetActorLocation() == TargetLocation)
 	{
