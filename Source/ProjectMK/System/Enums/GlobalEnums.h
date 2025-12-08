@@ -12,4 +12,30 @@ enum class EDataTableType : uint8
     Block,
     Item,
     EquipmentItem,
+	Sound,
+};
+
+UENUM(BlueprintType)
+enum class ESFXType : uint8
+{
+	None,
+	Floating,
+	Drill,
+	Break_Dirt,
+};
+
+UENUM(BlueprintType)
+enum class ESFXInstanceParamType : uint8
+{
+	None,
+	DestroyedBlockCount,
+};
+
+UENUM(BlueprintType)
+enum class ESFXContinuousParamType : uint8
+{
+	None,
+	HP,
+	Flying,
+	Drill,
 };

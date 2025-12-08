@@ -3,9 +3,11 @@
 #pragma once
 
 #include "CoreMinimal.h"
+
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "UObject/NoExportTypes.h"
 
@@ -43,6 +45,7 @@ public:
     }
 
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
+    const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 
     UFUNCTION(BlueprintCallable)
     FItemDataTableRow BP_GetItemDataTableRow(FName ItemUID) const;

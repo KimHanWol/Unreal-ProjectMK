@@ -46,6 +46,33 @@ const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) co
     return nullptr;
 }
 
+const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType) const
+{
+    if (::IsValid(DataTableDataAsset) == false)
+    {
+        return nullptr;
+    }
+
+    UDataTable* SoundDataTable = DataTableDataAsset->GetDataTable(EDataTableType::Sound);
+    if (SoundDataTable == nullptr)
+    {
+        return nullptr;
+    }
+
+    TArray<FSoundDataTableRow*> AllRows;
+    SoundDataTable->GetAllRows<FSoundDataTableRow>(TEXT("SoundDataTableRow"), AllRows);
+
+    for (const auto& Row : AllRows)
+    {
+        if (Row->SFXType == InSFXType)
+        {
+            return Row;
+        }
+    }
+
+    return nullptr;
+}
+
 FItemDataTableRow UDataManager::BP_GetItemDataTableRow(FName ItemUID) const
 {
     FItemDataTableRow DataTableRow;

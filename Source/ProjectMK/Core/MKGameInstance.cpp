@@ -3,6 +3,7 @@
 #include "ProjectMK/Core/MKGameInstance.h"
 
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 
 void UMKGameInstance::Init()
 {
@@ -12,9 +13,20 @@ void UMKGameInstance::Init()
 	{
 		DataManager = NewObject<UDataManager>(this, DataManagerClass);
 	}
+
+	if (::IsValid(SoundManagerClass))
+	{
+		SoundManager = NewObject<USoundManager>(this, SoundManagerClass);
+		SoundManager->Init();
+	}
 }
 
 UDataManager* UMKGameInstance::GetDataManager()
 {
 	return DataManager;
+}
+
+USoundManager* UMKGameInstance::GetSoundManager()
+{
+	return SoundManager;
 }
