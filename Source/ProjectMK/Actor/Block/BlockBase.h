@@ -46,6 +46,7 @@ public:
 
     //IInteractable
     virtual const FGameplayTag GetInteractEventTag() override;
+    virtual bool CanInteract(AActor* Interactor) override;
     virtual bool TryInteract(AActor* Interactor) override;
     virtual void EndInteract() override;
     //~IInteractable

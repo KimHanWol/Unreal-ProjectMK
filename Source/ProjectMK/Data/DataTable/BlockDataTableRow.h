@@ -9,13 +9,6 @@
 
 class UGameplayEffect;
 
-UENUM(BlueprintType)
-enum class ETileType : uint8
-{
-    Dirt,
-    Stone,
-};
-
 USTRUCT(BlueprintType)
 struct FBlockSpawnableItemData
 {
@@ -37,9 +30,6 @@ struct FBlockDataTableRow : public FTableRowBase
     GENERATED_BODY()
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    ETileType TileType;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
     int32 TileIndex;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -54,9 +44,12 @@ struct FBlockDataTableRow : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsMineable = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FGameplayTag InteractEventTag;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FGameplayTag InteractEventTag;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FBlockSpawnableItemData> SpawnableItemDataList;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    bool bNeedTobeHide = false;
 };

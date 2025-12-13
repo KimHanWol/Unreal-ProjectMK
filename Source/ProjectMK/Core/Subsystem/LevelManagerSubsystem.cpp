@@ -131,8 +131,6 @@ void ULevelManagerSubsystem::GenerateTileActors()
             SpawnedActor->InitializeBlock(BlockData);
         }
     }
-
-    OnGenerateFinished();
 }
 
 int32 ULevelManagerSubsystem::GetTileSize()
@@ -156,14 +154,4 @@ int32 ULevelManagerSubsystem::GetTileSize()
 
     //가로 세로 동일하다고 가정
     return TileMap->TileWidth;
-}
-
-void ULevelManagerSubsystem::OnGenerateFinished()
-{
-    if (TileMapActor.IsValid() == false)
-    {
-        return;
-    }
-
-    TileMapActor->SetActorHiddenInGame(true);
 }

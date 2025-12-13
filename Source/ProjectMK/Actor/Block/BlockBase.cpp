@@ -83,7 +83,10 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
             return;
         }
 
-        PaperSpriteComponent->SetSprite(Sprite);
+        if (BlockDataTableRow->bNeedTobeHide == false)
+        {
+            PaperSpriteComponent->SetSprite(Sprite);
+        }
 
         FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
         FVector2D SpriteSize = Sprite->GetSourceSize();
@@ -153,6 +156,28 @@ const FGameplayTag ABlockBase::GetInteractEventTag()
     }
 
     return BlockDataTableRow->InteractEventTag;
+}
+
+bool ABlockBase::CanInteract(AActor* Interactor)
+{
+    if (IInteractable::CanInteract(Interactor) == false)
+    {
+        return false;
+    }
+
+    UDataManager* DataManager = UDataManager::Get(this);
+    if (::IsValid(DataManager) == false)
+    {
+        return false;
+    }
+
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+    if (BlockDataTableRow == nullptr)
+    {
+        return false;
+    }
+
+    return BlockDataTableRow->bIsMineable;
 }
 
 bool ABlockBase::TryInteract(AActor* Interactor)
