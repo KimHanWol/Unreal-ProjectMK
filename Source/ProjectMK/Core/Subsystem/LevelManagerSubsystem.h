@@ -23,8 +23,14 @@ public:
 
 private:
 	void OnGenerateFinished();
-	
-	TWeakObjectPtr<APaperTileMapActor> TileMapActor;
+	void OnBlockDestroyed(TWeakObjectPtr<ABlockBase> DestroyedBlock);
 
-	TMap<FVector2D, int32> TileMapIndices;
+	bool CheckBlockIsAllDisconnected(const FVector2D& StartPosition);
+	const TArray<FVector2D> GetSurroundBlockPositions(const FVector2D& TargetBlockPosition) const;
+
+	TArray<FVector2D> BFSCheckArray;
+
+	TWeakObjectPtr<APaperTileMapActor> TileMapActor;
+	TMap<TWeakObjectPtr<ABlockBase>, FVector2D> TilePositionMap;
+	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> TileMap;
 };

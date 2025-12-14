@@ -10,6 +10,7 @@
 #include "PaperTileSet.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "LevelManagerSubsystem.h"
 
 void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -61,8 +62,6 @@ void ULevelManagerSubsystem::LoadTileMap(bool bForce /*=false*/)
             {
                 FPaperTileInfo TileInfo = TileMapComp->GetTile(X, Y, LayerIndex);
                 int32 TileIndex = TileInfo.PackedTileIndex & 0xFFFF; // 타일 인덱스, 플립 정보, 기타 설정을 압축해 표현한거라 비트 연산으로 index 추출
-
-                TileMapIndices.Add(FVector2D(X, Y), TileIndex);
             }
         }
     }
@@ -70,11 +69,6 @@ void ULevelManagerSubsystem::LoadTileMap(bool bForce /*=false*/)
 
 void ULevelManagerSubsystem::GenerateTileActors()
 {
-    if (TileMapIndices.IsEmpty())
-    {
-        return;
-    }
-
     if (TileMapActor.IsValid() == false)
     {
         return;
@@ -119,18 +113,24 @@ void ULevelManagerSubsystem::GenerateTileActors()
             FActorSpawnParameters SpawnParams;
             SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-            ABlockBase* SpawnedActor = GetWorld()->SpawnActor<ABlockBase>(ABlockBase::StaticClass(), WorldPos, FRotator::ZeroRotator, SpawnParams);
+            ABlockBase* SpawnedBlock = GetWorld()->SpawnActor<ABlockBase>(ABlockBase::StaticClass(), WorldPos, FRotator::ZeroRotator, SpawnParams);
 
             FBlockTileData BlockData;
             BlockData.TileSetIndex = TileInfo.GetTileIndex();
             BlockData.TileSize = FIntPoint(TileMap->TileWidth, TileMap->TileHeight);
+            BlockData.OnBlockDestroyedDelegate.AddUObject(this, &ULevelManagerSubsystem::OnBlockDestroyed);
 
-            const FVector& LocalPos = TileMapComp->GetTileCenterPosition(X, Y, 0);
+            const FVector &LocalPos = TileMapComp->GetTileCenterPosition(X, Y, 0);
             BlockData.WorldLocation = TileMapComp->GetComponentTransform().TransformPosition(LocalPos);
 
-            SpawnedActor->InitializeBlock(BlockData);
+            SpawnedBlock->InitializeBlock(BlockData);
+
+            TilePositionMap.Add(SpawnedBlock, FVector2D(X, Y));
+            TileMap.Add(FVector2D(X, Y), SpawnedBlock);
         }
     }
+
+    OnGenerateFinished();
 }
 
 int32 ULevelManagerSubsystem::GetTileSize()
@@ -154,4 +154,104 @@ int32 ULevelManagerSubsystem::GetTileSize()
 
     //가로 세로 동일하다고 가정
     return TileMap->TileWidth;
+}
+
+void ULevelManagerSubsystem::OnGenerateFinished()
+{
+    if (TileMapActor.IsValid() == false)
+    {
+        return;
+    }
+
+    TileMapActor->SetActorHiddenInGame(true);
+}
+
+void ULevelManagerSubsystem::OnBlockDestroyed(TWeakObjectPtr<ABlockBase> DestroyedBlock)
+{
+    if(DestroyedBlock.IsValid() == false)
+    {
+        return;
+    }
+
+    FVector2D* BlockPositionPtr = TilePositionMap.Find(DestroyedBlock);
+    if (BlockPositionPtr == nullptr)
+    {
+        return;
+    }
+
+    const FVector2D &BlockPosition = *BlockPositionPtr;
+    TileMap.Remove(BlockPosition);
+    TilePositionMap.Remove(DestoryedBlock);
+
+    const TArray<FVector2D>& SurroundBlockPositions = GetSurroundBlockPositions(BlockPosition);
+    TArray<FVector2D> DisconnectedBlockPositions;
+    for (const auto& SurroundBlockPosition : SurroundBlockPositions)
+    {
+        if (TileMap.Find(SurroundBlockPosition))
+        {
+            DisconnectedBlockPosition.Add(SurroundBlockPosition);
+        }
+    }
+
+    for(const auto& DisconnectedBlockPosition : DisconnectedBlockPositions)
+    {
+        if(CheckBlockIsAllDisconnected(DisconnectedBlockPosition) == false)
+        {
+            continue;
+        }
+
+        TWeakObjectPtr<ABlockBase> *DisconnectedBlockPtr = TileMap.Find(DisconnectedBlockPosition);
+        if (DisconnectedBlockPtr = nullptr || (*DisconnectedBlockPtr).IsValid() == false)
+        {
+            continue;
+        }
+
+        //(*DisconnectedBlockPtr)->
+    }
+}
+
+bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(const FVector2D &StartPosition)
+{
+    //BFS
+    const TArray<FVector2D>& SurroundBlockPositions = GetSurroundBlockPosition(StartPosition);
+
+    int32 UncheckedSurroundBlockCount = 0;
+    for(const auto& SurroundBlockPosition : SurroundBlockPositions)
+    {
+        if (BFSCheckArray.Contains(SurroundBlockPosition))
+        {
+            continue;
+        }
+        BFSCheckArray.Add(SurroundBlockPosition);
+
+        ++UncheckedSurroundBlockCount;
+    }
+
+    return true;
+}
+
+const TArray<FVector2D> ULevelManagerSubsystem::GetSurroundBlockPositions(const FVector2D& TargetBlockPosition) const
+{
+    TArray<FVector2D> SurroundBlockPositions;
+    if (TileMap.Find(TargetBlockPosition + FVector2D(1, 1)))
+    {
+        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, 1));
+    }
+
+    if (TileMap.Find(TargetBlockPosition + FVector2D(-1, 1)))
+    {
+        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, 1));
+    }
+
+    if (TileMap.Find(TargetBlockPosition + FVector2D(1, -1)))
+    {
+        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, -1));
+    }
+
+    if (TileMap.Find(TargetBlockPosition + FVector2D(-1, -1)))
+    {
+        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, -1));
+    }
+
+    return SurroundBlockPositions;
 }

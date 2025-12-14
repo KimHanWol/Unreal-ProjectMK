@@ -32,6 +32,9 @@ struct FBlockTileData
 
     UPROPERTY()
     FIntPoint TileSize;
+
+    DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed);
+    FOnBlockDestroyed OnBlockDestroyedDelegate;
 };
 
 UCLASS()
