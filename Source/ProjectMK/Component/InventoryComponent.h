@@ -36,7 +36,6 @@ public:
 	int32 GetItemCount(FName ItemUID);
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 
-	UFUNCTION(BlueprintCallable)
 	TMap<FName, int32> GetInventoryItems() { return InventoryItemMap; }
 
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
@@ -57,12 +56,10 @@ private:
 	void GainItem(FName ItemUID, int32 ItemCount);
 	void SpendItem(FName ItemUID, int32 ItemCount);
 
-	int32 GetInventoryCount();
 	void OnInventoryUpdated();
 
 public:
-	DECLARE_DYNAMIC_MULTICAST_DELEGATE(FOnInventoryChanged);
-	UPROPERTY(BlueprintAssignable)
+	DECLARE_MULTICAST_DELEGATE(FOnInventoryChanged);
 	FOnInventoryChanged OnInventoryChangedDelegate;
 
 private:

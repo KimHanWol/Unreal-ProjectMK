@@ -73,29 +73,6 @@ const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType)
     return nullptr;
 }
 
-FItemDataTableRow UDataManager::BP_GetItemDataTableRow(FName ItemUID) const
-{
-    FItemDataTableRow DataTableRow;
-    if (::IsValid(DataTableDataAsset) == false)
-    {
-        return DataTableRow;
-    }
-
-    UDataTable* BlockDataTable = DataTableDataAsset->GetDataTable(EDataTableType::Block);
-    if (BlockDataTable == nullptr)
-    {
-        return DataTableRow;
-    }
-
-    const FItemDataTableRow* ItemDataRow = GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
-    if (ItemDataRow)
-    {
-        DataTableRow = *ItemDataRow;
-    }
-
-    return DataTableRow;
-}
-
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType)
 {
     if (::IsValid(GameplayEffectDataAsset))

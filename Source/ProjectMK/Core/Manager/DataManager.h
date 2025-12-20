@@ -47,9 +47,6 @@ public:
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
     const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 
-    UFUNCTION(BlueprintCallable)
-    FItemDataTableRow BP_GetItemDataTableRow(FName ItemUID) const;
-
     TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
 
 protected:
