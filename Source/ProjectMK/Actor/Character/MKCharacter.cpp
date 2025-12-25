@@ -25,6 +25,7 @@ AMKCharacter::AMKCharacter()
 	InventoryComponent->SetupAttachment(GetRootComponent());
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	AttributeSet_Character = CreateDefaultSubobject<UAttributeSet_Character>(TEXT("AttributeSet_Character"));
 }
 
 UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
@@ -35,6 +36,11 @@ UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	if (::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 }
 
 void AMKCharacter::Tick(float DeltaTime)
@@ -91,7 +97,7 @@ void AMKCharacter::InitializeCharacterAttribute()
 		return;
 	}
 
-	AbilitySystemComponent->AddAttributeSetSubobject(NewObject<UAttributeSet_Character>());
+	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet_Character);
 
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
@@ -144,8 +150,16 @@ bool AMKCharacter::IsInteracting()
 
 void AMKCharacter::MoveRight(float Value)
 {
-	float Speed = GetCharacterMovement()->IsFlying() ? FlyingSpeed : MoveSpeed;
-	AddMovementInput(FVector::ForwardVector, Value * Speed);
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	float Speed = GetCharacterMovement()->IsFlying() ? AttributeSet_Character->GetFlyingSpeed() : AttributeSet_Character->GetMoveSpeed() / 10.f;
+	if (Speed > 0.f)
+	{
+		AddMovementInput(FVector::ForwardVector, Value * Speed);
+	}
 }
 
 void AMKCharacter::LookRight(float Value)
@@ -195,10 +209,15 @@ void AMKCharacter::Fly()
 		return;
 	}
 
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
 	CharacterMovementComp->SetMovementMode(MOVE_Flying);
-	CharacterMovementComp->MaxFlySpeed = MaxFlySpeed;
+	CharacterMovementComp->MaxFlySpeed = AttributeSet_Character->GetFlyingSpeed();
 	CharacterMovementComp->GravityScale = 1.f;
-	AddMovementInput(FVector::UpVector, FlyingSpeed);
+	AddMovementInput(FVector::UpVector, AttributeSet_Character->GetFlyingSpeed());
 }
 
 void AMKCharacter::FinishFly()
@@ -225,4 +244,3 @@ void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 		InventoryComponent->SetGainRadius(Data.NewValue);
 	}
 }
-

@@ -59,15 +59,12 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
 
-	UPROPERTY(EditAnywhere)
-	float MoveSpeed = 1.f;
-
-	UPROPERTY(EditAnywhere)
-	float FlyingSpeed = 100.f;
-
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
+
+	UPROPERTY(Transient)
+	UAttributeSet_Character* AttributeSet_Character;
 
 	UPROPERTY(EditAnywhere)
 	float DoublePressDuration = 0.5f;
@@ -80,9 +77,6 @@ protected:
 
 	UPROPERTY(Transient)
 	bool bIsUpDoublePressing = false;
-
-	UPROPERTY(EditAnywhere)
-	float MaxFlySpeed = 100.f;
 
 private:
 	UPROPERTY(Transient)
