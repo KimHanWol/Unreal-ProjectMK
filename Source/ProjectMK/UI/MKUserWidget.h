@@ -17,4 +17,11 @@ protected:
 
     virtual void BindEvents() {};
     virtual void UnbindEvents() {};
+
+protected:
+    UPROPERTY(Transient)
+    class AMKCharacter* LocalPlayerCharacter;
+
+    UPROPERTY(Transient)
+    class UAbilitySystemComponent* OwnerASC;
 };
