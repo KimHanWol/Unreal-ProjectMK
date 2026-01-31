@@ -5,6 +5,7 @@
 #include "Engine/DataTable.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Core/MKGameInstance.h"
+#include "ProjectMK/Data/DataAsset/BlueprintDataAsset.h"
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
@@ -78,6 +79,16 @@ TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType
     if (::IsValid(GameplayEffectDataAsset))
     {
         return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
+    }
+
+    return nullptr;
+}
+
+TSubclassOf<AActor> UDataManager::GetBlueprintClass(EBlueprintClassType BlueprintClassType)
+{
+    if (::IsValid(BlueprintDataAsset))
+    {
+        return BlueprintDataAsset->GetBlueprintClass(BlueprintClassType);
     }
 
     return nullptr;

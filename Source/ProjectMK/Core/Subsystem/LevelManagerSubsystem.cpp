@@ -9,8 +9,138 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileSet.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
-#include "LevelManagerSubsystem.h"
+#include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+
+void FFallingBlockGroupData::FinishFallingBlock(int32 FallFinishedBlockPositionX)
+{
+    FallingBlockMap.Remove(FallFinishedBlockPositionX);
+}
+
+void FFallingBlockGroupData::Tick_ShakeBlocks(float DeltaTime)
+{
+    if (IsShaking() == false)
+    {
+        return;
+    }
+
+    ShakeAccumulatedTime += DeltaTime;
+    ShakeTime += DeltaTime;
+
+    while (ShakeAccumulatedTime >= ShakeInterval)
+    {
+        ShakeAccumulatedTime -= ShakeInterval;
+    }
+
+    TArray<FFallingVerticalBlocksData> VerticalBlocksDataList;
+    FallingBlockMap.GenerateValueArray(VerticalBlocksDataList);
+
+    FVector MoveVector = FVector(FMath::FRandRange(-2.f, 2.f), 0, 0);
+    for (const auto& VerticalBlocksData : VerticalBlocksDataList)
+    {
+        for (const auto& FallingBlock : VerticalBlocksData.FallingBlocks)
+        {
+            if (FallingBlock.IsValid() == false)
+            {
+                return;
+            }
+
+            const FVector* OriginPositionPtr = VerticalBlocksData.BlockOriginPositionMap.Find(FallingBlock);
+            FVector NewActorLocation = (*OriginPositionPtr);
+            if (IsShaking())
+            {
+                NewActorLocation += MoveVector;
+            }
+            FallingBlock->SetActorLocation(NewActorLocation);
+        }
+    }
+}
+
+void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
+{
+    if (IsFallingFinished())
+    {
+        return;
+    }
+
+	TArray<FFallingVerticalBlocksData> VerticalBlockDataList;
+    FallingBlockMap.GenerateValueArray(VerticalBlockDataList);
+	for (const auto& VerticalBlockData : VerticalBlockDataList)
+	{
+        TWeakObjectPtr<ABlockBase> BottomBlock = VerticalBlockData.BottomBlock;
+		if (BottomBlock.IsValid() == false)
+		{
+			continue;
+		}
+
+		const FVector& BlockLocation = BottomBlock->GetActorLocation();
+		FVector TargetLocation = BlockLocation + FVector(0.f, 0.f, -8.f);
+		DrawDebugLine(BottomBlock->GetWorld(), BlockLocation, TargetLocation, FColor::Red, true);
+
+		TArray<FHitResult> HitResults;
+		FCollisionQueryParams TraceParams;
+		TraceParams.AddIgnoredActor(BottomBlock.Get());
+
+		bool bIsOnBottom = false;
+		if (BottomBlock->GetWorld()->LineTraceMultiByChannel(HitResults, BlockLocation, TargetLocation, ECC_MAX, TraceParams))
+		{
+			for (const auto& HitResult : HitResults)
+			{
+				if (Cast<ABlockBase>(HitResult.GetActor()))
+				{
+					bIsOnBottom = true;
+				}
+
+				if (Cast<AMKCharacter>(HitResult.GetActor()))
+				{
+					bIsOnBottom = true;
+					//대미지
+				}
+			}
+		}
+
+        if (bIsOnBottom)
+        {
+            FFallingVerticalBlocksData* FallFinishedVerticalBlocksPtr = FallingBlockMap.Find(UMKBlueprintFunctionLibrary::GetBlockPosition(BottomBlock.Get()).X);
+            if (FallFinishedVerticalBlocksPtr)
+            {
+                FallFinishedVerticalBlocksPtr->bFallFinished = true;
+            }
+        }
+	}
+
+	FallingVelocity += 9.8f * 0.1f;
+	//FallingVelocity = FMath::Max(FallingSpeed, MaxFallSpeed);
+
+	FVector MoveVector = FVector::Zero();
+	MoveVector.Z -= FallingVelocity * 0.1f;
+
+    TArray<FFallingVerticalBlocksData> FallingVerticalBlockDataList;
+    FallingBlockMap.GenerateValueArray(FallingVerticalBlockDataList);
+    for (const auto& FallingVerticalBlockData : FallingVerticalBlockDataList)
+    {
+        if (FallingVerticalBlockData.bFallFinished)
+        {
+            continue;
+        }
+
+        for (const auto& FallingBlock : FallingVerticalBlockData.FallingBlocks)
+        {
+            if (FallingBlock.IsValid() == false)
+            {
+                return;
+            }
+
+            FallingBlock->SetActorLocation(FallingBlock->GetActorLocation() + MoveVector);
+        }
+    }
+}
+
+float FFallingBlockGroupData::GetFallingDamage()
+{
+    return BlockCount * FallingVelocity / 100.f;
+}
 
 void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
@@ -18,6 +148,55 @@ void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 
     LoadTileMap();
     GenerateTileActors();
+}
+
+void ULevelManagerSubsystem::Tick(float DeltaTime)
+{
+    Super::Tick(DeltaTime);
+
+    if (FallingBlockGroupList.IsEmpty())
+    {
+        return;
+    }
+
+    for (int32 Index = FallingBlockGroupList.Num() - 1; Index >= 0; --Index)
+    {
+        FFallingBlockGroupData& FallingBlockGroupData = FallingBlockGroupList[Index];
+
+
+        TArray<FFallingVerticalBlocksData> VerticalBlockList;
+        FallingBlockGroupData.FallingBlockMap.GenerateValueArray(VerticalBlockList);
+        for (auto It = FallingBlockGroupData.FallingBlockMap.CreateIterator(); It; ++It)
+        {
+            FFallingVerticalBlocksData VerticalBlockData = It.Value();
+            if (VerticalBlockData.bFallFinished)
+            {
+                SnapBlocks(VerticalBlockData.FallingBlocks);
+                It.RemoveCurrent();
+                continue;
+            }
+        }
+
+        if (FallingBlockGroupData.IsFallingFinished())
+        {
+            FallingBlockGroupList.RemoveAt(Index);
+            return;
+        }
+
+        if (FallingBlockGroupData.IsShaking())
+        {
+            FallingBlockGroupData.Tick_ShakeBlocks(DeltaTime);
+        }
+        else
+        {
+            FallingBlockGroupData.Tick_FallBlocks(DeltaTime);
+        }
+    }
+}
+
+TStatId ULevelManagerSubsystem::GetStatId() const
+{
+    RETURN_QUICK_DECLARE_CYCLE_STAT(UMyWorldSubsystem, STATGROUP_Tickables);
 }
 
 void ULevelManagerSubsystem::LoadTileMap(bool bForce /*=false*/)
@@ -92,6 +271,8 @@ void ULevelManagerSubsystem::GenerateTileActors()
         return;
     }
 
+    TSubclassOf<AActor> BlockClass = DataManager->GetBlueprintClass(EBlueprintClassType::BlockBase);
+
     FVector Origin = TileMapComp->GetComponentLocation();
     float TileWidth = TileMap->TileWidth / TileMap->PixelsPerUnrealUnit;
     float TileHeight = TileMap->TileHeight / TileMap->PixelsPerUnrealUnit;
@@ -113,7 +294,7 @@ void ULevelManagerSubsystem::GenerateTileActors()
             FActorSpawnParameters SpawnParams;
             SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 
-            ABlockBase* SpawnedBlock = GetWorld()->SpawnActor<ABlockBase>(ABlockBase::StaticClass(), WorldPos, FRotator::ZeroRotator, SpawnParams);
+            ABlockBase* SpawnedBlock = GetWorld()->SpawnActor<ABlockBase>(BlockClass, WorldPos, FRotator::ZeroRotator, SpawnParams);
 
             FBlockTileData BlockData;
             BlockData.TileSetIndex = TileInfo.GetTileIndex();
@@ -125,8 +306,7 @@ void ULevelManagerSubsystem::GenerateTileActors()
 
             SpawnedBlock->InitializeBlock(BlockData);
 
-            TilePositionMap.Add(SpawnedBlock, FVector2D(X, Y));
-            TileMap.Add(FVector2D(X, Y), SpawnedBlock);
+            BlockActorMap.Add(FVector2D(X, Y), SpawnedBlock);
         }
     }
 
@@ -166,92 +346,200 @@ void ULevelManagerSubsystem::OnGenerateFinished()
     TileMapActor->SetActorHiddenInGame(true);
 }
 
-void ULevelManagerSubsystem::OnBlockDestroyed(TWeakObjectPtr<ABlockBase> DestroyedBlock)
+void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 {
-    if(DestroyedBlock.IsValid() == false)
+    if (::IsValid(DestroyedBlock) == false)
     {
         return;
     }
 
-    FVector2D* BlockPositionPtr = TilePositionMap.Find(DestroyedBlock);
-    if (BlockPositionPtr == nullptr)
+    const FVector2D& BlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(DestroyedBlock);
+    BlockActorMap.Remove(BlockPosition);
+
+	TArray<ABlockBase*> DFSCheckedBlocks;
+    const TArray<ABlockBase*>& SurroundBlocks = GetSurroundBlocks(DestroyedBlock);
+    for (const auto& SurroundBlock : SurroundBlocks)
     {
-        return;
-    }
-
-    const FVector2D &BlockPosition = *BlockPositionPtr;
-    TileMap.Remove(BlockPosition);
-    TilePositionMap.Remove(DestoryedBlock);
-
-    const TArray<FVector2D>& SurroundBlockPositions = GetSurroundBlockPositions(BlockPosition);
-    TArray<FVector2D> DisconnectedBlockPositions;
-    for (const auto& SurroundBlockPosition : SurroundBlockPositions)
-    {
-        if (TileMap.Find(SurroundBlockPosition))
+        TArray<ABlockBase*> DisconnectedBlocks;
+        if (CheckBlockIsAllDisconnected(SurroundBlock, DisconnectedBlocks, DFSCheckedBlocks, 0))
         {
-            DisconnectedBlockPosition.Add(SurroundBlockPosition);
+            CollapseBlocks(DisconnectedBlocks);
         }
-    }
-
-    for(const auto& DisconnectedBlockPosition : DisconnectedBlockPositions)
-    {
-        if(CheckBlockIsAllDisconnected(DisconnectedBlockPosition) == false)
-        {
-            continue;
-        }
-
-        TWeakObjectPtr<ABlockBase> *DisconnectedBlockPtr = TileMap.Find(DisconnectedBlockPosition);
-        if (DisconnectedBlockPtr = nullptr || (*DisconnectedBlockPtr).IsValid() == false)
-        {
-            continue;
-        }
-
-        //(*DisconnectedBlockPtr)->
     }
 }
 
-bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(const FVector2D &StartPosition)
+bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount)
 {
-    //BFS
-    const TArray<FVector2D>& SurroundBlockPositions = GetSurroundBlockPosition(StartPosition);
-
-    int32 UncheckedSurroundBlockCount = 0;
-    for(const auto& SurroundBlockPosition : SurroundBlockPositions)
+    //DFS
+    if (DFSCheckedBlocks.Contains(StartBlock))
     {
-        if (BFSCheckArray.Contains(SurroundBlockPosition))
-        {
-            continue;
-        }
-        BFSCheckArray.Add(SurroundBlockPosition);
+        return true;
+    }
+    DFSCheckedBlocks.Add(StartBlock);
 
-        ++UncheckedSurroundBlockCount;
+    if (::IsValid(StartBlock) == false)
+    {
+        return true;
+    }
+
+    if (StartBlock->IsMineable() == false)
+    {
+        return false;
+    }
+
+    StartBlock->BP_EnableDebugState(DebugCount);
+
+    OutDisconnectedBlocks.Add(StartBlock);
+
+    const TArray<ABlockBase*>& SurroundBlocks = GetSurroundBlocks(StartBlock);
+    for (const auto& SurroundBlock : SurroundBlocks)
+    {
+        if (CheckBlockIsAllDisconnected(SurroundBlock, OutDisconnectedBlocks, DFSCheckedBlocks, DebugCount + 1) == false)
+        {
+            return false;
+        }
     }
 
     return true;
 }
 
-const TArray<FVector2D> ULevelManagerSubsystem::GetSurroundBlockPositions(const FVector2D& TargetBlockPosition) const
+TArray<ABlockBase*> ULevelManagerSubsystem::GetSurroundBlocks(ABlockBase* TargetBlock)
 {
+    TArray<ABlockBase*> SurroundBlocks;
+    if (::IsValid(TargetBlock) == false)
+    {
+        return SurroundBlocks;
+    }
+
+    const FVector2D& TargetBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(TargetBlock);
+
     TArray<FVector2D> SurroundBlockPositions;
-    if (TileMap.Find(TargetBlockPosition + FVector2D(1, 1)))
+    SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(0, 1));
+    SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(0, -1));
+    SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, 0));
+    SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, 0));
+
+    for (const auto SurroundBlockPosition : SurroundBlockPositions)
     {
-        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, 1));
+        TWeakObjectPtr<ABlockBase>* SurroundBlockPtr = BlockActorMap.Find(SurroundBlockPosition);
+        if (SurroundBlockPtr == nullptr)
+        {
+            continue;
+        }
+
+        ABlockBase* SurroundBlock = (*SurroundBlockPtr).Get();
+        if (::IsValid(SurroundBlock))
+        {
+            SurroundBlocks.Add(SurroundBlock);
+        }
     }
 
-    if (TileMap.Find(TargetBlockPosition + FVector2D(-1, 1)))
+    return SurroundBlocks;
+}
+
+void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks)
+{
+    TMap<int32, FFallingVerticalBlocksData> VerticalBlocksMap;
+    for (auto& CollapsingBlock : CollapsingBlocks)
     {
-        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, 1));
+        if (::IsValid(CollapsingBlock) == false)
+        {
+            continue;
+        }
+
+        CollapsingBlock->SetMineableState(false);
+
+        const FVector2D& NewBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(CollapsingBlock);
+        FFallingVerticalBlocksData* VerticalBlocksDataPtr = VerticalBlocksMap.Find(NewBlockPosition.X);
+        if (VerticalBlocksDataPtr != nullptr)
+        {
+            //BlockPosition 이라 반대
+            if (UMKBlueprintFunctionLibrary::GetBlockPosition(VerticalBlocksDataPtr->BottomBlock.Get()).Y < NewBlockPosition.Y)
+            {
+                VerticalBlocksDataPtr->BottomBlock = CollapsingBlock;
+            }
+            VerticalBlocksDataPtr->FallingBlocks.Add(CollapsingBlock);
+            VerticalBlocksDataPtr->BlockOriginPositionMap.Add(CollapsingBlock, CollapsingBlock->GetActorLocation());
+        }
+        else
+        {
+            FFallingVerticalBlocksData VerticalBlocksData;
+            VerticalBlocksData.BottomBlock = CollapsingBlock;
+            VerticalBlocksData.FallingBlocks.Add(CollapsingBlock);
+            VerticalBlocksData.BlockOriginPositionMap.Add(CollapsingBlock, CollapsingBlock->GetActorLocation());
+
+            VerticalBlocksMap.Add(NewBlockPosition.X, VerticalBlocksData);
+        }
     }
 
-    if (TileMap.Find(TargetBlockPosition + FVector2D(1, -1)))
+    FFallingBlockGroupData FallingBlockGroupData;
+    FallingBlockGroupData.FallingBlockMap = VerticalBlocksMap;
+    FallingBlockGroupData.BlockCount = CollapsingBlocks.Num();
+
+    FallingBlockGroupList.Add(FallingBlockGroupData);
+}
+
+void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList)
+{
+    for (auto& FallFinishedBlock : FallFinishedBlockList)
     {
-        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, -1));
+        if (FallFinishedBlock.IsValid() == false)
+        {
+            continue;
+        }
+
+        const FVector& SnapLocation = UMKBlueprintFunctionLibrary::GetSnappingWorldPosition(FallFinishedBlock->GetActorLocation());
+        FallFinishedBlock->SetActorLocation(SnapLocation);
+        FallFinishedBlock->SetMineableState(true);
+
+        const FVector2D& BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(SnapLocation);
+        BlockActorMap.Add(BlockPosition, TWeakObjectPtr<ABlockBase>(FallFinishedBlock));
+    }
+}
+
+bool FFallingBlockGroupData::IsFallingFinished()
+{
+    TArray<FFallingVerticalBlocksData> VerticalBlockList;
+    FallingBlockMap.GenerateValueArray(VerticalBlockList);
+    for (const auto& VerticalBlockData : VerticalBlockList)
+    {
+        if (VerticalBlockData.bFallFinished == false)
+        {
+            return false;
+        }
     }
 
-    if (TileMap.Find(TargetBlockPosition + FVector2D(-1, -1)))
+    return true;
+}
+
+TWeakObjectPtr<ABlockBase> FFallingBlockGroupData::GetBottomBlock(int32 BlockPositionX)
+{
+    FFallingVerticalBlocksData* VerticalBlocksPtr = FallingBlockMap.Find(BlockPositionX);
+    if (VerticalBlocksPtr == nullptr)
     {
-        SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, -1));
+        return nullptr;
     }
 
-    return SurroundBlockPositions;
+    return VerticalBlocksPtr->BottomBlock;
+}
+
+TArray<ABlockBase*> FFallingBlockGroupData::GetFallingBlocks()
+{
+    TArray<ABlockBase*> FallingBlockList;
+
+    TArray<FFallingVerticalBlocksData> VerticalBlockList;
+    FallingBlockMap.GenerateValueArray(VerticalBlockList);
+
+    for (const auto& VerticalBlockData : VerticalBlockList)
+    {
+        if (VerticalBlockData.bFallFinished == false)
+        {
+            for (const auto& FallingBlock : VerticalBlockData.FallingBlocks)
+            {
+                FallingBlockList.Add(FallingBlock.Get());
+            }
+        }
+    }
+
+    return FallingBlockList;
 }

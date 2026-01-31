@@ -33,7 +33,7 @@ struct FBlockTileData
     UPROPERTY()
     FIntPoint TileSize;
 
-    DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed);
+    DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed, ABlockBase*);
     FOnBlockDestroyed OnBlockDestroyedDelegate;
 };
 
@@ -59,6 +59,12 @@ public:
     //IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
     //~IAbilitySystemInterface
+
+    void SetMineableState(bool bInIsMineableState);
+    bool IsMineable();
+
+    UFUNCTION(BlueprintImplementableEvent)
+    void BP_EnableDebugState(int32 Count);
 
 protected:
     virtual void BeginPlay() override;
@@ -95,6 +101,9 @@ protected:
 private:
     UPROPERTY(Transient)
     bool bIsInteracting = false;
+
+    UPROPERTY(Transient)
+    bool bIsMineableState = true;
 
     UPROPERTY(Transient)
     FName SpawnableItemKey;

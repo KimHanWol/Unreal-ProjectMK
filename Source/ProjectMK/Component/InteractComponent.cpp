@@ -25,10 +25,10 @@ bool UInteractComponent::TryInteract()
 	}
 	
 	bool bIsSucceed = InteractableActor->TryInteract(GetOwner());
-	InteractingTime += GetWorld()->GetDeltaSeconds();
 
 	if (bIsSucceed)
 	{
+		InteractingTime += GetWorld()->GetDeltaSeconds();
 		bIsInteracting = true;
 	}
 	
@@ -64,7 +64,8 @@ void UInteractComponent::UpdateCharacterDirection(const FVector& NewDir)
 	{
 		for (const auto& Hit : Hits)
 		{
-			IInteractable* InteractableActor = Cast<IInteractable>(Hit.GetActor());
+			AActor* HitActor = Hit.GetActor();
+			IInteractable* InteractableActor = Cast<IInteractable>(HitActor);
 			if (InteractableActor == nullptr)
 			{
 				continue;

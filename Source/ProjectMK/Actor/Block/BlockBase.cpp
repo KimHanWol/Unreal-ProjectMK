@@ -165,19 +165,7 @@ bool ABlockBase::CanInteract(AActor* Interactor)
         return false;
     }
 
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
-    {
-        return false;
-    }
-
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
-    {
-        return false;
-    }
-
-    return BlockDataTableRow->bIsMineable;
+    return IsMineable();
 }
 
 bool ABlockBase::TryInteract(AActor* Interactor)
@@ -235,6 +223,28 @@ UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
     return AbilitySystemComponent;
 }
 
+void ABlockBase::SetMineableState(bool bInIsMineableState)
+{
+    bIsMineableState = bInIsMineableState;
+}
+
+bool ABlockBase::IsMineable()
+{
+    UDataManager* DataManager = UDataManager::Get(this);
+    if (::IsValid(DataManager) == false)
+    {
+        return true;
+    }
+
+    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+    if (BlockDataTableRow == nullptr)
+    {
+        return true;
+    }
+
+    return BlockDataTableRow->bIsMineable && bIsMineableState;
+}
+
 void ABlockBase::BeginPlay()
 {
     Super::BeginPlay();
@@ -255,6 +265,8 @@ void ABlockBase::OnPreDestroy()
     {
         SpawnItem();
     }
+
+    BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
 }
 
 void ABlockBase::BindEvents()

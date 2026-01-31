@@ -13,9 +13,11 @@
 
 #include "DataManager.generated.h"
 
+class UBlueprintDataAsset;
 class UGameplayEffectDataAsset;
 class UGameplayAbility;
 
+enum class EBlueprintClassType : uint8;
 enum class EGameplayEffectType : uint8;
 enum class EGameplayAbilityType : uint8;
 
@@ -48,6 +50,7 @@ public:
     const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 
     TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
+    TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType);
 
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
@@ -55,4 +58,7 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UGameplayEffectDataAsset* GameplayEffectDataAsset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UBlueprintDataAsset* BlueprintDataAsset;
 };
