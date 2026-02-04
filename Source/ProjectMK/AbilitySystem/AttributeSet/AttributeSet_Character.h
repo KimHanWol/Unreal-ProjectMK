@@ -33,15 +33,23 @@ public:
 	FGameplayAttributeData FlyingSpeed;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, FlyingSpeed)
 
+	//Drilling
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-	FGameplayAttributeData DrillingRate;
-	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillingRate)
+	FGameplayAttributeData DrillingPeriod;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillingPeriod)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData DrillingPower;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillingPower)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData DrillingDistance;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillingDistance)
+	//~Drilling
+
+	//Currency
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData Coin;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, Coin)
+	//~Currency
 };

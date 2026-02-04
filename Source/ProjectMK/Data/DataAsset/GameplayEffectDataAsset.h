@@ -14,7 +14,10 @@ enum class EGameplayEffectType : uint8
     None = 0,
     Block_Init,
     Character_Init,
-    Duration_Add,
+    Character_Damage,
+    Durability_Add,
+    CurrentHealth_Add,
+    State_Drill,
 };
 
 enum class EGameplayAbilityType : uint8;

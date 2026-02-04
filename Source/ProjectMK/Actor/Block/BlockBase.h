@@ -7,7 +7,7 @@
 #include "GameFramework/Actor.h"
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
-#include "ProjectMK/Interface/Interactable.h"
+#include "ProjectMK/Interface/Damageable.h"
 
 #include "BlockBase.generated.h"
 
@@ -16,6 +16,7 @@ class UAttributeSet_Block;
 class UBoxComponent;
 class UGameplayAbility;
 class UPaperSpriteComponent;
+class IMinable;
 
 enum class EGameplayAbilityType : uint8;
 
@@ -38,7 +39,7 @@ struct FBlockTileData
 };
 
 UCLASS()
-class PROJECTMK_API ABlockBase : public AActor, public IInteractable, public IAbilitySystemInterface
+class PROJECTMK_API ABlockBase : public AActor, public IDamageable, public IAbilitySystemInterface
 {
 	GENERATED_BODY()
 
@@ -47,14 +48,9 @@ public:
 
 	void InitializeBlock(FBlockTileData InBlockData);
 
-    //IInteractable
-    virtual const FGameplayTag GetInteractEventTag() override;
-    virtual bool CanInteract(AActor* Interactor) override;
-    virtual bool TryInteract(AActor* Interactor) override;
-    virtual void EndInteract() override;
-    //~IInteractable
-
-    void TryInteract_Internal(AActor* Interactor);
+public:
+    void StartMineBlock(IMinable* Miner);
+    void EndMineBlock();
 
     //IAbilitySystemInterface
     virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
@@ -75,6 +71,12 @@ protected:
     void BindEvents();
     void UnbindEvents();
 
+    //IDamageable
+    virtual UAbilitySystemComponent* GetOwnerASC() override;
+    virtual bool CheckIsDestroyed() override;
+    virtual void OnDestroyed() override;
+    //~IDamageable
+
 private:
     void OnPaperSpriteLoaded();
     void InitializeBlockAttribute(); 
@@ -93,14 +95,11 @@ protected:
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Mining")
-    float MiningDuration = 0.5f;
-
     FBlockTileData BlockTileData;
 
 private:
     UPROPERTY(Transient)
-    bool bIsInteracting = false;
+    bool bIsMining = false;
 
     UPROPERTY(Transient)
     bool bIsMineableState = true;
@@ -108,5 +107,5 @@ private:
     UPROPERTY(Transient)
     FName SpawnableItemKey;
 
-    FTimerHandle InteractingTimerHandle;
+    FTimerHandle BreakingTimerHandle;
 };

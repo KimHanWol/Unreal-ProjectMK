@@ -7,6 +7,7 @@
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Core/MKGameInstance.h"
 #include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 
 
 void USoundManager::Init()
@@ -118,7 +119,7 @@ void USoundManager::SetInstantParam_Internal(UAudioComponent* AudioComp, ESFXTyp
         return;
     }
 
-    ESoundParamType SoundParamType;
+    ESoundParamType SoundParamType = ESoundParamType::None;
     switch (ParamType)
     {
     case ESFXInstanceParamType::DestroyedBlockCount:

@@ -44,9 +44,6 @@ struct FBlockDataTableRow : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     bool bIsMineable = true;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FGameplayTag InteractEventTag;
-
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 

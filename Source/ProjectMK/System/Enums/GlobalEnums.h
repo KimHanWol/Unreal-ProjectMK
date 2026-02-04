@@ -29,6 +29,7 @@ enum class ESFXInstanceParamType : uint8
 {
 	None,
 	DestroyedBlockCount,
+	Max,
 };
 
 UENUM(BlueprintType)

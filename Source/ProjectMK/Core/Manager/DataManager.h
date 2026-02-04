@@ -49,8 +49,8 @@ public:
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
     const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 
-    TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
-    TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType);
+    TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
+    TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
 
 protected:
     UPROPERTY(EditAnywhere, BlueprintReadWrite)

@@ -5,7 +5,10 @@
 
 #include "SoundDataTableRow.generated.h"
 
+enum class ESFXContinuousParamType : uint8;
+enum class ESFXInstanceParamType : uint8;
 enum class ESFXParamType : uint8;
+enum class ESFXType : uint8;
 
 USTRUCT(BlueprintType)
 struct FSoundDataTableRow : public FTableRowBase

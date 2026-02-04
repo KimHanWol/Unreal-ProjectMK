@@ -74,7 +74,7 @@ const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType)
     return nullptr;
 }
 
-TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType)
+TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType) const
 {
     if (::IsValid(GameplayEffectDataAsset))
     {
@@ -84,7 +84,7 @@ TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType
     return nullptr;
 }
 
-TSubclassOf<AActor> UDataManager::GetBlueprintClass(EBlueprintClassType BlueprintClassType)
+TSubclassOf<AActor> UDataManager::GetBlueprintClass(EBlueprintClassType BlueprintClassType) const
 {
     if (::IsValid(BlueprintDataAsset))
     {

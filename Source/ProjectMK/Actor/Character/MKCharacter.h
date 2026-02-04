@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "PaperZDCharacter.h"
+#include "ProjectMK/Interface/Damageable.h"
 #include "MKCharacter.generated.h"
 
 class UCameraComponent;
@@ -15,6 +16,7 @@ class UPaperSpriteComponent;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
+														   , public IDamageable
 {
 	GENERATED_BODY()
 	
@@ -36,9 +38,15 @@ protected:
 	virtual void BindEvents();
 	virtual void UnbindEvents();
 
+	//IDamageable
+protected:
+	virtual UAbilitySystemComponent* GetOwnerASC() override;
+	virtual bool CheckIsDestroyed() override;
+	virtual void OnDestroyed() override;
+	//~IDamageable
+
 public:
-	UFUNCTION(BlueprintCallable)
-	bool IsInteracting();
+	FVector GetCharacterDirection() const { return CharacterDir; }
 
 private:
 	void MoveRight(float Value);
@@ -47,12 +55,12 @@ private:
 	void Fly();
 	void FinishFly();
 
+	void TryDrill();
+
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
+	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
 
 protected:
-	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-	TObjectPtr<UInteractComponent> InteractComponent;
-
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
@@ -66,19 +74,11 @@ protected:
 	UPROPERTY(Transient)
 	UAttributeSet_Character* AttributeSet_Character;
 
-	UPROPERTY(EditAnywhere)
 	float DoublePressDuration = 0.5f;
-
-	UPROPERTY(Transient)
 	float LastUpPressedTime = 0.f;
-
-	UPROPERTY(Transient)
 	bool bIsUpPressing = false;
-
-	UPROPERTY(Transient)
 	bool bIsUpDoublePressing = false;
 
 private:
-	UPROPERTY(Transient)
 	FVector CharacterDir;
 };

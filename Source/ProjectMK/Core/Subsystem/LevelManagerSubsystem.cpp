@@ -12,6 +12,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 void FFallingBlockGroupData::FinishFallingBlock(int32 FallFinishedBlockPositionX)
 {
@@ -92,10 +93,11 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 					bIsOnBottom = true;
 				}
 
-				if (Cast<AMKCharacter>(HitResult.GetActor()))
+                AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitResult.GetActor());
+				if (::IsValid(HitCharacter))
 				{
 					bIsOnBottom = true;
-					//대미지
+                    FDamageableUtil::ApplyDamage(HitCharacter->GetAbilitySystemComponent(), nullptr, GetFallingDamage());
 				}
 			}
 		}

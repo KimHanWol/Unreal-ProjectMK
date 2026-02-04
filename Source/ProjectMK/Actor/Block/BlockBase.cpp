@@ -14,6 +14,8 @@
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
+#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Interface/Minable.h"
 
 ABlockBase::ABlockBase()
 {
@@ -141,81 +143,33 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
     }
 }
 
-const FGameplayTag ABlockBase::GetInteractEventTag()
+void ABlockBase::StartMineBlock(IMinable* Miner)
 {
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
+    if (bIsMining)
     {
-        return FGameplayTag::EmptyTag;
+        return;
     }
+    bIsMining = true;
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
+    float MiningDamage = Miner->GetMiningDamage();
+    float MiningDuration = Miner->GetMiningDuration();
+
+    TWeakObjectPtr<ABlockBase> WeakBlock(this);
+    GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
+    GetWorld()->GetTimerManager().SetTimer(BreakingTimerHandle, [WeakBlock, Miner, MiningDamage]()
     {
-        return FGameplayTag::EmptyTag;
-    }
-
-    return BlockDataTableRow->InteractEventTag;
-}
-
-bool ABlockBase::CanInteract(AActor* Interactor)
-{
-    if (IInteractable::CanInteract(Interactor) == false)
-    {
-        return false;
-    }
-
-    return IsMineable();
-}
-
-bool ABlockBase::TryInteract(AActor* Interactor)
-{
-    if (!CanInteract(Interactor))
-    {
-        return false;
-    }
-
-    if (bIsInteracting)
-    {
-        return false;
-    }
-    bIsInteracting = true;
-
-    TWeakObjectPtr<ABlockBase> WeakThis(this);
-    GetWorld()->GetTimerManager().SetTimer(InteractingTimerHandle, [WeakThis, Interactor]()
+        if (WeakBlock.IsValid() && Miner == nullptr)
         {
-            if (WeakThis.IsValid())
-            {
-                ABlockBase* StrongThis = WeakThis.Get();
-                if (::IsValid(StrongThis))
-                {
-                    StrongThis->TryInteract_Internal(Interactor);
-                }
-            }
-        }, MiningDuration, true, MiningDuration);
-
-    return true;
+            FDamageableUtil::ApplyDamage(WeakBlock.Get()->GetAbilitySystemComponent(), Miner->GetOwnerASC(), MiningDamage);
+        }
+    }, MiningDuration, true, MiningDuration);
 }
 
-void ABlockBase::EndInteract()
+void ABlockBase::EndMineBlock()
 {
-    if (!bIsInteracting)
-    {
-        return;
-    }
-    bIsInteracting = false;
+    bIsMining = false;
 
-    GetWorld()->GetTimerManager().ClearTimer(InteractingTimerHandle);
-}
-
-void ABlockBase::TryInteract_Internal(AActor* Interactor)
-{
-    if (!bIsInteracting)
-    {
-        return;
-    }
-
-    IInteractable::TryInteract(Interactor);
+    GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
 }
 
 UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
@@ -289,6 +243,33 @@ void ABlockBase::UnbindEvents()
     AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
 }
 
+UAbilitySystemComponent* ABlockBase::GetOwnerASC()
+{
+    return GetAbilitySystemComponent();
+}
+
+bool ABlockBase::CheckIsDestroyed()
+{
+    if (::IsValid(AbilitySystemComponent) == false)
+    {
+        return false;
+    }
+
+    const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
+    if (::IsValid(BlockAttributeSet) == false)
+    {
+        return false;
+    }
+
+    return BlockAttributeSet->GetDurability() <= 0.f;
+}
+
+void ABlockBase::OnDestroyed()
+{
+    OnPreDestroy();
+    Destroy();
+}
+
 void ABlockBase::OnPaperSpriteLoaded()
 {
 	InitializeBlock(BlockTileData);
@@ -325,36 +306,16 @@ void ABlockBase::InitializeBlockAttribute()
     if (SpecHandle.IsValid())
     {
         FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
-        SpecHandle.Data->SetSetByCallerMagnitude(FGameplayTag::RequestGameplayTag(FName("SetByCaller.Block.Durability")), BlockDataTableRow->BlockDurability);
+        SpecHandle.Data->SetSetByCallerMagnitude(DurabilityTag, BlockDataTableRow->BlockDurability);
         AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
     }
 }
 
 void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 {
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
+    if (CheckIsDestroyed())
     {
-        return;
-    }
-
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
-    {
-        return;
-    }
-
-    if (BlockDataTableRow->bIsMineable == false)
-    {
-        return;
-    }
-
-    UE_LOG(LogTemp, Warning, TEXT("Block duration changed (%f -> %f)"), Data.OldValue, Data.NewValue);
-
-    if (Data.NewValue <= 0)
-    {
-        OnPreDestroy();
-        Destroy();
+        OnDestroyed();
     }
 }
 

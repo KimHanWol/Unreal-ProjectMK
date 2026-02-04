@@ -8,7 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
-#include "ProjectMK/Component/InteractComponent.h"
+#include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
@@ -18,8 +18,6 @@ AMKCharacter::AMKCharacter()
 	PrimaryActorTick.bCanEverTick = true;
 	
 	SetRootComponent(GetCapsuleComponent());
-
-	InteractComponent = CreateDefaultSubobject<UInteractComponent>(TEXT("InteractComponent"));
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetupAttachment(GetRootComponent());
@@ -41,6 +39,9 @@ void AMKCharacter::BeginPlay()
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
+
+	GiveAbilities();
+	InitializeCharacterAttribute();
 }
 
 void AMKCharacter::Tick(float DeltaTime)
@@ -60,9 +61,6 @@ void AMKCharacter::Tick(float DeltaTime)
 void AMKCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-
-	GiveAbilities();
-	InitializeCharacterAttribute();
 }
 
 void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -125,7 +123,8 @@ void AMKCharacter::BindEvents()
 		return;
 	}
 
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &::AMKCharacter::OnItemCollectRangeChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
 }
 
 void AMKCharacter::UnbindEvents()
@@ -136,16 +135,33 @@ void AMKCharacter::UnbindEvents()
 	}
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
 }
 
-bool AMKCharacter::IsInteracting()
+UAbilitySystemComponent* AMKCharacter::GetOwnerASC()
 {
-	if (::IsValid(InteractComponent) == false)
+	return GetAbilitySystemComponent();
+}
+
+bool AMKCharacter::CheckIsDestroyed()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
 	{
 		return false;
 	}
 
-	return InteractComponent->IsInteracting();
+	const UAttributeSet_Character* CharacterAttributeSet =Cast<UAttributeSet_Character>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Character::StaticClass()));
+	if (::IsValid(CharacterAttributeSet) == false)
+	{
+		return false;
+	}
+
+	return CharacterAttributeSet->GetCurrentHealth() <= 0.f;
+}
+
+void AMKCharacter::OnDestroyed()
+{
+	
 }
 
 void AMKCharacter::MoveRight(float Value)
@@ -166,10 +182,7 @@ void AMKCharacter::LookRight(float Value)
 {
 	CharacterDir.X = Value;
 
-	if (::IsValid(InteractComponent))
-	{
-		InteractComponent->UpdateCharacterDirection(CharacterDir);
-	}
+	TryDrill();
 }
 
 void AMKCharacter::LookUp(float Value)
@@ -195,10 +208,7 @@ void AMKCharacter::LookUp(float Value)
 
 	CharacterDir.Z = Value;
 
-	if (::IsValid(InteractComponent))
-	{
-		InteractComponent->UpdateCharacterDirection(CharacterDir);
-	}
+	TryDrill();
 }
 
 void AMKCharacter::Fly()
@@ -237,10 +247,40 @@ void AMKCharacter::FinishFly()
 	GetCharacterMovement()->GravityScale = 1.f;
 }
 
+void AMKCharacter::TryDrill()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	if (CharacterDir != FVector::ZeroVector)
+	{
+		//ㅁㄻㄴㄻㄴㄹ 여기 Ability 확인
+		AbilitySystemComponent->TryActivateAbilityByClass(InitialGameplayAbilities[0]);
+	}
+	else
+	{
+		FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(InitialGameplayAbilities[0]);
+		if (AbilitySpec)
+		{
+			AbilitySystemComponent->CancelAbility(AbilitySpec->Ability);
+		}
+	}
+}
+
 void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 {
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->SetGainRadius(Data.NewValue);
+	}
+}
+
+void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (CheckIsDestroyed())
+	{
+		OnDestroyed();
 	}
 }

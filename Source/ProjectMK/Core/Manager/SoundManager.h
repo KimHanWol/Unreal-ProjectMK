@@ -20,6 +20,7 @@ struct FInstantSFXParamData
 UENUM(BlueprintType)
 enum class ESoundParamType : uint8
 {
+    None,
     Float,
     Bool,
 };
