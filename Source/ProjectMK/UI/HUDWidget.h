@@ -6,6 +6,8 @@
 #include "MKUserWidget.h"
 #include "HUDWidget.generated.h"
 
+class UHealthBarWidget;
+class UOxygenBarWidget;
 class UQuickInventoryWidget;
 
 UCLASS()
@@ -14,25 +16,12 @@ class PROJECTMK_API UHUDWidget : public UMKUserWidget
     GENERATED_BODY()
 
 protected:
-    virtual void BindEvents() override;
-    virtual void UnbindEvents() override;
-
-    void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
-    void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
-    void OnMaxOxygenChanged(const FOnAttributeChangeData& Data);
-    void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
-
-private:
-    void UpdateHealthProgressBar();
-    void UpdateOxygenProgressBar();
-
-protected:
     UPROPERTY(meta = (BindWidget))
-    class UQuickInventoryWidget* QuickInventory;
+    UHealthBarWidget* HealthBar;
 
     UPROPERTY(meta = (BindWidget))
-    class UProgressBar* ProgressBar_Health;
+    UOxygenBarWidget* OxygenBar;
 
     UPROPERTY(meta = (BindWidget))
-    class UProgressBar* ProgressBar_Oxygen;
+    UQuickInventoryWidget* QuickInventory;
 };
