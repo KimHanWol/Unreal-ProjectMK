@@ -119,6 +119,22 @@ void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
 	OnInventoryUpdated();
 }
 
+bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
+{
+	if (ItemUID.IsNone() || ItemCount <= 0)
+	{
+		return false;
+	}
+
+	if (CanGainItem(ItemUID, ItemCount) == false)
+	{
+		return false;
+	}
+
+	GainItem(ItemUID, ItemCount);
+	return true;
+}
+
 bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
 {
 	if (InventoryItemMap.Contains(ItemUID) == false && InventoryItemMap.Num() >= MaxInventoryCount)

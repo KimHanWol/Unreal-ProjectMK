@@ -16,6 +16,9 @@ public:
 	void DamagePlayer(float Damage = 1.f);
 
 	UFUNCTION(Exec)
+	void GiveItem(FName ItemUID, int32 ItemCount = 1);
+
+	UFUNCTION(Exec)
 	void EnableBlockDebugNumbers();
 
 	UFUNCTION(Exec)

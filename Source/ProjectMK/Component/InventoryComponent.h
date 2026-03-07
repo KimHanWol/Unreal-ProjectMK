@@ -36,6 +36,7 @@ public:
 
 	int32 GetItemCount(FName ItemUID);
 	void SetItemCount(FName ItemUID, int32 ItemCount);
+	bool AddItem(FName ItemUID, int32 ItemCount);
 
 	TMap<FName, int32> GetInventoryItems() { return InventoryItemMap; }
 
