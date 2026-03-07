@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
+#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
@@ -48,6 +49,7 @@ public:
 
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
     const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
+    const UGameSettingDataAsset* GetGameSettingDataAsset() const;
 
     TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
     TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
@@ -61,4 +63,7 @@ protected:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     UBlueprintDataAsset* BlueprintDataAsset;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UGameSettingDataAsset* GameSettingDataAsset;
 };

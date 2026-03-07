@@ -7,6 +7,7 @@
 #include "ProjectMK/Core/MKGameInstance.h"
 #include "ProjectMK/Data/DataAsset/BlueprintDataAsset.h"
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
+#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 
 UDataManager* UDataManager::Get(UObject* WorldContextObject)
@@ -72,6 +73,11 @@ const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType)
     }
 
     return nullptr;
+}
+
+const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
+{
+    return GameSettingDataAsset;
 }
 
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType) const

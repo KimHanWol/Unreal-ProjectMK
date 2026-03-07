@@ -42,6 +42,14 @@ void AMKCharacter::BeginPlay()
 
 	GiveAbilities();
 	InitializeCharacterAttribute();
+	BindEvents();
+}
+
+void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	UnbindEvents();
+
+	Super::EndPlay(EndPlayReason);
 }
 
 void AMKCharacter::PostInitializeComponents()
@@ -277,3 +285,4 @@ void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
 		OnDestroyed();
 	}
 }
+

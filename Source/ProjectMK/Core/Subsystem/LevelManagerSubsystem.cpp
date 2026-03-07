@@ -97,7 +97,11 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 				if (::IsValid(HitCharacter))
 				{
 					bIsOnBottom = true;
-                    FDamageableUtil::ApplyDamage(HitCharacter->GetAbilitySystemComponent(), nullptr, GetFallingDamage());
+                    const int32 FallingDamage = GetFallingDamage(BottomBlock.Get(), VerticalBlockData);
+                    if (FallingDamage > 0.f)
+                    {
+                        FDamageableUtil::ApplyDamage(HitCharacter->GetAbilitySystemComponent(), nullptr, static_cast<float>(FallingDamage));
+                    }
 				}
 			}
 		}
@@ -136,12 +140,36 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 
             FallingBlock->SetActorLocation(FallingBlock->GetActorLocation() + MoveVector);
         }
+
+        FFallingVerticalBlocksData* MutableVerticalBlockData = FallingBlockMap.Find(UMKBlueprintFunctionLibrary::GetBlockPosition(FallingVerticalBlockData.BottomBlock.Get()).X);
+        if (MutableVerticalBlockData)
+        {
+            MutableVerticalBlockData->FallenDistance += FMath::Abs(MoveVector.Z);
+        }
     }
 }
 
-float FFallingBlockGroupData::GetFallingDamage()
+int32 FFallingBlockGroupData::GetFallingDamage(UObject* WorldContextObject, const FFallingVerticalBlocksData& VerticalBlockData) const
 {
-    return BlockCount * FallingVelocity / 100.f;
+    UDataManager* DataManager = UDataManager::Get(WorldContextObject);
+    if (::IsValid(DataManager) == false)
+    {
+        return 0;
+    }
+
+    const UGameSettingDataAsset* GameSettingDataAsset = DataManager->GetGameSettingDataAsset();
+    if (::IsValid(GameSettingDataAsset) == false)
+    {
+        return 0;
+    }
+
+    const float RawDamage = (BlockCount * GameSettingDataAsset->FallingBlockDamagePerBlock * VerticalBlockData.FallenDistance) / 100.f;
+    if (RawDamage > 0.f && RawDamage < 1.f)
+    {
+        return 1;
+    }
+
+    return FMath::FloorToInt(RawDamage);
 }
 
 void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)

@@ -7,6 +7,7 @@
 #include "LevelManagerSubsystem.generated.h"
 
 class APaperTileMapActor;
+class ABlockBase;
 
 USTRUCT(BlueprintType)
 struct FFallingVerticalBlocksData
@@ -21,6 +22,9 @@ struct FFallingVerticalBlocksData
 
 	UPROPERTY()
 	TWeakObjectPtr<ABlockBase> BottomBlock;
+
+    UPROPERTY()
+    float FallenDistance = 0.f;
 
 	TMap<TWeakObjectPtr<ABlockBase>, FVector> BlockOriginPositionMap;
 };
@@ -59,7 +63,7 @@ struct FFallingBlockGroupData
 	bool IsFallingFinished();
 	TWeakObjectPtr<ABlockBase> GetBottomBlock(int32 BlockPositionX);
 	TArray<ABlockBase*> GetFallingBlocks();
-	float GetFallingDamage();
+	int32 GetFallingDamage(UObject* WorldContextObject, const FFallingVerticalBlocksData& VerticalBlockData) const;
 };
 
 UCLASS(Blueprintable)

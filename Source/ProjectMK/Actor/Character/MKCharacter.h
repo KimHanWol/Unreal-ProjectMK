@@ -1,4 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
+ï»¿// Fill out your copyright notice in the Description page of Project Settings.
 
 #pragma once
 
@@ -29,6 +29,7 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual void PostInitializeComponents() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
@@ -67,7 +68,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
 
-	//TODO: ASC Ä¿½ºÅÒÇÏ°Ô ¸¸µé¾î¼­ °¡Áö°í ÀÖ°Ô ÇÏ±â
+	//TODO: ASC ì»¤ìŠ¤í…€í•˜ê²Œ ë§Œë“¤ì–´ì„œ ê°€ì§€ê³  ìžˆê²Œ í•˜ê¸°
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
 
@@ -79,3 +80,4 @@ protected:
 private:
 	FVector CharacterDir;
 };
+
