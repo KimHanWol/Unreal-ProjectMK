@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 

@@ -55,10 +55,10 @@ private:
 	FName ItemKey;
 
 	UPROPERTY(EditAnywhere, Category = "Floating")
-	float FloatAmplitude = 5.0f; // À§¾Æ·¡ ¿òÁ÷ÀÓÀÇ Å©±â
+	float FloatAmplitude = 5.0f; // ìœ„ì•„ë˜ ì›€ì§ì„ì˜ í¬ê¸°
 
 	UPROPERTY(EditAnywhere, Category = "Floating")
-	float FloatSpeed = 3.0f; // ¿òÁ÷ÀÓ ¼Óµµ
+	float FloatSpeed = 3.0f; // ì›€ì§ì„ ì†ë„
 
 	FTimerHandle LootingTimerHandle;
 

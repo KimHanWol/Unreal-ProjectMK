@@ -47,11 +47,11 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 			return;
 		}
 
-		// Àß¶ó³½ ¿µ¿ª (ÇÈ¼¿ ´ÜÀ§) 
+		// ìž˜ë¼ë‚¸ ì˜ì—­ (í”½ì…€ ë‹¨ìœ„) 
 		FVector2D SourceUV = Sprite->GetSourceUV(); 
 		FVector2D SourceSize = Sprite->GetSourceSize(); 
 		
-		// ÅØ½ºÃ³ ÀüÃ¼ Å©±â 
+		// í…ìŠ¤ì²˜ ì „ì²´ í¬ê¸° 
 		float TexW = Tex->GetSizeX(); 
 		float TexH = Tex->GetSizeY(); 
 		
