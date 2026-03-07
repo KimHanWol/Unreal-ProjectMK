@@ -4,6 +4,7 @@
 
 #include "PaperSprite.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/System/GlobalConstants.h"
 
 TSoftObjectPtr<UTexture2D> UMKBlueprintFunctionLibrary::ConvItemTextureFromPaperSprite(TSoftObjectPtr<UPaperSprite> TargetSprite)
 {
@@ -17,7 +18,10 @@ TSoftObjectPtr<UTexture2D> UMKBlueprintFunctionLibrary::ConvItemTextureFromPaper
 
 FVector2D UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(const FVector& WorldPosition)
 {
-	return FVector2D((int32)(WorldPosition.X / 16), -(int32)(WorldPosition.Z / 16));
+	return FVector2D(
+		FMath::FloorToInt(WorldPosition.X / BLOCK_SIZE),
+		FMath::FloorToInt((-WorldPosition.Z) / BLOCK_SIZE)
+	);
 }
 
 FVector2D UMKBlueprintFunctionLibrary::GetBlockPosition(ABlockBase* TargetBlock)
@@ -32,26 +36,11 @@ FVector2D UMKBlueprintFunctionLibrary::GetBlockPosition(ABlockBase* TargetBlock)
 
 FVector UMKBlueprintFunctionLibrary::GetSnappingWorldPosition(const FVector& TargetVector)
 {
-    FVector ResultVector;
-    int32 LastX = (int32)TargetVector.X % 16;
-    if (LastX > 8)
-    {
-        ResultVector.X = TargetVector.X - LastX + 16;
-    }
-    else
-    {
-        ResultVector.X = TargetVector.X - LastX;
-    }
+	const FVector2D BlockPosition = ConvertWorldPositionToBlockPosition(TargetVector);
 
-    int32 LastZ = (int32)TargetVector.Z % 16;
-    if (LastZ > 8)
-    {
-        ResultVector.Z = TargetVector.Z - LastZ + 16;
-    }
-    else
-    {
-        ResultVector.Z = TargetVector.Z - LastZ;
-    }
-
-    return ResultVector;
+	return FVector(
+		BlockPosition.X * BLOCK_SIZE,
+		TargetVector.Y,
+		-(BlockPosition.Y * BLOCK_SIZE)
+	);
 }

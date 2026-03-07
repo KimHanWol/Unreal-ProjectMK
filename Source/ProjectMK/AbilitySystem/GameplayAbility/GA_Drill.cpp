@@ -1,4 +1,4 @@
-// LINK
+ï»¿// LINK
 
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 
@@ -11,6 +11,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/System/GlobalConstants.h"
 
 void UGA_Drill::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
 {
@@ -157,7 +158,7 @@ void UGA_Drill::Tick_UpdateSourcePosition(float DeltaTime)
         return;
     }
 
-    //¾Æ·¡ÂÊÀ¸·Î °¥ ¶§¸¸ µ¿ÀÛ
+    //ì•„ëž˜ìª½ìœ¼ë¡œ ê°ˆ ë•Œë§Œ ë™ìž‘
     const FVector& SourceCharDir = SourceCharacter->GetCharacterDirection();
     if (SourceCharDir.X != 0.f)
     {
@@ -190,11 +191,8 @@ void UGA_Drill::Tick_UpdateSourcePosition(float DeltaTime)
         return;
     }
 
-    //TODO: ÇÏµåÄÚµù ¼öÁ¤
-    int32 BlockSize = 16;
-
     const FVector& InteractedActorLocation = InteractionDirTarget->GetActorLocation();
-    FVector TargetLocation = InteractedActorLocation - SourceCharDir * BlockSize;
+    FVector TargetLocation = InteractedActorLocation - SourceCharDir * BLOCK_SIZE;
     TargetLocation.Z = SourceCharacter->GetActorLocation().Z;
 
     if (SourceCharacter->GetActorLocation() == TargetLocation)
@@ -307,3 +305,4 @@ void UGA_Drill::EnableDrill(bool bEnable)
         DrillEffectHandle.Invalidate();
     }
 }
+
