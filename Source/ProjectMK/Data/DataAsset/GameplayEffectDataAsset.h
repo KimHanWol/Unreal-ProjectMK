@@ -18,6 +18,7 @@ enum class EGameplayEffectType : uint8
     Durability_Add,
     CurrentHealth_Add,
     State_Drill,
+    Invincible,
 };
 
 enum class EGameplayAbilityType : uint8;

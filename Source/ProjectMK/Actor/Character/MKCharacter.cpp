@@ -6,6 +6,10 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameplayTagContainer.h"
+#include "Logging/LogMacros.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PaperFlipbookComponent.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
@@ -40,6 +44,8 @@ void AMKCharacter::BeginPlay()
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
+	InitializeInvincibleMaterial();
+
 	GiveAbilities();
 	InitializeCharacterAttribute();
 	BindEvents();
@@ -55,6 +61,26 @@ void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AMKCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+}
+
+void AMKCharacter::InitializeInvincibleMaterial()
+{
+	UPaperFlipbookComponent* SpriteComponent = GetSprite();
+	if (::IsValid(SpriteComponent) == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: SpriteComponent is invalid"));
+		return;
+	}
+
+	InvincibleMaterialInstance = SpriteComponent->CreateDynamicMaterialInstance(0);
+	if (::IsValid(InvincibleMaterialInstance) == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: Failed to create dynamic material instance"));
+		return;
+	}
+
+	InvincibleMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, 0.f);
+	UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: Created DMI, parameter=%s set to 0.0"), *InvincibleDarkenParameterName.ToString());
 }
 
 void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -119,6 +145,7 @@ void AMKCharacter::BindEvents()
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
+	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).AddUObject(this, &AMKCharacter::OnInvincibleTagChanged);
 }
 
 void AMKCharacter::UnbindEvents()
@@ -130,6 +157,7 @@ void AMKCharacter::UnbindEvents()
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
+	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).RemoveAll(this);
 }
 
 UAbilitySystemComponent* AMKCharacter::GetOwnerASC()
@@ -280,9 +308,53 @@ void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 
 void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
 {
+	if (Data.NewValue < Data.OldValue)
+	{
+		ApplyDamageInvincibility();
+	}
+
 	if (CheckIsDestroyed())
 	{
 		OnDestroyed();
+	}
+}
+
+void AMKCharacter::OnInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	if (::IsValid(InvincibleMaterialInstance) == false)
+	{
+		UE_LOG(LogTemp, Warning, TEXT("OnInvincibleTagChanged: DMI is invalid, Tag=%s, NewCount=%d"), *Tag.ToString(), NewCount);
+		return;
+	}
+
+	const float TargetDarkenAmount = NewCount > 0 ? InvincibleDarkenAmount : 0.f;
+	UE_LOG(LogTemp, Warning, TEXT("OnInvincibleTagChanged: Tag=%s, NewCount=%d, Set %s=%.3f"), *Tag.ToString(), NewCount, *InvincibleDarkenParameterName.ToString(), TargetDarkenAmount);
+	InvincibleMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, TargetDarkenAmount);
+}
+
+void AMKCharacter::ApplyDamageInvincibility()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	const UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Invincible);
+	if (::IsValid(EffectClass) == false)
+	{
+		return;
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
 }
 

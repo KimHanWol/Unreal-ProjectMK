@@ -10,9 +10,12 @@
 
 class UCameraComponent;
 class UGameplayAbility;
+class UGameplayEffect;
 class UInteractComponent;
 class UInventoryComponent;
+class UMaterialInstanceDynamic;
 class UPaperSpriteComponent;
+struct FGameplayTag;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
@@ -60,6 +63,9 @@ private:
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
+	void OnInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount);
+	void ApplyDamageInvincibility();
+	void InitializeInvincibleMaterial();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -74,6 +80,15 @@ protected:
 
 	UPROPERTY(Transient)
 	UAttributeSet_Character* AttributeSet_Character;
+
+	UPROPERTY(EditAnywhere, Category = "Invincible")
+	FName InvincibleDarkenParameterName = TEXT("DarkenAmount");
+
+	UPROPERTY(EditAnywhere, Category = "Invincible")
+	float InvincibleDarkenAmount = 1.f;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> InvincibleMaterialInstance;
 
 	bool bIsFlying = false;
 
