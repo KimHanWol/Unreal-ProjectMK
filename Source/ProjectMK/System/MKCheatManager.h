@@ -14,4 +14,7 @@ class PROJECTMK_API UMKCheatManager : public UCheatManager
 public:
 	UFUNCTION(Exec)
 	void DamagePlayer(float Damage = 1.f);
+
+	UFUNCTION(Exec)
+	void EnableBlockDebugNumbers();
 };

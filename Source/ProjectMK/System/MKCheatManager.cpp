@@ -4,6 +4,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 void UMKCheatManager::DamagePlayer(float Damage)
@@ -20,4 +21,21 @@ void UMKCheatManager::DamagePlayer(float Damage)
 	}
 
 	FDamageableUtil::ApplyDamage(PlayerCharacter->GetAbilitySystemComponent(), nullptr, Damage);
+}
+
+void UMKCheatManager::EnableBlockDebugNumbers()
+{
+	UWorld* World = GetWorld();
+	if (::IsValid(World) == false)
+	{
+		return;
+	}
+
+	ULevelManagerSubsystem* LevelManagerSubsystem = World->GetSubsystem<ULevelManagerSubsystem>();
+	if (::IsValid(LevelManagerSubsystem) == false)
+	{
+		return;
+	}
+
+	LevelManagerSubsystem->SetBlockDebugNumbersEnabled(true);
 }

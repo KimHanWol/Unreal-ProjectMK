@@ -471,6 +471,11 @@ void ULevelManagerSubsystem::GenerateTileActors()
     OnGenerateFinished();
 }
 
+void ULevelManagerSubsystem::SetBlockDebugNumbersEnabled(bool bEnabled)
+{
+    bBlockDebugNumbersEnabled = bEnabled;
+}
+
 int32 ULevelManagerSubsystem::GetTileSize()
 {
     if (TileMapActor.IsValid() == false)
@@ -545,7 +550,10 @@ bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock,
         return false;
     }
 
-    StartBlock->BP_EnableDebugState(DebugCount);
+    if (bBlockDebugNumbersEnabled)
+    {
+        StartBlock->BP_EnableDebugState(DebugCount);
+    }
 
     OutDisconnectedBlocks.Add(StartBlock);
 

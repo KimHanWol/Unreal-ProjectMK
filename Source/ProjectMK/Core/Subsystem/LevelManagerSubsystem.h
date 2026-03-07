@@ -83,6 +83,8 @@ public:
 	void GenerateTileActors();
 
 	int32 GetTileSize();
+	void SetBlockDebugNumbersEnabled(bool bEnabled);
+	bool IsBlockDebugNumbersEnabled() const { return bBlockDebugNumbersEnabled; }
 
 private:
 	void OnGenerateFinished();
@@ -104,4 +106,6 @@ private:
 	TArray<FFallingBlockGroupData> FallingBlockGroupList;
 
 	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> BlockActorMap;
+
+	bool bBlockDebugNumbersEnabled = false;
 };
