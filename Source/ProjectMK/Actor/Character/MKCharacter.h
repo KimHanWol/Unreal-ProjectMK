@@ -29,9 +29,9 @@ public:
 
 protected:
 	virtual void BeginPlay() override;
-	virtual void Tick(float DeltaTime) override;
 	virtual void PostInitializeComponents() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
+	virtual void Tick(float DeltaSeconds) override;
 	void GiveAbilities();
 	void InitializeCharacterAttribute();
 
@@ -49,11 +49,11 @@ public:
 	FVector GetCharacterDirection() const { return CharacterDir; }
 
 private:
-	void MoveRight(float Value);
-	void LookRight(float Value);
-	void LookUp(float Value);
-	void Fly();
-	void FinishFly();
+	void OnLookRight(float Value);
+	void OnLookUp(float Value);
+	void OnMoveRight(float Value);
+	void OnFly();
+	void OnFinishFly();
 
 	void TryDrill();
 
@@ -74,10 +74,7 @@ protected:
 	UPROPERTY(Transient)
 	UAttributeSet_Character* AttributeSet_Character;
 
-	float DoublePressDuration = 0.5f;
-	float LastUpPressedTime = 0.f;
-	bool bIsUpPressing = false;
-	bool bIsUpDoublePressing = false;
+	bool bIsFlying = false;
 
 private:
 	FVector CharacterDir;

@@ -76,6 +76,12 @@ void UGA_Drill::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 {
     bIsDrilling = false;
 
+    if (DelayTask.IsValid())
+    {
+        DelayTask->EndTask();
+        DelayTask = nullptr;
+    }
+
     EnableDrill(false);
 
 	Super::EndAbility(Handle, ActorInfo, ActivationInfo, bReplicateEndAbility, bWasCancelled);
@@ -103,7 +109,6 @@ void UGA_Drill::Tick_UpdateTarget()
 
     const FVector& SourceCharDir = SourceCharacter->GetCharacterDirection();
     if (SourceCharDir == FVector::ZeroVector || 
-        SourceCharDir == FVector::UpVector ||
         SourceCharDir.Size() > 1.f) 
     {
         EnableDrill(false);
@@ -119,7 +124,7 @@ void UGA_Drill::Tick_UpdateTarget()
 
     DrawDebugLine(GetWorld(), Start, End, FColor::Red, false);
 
-    TargetASCList.Empty();
+    TArray<TWeakObjectPtr<UAbilitySystemComponent>> NewTargetASCList;
     if (GetWorld()->LineTraceMultiByChannel(Hits, Start, End, ECC_Visibility, Params))
     {
         for (const auto& Hit : Hits)
@@ -127,13 +132,22 @@ void UGA_Drill::Tick_UpdateTarget()
             IDamageable* DamageableActor = Cast<IDamageable>(Hit.GetActor());
             if (DamageableActor)
             {
-                TargetASCList.Add(DamageableActor->GetOwnerASC());
+                NewTargetASCList.Add(DamageableActor->GetOwnerASC());
             }
         }
     }
 
-    bool bEnableDrill = TargetASCList.IsEmpty() == false;
-    EnableDrill(bEnableDrill);
+    if (NewTargetASCList.IsEmpty() ||
+        (TargetASCList.IsEmpty() == false && NewTargetASCList[0] != TargetASCList[0]))
+    {
+        EnableDrill(false);
+    }
+    TargetASCList = NewTargetASCList;
+
+    if (NewTargetASCList.IsEmpty() == false)
+    {
+        EnableDrill(true);
+    }
 }
 
 void UGA_Drill::Tick_UpdateSourcePosition(float DeltaTime)
@@ -195,12 +209,19 @@ void UGA_Drill::Tick_UpdateSourcePosition(float DeltaTime)
 
 void UGA_Drill::WaitPeriodAndMine()
 {
+    if (DelayTask.IsValid())
+    {
+        DelayTask->EndTask();
+        DelayTask = nullptr;
+    }
+
     if (DrillEffectHandle.IsValid() == false)
     {
         return;
     }
 
-    UAbilityTask_WaitDelay* DelayTask = UAbilityTask_WaitDelay::WaitDelay(this, DrillingPeriod);
+    UAbilityTask_WaitDelay* NewDelayTask = UAbilityTask_WaitDelay::WaitDelay(this, DrillingPeriod);
+    DelayTask = NewDelayTask;
 
     DelayTask->OnFinish.AddDynamic(this, &UGA_Drill::Drill_Instant);
     DelayTask->ReadyForActivation();
@@ -208,10 +229,16 @@ void UGA_Drill::WaitPeriodAndMine()
 
 void UGA_Drill::Drill_Instant()
 {
+    if (DrillEffectHandle.IsValid() == false)
+    {
+        return;
+    }
+
     if (SourceASC.IsValid() == false)
     {
         return;
     }
+    UE_LOG(LogTemp, Warning, TEXT("Drill!"));
 
     for (const auto& TargetASC : TargetASCList)
     {
@@ -219,6 +246,11 @@ void UGA_Drill::Drill_Instant()
         {
             FDamageableUtil::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
         }
+    }
+
+    if (DelayTask.IsValid())
+    {
+        DelayTask = nullptr;
     }
 
     WaitPeriodAndMine();
@@ -260,6 +292,12 @@ void UGA_Drill::EnableDrill(bool bEnable)
     }
     else
     {
+        if (DelayTask.IsValid())
+        {
+            DelayTask->EndTask();
+            DelayTask = nullptr;
+        }
+
         if (DrillEffectHandle.IsValid() == false)
         {
             return;

@@ -1,4 +1,4 @@
-// LINK
+ï»¿// LINK
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 
@@ -44,20 +44,6 @@ void AMKCharacter::BeginPlay()
 	InitializeCharacterAttribute();
 }
 
-void AMKCharacter::Tick(float DeltaTime)
-{
-	Super::Tick(DeltaTime);
-
-	if (bIsUpDoublePressing)
-	{
-		Fly();
-	}
-	else
-	{
-		FinishFly();
-	}
-}
-
 void AMKCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
@@ -67,12 +53,12 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 {
 	Super::SetupPlayerInputComponent(PlayerInputComponent);
 
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::MoveRight);
-	PlayerInputComponent->BindAction("Jump", IE_Pressed, this, &AMKCharacter::Jump);
-	PlayerInputComponent->BindAction("Jump", IE_Released, this, &AMKCharacter::StopJumping);
+	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
+	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
 
-	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::LookRight);
-	PlayerInputComponent->BindAxis("LookUp", this, &AMKCharacter::LookUp);
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::OnMoveRight);
+	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::OnLookRight);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMKCharacter::OnLookUp);
 }
 
 void AMKCharacter::GiveAbilities()
@@ -164,87 +150,94 @@ void AMKCharacter::OnDestroyed()
 	
 }
 
-void AMKCharacter::MoveRight(float Value)
+void AMKCharacter::Tick(float DeltaSeconds)
 {
-	if (::IsValid(AttributeSet_Character) == false)
-	{
-		return;
-	}
+	Super::Tick(DeltaSeconds);
 
-	float Speed = GetCharacterMovement()->IsFlying() ? AttributeSet_Character->GetFlyingSpeed() : AttributeSet_Character->GetMoveSpeed() / 10.f;
-	if (Speed > 0.f)
+	if (bIsFlying)
 	{
-		AddMovementInput(FVector::ForwardVector, Value * Speed);
+		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+		if (::IsValid(MoveComp) && ::IsValid(AttributeSet_Character))
+		{
+			FVector NewVelocity = MoveComp->Velocity;
+			NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
+			MoveComp->Velocity = NewVelocity;
+		}
 	}
 }
 
-void AMKCharacter::LookRight(float Value)
+void AMKCharacter::OnLookRight(float Value)
 {
 	CharacterDir.X = Value;
 
 	TryDrill();
 }
 
-void AMKCharacter::LookUp(float Value)
+void AMKCharacter::OnLookUp(float Value)
 {
-	float CurrentTime = GetWorld()->GetTimeSeconds();
-	if (Value > 0.f)
-	{
-		if (!bIsUpPressing)
-		{
-			if (CurrentTime - LastUpPressedTime <= DoublePressDuration)
-			{
-				bIsUpDoublePressing = true;
-			}
-			LastUpPressedTime = CurrentTime;
-			bIsUpPressing = true;
-		}
-	}
-	else
-	{
-		bIsUpPressing = false;
-		bIsUpDoublePressing = false;
-	}
-
 	CharacterDir.Z = Value;
 
 	TryDrill();
 }
 
-void AMKCharacter::Fly()
+void AMKCharacter::OnMoveRight(float Value)
 {
-	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
-	if (::IsValid(CharacterMovementComp) == false)
+	CharacterDir.X = Value;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
 	{
 		return;
 	}
 
-	if (::IsValid(AttributeSet_Character) == false)
+	if (MoveComp->IsFlying())
 	{
-		return;
-	}
+		FVector NewVelocity = MoveComp->Velocity;
+		NewVelocity.X = CharacterDir.X * AttributeSet_Character->GetMoveSpeed();
 
-	CharacterMovementComp->SetMovementMode(MOVE_Flying);
-	CharacterMovementComp->MaxFlySpeed = AttributeSet_Character->GetFlyingSpeed();
-	CharacterMovementComp->GravityScale = 1.f;
-	AddMovementInput(FVector::UpVector, AttributeSet_Character->GetFlyingSpeed());
+		MoveComp->Velocity = NewVelocity;
+	}
+	else
+	{
+		MoveComp->MaxWalkSpeed = AttributeSet_Character->GetMoveSpeed();
+		if (FMath::IsNearlyZero(CharacterDir.X) == false)
+		{
+			AddMovementInput(FVector::ForwardVector, CharacterDir.X);
+		}
+	}
 }
 
-void AMKCharacter::FinishFly()
+void AMKCharacter::OnFly()
 {
-	UCharacterMovementComponent* CharacterMovementComp = GetCharacterMovement();
-	if (::IsValid(CharacterMovementComp) == false)
+	bIsFlying = true;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (!MoveComp)
 	{
 		return;
 	}
 
-	if (CharacterMovementComp->MovementMode != MOVE_Flying)
+	MoveComp->SetMovementMode(MOVE_Flying);
+
+	FVector NewVelocity = MoveComp->Velocity;
+	NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
+	MoveComp->Velocity = NewVelocity;
+}
+
+void AMKCharacter::OnFinishFly()
+{
+	bIsFlying = false;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (!MoveComp)
 	{
 		return;
 	}
 
-	GetCharacterMovement()->SetMovementMode(MOVE_Falling);
-	GetCharacterMovement()->GravityScale = 1.f;
+	if (MoveComp->MovementMode == MOVE_Flying)
+	{
+		MoveComp->SetMovementMode(MOVE_Falling);
+	}
 }
 
 void AMKCharacter::TryDrill()
@@ -256,7 +249,7 @@ void AMKCharacter::TryDrill()
 
 	if (CharacterDir != FVector::ZeroVector)
 	{
-		//¤±¤«¤¤¤«¤¤¤© ¿©±â Ability È®ÀÎ
+		//ã…ã„»ã„´ã„»ã„´ã„¹ ì—¬ê¸° Ability í™•ì¸
 		AbilitySystemComponent->TryActivateAbilityByClass(InitialGameplayAbilities[0]);
 	}
 	else

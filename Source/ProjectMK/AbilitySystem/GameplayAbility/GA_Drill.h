@@ -6,8 +6,9 @@
 #include "Abilities/GameplayAbility.h"
 #include "GA_Drill.generated.h"
 
-class AMKCharacter;
 class UAbilitySystemComponent;
+class UAbilityTask_WaitDelay;
+class AMKCharacter;
 class UGameplayEffect;
 
 UCLASS()
@@ -52,6 +53,7 @@ private:
     TWeakObjectPtr<AMKCharacter> SourceCharacter = nullptr;
     TWeakObjectPtr<UAbilitySystemComponent> SourceASC = nullptr;
     TArray<TWeakObjectPtr<UAbilitySystemComponent>> TargetASCList;
+    TWeakObjectPtr<UAbilityTask_WaitDelay> DelayTask = nullptr;
 
     bool bIsDrilling = false;
 
