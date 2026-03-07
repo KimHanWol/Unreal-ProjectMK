@@ -8,6 +8,7 @@
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "UObject/NoExportTypes.h"
@@ -50,6 +51,7 @@ public:
     const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
     const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
     const UGameSettingDataAsset* GetGameSettingDataAsset() const;
+    UDataTable* GetDataTable(EDataTableType DataTableType) const;
 
     TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
     TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;

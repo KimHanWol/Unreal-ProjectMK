@@ -17,4 +17,7 @@ public:
 
 	UFUNCTION(Exec)
 	void EnableBlockDebugNumbers();
+
+	UFUNCTION(Exec)
+	void ToggleShopTestWidget();
 };

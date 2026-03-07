@@ -4,6 +4,7 @@
 
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Controller/MKPlayerController.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
@@ -38,4 +39,15 @@ void UMKCheatManager::EnableBlockDebugNumbers()
 	}
 
 	LevelManagerSubsystem->SetBlockDebugNumbersEnabled(true);
+}
+
+void UMKCheatManager::ToggleShopTestWidget()
+{
+	AMKPlayerController* PlayerController = Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+	if (::IsValid(PlayerController) == false)
+	{
+		return;
+	}
+
+	PlayerController->ToggleShopTestWidget();
 }

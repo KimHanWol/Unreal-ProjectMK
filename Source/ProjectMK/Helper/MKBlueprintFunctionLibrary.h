@@ -15,6 +15,9 @@ class PROJECTMK_API UMKBlueprintFunctionLibrary : public UBlueprintFunctionLibra
     GENERATED_BODY()
 
 public:
+    UFUNCTION()
+    static TArray<FString> GetItemRowNames();
+
     UFUNCTION(BlueprintCallable)
     static TSoftObjectPtr<UTexture2D> ConvItemTextureFromPaperSprite(TSoftObjectPtr<UPaperSprite> TargetSprite);
 

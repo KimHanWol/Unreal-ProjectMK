@@ -80,6 +80,16 @@ const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
     return GameSettingDataAsset;
 }
 
+UDataTable* UDataManager::GetDataTable(EDataTableType DataTableType) const
+{
+    if (::IsValid(DataTableDataAsset) == false)
+    {
+        return nullptr;
+    }
+
+    return DataTableDataAsset->GetDataTable(DataTableType);
+}
+
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType) const
 {
     if (::IsValid(GameplayEffectDataAsset))

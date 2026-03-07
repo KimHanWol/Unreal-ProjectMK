@@ -7,6 +7,7 @@
 #include "InventoryComponent.generated.h"
 
 enum class EEuipmentType : uint8;
+struct FShopRecipeDataTableRow;
 
 UCLASS(BlueprintType)
 class PROJECTMK_API UInventoryItemData : public UObject
@@ -46,6 +47,8 @@ public:
 
 	bool CraftEquipmentItem(FName EquipmentItemKey);
 	bool IsCraftable(FName EquipmentItemKey);
+	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
+	bool CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const;
 private:
 
 	UFUNCTION()

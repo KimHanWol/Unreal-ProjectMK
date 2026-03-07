@@ -9,11 +9,15 @@
 class UHealthBarWidget;
 class UOxygenBarWidget;
 class UQuickInventoryWidget;
+class UShopWidget;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
 {
     GENERATED_BODY()
+
+public:
+    bool ToggleShopWidget();
 
 protected:
     UPROPERTY(meta = (BindWidget))
@@ -24,4 +28,7 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     UQuickInventoryWidget* QuickInventory;
+
+    UPROPERTY(meta = (BindWidget))
+    UShopWidget* Shop;
 };

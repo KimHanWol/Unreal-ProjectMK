@@ -9,6 +9,7 @@
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -273,6 +274,71 @@ bool UInventoryComponent::IsCraftable(FName EquipmentItemKey)
 		{
 			return false;
 		}
+	}
+
+	return true;
+}
+
+bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData)
+{
+	if (CanCraftShopRecipe(ShopRecipeData) == false)
+	{
+		return false;
+	}
+
+	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
+	{
+		InventoryItemMap.FindOrAdd(RequiredItem.GetItemKey()) -= RequiredItem.ItemCount;
+	}
+
+	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
+	{
+		const FName RequiredItemKey = RequiredItem.GetItemKey();
+		const int32* InventoryItemCountPtr = InventoryItemMap.Find(RequiredItemKey);
+		if (InventoryItemCountPtr != nullptr && (*InventoryItemCountPtr) <= 0)
+		{
+			InventoryItemMap.Remove(RequiredItemKey);
+		}
+	}
+
+	InventoryItemMap.FindOrAdd(ShopRecipeData.GetResultItemKey()) += 1;
+	OnInventoryUpdated();
+
+	return true;
+}
+
+bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const
+{
+	if (ShopRecipeData.GetResultItemKey().IsNone())
+	{
+		return false;
+	}
+
+	TMap<FName, int32> SimulatedInventory = InventoryItemMap;
+	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
+	{
+		const FName RequiredItemKey = RequiredItem.GetItemKey();
+		if (RequiredItemKey.IsNone() || RequiredItem.ItemCount <= 0)
+		{
+			return false;
+		}
+
+		int32* InventoryItemCountPtr = SimulatedInventory.Find(RequiredItemKey);
+		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < RequiredItem.ItemCount)
+		{
+			return false;
+		}
+
+		(*InventoryItemCountPtr) -= RequiredItem.ItemCount;
+		if ((*InventoryItemCountPtr) <= 0)
+		{
+			SimulatedInventory.Remove(RequiredItemKey);
+		}
+	}
+
+	if (SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false && SimulatedInventory.Num() >= MaxInventoryCount)
+	{
+		return false;
 	}
 
 	return true;

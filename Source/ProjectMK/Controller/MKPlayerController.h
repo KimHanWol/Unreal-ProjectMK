@@ -6,6 +6,8 @@
 #include "GameFramework/PlayerController.h"
 #include "MKPlayerController.generated.h"
 
+class UHUDWidget;
+
 UCLASS()
 class PROJECTMK_API AMKPlayerController : public APlayerController
 {
@@ -13,4 +15,6 @@ class PROJECTMK_API AMKPlayerController : public APlayerController
 
 public:
 	AMKPlayerController();
+
+	void ToggleShopTestWidget();
 };
