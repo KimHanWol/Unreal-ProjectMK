@@ -5,6 +5,7 @@
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
 #include "PaperZDCharacter.h"
+#include "GameplayEffectTypes.h"
 #include "ProjectMK/Interface/Damageable.h"
 #include "MKCharacter.generated.h"
 
@@ -16,6 +17,7 @@ class UInventoryComponent;
 class UMaterialInstanceDynamic;
 class UPaperSpriteComponent;
 struct FGameplayTag;
+class UGameSettingDataAsset;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
@@ -63,9 +65,16 @@ private:
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
+	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
 	void OnInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void ApplyDamageInvincibility();
 	void InitializeInvincibleMaterial();
+	void UpdateOxygen();
+	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
+	void ClearOxygenDrainEffect();
+	void RestoreOxygenToMax();
+	int32 GetCurrentBlockDepth() const;
+	const UGameSettingDataAsset* GetGameSettings() const;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -94,5 +103,7 @@ protected:
 
 private:
 	FVector CharacterDir;
+	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
+	float AppliedOxygenDrainPerSecond = 0.f;
 };
 

@@ -74,3 +74,31 @@ void FDamageableUtil::ApplyDamageToDurability(UAbilitySystemComponent* TargetASC
 		}
 	}
 }
+
+void FDamageableUtil::ApplyOxygen(UAbilitySystemComponent* TargetASC, float OxygenDelta)
+{
+	if (::IsValid(TargetASC) == false || FMath::IsNearlyZero(OxygenDelta))
+	{
+		return;
+	}
+
+	const UDataManager* DataManager = UDataManager::Get(TargetASC);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::CurrentOxygen_Add);
+	if (::IsValid(EffectClass) == false)
+	{
+		return;
+	}
+
+	FGameplayEffectSpecHandle SpecHandle = TargetASC->MakeOutgoingSpec(EffectClass, 1.f, TargetASC->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		const FGameplayTag ValueTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Common.Value"));
+		SpecHandle.Data->SetSetByCallerMagnitude(ValueTag, OxygenDelta);
+		TargetASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
+}

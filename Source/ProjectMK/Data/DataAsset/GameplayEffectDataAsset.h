@@ -17,6 +17,8 @@ enum class EGameplayEffectType : uint8
     Character_Damage,
     Durability_Add,
     CurrentHealth_Add,
+    CurrentOxygen_Add,
+    Oxygen_Drain,
     State_Drill,
     Invincible,
 };

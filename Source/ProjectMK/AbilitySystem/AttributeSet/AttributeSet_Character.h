@@ -13,6 +13,10 @@ class PROJECTMK_API UAttributeSet_Character : public UMKAttributeSetBase
 	GENERATED_BODY()
 	
 public:
+	UAttributeSet_Character();
+	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
+	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
     FGameplayAttributeData ItemCollectRange;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, ItemCollectRange)
@@ -32,6 +36,14 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData FlyingSpeed;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, FlyingSpeed)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData CurrentOxygen;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, CurrentOxygen)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData MaxOxygen;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, MaxOxygen)
 
 	//Drilling
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")

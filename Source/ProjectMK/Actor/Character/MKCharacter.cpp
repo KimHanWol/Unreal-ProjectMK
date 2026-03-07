@@ -16,6 +16,9 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
+#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
+#include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 AMKCharacter::AMKCharacter()
 {
@@ -53,6 +56,7 @@ void AMKCharacter::BeginPlay()
 
 void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	ClearOxygenDrainEffect();
 	UnbindEvents();
 
 	Super::EndPlay(EndPlayReason);
@@ -133,6 +137,7 @@ void AMKCharacter::InitializeCharacterAttribute()
 	if (SpecHandle.IsValid())
 	{
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		RestoreOxygenToMax();
 	}
 }
 
@@ -145,6 +150,7 @@ void AMKCharacter::BindEvents()
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &AMKCharacter::OnCurrentOxygenChanged);
 	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).AddUObject(this, &AMKCharacter::OnInvincibleTagChanged);
 }
 
@@ -157,6 +163,7 @@ void AMKCharacter::UnbindEvents()
 
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
 	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
 	AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).RemoveAll(this);
 }
 
@@ -184,22 +191,6 @@ bool AMKCharacter::CheckIsDestroyed()
 void AMKCharacter::OnDestroyed()
 {
 	
-}
-
-void AMKCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	if (bIsFlying)
-	{
-		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-		if (::IsValid(MoveComp) && ::IsValid(AttributeSet_Character))
-		{
-			FVector NewVelocity = MoveComp->Velocity;
-			NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
-			MoveComp->Velocity = NewVelocity;
-		}
-	}
 }
 
 void AMKCharacter::OnLookRight(float Value)
@@ -317,6 +308,131 @@ void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
 	{
 		OnDestroyed();
 	}
+}
+
+void AMKCharacter::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
+{
+}
+
+void AMKCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateOxygen();
+
+	if (bIsFlying)
+	{
+		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+		if (::IsValid(MoveComp) && ::IsValid(AttributeSet_Character))
+		{
+			FVector NewVelocity = MoveComp->Velocity;
+			NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
+			MoveComp->Velocity = NewVelocity;
+		}
+	}
+}
+
+void AMKCharacter::UpdateOxygen()
+{
+	if (::IsValid(AbilitySystemComponent) == false || ::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	const UGameSettingDataAsset* GameSettings = GetGameSettings();
+	if (::IsValid(GameSettings) == false)
+	{
+		return;
+	}
+
+	const int32 CurrentBlockDepth = GetCurrentBlockDepth();
+	if (CurrentBlockDepth <= GameSettings->SurfaceBlockPositionY)
+	{
+		ClearOxygenDrainEffect();
+		RestoreOxygenToMax();
+		return;
+	}
+
+	const int32 DepthBelowSurface = CurrentBlockDepth - GameSettings->SurfaceBlockPositionY;
+	const int32 DepthPerOxygenLoss = FMath::Max(1, GameSettings->DepthPerOxygenLoss);
+	const float OxygenDrainPerSecond = static_cast<float>(FMath::Max(1, DepthBelowSurface / DepthPerOxygenLoss));
+	ApplyOxygenDrainEffect(OxygenDrainPerSecond);
+}
+
+void AMKCharacter::ApplyOxygenDrainEffect(float OxygenDrainPerSecond)
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	const UGameSettingDataAsset* GameSettings = GetGameSettings();
+	const UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(GameSettings) == false || ::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	if (FMath::IsNearlyEqual(AppliedOxygenDrainPerSecond, OxygenDrainPerSecond) && OxygenDrainEffectHandle.IsValid())
+	{
+		return;
+	}
+
+	ClearOxygenDrainEffect();
+
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Oxygen_Drain);
+	if (::IsValid(EffectClass) == false)
+	{
+		return;
+	}
+
+	const float PeriodicDrainAmount = -(OxygenDrainPerSecond * GameSettings->OxygenDrainTickInterval);
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		const FGameplayTag ValueTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Common.Value"));
+		SpecHandle.Data->SetSetByCallerMagnitude(ValueTag, PeriodicDrainAmount);
+		OxygenDrainEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		AppliedOxygenDrainPerSecond = OxygenDrainPerSecond;
+	}
+}
+
+void AMKCharacter::ClearOxygenDrainEffect()
+{
+	if (::IsValid(AbilitySystemComponent) && OxygenDrainEffectHandle.IsValid())
+	{
+		AbilitySystemComponent->RemoveActiveGameplayEffect(OxygenDrainEffectHandle);
+	}
+
+	OxygenDrainEffectHandle.Invalidate();
+	AppliedOxygenDrainPerSecond = 0.f;
+}
+
+void AMKCharacter::RestoreOxygenToMax()
+{
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	const float OxygenToRestore = AttributeSet_Character->GetMaxOxygen() - AttributeSet_Character->GetCurrentOxygen();
+	FDamageableUtil::ApplyOxygen(AbilitySystemComponent, OxygenToRestore);
+}
+
+int32 AMKCharacter::GetCurrentBlockDepth() const
+{
+	return FMath::FloorToInt(UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation()).Y);
+}
+
+const UGameSettingDataAsset* AMKCharacter::GetGameSettings() const
+{
+	const UDataManager* DataManager = UDataManager::Get(const_cast<AMKCharacter*>(this));
+	if (::IsValid(DataManager) == false)
+	{
+		return nullptr;
+	}
+
+	return DataManager->GetGameSettingDataAsset();
 }
 
 void AMKCharacter::OnInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)

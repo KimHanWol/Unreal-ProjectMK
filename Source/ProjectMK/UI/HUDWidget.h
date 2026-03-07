@@ -19,9 +19,12 @@ protected:
 
     void OnMaxHealthChanged(const FOnAttributeChangeData& Data);
     void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
+    void OnMaxOxygenChanged(const FOnAttributeChangeData& Data);
+    void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
 
 private:
     void UpdateHealthProgressBar();
+    void UpdateOxygenProgressBar();
 
 protected:
     UPROPERTY(meta = (BindWidget))
