@@ -13,6 +13,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 #include "ProjectMK/Interface/Minable.h"
@@ -27,6 +28,13 @@ ABlockBase::ABlockBase()
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
 	PaperSpriteComponent->SetRelativeLocation(FVector::ZeroVector);
+	PaperSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+
+	ItemSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("ItemSprite"));
+	ItemSpriteComponent->SetupAttachment(RootComponent);
+	ItemSpriteComponent->SetRelativeLocation(FVector(0.f, 0.1f, 0.f));
+	ItemSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ItemSpriteComponent->SetTranslucentSortPriority(1);
 
     AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
@@ -44,7 +52,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 		return;
 	}
 
-	if (::IsValid(PaperSpriteComponent) == false)
+	if (::IsValid(PaperSpriteComponent) == false || ::IsValid(ItemSpriteComponent) == false)
 	{
 		return;
     }
@@ -60,7 +68,8 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
     if (bVisualSelectionInitialized == false)
     {
         SpawnableItemKey = NAME_None;
-        SelectedTileSprite = BlockDataTableRow->TileSprite;
+        SelectedBaseTileSprite = BlockDataTableRow->TileSprite;
+        SelectedItemOverlaySprite = nullptr;
 
         float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
         float CurrntItemSpawnProb = 0.f;
@@ -69,8 +78,8 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
             CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
             if (SpawnProbabilityValue < CurrntItemSpawnProb)
             {
-                SelectedTileSprite = SpawnableItemData.TileSprite;
                 SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
+                SelectedItemOverlaySprite = SpawnableItemData.ItemSprite;
                 break;
             }
         }
@@ -78,7 +87,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
         bVisualSelectionInitialized = true;
     }
 
-    TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedTileSprite;
+    TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedBaseTileSprite;
 
     if (SoftPaperSprite.IsNull())
     {
@@ -97,6 +106,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
         if (bNeedToBeHide == false)
         {
             PaperSpriteComponent->SetSprite(Sprite);
+            ApplySpriteToComponent(PaperSpriteComponent, Sprite, BlockTileData.TileSize);
         }
         else
         {
@@ -105,22 +115,31 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 
         PaperSpriteComponent->SetVisibility(bNeedToBeHide == false);
 
-        FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
-        FVector2D SpriteSize = Sprite->GetSourceSize();
+        if (bNeedToBeHide == false && SelectedItemOverlaySprite.IsNull() == false)
+        {
+            UPaperSprite* OverlaySprite = SelectedItemOverlaySprite.LoadSynchronous();
+            float OverlaySpriteScale = 0.7f;
+            if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
+            {
+                OverlaySpriteScale = GameSettings->BlockItemOverlaySpriteScale;
+            }
 
-        float PixelsPerUnit = Sprite->GetPixelsPerUnrealUnit();
-        FVector2D WorldSpriteSize = SpriteSize / PixelsPerUnit;
-
-        FVector InSpriteScale = FVector(
-            TileSize.X / WorldSpriteSize.X,
-            TileSize.Y / WorldSpriteSize.Y,
-            1.0f
-        );
-
-        PaperSpriteComponent->SetRelativeScale3D(InSpriteScale);
+            ItemSpriteComponent->SetSprite(OverlaySprite);
+            ItemSpriteComponent->SetVisibility(::IsValid(OverlaySprite));
+            if (::IsValid(OverlaySprite))
+            {
+                ApplySpriteToComponent(ItemSpriteComponent, OverlaySprite, BlockTileData.TileSize, OverlaySpriteScale);
+            }
+        }
+        else
+        {
+            ItemSpriteComponent->SetSprite(nullptr);
+            ItemSpriteComponent->SetVisibility(false);
+        }
 
         if (BlockDataTableRow->bHasCollision)
         {
+            const FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
             FVector BoxExtent = FVector(
                 TileSize.X * 0.5f,
                 10.f,
@@ -293,6 +312,27 @@ void ABlockBase::OnDestroyed()
 void ABlockBase::OnPaperSpriteLoaded()
 {
 	InitializeBlock(BlockTileData);
+}
+
+void ABlockBase::ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier)
+{
+    if (::IsValid(SpriteComponent) == false || ::IsValid(Sprite) == false)
+    {
+        return;
+    }
+
+    const FVector2D TileSize2D = FVector2D(TileSize.X, TileSize.Y);
+    const FVector2D SpriteSize = Sprite->GetSourceSize();
+    const float PixelsPerUnit = Sprite->GetPixelsPerUnrealUnit();
+    const FVector2D WorldSpriteSize = SpriteSize / PixelsPerUnit;
+
+    const FVector InSpriteScale = FVector(
+        (TileSize2D.X / WorldSpriteSize.X) * ScaleMultiplier,
+        1.0f,
+        (TileSize2D.Y / WorldSpriteSize.Y) * ScaleMultiplier
+    );
+
+    SpriteComponent->SetRelativeScale3D(InSpriteScale);
 }
 
 void ABlockBase::InitializeBlockAttribute()

@@ -25,4 +25,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Falling Block")
     int32 FallingBlockDamagePerBlock = 1;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Block", meta = (ClampMin = "0.01"))
+    float BlockItemOverlaySpriteScale = 0.7f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "0.01"))
+    float WorldItemSpriteScale = 0.7f;
 };

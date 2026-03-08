@@ -79,6 +79,7 @@ protected:
     //~IDamageable
 
 private:
+    void ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier = 1.f);
     void OnPaperSpriteLoaded();
     void InitializeBlockAttribute(); 
 
@@ -92,6 +93,9 @@ protected:
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
+
+    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+    TObjectPtr<UPaperSpriteComponent> ItemSpriteComponent;
 
     UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
     TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
@@ -109,7 +113,10 @@ private:
     FName SpawnableItemKey;
 
     UPROPERTY(Transient)
-    TSoftObjectPtr<UPaperSprite> SelectedTileSprite;
+    TSoftObjectPtr<UPaperSprite> SelectedBaseTileSprite;
+
+    UPROPERTY(Transient)
+    TSoftObjectPtr<UPaperSprite> SelectedItemOverlaySprite;
 
     UPROPERTY(Transient)
     bool bVisualSelectionInitialized = false;

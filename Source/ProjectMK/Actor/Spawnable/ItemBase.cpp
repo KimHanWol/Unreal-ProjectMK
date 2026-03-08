@@ -6,6 +6,7 @@
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 
 AItemBase::AItemBase()
@@ -51,6 +52,14 @@ void AItemBase::InitializeItemBase(FName InItemKey)
 	}
 
 	PaperSpriteComponent->SetSprite(ItemDataTableRow->ItemIcon.LoadSynchronous());
+
+	float ItemSpriteScale = 0.7f;
+	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
+	{
+		ItemSpriteScale = GameSettings->WorldItemSpriteScale;
+	}
+
+	PaperSpriteComponent->SetRelativeScale3D(FVector(ItemSpriteScale, 1.f, ItemSpriteScale));
 
 	FTimerHandle InitTimerHandle;
 	GetWorld()->GetTimerManager().SetTimer(InitTimerHandle, [this]()

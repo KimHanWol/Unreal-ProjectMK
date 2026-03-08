@@ -21,7 +21,7 @@ struct FBlockSpawnableItemData
     float SpawnProbability;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UPaperSprite> TileSprite;
+    TSoftObjectPtr<UPaperSprite> ItemSprite;
 };
 
 USTRUCT(BlueprintType)
