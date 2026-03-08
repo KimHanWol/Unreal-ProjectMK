@@ -30,6 +30,10 @@ public:
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, MaxHealth)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData HealthRegenRate;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, HealthRegenRate)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData MoveSpeed;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, MoveSpeed)
 

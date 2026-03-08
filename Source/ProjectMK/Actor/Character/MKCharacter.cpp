@@ -15,7 +15,6 @@
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
-#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
@@ -50,7 +49,8 @@ void AMKCharacter::BeginPlay()
 	InitializeInvincibleMaterial();
 
 	GiveAbilities();
-	InitializeCharacterAttribute();
+	InitializeCharacterAttributes();
+	ApplyInitialEffects();
 	BindEvents();
 }
 
@@ -112,7 +112,7 @@ void AMKCharacter::GiveAbilities()
 	}
 }
 
-void AMKCharacter::InitializeCharacterAttribute()
+void AMKCharacter::InitializeCharacterAttributes()
 {
 	if (::IsValid(AbilitySystemComponent) == false)
 	{
@@ -120,25 +120,30 @@ void AMKCharacter::InitializeCharacterAttribute()
 	}
 
 	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet_Character);
+}
 
-	UDataManager* DataManager = UDataManager::Get(this);
-	if (::IsValid(DataManager) == false)
+void AMKCharacter::ApplyInitialEffects()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
 	{
 		return;
 	}
 
-	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Character_Init);
-	if (::IsValid(EffectClass) == false)
+	for (const TSubclassOf<UGameplayEffect>& InitialGameplayEffect : InitialGameplayEffects)
 	{
-		return;
+		if (::IsValid(InitialGameplayEffect) == false)
+		{
+			continue;
+		}
+
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitialGameplayEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
+		if (SpecHandle.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
 	}
 
-	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-	if (SpecHandle.IsValid())
-	{
-		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		RestoreOxygenToMax();
-	}
+	RestoreOxygenToMax();
 }
 
 void AMKCharacter::BindEvents()

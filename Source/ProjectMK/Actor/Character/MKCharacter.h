@@ -39,7 +39,8 @@ protected:
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
 	void GiveAbilities();
-	void InitializeCharacterAttribute();
+	void InitializeCharacterAttributes();
+	void ApplyInitialEffects();
 
 	virtual void BindEvents();
 	virtual void UnbindEvents();
@@ -86,6 +87,9 @@ protected:
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
+
+	UPROPERTY(EditAnywhere, Category = "Ability System")
+	TArray<TSubclassOf<UGameplayEffect>> InitialGameplayEffects;
 
 	UPROPERTY(Transient)
 	UAttributeSet_Character* AttributeSet_Character;
