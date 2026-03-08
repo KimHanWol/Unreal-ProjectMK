@@ -47,6 +47,6 @@ struct FBlockDataTableRow : public FTableRowBase
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "NeedToBeHide"))
     bool bNeedTobeHide = false;
 };

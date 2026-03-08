@@ -455,7 +455,7 @@ void ULevelManagerSubsystem::GenerateTileActors()
             ABlockBase* SpawnedBlock = GetWorld()->SpawnActor<ABlockBase>(BlockClass, WorldPos, FRotator::ZeroRotator, SpawnParams);
 
             FBlockTileData BlockData;
-            BlockData.TileSetIndex = TileInfo.GetTileIndex();
+            BlockData.TileSetIndex = TileInfo.PackedTileIndex & 0xFFFF;
             BlockData.TileSize = FIntPoint(TileMap->TileWidth, TileMap->TileHeight);
             BlockData.OnBlockDestroyedDelegate.AddUObject(this, &ULevelManagerSubsystem::OnBlockDestroyed);
 

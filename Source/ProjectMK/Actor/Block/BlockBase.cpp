@@ -47,9 +47,9 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	if (::IsValid(PaperSpriteComponent) == false)
 	{
 		return;
-	}
+    }
 
-	BlockTileData = InBlockTileData;
+    BlockTileData = InBlockTileData;
 
     const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
     if (BlockDataTableRow == nullptr)
@@ -57,20 +57,28 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
         return;
     }
 
-    TSoftObjectPtr<UPaperSprite> SoftPaperSprite = BlockDataTableRow->TileSprite;
-
-    float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
-    float CurrntItemSpawnProb = 0.f;
-    for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
+    if (bVisualSelectionInitialized == false)
     {
-        CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
-        if (SpawnProbabilityValue < CurrntItemSpawnProb)
+        SpawnableItemKey = NAME_None;
+        SelectedTileSprite = BlockDataTableRow->TileSprite;
+
+        float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
+        float CurrntItemSpawnProb = 0.f;
+        for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
         {
-            SoftPaperSprite = SpawnableItemData.TileSprite;
-            SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
-            break;
+            CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
+            if (SpawnProbabilityValue < CurrntItemSpawnProb)
+            {
+                SelectedTileSprite = SpawnableItemData.TileSprite;
+                SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
+                break;
+            }
         }
+
+        bVisualSelectionInitialized = true;
     }
+
+    TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedTileSprite;
 
     if (SoftPaperSprite.IsNull())
     {
@@ -85,10 +93,17 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
             return;
         }
 
-        if (BlockDataTableRow->bNeedTobeHide == false)
+        const bool bNeedToBeHide = BlockDataTableRow->bNeedTobeHide;
+        if (bNeedToBeHide == false)
         {
             PaperSpriteComponent->SetSprite(Sprite);
         }
+        else
+        {
+            PaperSpriteComponent->SetSprite(nullptr);
+        }
+
+        PaperSpriteComponent->SetVisibility(bNeedToBeHide == false);
 
         FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
         FVector2D SpriteSize = Sprite->GetSourceSize();
@@ -136,7 +151,12 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
         }
     }
 
-    InitializeBlockAttribute();
+    if (bBlockAttributesInitialized == false)
+    {
+        InitializeBlockAttribute();
+        bBlockAttributesInitialized = true;
+    }
+
     if (::IsValid(AbilitySystemComponent))
     {
         AbilitySystemComponent->InitAbilityActorInfo(this, this);

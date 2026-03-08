@@ -7,6 +7,7 @@
 #include "AbilityTask/AbilityTask_Tick.h"
 #include "GameplayEffect.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
+#include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
@@ -130,6 +131,12 @@ void UGA_Drill::Tick_UpdateTarget()
     {
         for (const auto& Hit : Hits)
         {
+            ABlockBase* HitBlock = Cast<ABlockBase>(Hit.GetActor());
+            if (::IsValid(HitBlock) && HitBlock->IsMineable() == false)
+            {
+                continue;
+            }
+
             IDamageable* DamageableActor = Cast<IDamageable>(Hit.GetActor());
             if (DamageableActor)
             {
@@ -240,10 +247,18 @@ void UGA_Drill::Drill_Instant()
 
     for (const auto& TargetASC : TargetASCList)
     {
-        if (TargetASC.IsValid())
+        if (TargetASC.IsValid() == false)
         {
-            FDamageableUtil::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
+            continue;
         }
+
+        ABlockBase* TargetBlock = Cast<ABlockBase>(TargetASC->GetOwner());
+        if (::IsValid(TargetBlock) && TargetBlock->IsMineable() == false)
+        {
+            continue;
+        }
+
+        FDamageableUtil::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
     }
 
     if (DelayTask.IsValid())

@@ -15,6 +15,7 @@ class UAbilitySystemComponent;
 class UAttributeSet_Block;
 class UBoxComponent;
 class UGameplayAbility;
+class UPaperSprite;
 class UPaperSpriteComponent;
 class IMinable;
 
@@ -106,6 +107,15 @@ private:
 
     UPROPERTY(Transient)
     FName SpawnableItemKey;
+
+    UPROPERTY(Transient)
+    TSoftObjectPtr<UPaperSprite> SelectedTileSprite;
+
+    UPROPERTY(Transient)
+    bool bVisualSelectionInitialized = false;
+
+    UPROPERTY(Transient)
+    bool bBlockAttributesInitialized = false;
 
     FTimerHandle BreakingTimerHandle;
 };
