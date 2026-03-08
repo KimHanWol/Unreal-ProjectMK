@@ -519,31 +519,39 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
     const FVector2D& BlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(DestroyedBlock);
     BlockActorMap.Remove(BlockPosition);
 
-	TArray<ABlockBase*> DFSCheckedBlocks;
+    TArray<ABlockBase*> ProcessedBlocks;
     const TArray<ABlockBase*>& SurroundBlocks = GetSurroundBlocks(DestroyedBlock);
     for (const auto& SurroundBlock : SurroundBlocks)
     {
+        if (::IsValid(SurroundBlock) == false || ProcessedBlocks.Contains(SurroundBlock))
+        {
+            continue;
+        }
+
         TArray<ABlockBase*> DisconnectedBlocks;
+        TArray<ABlockBase*> DFSCheckedBlocks;
         if (CheckBlockIsAllDisconnected(SurroundBlock, DisconnectedBlocks, DFSCheckedBlocks, 0))
         {
             CollapseBlocks(DisconnectedBlocks);
         }
+
+        ProcessedBlocks.Append(DisconnectedBlocks);
     }
 }
 
 bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount)
 {
-    //DFS
+    if (::IsValid(StartBlock) == false)
+    {
+        return true;
+    }
+
+    // DFS cycles should be ignored within a single search only.
     if (DFSCheckedBlocks.Contains(StartBlock))
     {
         return true;
     }
     DFSCheckedBlocks.Add(StartBlock);
-
-    if (::IsValid(StartBlock) == false)
-    {
-        return true;
-    }
 
     if (StartBlock->IsMineable() == false)
     {
