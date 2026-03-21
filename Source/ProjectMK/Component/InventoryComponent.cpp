@@ -102,6 +102,54 @@ int32 UInventoryComponent::GetItemCount(FName ItemUID)
 	return 0;
 }
 
+bool UInventoryComponent::IsItemEquipped(FName ItemUID) const
+{
+	if (ItemUID.IsNone())
+	{
+		return false;
+	}
+
+	for (const TPair<EEuipmentType, FName>& EquippedItem : EquipmentItemMap)
+	{
+		if (EquippedItem.Value == ItemUID)
+		{
+			return true;
+		}
+	}
+
+	return false;
+}
+
+FName UInventoryComponent::GetEquippedItem(EEuipmentType EquipmentType) const
+{
+	if (const FName* EquippedItemPtr = EquipmentItemMap.Find(EquipmentType))
+	{
+		return *EquippedItemPtr;
+	}
+
+	return NAME_None;
+}
+
+void UInventoryComponent::AddItemOrder(FName ItemUID)
+{
+	if (ItemUID.IsNone() || InventoryItemOrder.Contains(ItemUID))
+	{
+		return;
+	}
+
+	InventoryItemOrder.Add(ItemUID);
+}
+
+void UInventoryComponent::RemoveItemOrder(FName ItemUID)
+{
+	if (ItemUID.IsNone())
+	{
+		return;
+	}
+
+	InventoryItemOrder.Remove(ItemUID);
+}
+
 void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
 {
 	if (InventoryItemMap.Contains(ItemUID) == false)
@@ -114,6 +162,7 @@ void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
 	if (InventoryItemMap[ItemUID] == 0)
 	{
 		InventoryItemMap.Remove(ItemUID);
+		RemoveItemOrder(ItemUID);
 	}
 
 	OnInventoryUpdated();
@@ -152,145 +201,67 @@ void UInventoryComponent::SetGainRadius(float NewRadius)
 
 bool UInventoryComponent::EquipItem(FName EquipmentKey)
 {
-	int32 *bItemCountPtr = InventoryItemMap.Find(EquipmentKey);
-	if (bItemCountPtr == nullptr || (*bItemCountPtr) > 0)
+	if (EquipmentKey.IsNone())
 	{
 		return false;
 	}
 
-	(*bItemCountPtr) = true;
-
-	UDataManager *DataManager = UDataManager::Get(this);
-	if (::IsValid(DataManager) == false)
+	const int32* ItemCountPtr = InventoryItemMap.Find(EquipmentKey);
+	if (ItemCountPtr == nullptr || (*ItemCountPtr) <= 0)
 	{
 		return false;
 	}
 
-	const FEquipmentItemDataTableRow* EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	const FEquipmentItemDataTableRow* EquipmentItemDataTableRow = GetEquipmentItemData(EquipmentKey);
 	if (EquipmentItemDataTableRow == nullptr)
 	{
 		return false;
 	}
 
-	IAbilitySystemInterface* OwnerAbilitySystemInterface = Cast <IAbilitySystemInterface>(GetOwner());
-	if (OwnerAbilitySystemInterface == nullptr)
+	if (GetEquippedItem(EquipmentItemDataTableRow->EquipmentType) == EquipmentKey)
+	{
+		return true;
+	}
+
+	const FName EquippedItemKey = GetEquippedItem(EquipmentItemDataTableRow->EquipmentType);
+	if (EquippedItemKey.IsNone() == false && UnEquipItem(EquippedItemKey) == false)
 	{
 		return false;
 	}
 
-	UAbilitySystemComponent* OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
-	if(OwnerASC == nullptr)
+	if (ApplyEquipmentEffects(EquipmentKey, EquipmentItemDataTableRow->EqiupEffectClasses) == false)
 	{
 		return false;
 	}
 
-	FName *EquipmentNamePtr = EquipmentItemMap.Find(EquipmentItemDataTableRow->EquipmentType);
-	if (EquipmentNamePtr)
-	{
-		UnEquipItem(*EquipmentNamePtr);
-	}
-
-	for (const auto& EquipEffectClass : EquipmentItemDataTableRow->EqiupEffectClasses)
-	{
-		FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EquipEffectClass, 1.f, OwnerASC->MakeEffectContext());
-		if (SpecHandle.IsValid())
-		{
-			FActiveGameplayEffectHandle Handle = OwnerASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-			ActivatedEquipementEffects.FindOrAdd(EquipmentKey).Add(Handle);
-		}
-	}
-
-	(*EquipmentNamePtr) = EquipmentKey;
+	EquipmentItemMap.FindOrAdd(EquipmentItemDataTableRow->EquipmentType) = EquipmentKey;
+	OnInventoryUpdated();
 
 	return true;
 }
 
 bool UInventoryComponent::UnEquipItem(FName ItemUID)
 {
-	IAbilitySystemInterface *OwnerAbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner());
-	if (OwnerAbilitySystemInterface == nullptr)
+	if (ItemUID.IsNone())
 	{
 		return false;
 	}
 
-	UAbilitySystemComponent *OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
-	if (OwnerASC == nullptr)
-	{
-		return false;
-	}
-
-	TArray<FActiveGameplayEffectHandle>* ActiveEffectHandlePtr = ActivatedEquipementEffects.Find(ItemUID);
-	if (ActiveEffectHandlePtr == nullptr)
-	{
-		return false;
-	}
-
-	for(const auto& ActiveEffectHandle : (*ActiveEffectHandlePtr))
-	{
-		OwnerASC->RemoveActiveGameplayEffect(ActiveEffectHandle);
-	}
-
-	ActivatedEquipementEffects.Remove(ItemUID);
-
-	return true;
-}
-
-bool UInventoryComponent::CraftEquipmentItem(FName EquipmentItemKey)
-{
-	if (IsCraftable(EquipmentItemKey) == false)
-	{
-		return false;
-	}
-
-	const UDataManager *DataManager = UDataManager::Get(this);
-	if (::IsValid(DataManager) == false)
-	{
-		return false;
-	}
-
-	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentItemKey);
+	const FEquipmentItemDataTableRow* EquipmentItemDataTableRow = GetEquipmentItemData(ItemUID);
 	if (EquipmentItemDataTableRow == nullptr)
 	{
 		return false;
 	}
 
-	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
-	{
-		int32* InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.MaterialKey);
-		(*InventoryItemCountPtr) -= CraftRecipeMaterial.MaterialCount;
-	}
-
-	InventoryItemMap.FindOrAdd(EquipmentItemKey) += 1;
-	return true;
-}
-
-bool UInventoryComponent::IsCraftable(FName EquipmentItemKey)
-{
-	if(GetItemCount(EquipmentItemKey) > 0)
+	FName* EquippedItemPtr = EquipmentItemMap.Find(EquipmentItemDataTableRow->EquipmentType);
+	if (EquippedItemPtr == nullptr || (*EquippedItemPtr) != ItemUID)
 	{
 		return false;
 	}
 
-	UDataManager *DataManager = UDataManager::Get(this);
-	if (::IsValid(DataManager) == false)
-	{
-		return false;
-	}
-
-	const FEquipmentItemDataTableRow *EquipmentItemDataTableRow = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentItemKey);
-	if (EquipmentItemDataTableRow == nullptr)
-	{
-		return false;
-	}
-
-	for (const auto &CraftRecipeMaterial : EquipmentItemDataTableRow->CraftRecipe)
-	{
-		const int32 *InventoryItemCountPtr = InventoryItemMap.Find(CraftRecipeMaterial.MaterialKey);
-		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < CraftRecipeMaterial.MaterialCount)
-		{
-			return false;
-		}
-	}
+	RemoveEquipmentEffects(ItemUID);
+	EquipmentItemMap.Remove(EquipmentItemDataTableRow->EquipmentType);
+	OnInventoryUpdated();
 
 	return true;
 }
@@ -314,9 +285,11 @@ bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRec
 		if (InventoryItemCountPtr != nullptr && (*InventoryItemCountPtr) <= 0)
 		{
 			InventoryItemMap.Remove(RequiredItemKey);
+			RemoveItemOrder(RequiredItemKey);
 		}
 	}
 
+	AddItemOrder(ShopRecipeData.GetResultItemKey());
 	InventoryItemMap.FindOrAdd(ShopRecipeData.GetResultItemKey()) += 1;
 	OnInventoryUpdated();
 
@@ -388,8 +361,95 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 	}
 
 	InventoryItemMap.FindOrAdd(ItemUID) += ItemCount;
+	AddItemOrder(ItemUID);
 
 	OnInventoryUpdated();
+}
+
+bool UInventoryComponent::ApplyEquipmentEffects(FName EquipmentKey, const TArray<FEquipmentEffectEntry>& EffectClasses)
+{
+	IAbilitySystemInterface* OwnerAbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner());
+	if (OwnerAbilitySystemInterface == nullptr)
+	{
+		return false;
+	}
+
+	UAbilitySystemComponent* OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
+	if (OwnerASC == nullptr)
+	{
+		return false;
+	}
+
+	TArray<FActiveGameplayEffectHandle> AppliedHandles;
+	for (const FEquipmentEffectEntry& EquipEffectEntry : EffectClasses)
+	{
+		if (::IsValid(EquipEffectEntry.EffectClass) == false)
+		{
+			continue;
+		}
+
+		FGameplayEffectSpecHandle SpecHandle = OwnerASC->MakeOutgoingSpec(EquipEffectEntry.EffectClass, 1.f, OwnerASC->MakeEffectContext());
+		if (SpecHandle.IsValid() == false)
+		{
+			continue;
+		}
+
+		if (EquipEffectEntry.SetByCallerTag.IsValid())
+		{
+			SpecHandle.Data->SetSetByCallerMagnitude(EquipEffectEntry.SetByCallerTag, EquipEffectEntry.SetByCallerValue);
+		}
+
+		const FActiveGameplayEffectHandle Handle = OwnerASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		if (Handle.WasSuccessfullyApplied())
+		{
+			AppliedHandles.Add(Handle);
+		}
+	}
+
+	ActivatedEquipementEffects.FindOrAdd(EquipmentKey) = MoveTemp(AppliedHandles);
+	return true;
+}
+
+void UInventoryComponent::RemoveEquipmentEffects(FName EquipmentKey)
+{
+	IAbilitySystemInterface* OwnerAbilitySystemInterface = Cast<IAbilitySystemInterface>(GetOwner());
+	if (OwnerAbilitySystemInterface == nullptr)
+	{
+		return;
+	}
+
+	UAbilitySystemComponent* OwnerASC = OwnerAbilitySystemInterface->GetAbilitySystemComponent();
+	if (OwnerASC == nullptr)
+	{
+		return;
+	}
+
+	TArray<FActiveGameplayEffectHandle>* ActiveEffectHandlePtr = ActivatedEquipementEffects.Find(EquipmentKey);
+	if (ActiveEffectHandlePtr == nullptr)
+	{
+		return;
+	}
+
+	for (const FActiveGameplayEffectHandle& ActiveEffectHandle : (*ActiveEffectHandlePtr))
+	{
+		if (ActiveEffectHandle.IsValid())
+		{
+			OwnerASC->RemoveActiveGameplayEffect(ActiveEffectHandle);
+		}
+	}
+
+	ActivatedEquipementEffects.Remove(EquipmentKey);
+}
+
+const FEquipmentItemDataTableRow* UInventoryComponent::GetEquipmentItemData(FName EquipmentKey) const
+{
+	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	if (::IsValid(DataManager) == false)
+	{
+		return nullptr;
+	}
+
+	return DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
 }
 
 void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
@@ -399,6 +459,7 @@ void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 	if (InventoryItemMap[ItemUID] == 0)
 	{
 		InventoryItemMap.Remove(ItemUID);
+		RemoveItemOrder(ItemUID);
 	}
 
 	OnInventoryUpdated();

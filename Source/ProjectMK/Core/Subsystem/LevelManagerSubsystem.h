@@ -37,7 +37,7 @@ struct FFallingBlockGroupData
 	UPROPERTY()
 	int32 BlockCount = 0;
 
-    UPROPERTY()
+	UPROPERTY()
     float FallingVelocity;
 
 	UPROPERTY()

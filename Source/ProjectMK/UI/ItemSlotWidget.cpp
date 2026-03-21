@@ -7,6 +7,20 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "Components/CanvasPanelSlot.h"
 
+void UItemSlotWidget::ClearItem()
+{
+	if (::IsValid(Text_Count))
+	{
+		Text_Count->SetText(FText::GetEmpty());
+	}
+
+	if (::IsValid(Image_Item))
+	{
+		Image_Item->SetBrush(FSlateBrush());
+		Image_Item->SetVisibility(ESlateVisibility::Collapsed);
+	}
+}
+
 void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 {
 	if (::IsValid(Image_Item) == false)
@@ -14,7 +28,7 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 		return;
 	}
 
-	Image_Item->SetVisibility(ESlateVisibility::Collapsed);
+	ClearItem();
 
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)

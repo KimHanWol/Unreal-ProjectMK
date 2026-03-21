@@ -12,6 +12,7 @@ class PROJECTMK_API UItemSlotWidget : public UMKUserWidget
     GENERATED_BODY()
 
 public:
+    void ClearItem();
     void SetItem(FName ItemKey, int32 ItemCount);
 
 protected:

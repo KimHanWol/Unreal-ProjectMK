@@ -18,6 +18,7 @@ class PROJECTMK_API UQuickInventoryWidget : public UMKUserWidget
 protected:
     virtual void NativeConstruct() override;
     virtual void BindEvents() override;
+    virtual void UnbindEvents() override;
 
 private:
     void SetInventorySlot();
@@ -31,6 +32,8 @@ protected:
     UHorizontalBox* HBox_Slot;
 
 private:
+    static constexpr int32 QuickInventorySlotCount = 8;
+
     UPROPERTY(Transient)
     TArray<UItemSlotWidget*> ItemSlotList;
 };

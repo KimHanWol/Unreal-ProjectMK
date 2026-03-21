@@ -3,29 +3,24 @@
 #include "ProjectMK/UI/QuickInventoryWidget.h"
 
 #include "Components/HorizontalBox.h"
-#include "Components/Overlay.h"
 #include "ItemSlotWidget.h"
-#include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Component/InventoryComponent.h"
-#include "GameFramework/Character.h"
-
-#define QUICK_INVENTORY_SLOT_COUNT 8
 
 void UQuickInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
 	SetInventorySlot();
+	OnInventoryChanged();
 }
 
 void UQuickInventoryWidget::BindEvents()
 {
 	Super::BindEvents();
 
-	ACharacter* LocalCharacter = Cast<ACharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (::IsValid(LocalCharacter))
+	if (::IsValid(LocalPlayerCharacter))
 	{
-		UInventoryComponent* InventoryComponent = LocalCharacter->GetComponentByClass<UInventoryComponent>();
+		UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
 		if (::IsValid(InventoryComponent))
 		{
 			InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UQuickInventoryWidget::OnInventoryChanged);
@@ -33,14 +28,30 @@ void UQuickInventoryWidget::BindEvents()
 	}
 }
 
-void UQuickInventoryWidget::SetInventorySlot()
+void UQuickInventoryWidget::UnbindEvents()
 {
-	if (::IsValid(HBox_Slot) == false)
+	Super::UnbindEvents();
+
+	if (::IsValid(LocalPlayerCharacter) == false)
 	{
 		return;
 	}
 
-	for (int32 i = 0; i < QUICK_INVENTORY_SLOT_COUNT; i++)
+	UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+	}
+}
+
+void UQuickInventoryWidget::SetInventorySlot()
+{
+	if (::IsValid(HBox_Slot) == false || ItemSlotList.Num() > 0)
+	{
+		return;
+	}
+
+	for (int32 i = 0; i < QuickInventorySlotCount; i++)
 	{
 		UItemSlotWidget* NewItemSlot = CreateWidget<UItemSlotWidget>(this, ItemSlotClass);
 		if (::IsValid(NewItemSlot))
@@ -53,27 +64,42 @@ void UQuickInventoryWidget::SetInventorySlot()
 
 void UQuickInventoryWidget::OnInventoryChanged()
 {
-	ACharacter* LocalCharacter = Cast<ACharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (::IsValid(LocalCharacter) == false)
+	if (::IsValid(LocalPlayerCharacter) == false)
 	{
 		return;
 	}
 
-	UInventoryComponent* InventoryComponent = LocalCharacter->GetComponentByClass<UInventoryComponent>();
+	for (UItemSlotWidget* ItemSlot : ItemSlotList)
+	{
+		if (::IsValid(ItemSlot))
+		{
+			ItemSlot->ClearItem();
+		}
+	}
+
+	UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		return;
 	}
 
 	const TMap<FName, int32> InventoryItems = InventoryComponent->GetInventoryItems();
+	const TArray<FName>& InventoryItemOrder = InventoryComponent->GetInventoryItemOrder();
 
-	int32 SlotIndex = 0;
-	for (const auto& InventoryItem : InventoryItems)
+	for (int32 SlotIndex = 0; SlotIndex < QuickInventorySlotCount; ++SlotIndex)
 	{
-		if (ItemSlotList.Num() > SlotIndex)
+		if (InventoryItemOrder.IsValidIndex(SlotIndex) == false || ItemSlotList.IsValidIndex(SlotIndex) == false)
 		{
-			ItemSlotList[SlotIndex]->SetItem(InventoryItem.Key, InventoryItem.Value);
+			break;
 		}
-		++SlotIndex;
+
+		const FName& ItemKey = InventoryItemOrder[SlotIndex];
+		const int32* ItemCountPtr = InventoryItems.Find(ItemKey);
+		if (ItemCountPtr == nullptr)
+		{
+			continue;
+		}
+
+		ItemSlotList[SlotIndex]->SetItem(ItemKey, *ItemCountPtr);
 	}
 }

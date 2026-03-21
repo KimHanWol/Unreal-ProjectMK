@@ -7,6 +7,7 @@
 #include "HUDWidget.generated.h"
 
 class UHealthBarWidget;
+class UInventoryWidget;
 class UOxygenBarWidget;
 class UQuickInventoryWidget;
 class UShopWidget;
@@ -17,7 +18,9 @@ class PROJECTMK_API UHUDWidget : public UMKUserWidget
     GENERATED_BODY()
 
 public:
+    bool ToggleInventoryWidget();
     bool ToggleShopWidget();
+    bool IsMenuVisible() const;
 
 protected:
     UPROPERTY(meta = (BindWidget))
@@ -28,6 +31,9 @@ protected:
 
     UPROPERTY(meta = (BindWidget))
     UQuickInventoryWidget* QuickInventory;
+
+    UPROPERTY(meta = (BindWidgetOptional))
+    UInventoryWidget* Inventory;
 
     UPROPERTY(meta = (BindWidget))
     UShopWidget* Shop;

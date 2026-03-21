@@ -4,10 +4,13 @@
 
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
+#include "GameplayEffectTypes.h"
 #include "InventoryComponent.generated.h"
 
 enum class EEuipmentType : uint8;
 struct FShopRecipeDataTableRow;
+class UGameplayEffect;
+struct FEquipmentEffectEntry;
 
 UCLASS(BlueprintType)
 class PROJECTMK_API UInventoryItemData : public UObject
@@ -37,8 +40,11 @@ public:
 	int32 GetItemCount(FName ItemUID);
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 	bool AddItem(FName ItemUID, int32 ItemCount);
+	bool IsItemEquipped(FName ItemUID) const;
+	FName GetEquippedItem(EEuipmentType EquipmentType) const;
 
-	TMap<FName, int32> GetInventoryItems() { return InventoryItemMap; }
+	TMap<FName, int32> GetInventoryItems() const { return InventoryItemMap; }
+	const TArray<FName>& GetInventoryItemOrder() const { return InventoryItemOrder; }
 
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	void SetGainRadius(float NewRadius);
@@ -46,11 +52,16 @@ public:
 	bool EquipItem(FName ItemUID);
 	bool UnEquipItem(FName ItemUID);
 
-	bool CraftEquipmentItem(FName EquipmentItemKey);
-	bool IsCraftable(FName EquipmentItemKey);
 	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
 	bool CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const;
+
 private:
+	void AddItemOrder(FName ItemUID);
+	void RemoveItemOrder(FName ItemUID);
+
+	bool ApplyEquipmentEffects(FName EquipmentKey, const TArray<FEquipmentEffectEntry>& EffectClasses);
+	void RemoveEquipmentEffects(FName EquipmentKey);
+	const struct FEquipmentItemDataTableRow* GetEquipmentItemData(FName EquipmentKey) const;
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -71,6 +82,9 @@ private:
 	TMap<FName, int32> InventoryItemMap; //ItemKey, ItemCount
 
 	UPROPERTY(Transient)
+	TArray<FName> InventoryItemOrder; // insertion order for stable UI slots
+
+	UPROPERTY(Transient)
 	TMap<EEuipmentType, FName> EquipmentItemMap; // EEuipmentType, EquipmentKey
 
 	TMap<FName, TArray<FActiveGameplayEffectHandle>> ActivatedEquipementEffects;
@@ -82,7 +96,7 @@ private:
 	float ItemCollectRange = 0.f;
 
 	UPROPERTY(EditAnywhere)
-	int32 MaxInventoryCount = 10;
+	int32 MaxInventoryCount = 30;
 
 	UPROPERTY(EditAnywhere)
 	float LootableDistance = 0.f;

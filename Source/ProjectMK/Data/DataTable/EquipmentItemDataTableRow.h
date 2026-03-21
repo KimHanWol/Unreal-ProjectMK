@@ -2,28 +2,37 @@
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "GameplayTagContainer.h"
+#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 
 #include "EquipmentItemDataTableRow.generated.h"
+
+class UGameplayEffect;
+class UPaperSprite;
 
 UENUM(BlueprintType)
 enum class EEuipmentType : uint8
 {
-    Halmet,
-    Drill,
-    balloon,
-    shoes,
+    Halmet UMETA(DisplayName = "Armor"),
+    Drill UMETA(DisplayName = "Drill"),
+    balloon UMETA(DisplayName = "Balloon"),
+    Gloves UMETA(DisplayName = "Gloves"),
+    shoes UMETA(DisplayName = "Shoes"),
 };
 
 USTRUCT(BlueprintType)
-struct FEquipmentRecipe
+struct FEquipmentEffectEntry
 {
     GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (RowType = "FItemDataTableRow"))
-    FName MaterialKey;
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSubclassOf<UGameplayEffect> EffectClass;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 MaterialCount;
+    FGameplayTag SetByCallerTag;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    float SetByCallerValue = 0.f;
 };
 
 USTRUCT(BlueprintType)
@@ -44,8 +53,5 @@ struct FEquipmentItemDataTableRow : public FItemDataTableRow
     int32 EquipmentPrice;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FEquipmentRecipe> CraftRecipe;
-
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<TSubclassOf<UGameplayEffect>> EqiupEffectClasses;
+    TArray<FEquipmentEffectEntry> EqiupEffectClasses;
 };

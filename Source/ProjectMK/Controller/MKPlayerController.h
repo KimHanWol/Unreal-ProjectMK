@@ -16,5 +16,9 @@ class PROJECTMK_API AMKPlayerController : public APlayerController
 public:
 	AMKPlayerController();
 
+	void ToggleInventoryWidget();
 	void ToggleShopTestWidget();
+
+private:
+	void SetMenuInputMode(bool bEnableMenuInput);
 };

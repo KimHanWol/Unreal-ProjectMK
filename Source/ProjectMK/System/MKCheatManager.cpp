@@ -81,6 +81,17 @@ void UMKCheatManager::EnableBlockDebugNumbers()
 	LevelManagerSubsystem->SetBlockDebugNumbersEnabled(true);
 }
 
+void UMKCheatManager::ToggleInventoryWidget()
+{
+	AMKPlayerController* PlayerController = Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+	if (::IsValid(PlayerController) == false)
+	{
+		return;
+	}
+
+	PlayerController->ToggleInventoryWidget();
+}
+
 void UMKCheatManager::ToggleShopTestWidget()
 {
 	AMKPlayerController* PlayerController = Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
