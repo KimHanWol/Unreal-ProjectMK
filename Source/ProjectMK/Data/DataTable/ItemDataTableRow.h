@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -8,14 +8,14 @@
 USTRUCT(BlueprintType)
 struct FItemDataTableRow : public FTableRowBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UPaperSprite> ItemIcon;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UPaperSprite> ItemIcon;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bIsOre;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsOre;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 SellPrice;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 SellPrice;
 };

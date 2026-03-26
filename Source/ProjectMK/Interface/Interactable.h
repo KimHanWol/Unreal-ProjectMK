@@ -1,11 +1,9 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "GameplayTagContainer.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
-#include "UObject/Interface.h" 
+#include "UObject/Interface.h"
 
 #include "Interactable.generated.h"
 
@@ -17,13 +15,13 @@ class PROJECTMK_API UInteractable : public UInterface
 
 class IInteractable
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    virtual bool CanInteract(AActor* Interactor);
-    virtual bool TryInteract(AActor* Interactor);
-    virtual void EndInteract() {}
+	virtual bool CanInteract(AActor* Interactor);
+	virtual bool TryInteract(AActor* Interactor);
+	virtual void EndInteract() {}
 
 protected:
-    virtual const FGameplayTag GetInteractEventTag() = 0;
+	virtual const FGameplayTag GetInteractEventTag() = 0;
 };

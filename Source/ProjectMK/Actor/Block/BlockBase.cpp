@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Actor/Block/BlockBase.h"
 
@@ -21,7 +21,7 @@
 ABlockBase::ABlockBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	RootComponent = BoxCollision;
 
@@ -36,7 +36,7 @@ ABlockBase::ABlockBase()
 	ItemSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ItemSpriteComponent->SetTranslucentSortPriority(1);
 
-    AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
@@ -55,258 +55,258 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	if (::IsValid(PaperSpriteComponent) == false || ::IsValid(ItemSpriteComponent) == false)
 	{
 		return;
-    }
+	}
 
-    BlockTileData = InBlockTileData;
+	BlockTileData = InBlockTileData;
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
-    {
-        return;
-    }
+	const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+	if (BlockDataTableRow == nullptr)
+	{
+		return;
+	}
 
-    if (bVisualSelectionInitialized == false)
-    {
-        SpawnableItemKey = NAME_None;
-        SelectedBaseTileSprite = BlockDataTableRow->TileSprite;
-        SelectedItemOverlaySprite = nullptr;
+	if (bVisualSelectionInitialized == false)
+	{
+		SpawnableItemKey = NAME_None;
+		SelectedBaseTileSprite = BlockDataTableRow->TileSprite;
+		SelectedItemOverlaySprite = nullptr;
 
-        float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
-        float CurrntItemSpawnProb = 0.f;
-        for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
-        {
-            CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
-            if (SpawnProbabilityValue < CurrntItemSpawnProb)
-            {
-                SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
-                SelectedItemOverlaySprite = SpawnableItemData.ItemSprite;
-                break;
-            }
-        }
+		float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
+		float CurrntItemSpawnProb = 0.f;
+		for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
+		{
+			CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
+			if (SpawnProbabilityValue < CurrntItemSpawnProb)
+			{
+				SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
+				SelectedItemOverlaySprite = SpawnableItemData.ItemSprite;
+				break;
+			}
+		}
 
-        bVisualSelectionInitialized = true;
-    }
+		bVisualSelectionInitialized = true;
+	}
 
-    TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedBaseTileSprite;
+	TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedBaseTileSprite;
 
-    if (SoftPaperSprite.IsNull())
-    {
-        return;
-    }
+	if (SoftPaperSprite.IsNull())
+	{
+		return;
+	}
 
-    if (SoftPaperSprite.IsValid())
-    {
-        UPaperSprite* Sprite = SoftPaperSprite.LoadSynchronous();
-        if (::IsValid(Sprite) == false)
-        {
-            return;
-        }
+	if (SoftPaperSprite.IsValid())
+	{
+		UPaperSprite* Sprite = SoftPaperSprite.LoadSynchronous();
+		if (::IsValid(Sprite) == false)
+		{
+			return;
+		}
 
-        const bool bNeedToBeHide = BlockDataTableRow->bNeedTobeHide;
-        if (bNeedToBeHide == false)
-        {
-            PaperSpriteComponent->SetSprite(Sprite);
-            ApplySpriteToComponent(PaperSpriteComponent, Sprite, BlockTileData.TileSize);
-        }
-        else
-        {
-            PaperSpriteComponent->SetSprite(nullptr);
-        }
+		const bool bNeedToBeHide = BlockDataTableRow->bNeedTobeHide;
+		if (bNeedToBeHide == false)
+		{
+			PaperSpriteComponent->SetSprite(Sprite);
+			ApplySpriteToComponent(PaperSpriteComponent, Sprite, BlockTileData.TileSize);
+		}
+		else
+		{
+			PaperSpriteComponent->SetSprite(nullptr);
+		}
 
-        PaperSpriteComponent->SetVisibility(bNeedToBeHide == false);
+		PaperSpriteComponent->SetVisibility(bNeedToBeHide == false);
 
-        if (bNeedToBeHide == false && SelectedItemOverlaySprite.IsNull() == false)
-        {
-            UPaperSprite* OverlaySprite = SelectedItemOverlaySprite.LoadSynchronous();
-            float OverlaySpriteScale = 0.7f;
-            if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
-            {
-                OverlaySpriteScale = GameSettings->BlockItemOverlaySpriteScale;
-            }
+		if (bNeedToBeHide == false && SelectedItemOverlaySprite.IsNull() == false)
+		{
+			UPaperSprite* OverlaySprite = SelectedItemOverlaySprite.LoadSynchronous();
+			float OverlaySpriteScale = 0.7f;
+			if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
+			{
+				OverlaySpriteScale = GameSettings->BlockItemOverlaySpriteScale;
+			}
 
-            ItemSpriteComponent->SetSprite(OverlaySprite);
-            ItemSpriteComponent->SetVisibility(::IsValid(OverlaySprite));
-            if (::IsValid(OverlaySprite))
-            {
-                ApplySpriteToComponent(ItemSpriteComponent, OverlaySprite, BlockTileData.TileSize, OverlaySpriteScale);
-            }
-        }
-        else
-        {
-            ItemSpriteComponent->SetSprite(nullptr);
-            ItemSpriteComponent->SetVisibility(false);
-        }
+			ItemSpriteComponent->SetSprite(OverlaySprite);
+			ItemSpriteComponent->SetVisibility(::IsValid(OverlaySprite));
+			if (::IsValid(OverlaySprite))
+			{
+				ApplySpriteToComponent(ItemSpriteComponent, OverlaySprite, BlockTileData.TileSize, OverlaySpriteScale);
+			}
+		}
+		else
+		{
+			ItemSpriteComponent->SetSprite(nullptr);
+			ItemSpriteComponent->SetVisibility(false);
+		}
 
-        if (BlockDataTableRow->bHasCollision)
-        {
-            const FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
-            FVector BoxExtent = FVector(
-                TileSize.X * 0.5f,
-                10.f,
-                TileSize.Y * 0.5f
-            );
+		if (BlockDataTableRow->bHasCollision)
+		{
+			const FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
+			FVector BoxExtent = FVector(
+				TileSize.X * 0.5f,
+				10.f,
+				TileSize.Y * 0.5f
+			);
 
-            BoxCollision->SetBoxExtent(BoxExtent, false); // false: 스케일 적용 안 함
-            BoxCollision->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
-            BoxCollision->SetCollisionProfileName(TEXT("BlockAll"));
-        }
-        else
-        {
-            BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
-        }
+			BoxCollision->SetBoxExtent(BoxExtent, false); // false: 스케일 적용 안 함
+			BoxCollision->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
+			BoxCollision->SetCollisionProfileName(TEXT("BlockAll"));
+		}
+		else
+		{
+			BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
+		}
 
-        SetActorLocation(BlockTileData.WorldLocation);
-    }
-    else
-    {
-        // 비동기 로딩 처리
-        if (!SoftPaperSprite.IsNull())
-        {
-            FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-            Streamable.RequestAsyncLoad(
-                SoftPaperSprite.ToSoftObjectPath(),
-                FStreamableDelegate::CreateUObject(this, &ABlockBase::OnPaperSpriteLoaded)
-            );
-        }
-    }
+		SetActorLocation(BlockTileData.WorldLocation);
+	}
+	else
+	{
+		// 비동기 로딩 처리
+		if (!SoftPaperSprite.IsNull())
+		{
+			FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+			Streamable.RequestAsyncLoad(
+				SoftPaperSprite.ToSoftObjectPath(),
+				FStreamableDelegate::CreateUObject(this, &ABlockBase::OnPaperSpriteLoaded)
+			);
+		}
+	}
 
-    if (bBlockAttributesInitialized == false)
-    {
-        InitializeBlockAttribute();
-        bBlockAttributesInitialized = true;
-    }
+	if (bBlockAttributesInitialized == false)
+	{
+		InitializeBlockAttribute();
+		bBlockAttributesInitialized = true;
+	}
 
-    if (::IsValid(AbilitySystemComponent))
-    {
-        AbilitySystemComponent->InitAbilityActorInfo(this, this);
-    }
+	if (::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->InitAbilityActorInfo(this, this);
+	}
 }
 
 void ABlockBase::StartMineBlock(IMinable* Miner)
 {
-    if (bIsMining)
-    {
-        return;
-    }
-    bIsMining = true;
+	if (bIsMining)
+	{
+		return;
+	}
+	bIsMining = true;
 
-    float MiningDamage = Miner->GetMiningDamage();
-    float MiningDuration = Miner->GetMiningDuration();
+	float MiningDamage = Miner->GetMiningDamage();
+	float MiningDuration = Miner->GetMiningDuration();
 
-    TWeakObjectPtr<ABlockBase> WeakBlock(this);
-    GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
-    GetWorld()->GetTimerManager().SetTimer(BreakingTimerHandle, [WeakBlock, Miner, MiningDamage]()
-    {
-        if (WeakBlock.IsValid() && Miner == nullptr)
-        {
-            FDamageableUtil::ApplyDamage(WeakBlock.Get()->GetAbilitySystemComponent(), Miner->GetOwnerASC(), MiningDamage);
-        }
-    }, MiningDuration, true, MiningDuration);
+	TWeakObjectPtr<ABlockBase> WeakBlock(this);
+	GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
+	GetWorld()->GetTimerManager().SetTimer(BreakingTimerHandle, [WeakBlock, Miner, MiningDamage]()
+	{
+		if (WeakBlock.IsValid() && Miner == nullptr)
+		{
+			FDamageableUtil::ApplyDamage(WeakBlock.Get()->GetAbilitySystemComponent(), Miner->GetOwnerASC(), MiningDamage);
+		}
+	}, MiningDuration, true, MiningDuration);
 }
 
 void ABlockBase::EndMineBlock()
 {
-    bIsMining = false;
+	bIsMining = false;
 
-    GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
+	GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
 }
 
 UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
 {
-    return AbilitySystemComponent;
+	return AbilitySystemComponent;
 }
 
 void ABlockBase::SetMineableState(bool bInIsMineableState)
 {
-    bIsMineableState = bInIsMineableState;
+	bIsMineableState = bInIsMineableState;
 }
 
 bool ABlockBase::IsMineable()
 {
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
-    {
-        return true;
-    }
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return true;
+	}
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
-    {
-        return true;
-    }
+	const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+	if (BlockDataTableRow == nullptr)
+	{
+		return true;
+	}
 
-    return BlockDataTableRow->bIsMineable && bIsMineableState;
+	return BlockDataTableRow->bIsMineable && bIsMineableState;
 }
 
 void ABlockBase::BeginPlay()
 {
-    Super::BeginPlay();
+	Super::BeginPlay();
 
-    BindEvents();
+	BindEvents();
 }
 
 void ABlockBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
-    Super::EndPlay(EndPlayReason);
+	Super::EndPlay(EndPlayReason);
 
-    UnbindEvents();
+	UnbindEvents();
 }
 
 void ABlockBase::OnPreDestroy()
 {
-    if (SpawnableItemKey.IsNone() == false)
-    {
-        SpawnItem();
-    }
+	if (SpawnableItemKey.IsNone() == false)
+	{
+		SpawnItem();
+	}
 
-    BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
+	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
 }
 
 void ABlockBase::BindEvents()
 {
-    if (::IsValid(AbilitySystemComponent) == false)
-    {
-        return;
-    }
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
 
-    AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).AddUObject(this, &ABlockBase::OnDurationChanged);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).AddUObject(this, &ABlockBase::OnDurationChanged);
 }
 
 void ABlockBase::UnbindEvents()
 {
-    if (::IsValid(AbilitySystemComponent) == false)
-    {
-        return;
-    }
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
 
-    AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
 }
 
 UAbilitySystemComponent* ABlockBase::GetOwnerASC()
 {
-    return GetAbilitySystemComponent();
+	return GetAbilitySystemComponent();
 }
 
 bool ABlockBase::CheckIsDestroyed()
 {
-    if (::IsValid(AbilitySystemComponent) == false)
-    {
-        return false;
-    }
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return false;
+	}
 
-    const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
-    if (::IsValid(BlockAttributeSet) == false)
-    {
-        return false;
-    }
+	const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
+	if (::IsValid(BlockAttributeSet) == false)
+	{
+		return false;
+	}
 
-    return BlockAttributeSet->GetDurability() <= 0.f;
+	return BlockAttributeSet->GetDurability() <= 0.f;
 }
 
 void ABlockBase::OnDestroyed()
 {
-    OnPreDestroy();
-    Destroy();
+	OnPreDestroy();
+	Destroy();
 }
 
 void ABlockBase::OnPaperSpriteLoaded()
@@ -316,77 +316,77 @@ void ABlockBase::OnPaperSpriteLoaded()
 
 void ABlockBase::ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier)
 {
-    if (::IsValid(SpriteComponent) == false || ::IsValid(Sprite) == false)
-    {
-        return;
-    }
+	if (::IsValid(SpriteComponent) == false || ::IsValid(Sprite) == false)
+	{
+		return;
+	}
 
-    const FVector2D TileSize2D = FVector2D(TileSize.X, TileSize.Y);
-    const FVector2D SpriteSize = Sprite->GetSourceSize();
-    const float PixelsPerUnit = Sprite->GetPixelsPerUnrealUnit();
-    const FVector2D WorldSpriteSize = SpriteSize / PixelsPerUnit;
+	const FVector2D TileSize2D = FVector2D(TileSize.X, TileSize.Y);
+	const FVector2D SpriteSize = Sprite->GetSourceSize();
+	const float PixelsPerUnit = Sprite->GetPixelsPerUnrealUnit();
+	const FVector2D WorldSpriteSize = SpriteSize / PixelsPerUnit;
 
-    const FVector InSpriteScale = FVector(
-        (TileSize2D.X / WorldSpriteSize.X) * ScaleMultiplier,
-        1.0f,
-        (TileSize2D.Y / WorldSpriteSize.Y) * ScaleMultiplier
-    );
+	const FVector InSpriteScale = FVector(
+		(TileSize2D.X / WorldSpriteSize.X) * ScaleMultiplier,
+		1.0f,
+		(TileSize2D.Y / WorldSpriteSize.Y) * ScaleMultiplier
+	);
 
-    SpriteComponent->SetRelativeScale3D(InSpriteScale);
+	SpriteComponent->SetRelativeScale3D(InSpriteScale);
 }
 
 void ABlockBase::InitializeBlockAttribute()
 {
-    if (::IsValid(AbilitySystemComponent) == false)
-    {
-        return;
-    }
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
 
-    AbilitySystemComponent->AddAttributeSetSubobject(NewObject<UAttributeSet_Block>());
+	AbilitySystemComponent->AddAttributeSetSubobject(NewObject<UAttributeSet_Block>());
 
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
-    {
-        return;
-    }
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
 
-    const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-    if (BlockDataTableRow == nullptr)
-    {
-        return;
-    }
+	const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+	if (BlockDataTableRow == nullptr)
+	{
+		return;
+	}
 
-    TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Block_Init);
-    if (::IsValid(EffectClass) == false)
-    {
-        return;
-    }
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Block_Init);
+	if (::IsValid(EffectClass) == false)
+	{
+		return;
+	}
 
-    FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-    if (SpecHandle.IsValid())
-    {
-        FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
-        SpecHandle.Data->SetSetByCallerMagnitude(DurabilityTag, BlockDataTableRow->BlockDurability);
-        AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-    }
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
+	{
+		FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
+		SpecHandle.Data->SetSetByCallerMagnitude(DurabilityTag, BlockDataTableRow->BlockDurability);
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+	}
 }
 
 void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 {
-    if (CheckIsDestroyed())
-    {
-        OnDestroyed();
-    }
+	if (CheckIsDestroyed())
+	{
+		OnDestroyed();
+	}
 }
 
 void ABlockBase::SpawnItem()
 {
-    AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
-    if (::IsValid(SpawnedItem) == false)
-    {
-        return;
-    }
+	AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
+	if (::IsValid(SpawnedItem) == false)
+	{
+		return;
+	}
 
-    SpawnedItem->InitializeItemBase(SpawnableItemKey);
-    SpawnedItem->SetActorLocation(GetActorLocation());
+	SpawnedItem->InitializeItemBase(SpawnableItemKey);
+	SpawnedItem->SetActorLocation(GetActorLocation());
 }

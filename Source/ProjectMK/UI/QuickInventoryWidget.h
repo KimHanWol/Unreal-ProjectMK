@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -13,27 +11,27 @@ class UOverlay;
 UCLASS()
 class PROJECTMK_API UQuickInventoryWidget : public UMKUserWidget
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 protected:
-    virtual void NativeConstruct() override;
-    virtual void BindEvents() override;
-    virtual void UnbindEvents() override;
+	virtual void NativeConstruct() override;
+	virtual void BindEvents() override;
+	virtual void UnbindEvents() override;
 
 private:
-    void SetInventorySlot();
-    void OnInventoryChanged();
+	void SetInventorySlot();
+	void OnInventoryChanged();
 
 protected:
-    UPROPERTY(EditAnywhere)
-    TSubclassOf<UItemSlotWidget> ItemSlotClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UItemSlotWidget> ItemSlotClass;
 
-    UPROPERTY(meta = (BindWidget))
-    UHorizontalBox* HBox_Slot;
+	UPROPERTY(meta = (BindWidget))
+	UHorizontalBox* HBox_Slot;
 
 private:
-    static constexpr int32 QuickInventorySlotCount = 8;
+	static constexpr int32 QuickInventorySlotCount = 8;
 
-    UPROPERTY(Transient)
-    TArray<UItemSlotWidget*> ItemSlotList;
+	UPROPERTY(Transient)
+	TArray<UItemSlotWidget*> ItemSlotList;
 };

@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystemComponent.h"
 #include "CoreMinimal.h"
@@ -11,14 +9,14 @@ UCLASS()
 class PROJECTMK_API UAttributeSet_Character : public UMKAttributeSetBase
 {
 	GENERATED_BODY()
-	
+
 public:
 	UAttributeSet_Character();
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
-    FGameplayAttributeData ItemCollectRange;
+	FGameplayAttributeData ItemCollectRange;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, ItemCollectRange)
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")

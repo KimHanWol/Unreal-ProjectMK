@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Component/InventoryComponent.h"
 
@@ -98,7 +98,7 @@ int32 UInventoryComponent::GetItemCount(FName ItemUID)
 	{
 		return *ItemCountPtr;
 	}
-	
+
 	return 0;
 }
 
@@ -455,7 +455,7 @@ const FEquipmentItemDataTableRow* UInventoryComponent::GetEquipmentItemData(FNam
 void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 {
 	InventoryItemMap.FindOrAdd(ItemUID) -= ItemCount;
-	
+
 	if (InventoryItemMap[ItemUID] == 0)
 	{
 		InventoryItemMap.Remove(ItemUID);

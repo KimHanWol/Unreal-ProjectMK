@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -11,16 +11,16 @@ class UGameplayEffect;
 UENUM()
 enum class EGameplayEffectType : uint8
 {
-    None = 0,
-    Block_Init,
-    Character_Init,
-    Character_Damage,
-    Durability_Add,
-    CurrentHealth_Add,
-    CurrentOxygen_Add,
-    Oxygen_Drain,
-    State_Drill,
-    Invincible,
+	None = 0,
+	Block_Init,
+	Character_Init,
+	Character_Damage,
+	Durability_Add,
+	CurrentHealth_Add,
+	CurrentOxygen_Add,
+	Oxygen_Drain,
+	State_Drill,
+	Invincible,
 };
 
 enum class EGameplayAbilityType : uint8;
@@ -30,12 +30,12 @@ class UGameplayAbility;
 UCLASS(BlueprintType)
 class PROJECTMK_API UGameplayEffectDataAsset : public UMKDataAssetBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
+	TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TMap<EGameplayEffectType, TSubclassOf<UGameplayEffect>> GameplayEffectList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<EGameplayEffectType, TSubclassOf<UGameplayEffect>> GameplayEffectList;
 };

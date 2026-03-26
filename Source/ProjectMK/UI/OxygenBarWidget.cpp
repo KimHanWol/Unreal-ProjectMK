@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/UI/OxygenBarWidget.h"
 

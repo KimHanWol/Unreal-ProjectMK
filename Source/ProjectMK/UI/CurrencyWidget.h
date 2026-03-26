@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -9,15 +7,15 @@
 UCLASS()
 class PROJECTMK_API UCurrencyWidget : public UMKUserWidget
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 protected:
-    virtual void BindEvents() override;
-    virtual void UnbindEvents() override;
+	virtual void BindEvents() override;
+	virtual void UnbindEvents() override;
 
-    void OnCoinChanged(const FOnAttributeChangeData& Data);
+	void OnCoinChanged(const FOnAttributeChangeData& Data);
 
 protected:
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* Text_Coin;
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* Text_Coin;
 };

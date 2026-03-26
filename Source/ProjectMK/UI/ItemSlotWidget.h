@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -9,16 +7,16 @@
 UCLASS()
 class PROJECTMK_API UItemSlotWidget : public UMKUserWidget
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    void ClearItem();
-    void SetItem(FName ItemKey, int32 ItemCount);
+	void ClearItem();
+	void SetItem(FName ItemKey, int32 ItemCount);
 
 protected:
-    UPROPERTY(meta = (BindWidget))
-    class UTextBlock* Text_Count;
+	UPROPERTY(meta = (BindWidget))
+	class UTextBlock* Text_Count;
 
-    UPROPERTY(meta = (BindWidget))
-    class UImage* Image_Item;
+	UPROPERTY(meta = (BindWidget))
+	class UImage* Image_Item;
 };

@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -14,56 +14,56 @@ class UGameplayEffect;
 UCLASS()
 class PROJECTMK_API UGA_Drill : public UGameplayAbility
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    virtual void ActivateAbility(
-        const FGameplayAbilitySpecHandle Handle,
-        const FGameplayAbilityActorInfo* ActorInfo,
-        const FGameplayAbilityActivationInfo ActivationInfo,
-        const FGameplayEventData* TriggerEventData
-    ) override;
+	virtual void ActivateAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		const FGameplayEventData* TriggerEventData
+	) override;
 
-    virtual void EndAbility(
-        const FGameplayAbilitySpecHandle Handle,
-        const FGameplayAbilityActorInfo* ActorInfo,
-        const FGameplayAbilityActivationInfo ActivationInfo,
-        bool bReplicateEndAbility,
-        bool bWasCancelled
-    ) override;
+	virtual void EndAbility(
+		const FGameplayAbilitySpecHandle Handle,
+		const FGameplayAbilityActorInfo* ActorInfo,
+		const FGameplayAbilityActivationInfo ActivationInfo,
+		bool bReplicateEndAbility,
+		bool bWasCancelled
+	) override;
 
-    UFUNCTION()
-    virtual void Tick(float DeltaTime);
+	UFUNCTION()
+	virtual void Tick(float DeltaTime);
 
 private:
-    void Tick_UpdateTarget();
-    void Tick_UpdateSourcePosition(float DeltaTime);
+	void Tick_UpdateTarget();
+	void Tick_UpdateSourcePosition(float DeltaTime);
 
-    void WaitPeriodAndMine();
+	void WaitPeriodAndMine();
 
-    UFUNCTION()
-    void Drill_Instant();
+	UFUNCTION()
+	void Drill_Instant();
 
-    void EnableDrill(bool bEnable);
+	void EnableDrill(bool bEnable);
 
-    float DrillingPeriod = 0.f;
-    float DrillingPower = 0.f;
-    float DrillingDistance = 0.f;
+	float DrillingPeriod = 0.f;
+	float DrillingPower = 0.f;
+	float DrillingDistance = 0.f;
 
-    TWeakObjectPtr<AMKCharacter> SourceCharacter = nullptr;
-    TWeakObjectPtr<UAbilitySystemComponent> SourceASC = nullptr;
-    TArray<TWeakObjectPtr<UAbilitySystemComponent>> TargetASCList;
-    TWeakObjectPtr<UAbilityTask_WaitDelay> DelayTask = nullptr;
+	TWeakObjectPtr<AMKCharacter> SourceCharacter = nullptr;
+	TWeakObjectPtr<UAbilitySystemComponent> SourceASC = nullptr;
+	TArray<TWeakObjectPtr<UAbilitySystemComponent>> TargetASCList;
+	TWeakObjectPtr<UAbilityTask_WaitDelay> DelayTask = nullptr;
 
-    bool bIsDrilling = false;
+	bool bIsDrilling = false;
 
-    TWeakObjectPtr<AActor> InteractionDirTarget = nullptr;
-    FVector InteractionStartPoint = FVector::ZeroVector;
-    float InteractStartTime = 0.f;
-    float InteractingTime = 0.f;
-    float InteractionMoveDuration = 0.15f;
+	TWeakObjectPtr<AActor> InteractionDirTarget = nullptr;
+	FVector InteractionStartPoint = FVector::ZeroVector;
+	float InteractStartTime = 0.f;
+	float InteractingTime = 0.f;
+	float InteractionMoveDuration = 0.15f;
 
-    TSubclassOf<UGameplayEffect> MineEffectClass;
+	TSubclassOf<UGameplayEffect> MineEffectClass;
 
-    FActiveGameplayEffectHandle DrillEffectHandle;
+	FActiveGameplayEffectHandle DrillEffectHandle;
 };

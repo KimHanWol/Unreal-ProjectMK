@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -26,46 +26,46 @@ enum class EGameplayAbilityType : uint8;
 UCLASS(Blueprintable)
 class PROJECTMK_API UDataManager : public UObject
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    static UDataManager* Get(UObject* WorldContextObject);
+	static UDataManager* Get(UObject* WorldContextObject);
 
-    template<typename T>
-    const T* GetDataTableRow(EDataTableType DataTableType, FName Key) const
-    {
-        if (::IsValid(DataTableDataAsset) == false)
-        {
-            return nullptr;
-        }
+	template<typename T>
+	const T* GetDataTableRow(EDataTableType DataTableType, FName Key) const
+	{
+		if (::IsValid(DataTableDataAsset) == false)
+		{
+			return nullptr;
+		}
 
-        UDataTable* DataTable = DataTableDataAsset->GetDataTable(DataTableType);
-        if (DataTable == nullptr)
-        {
-            return nullptr;
-        }
+		UDataTable* DataTable = DataTableDataAsset->GetDataTable(DataTableType);
+		if (DataTable == nullptr)
+		{
+			return nullptr;
+		}
 
-        return DataTable->FindRow<T>(Key, TEXT("GetDataTableRow"));
-    }
+		return DataTable->FindRow<T>(Key, TEXT("GetDataTableRow"));
+	}
 
-    const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
-    const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
-    const UGameSettingDataAsset* GetGameSettingDataAsset() const;
-    UDataTable* GetDataTable(EDataTableType DataTableType) const;
+	const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
+	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
+	const UGameSettingDataAsset* GetGameSettingDataAsset() const;
+	UDataTable* GetDataTable(EDataTableType DataTableType) const;
 
-    TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
-    TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
+	TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
+	TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
 
 protected:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UDataTableDataAsset* DataTableDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UDataTableDataAsset* DataTableDataAsset;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UGameplayEffectDataAsset* GameplayEffectDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UGameplayEffectDataAsset* GameplayEffectDataAsset;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UBlueprintDataAsset* BlueprintDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UBlueprintDataAsset* BlueprintDataAsset;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    UGameSettingDataAsset* GameSettingDataAsset;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UGameSettingDataAsset* GameSettingDataAsset;
 };

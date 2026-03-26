@@ -1,4 +1,4 @@
-#include "ProjectMK/UI/ShopWidget.h"
+﻿#include "ProjectMK/UI/ShopWidget.h"
 
 #include "Components/VerticalBox.h"
 #include "Kismet/GameplayStatics.h"
@@ -10,101 +10,101 @@
 
 void UShopWidget::NativeConstruct()
 {
-    Super::NativeConstruct();
+	Super::NativeConstruct();
 
-    BindInventory();
-    BuildRecipeList();
+	BindInventory();
+	BuildRecipeList();
 }
 
 void UShopWidget::NativeDestruct()
 {
-    if (::IsValid(BoundInventoryComponent))
-    {
-        BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-    }
+	if (::IsValid(BoundInventoryComponent))
+	{
+		BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+	}
 
-    Super::NativeDestruct();
+	Super::NativeDestruct();
 }
 
 void UShopWidget::BuildRecipeList()
 {
-    RecipeEntries.Reset();
+	RecipeEntries.Reset();
 
-    if (::IsValid(VBox_RecipeList) == false)
-    {
-        return;
-    }
+	if (::IsValid(VBox_RecipeList) == false)
+	{
+		return;
+	}
 
-    VBox_RecipeList->ClearChildren();
+	VBox_RecipeList->ClearChildren();
 
-    UDataManager* DataManager = UDataManager::Get(this);
-    if (::IsValid(DataManager) == false)
-    {
-        return;
-    }
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
 
-    UDataTable* ShopRecipeDataTable = DataManager->GetDataTable(EDataTableType::ShopRecipe);
-    if (ShopRecipeDataTable == nullptr)
-    {
-        return;
-    }
+	UDataTable* ShopRecipeDataTable = DataManager->GetDataTable(EDataTableType::ShopRecipe);
+	if (ShopRecipeDataTable == nullptr)
+	{
+		return;
+	}
 
-    TArray<FName> RowNames = ShopRecipeDataTable->GetRowNames();
-    for (const FName& RowName : RowNames)
-    {
-        const FShopRecipeDataTableRow* ShopRecipeRow = ShopRecipeDataTable->FindRow<FShopRecipeDataTableRow>(RowName, TEXT("BuildRecipeList"));
-        if (ShopRecipeRow == nullptr)
-        {
-            continue;
-        }
+	TArray<FName> RowNames = ShopRecipeDataTable->GetRowNames();
+	for (const FName& RowName : RowNames)
+	{
+		const FShopRecipeDataTableRow* ShopRecipeRow = ShopRecipeDataTable->FindRow<FShopRecipeDataTableRow>(RowName, TEXT("BuildRecipeList"));
+		if (ShopRecipeRow == nullptr)
+		{
+			continue;
+		}
 
-        UShopRecipeEntryWidget* EntryWidget = CreateWidget<UShopRecipeEntryWidget>(this, ShopRecipeEntryClass);
-        if (::IsValid(EntryWidget) == false)
-        {
-            continue;
-        }
+		UShopRecipeEntryWidget* EntryWidget = CreateWidget<UShopRecipeEntryWidget>(this, ShopRecipeEntryClass);
+		if (::IsValid(EntryWidget) == false)
+		{
+			continue;
+		}
 
-        VBox_RecipeList->AddChildToVerticalBox(EntryWidget);
-        EntryWidget->InitializeRecipe(RowName, *ShopRecipeRow);
-        RecipeEntries.Add(EntryWidget);
-    }
+		VBox_RecipeList->AddChildToVerticalBox(EntryWidget);
+		EntryWidget->InitializeRecipe(RowName, *ShopRecipeRow);
+		RecipeEntries.Add(EntryWidget);
+	}
 
-    RefreshEntries();
+	RefreshEntries();
 }
 
 void UShopWidget::BindInventory()
 {
-    if (::IsValid(BoundInventoryComponent))
-    {
-        BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-        BoundInventoryComponent = nullptr;
-    }
+	if (::IsValid(BoundInventoryComponent))
+	{
+		BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+		BoundInventoryComponent = nullptr;
+	}
 
-    AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-    if (::IsValid(PlayerCharacter) == false)
-    {
-        return;
-    }
+	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+	if (::IsValid(PlayerCharacter) == false)
+	{
+		return;
+	}
 
-    BoundInventoryComponent = PlayerCharacter->GetComponentByClass<UInventoryComponent>();
-    if (::IsValid(BoundInventoryComponent))
-    {
-        BoundInventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopWidget::HandleInventoryChanged);
-    }
+	BoundInventoryComponent = PlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	if (::IsValid(BoundInventoryComponent))
+	{
+		BoundInventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopWidget::HandleInventoryChanged);
+	}
 }
 
 void UShopWidget::RefreshEntries()
 {
-    for (UShopRecipeEntryWidget* EntryWidget : RecipeEntries)
-    {
-        if (::IsValid(EntryWidget))
-        {
-            EntryWidget->RefreshState();
-        }
-    }
+	for (UShopRecipeEntryWidget* EntryWidget : RecipeEntries)
+	{
+		if (::IsValid(EntryWidget))
+		{
+			EntryWidget->RefreshState();
+		}
+	}
 }
 
 void UShopWidget::HandleInventoryChanged()
 {
-    RefreshEntries();
+	RefreshEntries();
 }

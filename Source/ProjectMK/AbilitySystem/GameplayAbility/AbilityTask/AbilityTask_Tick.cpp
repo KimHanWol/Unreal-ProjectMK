@@ -1,29 +1,29 @@
-// LINK
+﻿// LINK
 
 #include "AbilityTask_Tick.h"
 
 UAbilityTask_Tick::UAbilityTask_Tick()
 {
-    bTickingTask = true;
+	bTickingTask = true;
 }
 
 UAbilityTask_Tick* UAbilityTask_Tick::CreateTickTask(UGameplayAbility* OwningAbility)
 {
-    return NewAbilityTask<UAbilityTask_Tick>(OwningAbility);
+	return NewAbilityTask<UAbilityTask_Tick>(OwningAbility);
 }
 
 void UAbilityTask_Tick::TickTask(float DeltaTime)
 {
-    if (!ShouldBroadcastAbilityTaskDelegates())
-    {
-        return;
-    }
+	if (!ShouldBroadcastAbilityTaskDelegates())
+	{
+		return;
+	}
 
-    OnTick.Broadcast(DeltaTime);
+	OnTick.Broadcast(DeltaTime);
 }
 
 void UAbilityTask_Tick::OnDestroy(bool AbilityEnded)
 {
-    OnTick.Clear();
-    Super::OnDestroy(AbilityEnded);
+	OnTick.Clear();
+	Super::OnDestroy(AbilityEnded);
 }

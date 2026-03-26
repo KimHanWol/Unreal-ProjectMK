@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -13,40 +13,40 @@ class UTextBlock;
 UCLASS()
 class PROJECTMK_API UShopRecipeEntryWidget : public UMKUserWidget
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    virtual void NativeConstruct() override;
+	virtual void NativeConstruct() override;
 
-    void InitializeRecipe(FName InRecipeId, const FShopRecipeDataTableRow& InRecipeData);
-    void RefreshState();
+	void InitializeRecipe(FName InRecipeId, const FShopRecipeDataTableRow& InRecipeData);
+	void RefreshState();
 
 protected:
-    UFUNCTION()
-    void HandleCraftButtonClicked();
+	UFUNCTION()
+	void HandleCraftButtonClicked();
 
-    UPROPERTY(EditAnywhere)
-    TSubclassOf<UItemSlotWidget> ItemSlotClass;
+	UPROPERTY(EditAnywhere)
+	TSubclassOf<UItemSlotWidget> ItemSlotClass;
 
-    UPROPERTY(meta = (BindWidget))
-    UHorizontalBox* HBox_RecipeItems;
+	UPROPERTY(meta = (BindWidget))
+	UHorizontalBox* HBox_RecipeItems;
 
-    UPROPERTY(meta = (BindWidget))
-    UItemSlotWidget* OutputItemSlot;
+	UPROPERTY(meta = (BindWidget))
+	UItemSlotWidget* OutputItemSlot;
 
-    UPROPERTY(meta = (BindWidgetOptional))
-    UTextBlock* Text_RecipeName;
+	UPROPERTY(meta = (BindWidgetOptional))
+	UTextBlock* Text_RecipeName;
 
-    UPROPERTY(meta = (BindWidgetOptional))
-    UTextBlock* Text_ResultKey;
+	UPROPERTY(meta = (BindWidgetOptional))
+	UTextBlock* Text_ResultKey;
 
-    UPROPERTY(meta = (BindWidget))
-    UButton* Button_Craft;
+	UPROPERTY(meta = (BindWidget))
+	UButton* Button_Craft;
 
 private:
-    UPROPERTY(Transient)
-    FName RecipeId;
+	UPROPERTY(Transient)
+	FName RecipeId;
 
-    UPROPERTY(Transient)
-    FShopRecipeDataTableRow RecipeData;
+	UPROPERTY(Transient)
+	FShopRecipeDataTableRow RecipeData;
 };

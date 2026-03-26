@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -12,15 +12,15 @@ class UDataTable;
 UCLASS(BlueprintType)
 class PROJECTMK_API UDataTableDataAsset : public UMKDataAssetBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UDataTable* GetDataTable(EDataTableType Type) const;
+	UDataTable* GetDataTable(EDataTableType Type) const;
 
 private:
-    virtual void AsyncLoadAsset() override;
+	virtual void AsyncLoadAsset() override;
 
 public:
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TMap<EDataTableType, TSoftObjectPtr<UDataTable>> DataTableList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TMap<EDataTableType, TSoftObjectPtr<UDataTable>> DataTableList;
 };

@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Interface/Interactable.h"
 
@@ -45,5 +45,5 @@ bool IInteractable::TryInteract(AActor* Interactor)
 	EventData.Target = Cast<AActor>(this);
 	EventData.EventTag = InteractEventTag;
 
-	return InteractorASC->HandleGameplayEvent(EventData.EventTag, &EventData) > 0; 
+	return InteractorASC->HandleGameplayEvent(EventData.EventTag, &EventData) > 0;
 }

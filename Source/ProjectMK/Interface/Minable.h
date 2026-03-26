@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Interface.h" 
+#include "UObject/Interface.h"
 
 #include "Minable.generated.h"
 
@@ -17,10 +15,10 @@ class PROJECTMK_API UMinable : public UInterface
 
 class IMinable
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    virtual UAbilitySystemComponent* GetOwnerASC() = 0;
-    virtual float GetMiningDamage() = 0;
-    virtual float GetMiningDuration() = 0;
+	virtual UAbilitySystemComponent* GetOwnerASC() = 0;
+	virtual float GetMiningDamage() = 0;
+	virtual float GetMiningDuration() = 0;
 };

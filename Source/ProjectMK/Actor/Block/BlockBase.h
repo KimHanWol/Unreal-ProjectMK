@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
@@ -24,19 +22,19 @@ enum class EGameplayAbilityType : uint8;
 USTRUCT(BlueprintType)
 struct FBlockTileData
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY()
-    int32 TileSetIndex;
+	UPROPERTY()
+	int32 TileSetIndex;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
-    FVector WorldLocation;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FVector WorldLocation;
 
-    UPROPERTY()
-    FIntPoint TileSize;
+	UPROPERTY()
+	FIntPoint TileSize;
 
-    DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed, ABlockBase*);
-    FOnBlockDestroyed OnBlockDestroyedDelegate;
+	DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed, ABlockBase*);
+	FOnBlockDestroyed OnBlockDestroyedDelegate;
 };
 
 UCLASS()
@@ -44,85 +42,85 @@ class PROJECTMK_API ABlockBase : public AActor, public IDamageable, public IAbil
 {
 	GENERATED_BODY()
 
-public:	
-    ABlockBase();
+public:
+	ABlockBase();
 
 	void InitializeBlock(FBlockTileData InBlockData);
 
 public:
-    void StartMineBlock(IMinable* Miner);
-    void EndMineBlock();
+	void StartMineBlock(IMinable* Miner);
+	void EndMineBlock();
 
-    //IAbilitySystemInterface
-    virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-    //~IAbilitySystemInterface
+	//IAbilitySystemInterface
+	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	//~IAbilitySystemInterface
 
-    void SetMineableState(bool bInIsMineableState);
-    bool IsMineable();
+	void SetMineableState(bool bInIsMineableState);
+	bool IsMineable();
 
-    UFUNCTION(BlueprintImplementableEvent)
-    void BP_EnableDebugState(int32 Count);
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_EnableDebugState(int32 Count);
 
 protected:
-    virtual void BeginPlay() override;
-    virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual void BeginPlay() override;
+	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-    virtual void OnPreDestroy();
+	virtual void OnPreDestroy();
 
-    void BindEvents();
-    void UnbindEvents();
+	void BindEvents();
+	void UnbindEvents();
 
-    //IDamageable
-    virtual UAbilitySystemComponent* GetOwnerASC() override;
-    virtual bool CheckIsDestroyed() override;
-    virtual void OnDestroyed() override;
-    //~IDamageable
+	//IDamageable
+	virtual UAbilitySystemComponent* GetOwnerASC() override;
+	virtual bool CheckIsDestroyed() override;
+	virtual void OnDestroyed() override;
+	//~IDamageable
 
 private:
-    void ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier = 1.f);
-    void OnPaperSpriteLoaded();
-    void InitializeBlockAttribute(); 
+	void ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier = 1.f);
+	void OnPaperSpriteLoaded();
+	void InitializeBlockAttribute();
 
-    void OnDurationChanged(const FOnAttributeChangeData& Data);
+	void OnDurationChanged(const FOnAttributeChangeData& Data);
 
-    void SpawnItem();
+	void SpawnItem();
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UBoxComponent> BoxCollision;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    TObjectPtr<UPaperSpriteComponent> ItemSpriteComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> ItemSpriteComponent;
 
-    UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
-    FBlockTileData BlockTileData;
+	FBlockTileData BlockTileData;
 
 private:
-    UPROPERTY(Transient)
-    bool bIsMining = false;
+	UPROPERTY(Transient)
+	bool bIsMining = false;
 
-    UPROPERTY(Transient)
-    bool bIsMineableState = true;
+	UPROPERTY(Transient)
+	bool bIsMineableState = true;
 
-    UPROPERTY(Transient)
-    FName SpawnableItemKey;
+	UPROPERTY(Transient)
+	FName SpawnableItemKey;
 
-    UPROPERTY(Transient)
-    TSoftObjectPtr<UPaperSprite> SelectedBaseTileSprite;
+	UPROPERTY(Transient)
+	TSoftObjectPtr<UPaperSprite> SelectedBaseTileSprite;
 
-    UPROPERTY(Transient)
-    TSoftObjectPtr<UPaperSprite> SelectedItemOverlaySprite;
+	UPROPERTY(Transient)
+	TSoftObjectPtr<UPaperSprite> SelectedItemOverlaySprite;
 
-    UPROPERTY(Transient)
-    bool bVisualSelectionInitialized = false;
+	UPROPERTY(Transient)
+	bool bVisualSelectionInitialized = false;
 
-    UPROPERTY(Transient)
-    bool bBlockAttributesInitialized = false;
+	UPROPERTY(Transient)
+	bool bBlockAttributesInitialized = false;
 
-    FTimerHandle BreakingTimerHandle;
+	FTimerHandle BreakingTimerHandle;
 };

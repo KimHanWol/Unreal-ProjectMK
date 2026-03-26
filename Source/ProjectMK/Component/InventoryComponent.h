@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
@@ -15,21 +13,21 @@ struct FEquipmentEffectEntry;
 UCLASS(BlueprintType)
 class PROJECTMK_API UInventoryItemData : public UObject
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UPROPERTY(BlueprintReadWrite)
-    FName ItemUID;
+	UPROPERTY(BlueprintReadWrite)
+	FName ItemUID;
 
-    UPROPERTY(BlueprintReadWrite)
-    int32 ItemCount;
+	UPROPERTY(BlueprintReadWrite)
+	int32 ItemCount;
 };
 
 UCLASS(BlueprintType)
 class PROJECTMK_API UInventoryComponent : public USphereComponent
 {
 	GENERATED_BODY()
-	
+
 protected:
 	virtual void BeginPlay() override;
 	virtual void TickComponent(float DeltaTime, ELevelTick TickType, FActorComponentTickFunction* ThisTickFunction) override;
@@ -89,7 +87,7 @@ private:
 
 	TMap<FName, TArray<FActiveGameplayEffectHandle>> ActivatedEquipementEffects;
 
-	UPROPERTY(EditAnywhere) 
+	UPROPERTY(EditAnywhere)
 	float ItemGainRange = 5.f;
 
 	UPROPERTY(Transient)

@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
@@ -19,6 +17,7 @@ class UInventoryComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class UMKRuntimePaperSprite;
+class UPaperSprite;
 class UPaperSpriteComponent;
 class UPaperZDAnimPlayer;
 class UPaperZDAnimSequence;
@@ -34,8 +33,8 @@ class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySyst
 														   , public IDamageable
 {
 	GENERATED_BODY()
-	
-public:	
+
+public:
 	AMKCharacter();
 
 	//IAbilitySystemInterface
@@ -85,6 +84,9 @@ private:
 	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
 	void ClearOxygenDrainEffect();
 	void RestoreOxygenToMax();
+	void Apply2DCameraOverrides();
+	void ApplyTextureRenderingOverrides(UTexture2D* Texture) const;
+	void ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const;
 	int32 GetCurrentBlockDepth() const;
 	const UGameSettingDataAsset* GetGameSettings() const;
 	void UpdateCharacterAnimationVisual();
@@ -113,7 +115,7 @@ private:
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
-    TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
+	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
@@ -127,7 +129,7 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Animation")
 	ECharacterAnimationType CurrentCharacterAnimationType = ECharacterAnimationType::Idle;
 
-	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
+	// TODO: ASC를 커스텀하게 만들어서 직접 보관하도록 정리
 	UPROPERTY(EditAnywhere)
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
 
@@ -173,4 +175,3 @@ private:
 	TMap<EEuipmentType, FName> EquippedOverlayItemKeys;
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };
-

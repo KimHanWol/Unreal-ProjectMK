@@ -1,9 +1,7 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
-#include "UObject/Interface.h" 
+#include "UObject/Interface.h"
 
 #include "Damageable.generated.h"
 
@@ -17,12 +15,12 @@ class PROJECTMK_API UDamageable : public UInterface
 
 class IDamageable
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    virtual UAbilitySystemComponent* GetOwnerASC() = 0;
+	virtual UAbilitySystemComponent* GetOwnerASC() = 0;
 
 protected:
-    virtual bool CheckIsDestroyed() = 0;
-    virtual void OnDestroyed() = 0;
+	virtual bool CheckIsDestroyed() = 0;
+	virtual void OnDestroyed() = 0;
 };

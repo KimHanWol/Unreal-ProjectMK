@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
@@ -23,8 +21,8 @@ struct FFallingVerticalBlocksData
 	UPROPERTY()
 	TWeakObjectPtr<ABlockBase> BottomBlock;
 
-    UPROPERTY()
-    float FallenDistance = 0.f;
+	UPROPERTY()
+	float FallenDistance = 0.f;
 
 	TMap<TWeakObjectPtr<ABlockBase>, FVector> BlockOriginPositionMap;
 };
@@ -32,13 +30,13 @@ struct FFallingVerticalBlocksData
 USTRUCT(BlueprintType)
 struct FFallingBlockGroupData
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 	UPROPERTY()
 	int32 BlockCount = 0;
 
 	UPROPERTY()
-    float FallingVelocity;
+	float FallingVelocity;
 
 	UPROPERTY()
 	float ShakeTime = 0.f;

@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -8,10 +8,10 @@
 UCLASS(BlueprintType)
 class PROJECTMK_API UMKDataAssetBase : public UPrimaryDataAsset
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 protected:
-    virtual void PostLoad() override;
+	virtual void PostLoad() override;
 
-    virtual void AsyncLoadAsset() {};
+	virtual void AsyncLoadAsset() {};
 };

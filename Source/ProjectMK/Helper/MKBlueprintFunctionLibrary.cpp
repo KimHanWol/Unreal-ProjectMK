@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 

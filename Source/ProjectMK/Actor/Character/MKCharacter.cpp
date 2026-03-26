@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 
@@ -17,6 +17,7 @@
 #include "AnimSequences/Players/PaperZDAnimPlayer.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
+#include "PaperSprite.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
@@ -32,6 +33,9 @@ namespace
 {
 	constexpr int32 EquipmentOverlayAtlasCellSize = 256;
 	const FName DrillingVectorVariableName(TEXT("DrillingVector"));
+	constexpr float DisabledPostProcessValue = 0.f;
+	constexpr float LockedExposureValue = 1.f;
+	constexpr TextureFilter StableSpriteTextureFilter = TF_Bilinear;
 
 	const TArray<EEuipmentType>& GetSupportedEquipmentTypes()
 	{
@@ -57,12 +61,30 @@ namespace
 		const float ClampedScale = FMath::Max(VisualScale, KINDA_SMALL_NUMBER);
 		return FVector(bReverseFacingDirection ? -ClampedScale : ClampedScale, 1.f, ClampedScale);
 	}
+
+	void ApplyCameraPostProcessOverrides(FPostProcessSettings& PostProcessSettings)
+	{
+		PostProcessSettings.bOverride_MotionBlurAmount = true;
+		PostProcessSettings.MotionBlurAmount = DisabledPostProcessValue;
+		PostProcessSettings.bOverride_MotionBlurMax = true;
+		PostProcessSettings.MotionBlurMax = DisabledPostProcessValue;
+		PostProcessSettings.bOverride_DepthOfFieldScale = true;
+		PostProcessSettings.DepthOfFieldScale = DisabledPostProcessValue;
+		PostProcessSettings.bOverride_BloomIntensity = true;
+		PostProcessSettings.BloomIntensity = DisabledPostProcessValue;
+		PostProcessSettings.bOverride_SceneFringeIntensity = true;
+		PostProcessSettings.SceneFringeIntensity = DisabledPostProcessValue;
+		PostProcessSettings.bOverride_AutoExposureMinBrightness = true;
+		PostProcessSettings.AutoExposureMinBrightness = LockedExposureValue;
+		PostProcessSettings.bOverride_AutoExposureMaxBrightness = true;
+		PostProcessSettings.AutoExposureMaxBrightness = LockedExposureValue;
+	}
 }
 
 AMKCharacter::AMKCharacter()
 {
 	PrimaryActorTick.bCanEverTick = true;
-	
+
 	SetRootComponent(GetCapsuleComponent());
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
@@ -103,6 +125,8 @@ void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
+
+	Apply2DCameraOverrides();
 
 	if (::IsValid(AbilitySystemComponent))
 	{
@@ -152,6 +176,61 @@ void AMKCharacter::InitializeInvincibleMaterial()
 
 	InvincibleMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, 0.f);
 	UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: Created DMI, parameter=%s set to 0.0"), *InvincibleDarkenParameterName.ToString());
+}
+
+void AMKCharacter::Apply2DCameraOverrides()
+{
+	TArray<UCameraComponent*> CameraComponents;
+	GetComponents<UCameraComponent>(CameraComponents);
+
+	for (UCameraComponent* CameraComponent : CameraComponents)
+	{
+		if (::IsValid(CameraComponent) == false)
+		{
+			continue;
+		}
+
+		CameraComponent->PostProcessBlendWeight = 1.f;
+		ApplyCameraPostProcessOverrides(CameraComponent->PostProcessSettings);
+	}
+}
+
+void AMKCharacter::ApplyTextureRenderingOverrides(UTexture2D* Texture) const
+{
+	if (::IsValid(Texture) == false)
+	{
+		return;
+	}
+
+	bool bNeedsResourceUpdate = false;
+
+	// The imported character assets are raster atlases, so bilinear filtering gives a steadier result than nearest.
+	if (Texture->Filter != StableSpriteTextureFilter)
+	{
+		Texture->Filter = StableSpriteTextureFilter;
+		bNeedsResourceUpdate = true;
+	}
+
+	if (Texture->NeverStream == false)
+	{
+		Texture->NeverStream = true;
+		bNeedsResourceUpdate = true;
+	}
+
+	if (bNeedsResourceUpdate)
+	{
+		Texture->UpdateResource();
+	}
+}
+
+void AMKCharacter::ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const
+{
+	if (::IsValid(PaperSprite) == false)
+	{
+		return;
+	}
+
+	ApplyTextureRenderingOverrides(PaperSprite->GetBakedTexture());
 }
 
 void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
@@ -268,7 +347,7 @@ bool AMKCharacter::CheckIsDestroyed()
 
 void AMKCharacter::OnDestroyed()
 {
-	
+
 }
 
 void AMKCharacter::OnLookRight(float Value)
@@ -354,7 +433,7 @@ void AMKCharacter::TryDrill()
 
 	if (CharacterDir != FVector::ZeroVector)
 	{
-		//ㅁㄻㄴㄻㄴㄹ 여기 Ability 확인
+		// TODO: 드릴 어빌리티 선택 방식을 명시적으로 정리
 		AbilitySystemComponent->TryActivateAbilityByClass(InitialGameplayAbilities[0]);
 	}
 	else
@@ -522,6 +601,8 @@ void AMKCharacter::UpdateCharacterAnimationVisual()
 		return;
 	}
 
+	ApplySpriteRenderingOverrides(ResolveCurrentBaseFrameSprite());
+
 	const FCharacterDataTableRow* CharacterData = GetCharacterData();
 	UpdateOverrideVisualFacingDirection();
 	if (CharacterData == nullptr)
@@ -560,6 +641,7 @@ void AMKCharacter::UpdateCharacterAnimationVisual()
 
 	CurrentOverrideVisualScale = 1.f;
 	UpdateOverrideVisualFacingDirection();
+	ApplySpriteRenderingOverrides(CharacterSprite);
 	CharacterVisualComponent->SetSprite(const_cast<UPaperSprite*>(CharacterSprite));
 	SetCharacterVisualOverrideEnabled(true);
 	EnsureCharacterVisualMaterialInstance();
@@ -1013,7 +1095,9 @@ const UPaperSprite* AMKCharacter::ResolveEquipmentOverlaySprite(const FEquipment
 		return nullptr;
 	}
 
-	return EquipmentData.EquipmentSprite.IsNull() ? nullptr : EquipmentData.EquipmentSprite.LoadSynchronous();
+	const UPaperSprite* EquipmentSprite = EquipmentData.EquipmentSprite.IsNull() ? nullptr : EquipmentData.EquipmentSprite.LoadSynchronous();
+	ApplySpriteRenderingOverrides(EquipmentSprite);
+	return EquipmentSprite;
 }
 
 const UPaperSprite* AMKCharacter::ResolveAnimationOverlaySprite(const FEquipmentAnimationOverlayEntry& OverlayEntry, int32 AnimationFrameIndex)
@@ -1047,6 +1131,8 @@ UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* A
 	{
 		return nullptr;
 	}
+
+	ApplyTextureRenderingOverrides(AtlasTexture);
 
 	const FName CacheKey = MakeRuntimeAtlasSpriteCacheKey(AtlasTexture, AtlasCellIndex, PixelsPerUnrealUnit);
 	if (TObjectPtr<UMKRuntimePaperSprite>* CachedSpritePtr = RuntimeAtlasSpriteCache.Find(CacheKey))
@@ -1159,4 +1245,3 @@ void AMKCharacter::ApplyDamageInvincibility()
 		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
 }
-

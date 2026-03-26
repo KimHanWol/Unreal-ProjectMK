@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -12,41 +12,41 @@ class UGameplayEffect;
 USTRUCT(BlueprintType)
 struct FBlockSpawnableItemData
 {
-    GENERATED_BODY()
-    
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    FName SpawnableItemKey;
+	GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float SpawnProbability;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	FName SpawnableItemKey;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UPaperSprite> ItemSprite;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float SpawnProbability;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UPaperSprite> ItemSprite;
 };
 
 USTRUCT(BlueprintType)
 struct FBlockDataTableRow : public FTableRowBase
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    int32 TileIndex;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 TileIndex;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bHasCollision = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bHasCollision = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TSoftObjectPtr<UPaperSprite> TileSprite;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UPaperSprite> TileSprite;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    float BlockDurability = 0.f;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	float BlockDurability = 0.f;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    bool bIsMineable = true;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsMineable = true;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite)
-    TArray<FBlockSpawnableItemData> SpawnableItemDataList;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 
-    UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "NeedToBeHide"))
-    bool bNeedTobeHide = false;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "NeedToBeHide"))
+	bool bNeedTobeHide = false;
 };

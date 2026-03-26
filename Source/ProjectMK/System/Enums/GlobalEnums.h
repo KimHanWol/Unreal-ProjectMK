@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -8,11 +8,11 @@
 UENUM(BlueprintType)
 enum class EDataTableType : uint8
 {
-    None,
-    Block,
+	None,
+	Block,
 	Item,
-    EquipmentItem,
-    Character,
+	EquipmentItem,
+	Character,
 	ShopRecipe,
 	Sound,
 };

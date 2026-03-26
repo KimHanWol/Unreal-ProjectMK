@@ -1,6 +1,4 @@
-// Fill out your copyright notice in the Description page of Project Settings.
-
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/GameInstance.h"
@@ -32,6 +30,8 @@ protected:
 	TSubclassOf<USoundManager> SoundManagerClass;
 
 private:
+	void Apply2DRenderOverrides() const;
+
 	UPROPERTY()
 	UDataManager* DataManager;
 

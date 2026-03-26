@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Core/Manager/DataManager.h"
 
@@ -12,100 +12,100 @@
 
 UDataManager* UDataManager::Get(UObject* WorldContextObject)
 {
-    UMKGameInstance* GameInstance = Cast<UMKGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject));
-    if (::IsValid(GameInstance))
-    {
-        return GameInstance->GetDataManager();
-    }
+	UMKGameInstance* GameInstance = Cast<UMKGameInstance>(UGameplayStatics::GetGameInstance(WorldContextObject));
+	if (::IsValid(GameInstance))
+	{
+		return GameInstance->GetDataManager();
+	}
 
-    return nullptr; 
+	return nullptr;
 }
 
 const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) const
 {
-    if (::IsValid(DataTableDataAsset) == false)
-    {
-        return nullptr;
-    }
+	if (::IsValid(DataTableDataAsset) == false)
+	{
+		return nullptr;
+	}
 
-    UDataTable* BlockDataTable  = DataTableDataAsset->GetDataTable(EDataTableType::Block);
-    if (BlockDataTable == nullptr)
-    {
-        return nullptr;
-    }
+	UDataTable* BlockDataTable  = DataTableDataAsset->GetDataTable(EDataTableType::Block);
+	if (BlockDataTable == nullptr)
+	{
+		return nullptr;
+	}
 
-    TArray<FBlockDataTableRow*> AllRows;
-    BlockDataTable->GetAllRows<FBlockDataTableRow>(TEXT("BlockDataTableRow"), AllRows);
+	TArray<FBlockDataTableRow*> AllRows;
+	BlockDataTable->GetAllRows<FBlockDataTableRow>(TEXT("BlockDataTableRow"), AllRows);
 
-    for (const auto& Row : AllRows)
-    {
-        if (Row->TileIndex == TileIndex)
-        {
-            return Row;
-        }
-    }
-    
-    return nullptr;
+	for (const auto& Row : AllRows)
+	{
+		if (Row->TileIndex == TileIndex)
+		{
+			return Row;
+		}
+	}
+
+	return nullptr;
 }
 
 const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType) const
 {
-    if (::IsValid(DataTableDataAsset) == false)
-    {
-        return nullptr;
-    }
+	if (::IsValid(DataTableDataAsset) == false)
+	{
+		return nullptr;
+	}
 
-    UDataTable* SoundDataTable = DataTableDataAsset->GetDataTable(EDataTableType::Sound);
-    if (SoundDataTable == nullptr)
-    {
-        return nullptr;
-    }
+	UDataTable* SoundDataTable = DataTableDataAsset->GetDataTable(EDataTableType::Sound);
+	if (SoundDataTable == nullptr)
+	{
+		return nullptr;
+	}
 
-    TArray<FSoundDataTableRow*> AllRows;
-    SoundDataTable->GetAllRows<FSoundDataTableRow>(TEXT("SoundDataTableRow"), AllRows);
+	TArray<FSoundDataTableRow*> AllRows;
+	SoundDataTable->GetAllRows<FSoundDataTableRow>(TEXT("SoundDataTableRow"), AllRows);
 
-    for (const auto& Row : AllRows)
-    {
-        if (Row->SFXType == InSFXType)
-        {
-            return Row;
-        }
-    }
+	for (const auto& Row : AllRows)
+	{
+		if (Row->SFXType == InSFXType)
+		{
+			return Row;
+		}
+	}
 
-    return nullptr;
+	return nullptr;
 }
 
 const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
 {
-    return GameSettingDataAsset;
+	return GameSettingDataAsset;
 }
 
 UDataTable* UDataManager::GetDataTable(EDataTableType DataTableType) const
 {
-    if (::IsValid(DataTableDataAsset) == false)
-    {
-        return nullptr;
-    }
+	if (::IsValid(DataTableDataAsset) == false)
+	{
+		return nullptr;
+	}
 
-    return DataTableDataAsset->GetDataTable(DataTableType);
+	return DataTableDataAsset->GetDataTable(DataTableType);
 }
 
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType) const
 {
-    if (::IsValid(GameplayEffectDataAsset))
-    {
-        return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
-    }
+	if (::IsValid(GameplayEffectDataAsset))
+	{
+		return GameplayEffectDataAsset->GetGameplayEffect(EffectType);
+	}
 
-    return nullptr;
+	return nullptr;
 }
 
 TSubclassOf<AActor> UDataManager::GetBlueprintClass(EBlueprintClassType BlueprintClassType) const
 {
-    if (::IsValid(BlueprintDataAsset))
-    {
-        return BlueprintDataAsset->GetBlueprintClass(BlueprintClassType);
-    }
+	if (::IsValid(BlueprintDataAsset))
+	{
+		return BlueprintDataAsset->GetBlueprintClass(BlueprintClassType);
+	}
 
-    return nullptr;
+	return nullptr;
 }

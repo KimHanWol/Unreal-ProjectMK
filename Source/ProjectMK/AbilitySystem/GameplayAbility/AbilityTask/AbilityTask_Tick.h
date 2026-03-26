@@ -1,4 +1,4 @@
-//LINK
+﻿// LINK
 
 #pragma once
 
@@ -11,19 +11,18 @@ DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FAbilityTaskTickDelegate, float, Del
 UCLASS()
 class PROJECTMK_API UAbilityTask_Tick : public UAbilityTask
 {
-    GENERATED_BODY()
+	GENERATED_BODY()
 
 public:
-    UAbilityTask_Tick();
+	UAbilityTask_Tick();
 
-    UFUNCTION(BlueprintCallable, Category="Ability|Tasks", meta=(HidePin="OwningAbility", DefaultToSelf="OwningAbility"))
-    static UAbilityTask_Tick* CreateTickTask(UGameplayAbility* OwningAbility);
+	UFUNCTION(BlueprintCallable, Category="Ability|Tasks", meta=(HidePin="OwningAbility", DefaultToSelf="OwningAbility"))
+	static UAbilityTask_Tick* CreateTickTask(UGameplayAbility* OwningAbility);
 
-    UPROPERTY(BlueprintAssignable)
-    FAbilityTaskTickDelegate OnTick;
+	UPROPERTY(BlueprintAssignable)
+	FAbilityTaskTickDelegate OnTick;
 
 protected:
-    virtual void TickTask(float DeltaTime) override;
-    virtual void OnDestroy(bool AbilityEnded) override;
+	virtual void TickTask(float DeltaTime) override;
+	virtual void OnDestroy(bool AbilityEnded) override;
 };
-
