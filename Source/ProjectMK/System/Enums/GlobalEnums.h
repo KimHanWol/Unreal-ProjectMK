@@ -12,6 +12,7 @@ enum class EDataTableType : uint8
     Block,
 	Item,
     EquipmentItem,
+    Character,
 	ShopRecipe,
 	Sound,
 };

@@ -78,6 +78,11 @@ void UGA_Drill::EndAbility(const FGameplayAbilitySpecHandle Handle, const FGamep
 {
     bIsDrilling = false;
 
+    if (SourceCharacter.IsValid())
+    {
+        SourceCharacter->SetDrillingVector(FVector::ZeroVector);
+    }
+
     if (DelayTask.IsValid())
     {
         DelayTask->EndTask();
@@ -154,6 +159,7 @@ void UGA_Drill::Tick_UpdateTarget()
 
     if (NewTargetASCList.IsEmpty() == false)
     {
+        SourceCharacter->SetDrillingVector(SourceCharDir);
         EnableDrill(true);
     }
 }
@@ -305,6 +311,11 @@ void UGA_Drill::EnableDrill(bool bEnable)
     }
     else
     {
+        if (SourceCharacter.IsValid())
+        {
+            SourceCharacter->SetDrillingVector(FVector::ZeroVector);
+        }
+
         if (DelayTask.IsValid())
         {
             DelayTask->EndTask();

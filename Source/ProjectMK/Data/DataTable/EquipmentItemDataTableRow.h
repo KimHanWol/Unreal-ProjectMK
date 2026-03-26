@@ -9,6 +9,8 @@
 
 class UGameplayEffect;
 class UPaperSprite;
+class UPaperZDAnimSequence;
+class UTexture2D;
 
 UENUM(BlueprintType)
 enum class EEuipmentType : uint8
@@ -36,6 +38,18 @@ struct FEquipmentEffectEntry
 };
 
 USTRUCT(BlueprintType)
+struct FEquipmentAnimationOverlayEntry
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UPaperZDAnimSequence> AnimationSequence;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TSoftObjectPtr<UTexture2D> OverlayAtlasTexture;
+};
+
+USTRUCT(BlueprintType)
 struct FEquipmentItemDataTableRow : public FItemDataTableRow
 {
     GENERATED_BODY()
@@ -45,6 +59,9 @@ struct FEquipmentItemDataTableRow : public FItemDataTableRow
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     TSoftObjectPtr<UPaperSprite> EquipmentSprite;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite)
+    TArray<FEquipmentAnimationOverlayEntry> AnimationOverlayEntries;
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite)
     EEuipmentType EquipmentType;

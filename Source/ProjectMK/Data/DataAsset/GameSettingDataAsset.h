@@ -2,8 +2,21 @@
 
 #include "CoreMinimal.h"
 #include "ProjectMK/Data/DataAsset/MKDataAssetBase.h"
+#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 
 #include "GameSettingDataAsset.generated.h"
+
+USTRUCT(BlueprintType)
+struct FEquipmentOverlayZOrderEntry
+{
+    GENERATED_BODY()
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    EEuipmentType EquipmentType = EEuipmentType::Halmet;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    int32 ZOrder = 0;
+};
 
 UCLASS(BlueprintType)
 class PROJECTMK_API UGameSettingDataAsset : public UMKDataAssetBase
@@ -11,6 +24,9 @@ class PROJECTMK_API UGameSettingDataAsset : public UMKDataAssetBase
     GENERATED_BODY()
 
 public:
+    UFUNCTION(BlueprintPure, Category = "Equipment")
+    int32 GetEquipmentOverlayZOrder(EEuipmentType EquipmentType) const;
+
     // The surface block Y position where oxygen is immediately restored to max.
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Oxygen")
     int32 SurfaceBlockPositionY = 0;
@@ -31,4 +47,10 @@ public:
 
     UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Item", meta = (ClampMin = "0.01"))
     float WorldItemSpriteScale = 0.7f;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Character")
+    bool bReverseOverrideVisualFacingDirection = false;
+
+    UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Equipment")
+    TArray<FEquipmentOverlayZOrderEntry> EquipmentOverlayZOrders;
 };

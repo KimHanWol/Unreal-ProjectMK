@@ -6,6 +6,8 @@
 #include "AbilitySystemInterface.h"
 #include "PaperZDCharacter.h"
 #include "GameplayEffectTypes.h"
+#include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
+#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Interface/Damageable.h"
 #include "MKCharacter.generated.h"
 
@@ -14,10 +16,18 @@ class UGameplayAbility;
 class UGameplayEffect;
 class UInteractComponent;
 class UInventoryComponent;
+class UMaterialInterface;
 class UMaterialInstanceDynamic;
+class UMKRuntimePaperSprite;
 class UPaperSpriteComponent;
+class UPaperZDAnimPlayer;
+class UPaperZDAnimSequence;
+class UTexture2D;
 struct FGameplayTag;
 class UGameSettingDataAsset;
+struct FCharacterDataTableRow;
+struct FCharacterAnimationEntry;
+struct FEquipmentItemDataTableRow;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
@@ -54,6 +64,7 @@ protected:
 
 public:
 	FVector GetCharacterDirection() const { return CharacterDir; }
+	void SetDrillingVector(const FVector& InDrillingVector);
 
 private:
 	void OnLookRight(float Value);
@@ -76,6 +87,29 @@ private:
 	void RestoreOxygenToMax();
 	int32 GetCurrentBlockDepth() const;
 	const UGameSettingDataAsset* GetGameSettings() const;
+	void UpdateCharacterAnimationVisual();
+	void SetCharacterVisualOverrideEnabled(bool bEnabled);
+	void UpdateOverrideVisualFacingDirection();
+	ECharacterAnimationType ResolveCurrentCharacterAnimationType() const;
+	const UPaperSprite* ResolveCurrentBaseFrameSprite() const;
+	float ResolveCurrentBasePixelsPerUnrealUnit() const;
+	float ResolveOverrideVisualScale(const UPaperSprite* OverrideSprite) const;
+	const FCharacterDataTableRow* GetCharacterData() const;
+	const FCharacterAnimationEntry* FindCharacterAnimationEntry(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const;
+	const UPaperSprite* ResolveCharacterAnimationSprite(const FCharacterAnimationEntry& CharacterAnimationEntry, int32 AnimationFrameIndex);
+	void EnsureCharacterVisualMaterialInstance();
+	void InitializeEquipmentOverlayComponents();
+	void RefreshEquippedOverlayItems();
+	void UpdateEquipmentOverlays();
+	void UpdateEquipmentOverlayZOrders();
+	bool GetCurrentAnimationPlaybackData(const UPaperZDAnimSequence*& OutAnimationSequence, float& OutPlaybackTime, float& OutPlaybackProgress) const;
+	int32 ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress) const;
+	const FEquipmentItemDataTableRow* GetEquipmentItemData(FName EquipmentKey);
+	const UPaperSprite* ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress);
+	const UPaperSprite* ResolveAnimationOverlaySprite(const FEquipmentAnimationOverlayEntry& OverlayEntry, int32 AnimationFrameIndex);
+	UMKRuntimePaperSprite* GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit);
+	FName MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const;
+	void SetAnimInstanceVectorVariable(FName VariableName, const FVector& Value);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -83,6 +117,15 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> CharacterVisualComponent;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetCharacterRowNames"))
+	FName CharacterDataRowKey = NAME_None;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Animation")
+	ECharacterAnimationType CurrentCharacterAnimationType = ECharacterAnimationType::Idle;
 
 	//TODO: ASC 커스텀하게 만들어서 가지고 있게 하기
 	UPROPERTY(EditAnywhere)
@@ -103,11 +146,31 @@ protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInstanceDynamic> InvincibleMaterialInstance;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> CharacterVisualMaterialInstance;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UMaterialInterface> CharacterVisualMaterialSource;
+
 	bool bIsFlying = false;
 
 private:
 	FVector CharacterDir;
+	FVector DrillingVector = FVector::ZeroVector;
+	bool bHasAppliedDrillingVectorToAnimInstance = false;
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
+	float CurrentInvincibleDarkenValue = 0.f;
+	float CurrentOverrideVisualScale = 1.f;
+	bool bCharacterVisualOverrideEnabled = false;
+
+	UPROPERTY(Transient)
+	TMap<EEuipmentType, TObjectPtr<UPaperSpriteComponent>> EquipmentOverlayComponents;
+
+	UPROPERTY(Transient)
+	TMap<FName, TObjectPtr<UMKRuntimePaperSprite>> RuntimeAtlasSpriteCache;
+
+	TMap<EEuipmentType, FName> EquippedOverlayItemKeys;
+	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };
 
