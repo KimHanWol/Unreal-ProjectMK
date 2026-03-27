@@ -1,23 +1,12 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
+#include "ProjectMK/Data/Struct/CharacterAnimationTextureSet.h"
 
 #include "CharacterDataTableRow.generated.h"
 
 class UTexture2D;
-
-UENUM(BlueprintType)
-enum class ECharacterAnimationType : uint8
-{
-	Idle UMETA(DisplayName = "Idle"),
-	Run UMETA(DisplayName = "Run"),
-	Fly UMETA(DisplayName = "Fly"),
-	Fall UMETA(DisplayName = "Fall"),
-	Drill_Side UMETA(DisplayName = "Drill_Side"),
-	Drill_Up UMETA(DisplayName = "Drill_Up"),
-	Drill_Down UMETA(DisplayName = "Drill_Down"),
-};
 
 USTRUCT(BlueprintType)
 struct FCharacterAnimationEntry
@@ -39,8 +28,8 @@ struct FCharacterDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText CharacterName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TArray<FCharacterAnimationEntry> AnimationEntries;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	FCharacterAnimationTextureSet AnimationTextures;
 };
 
 // Legacy row struct kept for compatibility with existing DataTable assets.
@@ -59,7 +48,10 @@ struct FCharacterAnimationDataTableRow : public FTableRowBase
 	{
 		FCharacterDataTableRow ConvertedRow;
 		ConvertedRow.CharacterName = CharacterName;
-		ConvertedRow.AnimationEntries = AnimationEntries;
+		for (const FCharacterAnimationEntry& AnimationEntry : AnimationEntries)
+		{
+			ConvertedRow.AnimationTextures.SetTexture(AnimationEntry.AnimationType, AnimationEntry.AnimationAtlasTexture);
+		}
 		return ConvertedRow;
 	}
 };

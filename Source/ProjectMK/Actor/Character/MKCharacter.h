@@ -25,7 +25,6 @@ class UTexture2D;
 struct FGameplayTag;
 class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
-struct FCharacterAnimationEntry;
 struct FEquipmentItemDataTableRow;
 
 UCLASS()
@@ -97,8 +96,7 @@ private:
 	float ResolveCurrentBasePixelsPerUnrealUnit() const;
 	float ResolveOverrideVisualScale(const UPaperSprite* OverrideSprite) const;
 	const FCharacterDataTableRow* GetCharacterData() const;
-	const FCharacterAnimationEntry* FindCharacterAnimationEntry(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const;
-	const UPaperSprite* ResolveCharacterAnimationSprite(const FCharacterAnimationEntry& CharacterAnimationEntry, int32 AnimationFrameIndex);
+	const TSoftObjectPtr<UTexture2D>* FindCharacterAnimationTexture(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const;
 	void EnsureCharacterVisualMaterialInstance();
 	void InitializeEquipmentOverlayComponents();
 	void RefreshEquippedOverlayItems();
@@ -107,8 +105,8 @@ private:
 	bool GetCurrentAnimationPlaybackData(const UPaperZDAnimSequence*& OutAnimationSequence, float& OutPlaybackTime, float& OutPlaybackProgress) const;
 	int32 ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress) const;
 	const FEquipmentItemDataTableRow* GetEquipmentItemData(FName EquipmentKey);
-	const UPaperSprite* ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress);
-	const UPaperSprite* ResolveAnimationOverlaySprite(const FEquipmentAnimationOverlayEntry& OverlayEntry, int32 AnimationFrameIndex);
+	const UPaperSprite* ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType CurrentAnimationType, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress);
+	const UPaperSprite* ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex);
 	UMKRuntimePaperSprite* GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit);
 	FName MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const;
 	void SetAnimInstanceVectorVariable(FName VariableName, const FVector& Value);

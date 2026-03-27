@@ -10,6 +10,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
+#include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -443,13 +444,7 @@ void UInventoryComponent::RemoveEquipmentEffects(FName EquipmentKey)
 
 const FEquipmentItemDataTableRow* UInventoryComponent::GetEquipmentItemData(FName EquipmentKey) const
 {
-	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
-	if (::IsValid(DataManager) == false)
-	{
-		return nullptr;
-	}
-
-	return DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	return FEquipmentItemDataTableUtil::FindEquipmentItemData(const_cast<UInventoryComponent*>(this), EquipmentKey);
 }
 
 void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)

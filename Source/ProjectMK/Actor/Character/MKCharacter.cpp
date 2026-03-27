@@ -27,6 +27,7 @@
 #include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Helper/MKRuntimePaperSprite.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 namespace
@@ -42,10 +43,11 @@ namespace
 		static const TArray<EEuipmentType> EquipmentTypes =
 		{
 			EEuipmentType::Halmet,
+			EEuipmentType::Armor,
 			EEuipmentType::Drill,
-			EEuipmentType::balloon,
+			EEuipmentType::Balloon,
 			EEuipmentType::Gloves,
-			EEuipmentType::shoes,
+			EEuipmentType::Shoes,
 		};
 
 		return EquipmentTypes;
@@ -622,15 +624,16 @@ void AMKCharacter::UpdateCharacterAnimationVisual()
 
 	CurrentCharacterAnimationType = ResolveCurrentCharacterAnimationType();
 
-	const FCharacterAnimationEntry* CharacterAnimationEntry = FindCharacterAnimationEntry(*CharacterData, CurrentCharacterAnimationType);
-	if (CharacterAnimationEntry == nullptr)
+	const TSoftObjectPtr<UTexture2D>* CharacterAnimationTexturePtr = FindCharacterAnimationTexture(*CharacterData, CurrentCharacterAnimationType);
+	if (CharacterAnimationTexturePtr == nullptr || CharacterAnimationTexturePtr->IsNull())
 	{
 		SetCharacterVisualOverrideEnabled(false);
 		return;
 	}
 
 	const int32 AnimationFrameIndex = ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-	const UPaperSprite* CharacterSprite = ResolveCharacterAnimationSprite(*CharacterAnimationEntry, AnimationFrameIndex);
+	UTexture2D* CharacterAtlasTexture = CharacterAnimationTexturePtr->LoadSynchronous();
+	const UPaperSprite* CharacterSprite = ResolveAnimationAtlasSprite(CharacterAtlasTexture, AnimationFrameIndex);
 	if (CharacterSprite == nullptr)
 	{
 		CurrentOverrideVisualScale = 1.f;
@@ -837,27 +840,19 @@ const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
 	return nullptr;
 }
 
-const FCharacterAnimationEntry* AMKCharacter::FindCharacterAnimationEntry(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const
+const TSoftObjectPtr<UTexture2D>* AMKCharacter::FindCharacterAnimationTexture(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const
 {
-	for (const FCharacterAnimationEntry& CharacterAnimationEntry : CharacterData.AnimationEntries)
+	const TSoftObjectPtr<UTexture2D>* AnimationTexturePtr = CharacterData.AnimationTextures.FindTexture(AnimationType);
+	if (AnimationTexturePtr != nullptr)
 	{
-		if (CharacterAnimationEntry.AnimationType == AnimationType)
-		{
-			return &CharacterAnimationEntry;
-		}
+		return AnimationTexturePtr;
 	}
 
 	return nullptr;
 }
 
-const UPaperSprite* AMKCharacter::ResolveCharacterAnimationSprite(const FCharacterAnimationEntry& CharacterAnimationEntry, int32 AnimationFrameIndex)
+const UPaperSprite* AMKCharacter::ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex)
 {
-	if (CharacterAnimationEntry.AnimationAtlasTexture.IsNull())
-	{
-		return nullptr;
-	}
-
-	UTexture2D* AtlasTexture = CharacterAnimationEntry.AnimationAtlasTexture.LoadSynchronous();
 	if (::IsValid(AtlasTexture) == false)
 	{
 		return nullptr;
@@ -966,6 +961,7 @@ void AMKCharacter::UpdateEquipmentOverlays()
 	float PlaybackTime = 0.f;
 	float PlaybackProgress = 0.f;
 	GetCurrentAnimationPlaybackData(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
+	const ECharacterAnimationType CurrentAnimationType = ResolveCurrentCharacterAnimationType();
 
 	for (const EEuipmentType EquipmentType : GetSupportedEquipmentTypes())
 	{
@@ -987,7 +983,7 @@ void AMKCharacter::UpdateEquipmentOverlays()
 
 		const FEquipmentItemDataTableRow* EquipmentData = GetEquipmentItemData(*EquippedItemKeyPtr);
 		const UPaperSprite* OverlaySprite = EquipmentData != nullptr
-			? ResolveEquipmentOverlaySprite(*EquipmentData, CurrentAnimationSequence, PlaybackTime, PlaybackProgress)
+			? ResolveEquipmentOverlaySprite(*EquipmentData, CurrentAnimationType, CurrentAnimationSequence, PlaybackTime, PlaybackProgress)
 			: nullptr;
 
 		OverlayComponent->SetSprite(const_cast<UPaperSprite*>(OverlaySprite));
@@ -1059,70 +1055,30 @@ int32 AMKCharacter::ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence
 
 const FEquipmentItemDataTableRow* AMKCharacter::GetEquipmentItemData(FName EquipmentKey)
 {
-	if (EquipmentKey.IsNone())
-	{
-		return nullptr;
-	}
-
-	const UDataManager* DataManager = UDataManager::Get(const_cast<AMKCharacter*>(this));
-	if (::IsValid(DataManager) == false)
-	{
-		return nullptr;
-	}
-
-	return DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, EquipmentKey);
+	return FEquipmentItemDataTableUtil::FindEquipmentItemData(this, EquipmentKey);
 }
 
-const UPaperSprite* AMKCharacter::ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress)
+const UPaperSprite* AMKCharacter::ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType CurrentAnimationType, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress)
 {
 	const int32 AnimationFrameIndex = ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-
-	for (const FEquipmentAnimationOverlayEntry& OverlayEntry : EquipmentData.AnimationOverlayEntries)
+	const TSoftObjectPtr<UTexture2D>* InlineOverlayTexturePtr = EquipmentData.AnimationOverlayTextures.FindTexture(CurrentAnimationType);
+	if (InlineOverlayTexturePtr != nullptr)
 	{
-		const UPaperZDAnimSequence* EntrySequence = OverlayEntry.AnimationSequence.IsNull()
-			? nullptr
-			: OverlayEntry.AnimationSequence.LoadSynchronous();
-		if (EntrySequence == nullptr || EntrySequence != CurrentAnimationSequence)
+		if (InlineOverlayTexturePtr->IsNull() == false)
 		{
-			continue;
+			UTexture2D* OverlayAtlasTexture = InlineOverlayTexturePtr->LoadSynchronous();
+			return ResolveAnimationAtlasSprite(OverlayAtlasTexture, AnimationFrameIndex);
 		}
 
-		return ResolveAnimationOverlaySprite(OverlayEntry, AnimationFrameIndex);
-	}
-
-	if (EquipmentData.AnimationOverlayEntries.IsEmpty() == false)
-	{
-		return nullptr;
+		if (EquipmentData.AnimationOverlayTextures.HasAnyTexture())
+		{
+			return nullptr;
+		}
 	}
 
 	const UPaperSprite* EquipmentSprite = EquipmentData.EquipmentSprite.IsNull() ? nullptr : EquipmentData.EquipmentSprite.LoadSynchronous();
 	ApplySpriteRenderingOverrides(EquipmentSprite);
 	return EquipmentSprite;
-}
-
-const UPaperSprite* AMKCharacter::ResolveAnimationOverlaySprite(const FEquipmentAnimationOverlayEntry& OverlayEntry, int32 AnimationFrameIndex)
-{
-	if (OverlayEntry.OverlayAtlasTexture.IsNull())
-	{
-		return nullptr;
-	}
-
-	UTexture2D* AtlasTexture = OverlayEntry.OverlayAtlasTexture.LoadSynchronous();
-	if (::IsValid(AtlasTexture) == false)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / EquipmentOverlayAtlasCellSize;
-	const int32 AtlasRows = AtlasTexture->GetSizeY() / EquipmentOverlayAtlasCellSize;
-	const int32 AtlasCellCount = AtlasColumns * AtlasRows;
-	if (AtlasCellCount <= 0)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasCellIndex = FMath::Clamp(AnimationFrameIndex, 0, AtlasCellCount - 1);
-	return GetOrCreateRuntimeAtlasSprite(AtlasTexture, AtlasCellIndex, ResolveCurrentBasePixelsPerUnrealUnit());
 }
 
 UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit)

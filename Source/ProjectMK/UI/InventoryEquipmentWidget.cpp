@@ -76,11 +76,12 @@ void UInventoryEquipmentWidget::OnInventoryChanged()
 		BalloonSlot->ClearItem();
 	}
 
-	RefreshEquipmentSlot(EEuipmentType::Halmet, HelmetSlot, ArmorSlot);
+	RefreshEquipmentSlot(EEuipmentType::Halmet, HelmetSlot);
+	RefreshEquipmentSlot(EEuipmentType::Armor, ArmorSlot);
 	RefreshEquipmentSlot(EEuipmentType::Gloves, GlovesSlot);
-	RefreshEquipmentSlot(EEuipmentType::shoes, ShoesSlot);
+	RefreshEquipmentSlot(EEuipmentType::Shoes, ShoesSlot);
 	RefreshEquipmentSlot(EEuipmentType::Drill, DrillSlot);
-	RefreshEquipmentSlot(EEuipmentType::balloon, BalloonSlot);
+	RefreshEquipmentSlot(EEuipmentType::Balloon, BalloonSlot);
 }
 
 void UInventoryEquipmentWidget::RefreshEquipmentSlot(EEuipmentType EquipmentType, UItemSlotWidget* PreferredSlot, UItemSlotWidget* FallbackSlot)
