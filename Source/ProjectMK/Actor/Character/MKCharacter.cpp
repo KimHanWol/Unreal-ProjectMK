@@ -22,6 +22,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
@@ -103,6 +104,8 @@ AMKCharacter::AMKCharacter()
 	CharacterVisualComponent->SetVisibility(false);
 	CharacterVisualComponent->SetHiddenInGame(true);
 
+	CharacterVisualLogicComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualLogicComponent"));
+
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 	AttributeSet_Character = CreateDefaultSubobject<UAttributeSet_Character>(TEXT("AttributeSet_Character"));
 }
@@ -135,16 +138,14 @@ void AMKCharacter::BeginPlay()
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
 
-	InitializeInvincibleMaterial();
-	InitializeEquipmentOverlayComponents();
-
 	GiveAbilities();
 	InitializeCharacterAttributes();
 	ApplyInitialEffects();
 	BindEvents();
-	UpdateCharacterAnimationVisual();
-	RefreshEquippedOverlayItems();
-	UpdateEquipmentOverlays();
+	if (::IsValid(CharacterVisualLogicComponent))
+	{
+		CharacterVisualLogicComponent->InitializeVisuals();
+	}
 }
 
 void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
@@ -301,12 +302,6 @@ void AMKCharacter::BindEvents()
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &AMKCharacter::OnCurrentOxygenChanged);
-		AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).AddUObject(this, &AMKCharacter::OnInvincibleTagChanged);
-	}
-
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &AMKCharacter::RefreshEquippedOverlayItems);
 	}
 }
 
@@ -317,12 +312,6 @@ void AMKCharacter::UnbindEvents()
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
-		AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).RemoveAll(this);
-	}
-
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 	}
 }
 
@@ -478,8 +467,10 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
-	UpdateCharacterAnimationVisual();
-	UpdateEquipmentOverlays();
+	if (::IsValid(CharacterVisualLogicComponent))
+	{
+		CharacterVisualLogicComponent->UpdateVisuals();
+	}
 
 	if (bIsFlying)
 	{
@@ -1062,23 +1053,18 @@ const UPaperSprite* AMKCharacter::ResolveEquipmentOverlaySprite(const FEquipment
 {
 	const int32 AnimationFrameIndex = ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
 	const TSoftObjectPtr<UTexture2D>* InlineOverlayTexturePtr = EquipmentData.AnimationOverlayTextures.FindTexture(CurrentAnimationType);
-	if (InlineOverlayTexturePtr != nullptr)
+	if (InlineOverlayTexturePtr != nullptr && InlineOverlayTexturePtr->IsNull() == false)
 	{
-		if (InlineOverlayTexturePtr->IsNull() == false)
-		{
-			UTexture2D* OverlayAtlasTexture = InlineOverlayTexturePtr->LoadSynchronous();
-			return ResolveAnimationAtlasSprite(OverlayAtlasTexture, AnimationFrameIndex);
-		}
-
-		if (EquipmentData.AnimationOverlayTextures.HasAnyTexture())
-		{
-			return nullptr;
-		}
+		UTexture2D* OverlayAtlasTexture = InlineOverlayTexturePtr->LoadSynchronous();
+		return ResolveAnimationAtlasSprite(OverlayAtlasTexture, AnimationFrameIndex);
 	}
 
-	const UPaperSprite* EquipmentSprite = EquipmentData.EquipmentSprite.IsNull() ? nullptr : EquipmentData.EquipmentSprite.LoadSynchronous();
-	ApplySpriteRenderingOverrides(EquipmentSprite);
-	return EquipmentSprite;
+	if (UTexture2D* IdlePreviewTexture = FEquipmentItemDataTableUtil::LoadIdlePreviewTexture(EquipmentData))
+	{
+		return ResolveAnimationAtlasSprite(IdlePreviewTexture, 0);
+	}
+
+	return nullptr;
 }
 
 UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit)

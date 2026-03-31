@@ -9,7 +9,6 @@
 #include "EquipmentItemDataTableRow.generated.h"
 
 class UGameplayEffect;
-class UPaperSprite;
 
 UENUM(BlueprintType)
 enum class EEuipmentType : uint8
@@ -38,18 +37,18 @@ struct FEquipmentEffectEntry
 };
 
 USTRUCT(BlueprintType)
-struct FEquipmentItemDataTableRow : public FItemDataTableRow
+struct FEquipmentItemDataTableRow : public FItemDataTableRowBase
 {
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText EquipmentName;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSoftObjectPtr<UPaperSprite> EquipmentSprite;
-
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Overlay")
 	FCharacterAnimationTextureSet AnimationOverlayTextures;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "State Visual")
+	TSoftObjectPtr<UPaperSprite> StateDisplaySprite;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	EEuipmentType EquipmentType;

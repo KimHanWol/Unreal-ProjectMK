@@ -7,7 +7,10 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
+#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Helper/MKRuntimePaperSprite.h"
+#include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
 
 AItemBase::AItemBase()
 {
@@ -45,13 +48,30 @@ void AItemBase::InitializeItemBase(FName InItemKey)
 		return;
 	}
 
-	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, InItemKey);
-	if (ItemDataTableRow == nullptr)
+	RuntimeItemPreviewSprite = nullptr;
+
+	UPaperSprite* ResolvedItemSprite = nullptr;
+	if (const FEquipmentItemDataTableRow* EquipmentData = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, InItemKey))
 	{
-		return;
+		RuntimeItemPreviewSprite = Cast<UMKRuntimePaperSprite>(FEquipmentItemDataTableUtil::CreateIdlePreviewSprite(this, *EquipmentData));
+		if (::IsValid(RuntimeItemPreviewSprite))
+		{
+			ResolvedItemSprite = RuntimeItemPreviewSprite;
+		}
 	}
 
-	PaperSpriteComponent->SetSprite(ItemDataTableRow->ItemIcon.LoadSynchronous());
+	if (::IsValid(ResolvedItemSprite) == false)
+	{
+		const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, InItemKey);
+		if (ItemDataTableRow == nullptr)
+		{
+			return;
+		}
+
+		ResolvedItemSprite = ItemDataTableRow->ItemIcon.LoadSynchronous();
+	}
+
+	PaperSpriteComponent->SetSprite(ResolvedItemSprite);
 
 	float ItemSpriteScale = 0.7f;
 	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())

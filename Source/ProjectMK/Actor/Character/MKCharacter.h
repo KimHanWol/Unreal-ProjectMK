@@ -14,8 +14,10 @@ class UGameplayAbility;
 class UGameplayEffect;
 class UInteractComponent;
 class UInventoryComponent;
+class UAttributeSet_Character;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
+class UMKCharacterVisualComponent;
 class UMKRuntimePaperSprite;
 class UPaperSprite;
 class UPaperSpriteComponent;
@@ -62,9 +64,12 @@ protected:
 
 public:
 	FVector GetCharacterDirection() const { return CharacterDir; }
+	FVector GetDrillingVector() const { return DrillingVector; }
 	void SetDrillingVector(const FVector& InDrillingVector);
 
 private:
+	friend class UMKCharacterVisualComponent;
+
 	void OnLookRight(float Value);
 	void OnLookUp(float Value);
 	void OnMoveRight(float Value);
@@ -120,6 +125,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPaperSpriteComponent> CharacterVisualComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UMKCharacterVisualComponent> CharacterVisualLogicComponent;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetCharacterRowNames"))
 	FName CharacterDataRowKey = NAME_None;

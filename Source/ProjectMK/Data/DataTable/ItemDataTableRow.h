@@ -6,16 +6,22 @@
 #include "ItemDataTableRow.generated.h"
 
 USTRUCT(BlueprintType)
-struct FItemDataTableRow : public FTableRowBase
+struct FItemDataTableRowBase : public FTableRowBase
 {
 	GENERATED_BODY()
-
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSoftObjectPtr<UPaperSprite> ItemIcon;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsOre;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	int32 SellPrice;
+};
+
+USTRUCT(BlueprintType)
+struct FItemDataTableRow : public FItemDataTableRowBase
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	TSoftObjectPtr<UPaperSprite> ItemIcon;
 };
