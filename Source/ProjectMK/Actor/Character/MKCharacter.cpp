@@ -26,6 +26,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/MKRuntimePaperSprite.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
@@ -141,6 +142,7 @@ void AMKCharacter::BeginPlay()
 	GiveAbilities();
 	InitializeCharacterAttributes();
 	ApplyInitialEffects();
+	GrantInitialInventoryItems();
 	BindEvents();
 	if (::IsValid(CharacterVisualLogicComponent))
 	{
@@ -293,6 +295,54 @@ void AMKCharacter::ApplyInitialEffects()
 	}
 
 	RestoreOxygenToMax();
+}
+
+void AMKCharacter::GrantInitialInventoryItems()
+{
+	if (::IsValid(InventoryComponent) == false)
+	{
+		return;
+	}
+
+	const FCharacterDataTableRow* CharacterData = GetCharacterData();
+	if (CharacterData == nullptr)
+	{
+		return;
+	}
+
+	TSet<FName> ValidItemKeys;
+	for (const FString& ItemRowName : UMKBlueprintFunctionLibrary::GetItemRowNames())
+	{
+		ValidItemKeys.Add(FName(*ItemRowName));
+	}
+
+	for (const FCharacterInitialInventoryEntry& InitialItem : CharacterData->InitialInventoryItems)
+	{
+		const FName ItemKey = InitialItem.GetItemKey();
+		if (ItemKey.IsNone() || InitialItem.ItemCount <= 0)
+		{
+			continue;
+		}
+
+		const bool bHasItemData = ValidItemKeys.Contains(ItemKey);
+		const bool bHasEquipmentData = FEquipmentItemDataTableUtil::FindEquipmentItemData(this, ItemKey) != nullptr;
+		if (bHasItemData == false && bHasEquipmentData == false)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Invalid initial item key '%s' on '%s'."), *ItemKey.ToString(), *GetName());
+			continue;
+		}
+
+		if (InventoryComponent->AddItem(ItemKey, InitialItem.ItemCount) == false)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Failed to add '%s' x%d to '%s'."), *ItemKey.ToString(), InitialItem.ItemCount, *GetName());
+			continue;
+		}
+
+		if (bHasEquipmentData && InventoryComponent->EquipItem(ItemKey) == false)
+		{
+			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Failed to equip initial equipment '%s' on '%s'."), *ItemKey.ToString(), *GetName());
+		}
+	}
 }
 
 void AMKCharacter::BindEvents()

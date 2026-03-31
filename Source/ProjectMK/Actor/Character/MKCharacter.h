@@ -51,6 +51,7 @@ protected:
 	void GiveAbilities();
 	void InitializeCharacterAttributes();
 	void ApplyInitialEffects();
+	void GrantInitialInventoryItems();
 
 	virtual void BindEvents();
 	virtual void UnbindEvents();

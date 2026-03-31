@@ -19,6 +19,9 @@ public:
 	static TArray<FString> GetItemRowNames();
 
 	UFUNCTION()
+	static TArray<FString> GetItemAndEquipmentRowNames();
+
+	UFUNCTION()
 	static TArray<FString> GetCharacterRowNames();
 
 	UFUNCTION(BlueprintCallable)
