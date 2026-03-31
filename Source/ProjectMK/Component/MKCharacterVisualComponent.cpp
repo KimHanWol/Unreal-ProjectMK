@@ -1,4 +1,4 @@
-#include "ProjectMK/Component/MKCharacterVisualComponent.h"
+﻿#include "ProjectMK/Component/MKCharacterVisualComponent.h"
 
 #include "AbilitySystemComponent.h"
 #include "AnimSequences/PaperZDAnimSequence.h"
@@ -60,6 +60,10 @@ void UMKCharacterVisualComponent::InitializeVisuals()
 	}
 
 	CharacterVisualComponent = OwnerCharacter->CharacterVisualComponent;
+	if (::IsValid(OwnerCharacter->GetSprite()))
+	{
+		BaseCharacterSpriteRelativeLocation = OwnerCharacter->GetSprite()->GetRelativeLocation();
+	}
 	InitializeInvincibleMaterial();
 	InitializeEquipmentOverlayComponents();
 	CacheStateSpriteComponents();
@@ -100,6 +104,7 @@ void UMKCharacterVisualComponent::UpdateVisuals()
 
 	UpdateCharacterAnimationVisual();
 	UpdateEquipmentOverlays();
+	UpdateDrillShakeVisuals();
 	UpdateStateSpriteVisuals();
 }
 
@@ -142,6 +147,14 @@ void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag 
 
 void UMKCharacterVisualComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	if (AMKCharacter* OwnerCharacter = GetOwnerCharacter())
+	{
+		if (::IsValid(OwnerCharacter->GetSprite()))
+		{
+			OwnerCharacter->GetSprite()->SetRelativeLocation(BaseCharacterSpriteRelativeLocation);
+		}
+	}
+
 	UnbindVisualDelegates();
 	Super::EndPlay(EndPlayReason);
 }
@@ -237,6 +250,10 @@ void UMKCharacterVisualComponent::CacheStateSpriteComponents()
 	CacheStateSpriteComponent(DrillSideSpriteComponentName, DrillSideStateSpriteComponent, DrillSideLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillDownSpriteComponentName, DrillDownStateSpriteComponent, DrillDownLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillUpSpriteComponentName, DrillUpStateSpriteComponent, DrillUpLeftFacingRelativeLocation);
+	if (::IsValid(DrillSideStateSpriteComponent))
+	{
+		DrillSideLeftFacingRelativeRotation = DrillSideStateSpriteComponent->GetRelativeRotation();
+	}
 
 	const int32 StateSpriteSortPriority = ResolveStateSpriteSortPriority();
 	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillSideStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
@@ -490,6 +507,32 @@ void UMKCharacterVisualComponent::UpdateEquipmentOverlayZOrders()
 	}
 }
 
+void UMKCharacterVisualComponent::UpdateDrillShakeVisuals()
+{
+	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
+	if (::IsValid(OwnerCharacter) == false || ::IsValid(OwnerCharacter->GetSprite()) == false)
+	{
+		CachedDrillShakeOffset = FVector::ZeroVector;
+		return;
+	}
+
+	CachedDrillShakeOffset = FVector::ZeroVector;
+
+	const bool bShouldShake = OwnerCharacter->GetDrillingVector().IsNearlyZero() == false
+		&& DrillShakeOscillationSpeed > 0.f
+		&& (DrillShakeHorizontalAmplitude > 0.f || DrillShakeVerticalAmplitude > 0.f);
+	if (bShouldShake)
+	{
+		const UWorld* World = GetWorld();
+		const float TimeSeconds = ::IsValid(World) ? World->GetTimeSeconds() : 0.f;
+
+		CachedDrillShakeOffset.X = FMath::Sin(TimeSeconds * DrillShakeOscillationSpeed) * DrillShakeHorizontalAmplitude;
+		CachedDrillShakeOffset.Z = FMath::Cos(TimeSeconds * DrillShakeOscillationSpeed * 1.7f) * DrillShakeVerticalAmplitude;
+	}
+
+	OwnerCharacter->GetSprite()->SetRelativeLocation(BaseCharacterSpriteRelativeLocation + CachedDrillShakeOffset);
+}
+
 void UMKCharacterVisualComponent::UpdateStateSpriteVisuals()
 {
 	UpdateStateSpriteLocations();
@@ -552,7 +595,10 @@ void UMKCharacterVisualComponent::UpdateStateSpriteVisuals()
 
 void UMKCharacterVisualComponent::UpdateStateSpriteLocations()
 {
-	const auto ApplyFacingLocation = [this](UPaperSpriteComponent* StateSpriteComponent, const FVector& LeftFacingLocation)
+	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
+	const USceneComponent* OwnerSpriteComponent = ::IsValid(OwnerCharacter) ? OwnerCharacter->GetSprite() : nullptr;
+
+	const auto ApplyFacingLocation = [this, OwnerSpriteComponent](UPaperSpriteComponent* StateSpriteComponent, const FVector& LeftFacingLocation)
 	{
 		if (::IsValid(StateSpriteComponent) == false)
 		{
@@ -565,6 +611,12 @@ void UMKCharacterVisualComponent::UpdateStateSpriteLocations()
 			UpdatedLocation.X *= -1.f;
 		}
 
+		if (CachedDrillShakeOffset.IsNearlyZero() == false
+			&& (OwnerSpriteComponent == nullptr || StateSpriteComponent->IsAttachedTo(OwnerSpriteComponent) == false))
+		{
+			UpdatedLocation += CachedDrillShakeOffset;
+		}
+
 		StateSpriteComponent->SetRelativeLocation(UpdatedLocation);
 	};
 
@@ -572,6 +624,17 @@ void UMKCharacterVisualComponent::UpdateStateSpriteLocations()
 	ApplyFacingLocation(DrillSideStateSpriteComponent, DrillSideLeftFacingRelativeLocation);
 	ApplyFacingLocation(DrillDownStateSpriteComponent, DrillDownLeftFacingRelativeLocation);
 	ApplyFacingLocation(DrillUpStateSpriteComponent, DrillUpLeftFacingRelativeLocation);
+
+	if (::IsValid(DrillSideStateSpriteComponent))
+	{
+		FRotator UpdatedRotation = DrillSideLeftFacingRelativeRotation;
+		if (bFacingRight)
+		{
+			UpdatedRotation.Yaw += 180.f;
+		}
+
+		DrillSideStateSpriteComponent->SetRelativeRotation(UpdatedRotation);
+	}
 }
 
 void UMKCharacterVisualComponent::HideAllStateSprites()

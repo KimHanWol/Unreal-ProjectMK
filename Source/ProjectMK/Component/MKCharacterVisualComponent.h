@@ -50,6 +50,7 @@ private:
 	void RefreshEquippedOverlayItems();
 	void UpdateEquipmentOverlays();
 	void UpdateEquipmentOverlayZOrders();
+	void UpdateDrillShakeVisuals();
 
 	void UpdateStateSpriteVisuals();
 	void UpdateStateSpriteLocations();
@@ -81,6 +82,15 @@ private:
 
 	UPROPERTY(EditDefaultsOnly, Category = "State Sprite")
 	FName DrillUpSpriteComponentName = TEXT("DrillUpSprite");
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	float DrillShakeHorizontalAmplitude = 1.25f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	float DrillShakeVerticalAmplitude = 0.9f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	float DrillShakeOscillationSpeed = 40.f;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UPaperSpriteComponent> CharacterVisualComponent;
@@ -117,8 +127,11 @@ private:
 	FVector DrillSideLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillDownLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillUpLeftFacingRelativeLocation = FVector::ZeroVector;
+	FRotator DrillSideLeftFacingRelativeRotation = FRotator::ZeroRotator;
 	float CurrentInvincibleDarkenValue = 0.f;
 	float CurrentOverrideVisualScale = 1.f;
+	FVector BaseCharacterSpriteRelativeLocation = FVector::ZeroVector;
+	FVector CachedDrillShakeOffset = FVector::ZeroVector;
 	bool bCharacterVisualOverrideEnabled = false;
 	bool bFacingRight = false;
 	ECharacterAnimationType CachedAnimationType = ECharacterAnimationType::Idle;
