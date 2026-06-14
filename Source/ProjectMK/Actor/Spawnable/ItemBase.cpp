@@ -51,13 +51,10 @@ void AItemBase::InitializeItemBase(FName InItemKey)
 	RuntimeItemPreviewSprite = nullptr;
 
 	UPaperSprite* ResolvedItemSprite = nullptr;
-	if (const FEquipmentItemDataTableRow* EquipmentData = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, InItemKey))
+	if (const FEquipmentItemDataTableRow* EquipmentData = FEquipmentItemDataTableUtil::FindEquipmentItemData(this, InItemKey))
 	{
-		RuntimeItemPreviewSprite = Cast<UMKRuntimePaperSprite>(FEquipmentItemDataTableUtil::CreateIdlePreviewSprite(this, *EquipmentData));
-		if (::IsValid(RuntimeItemPreviewSprite))
-		{
-			ResolvedItemSprite = RuntimeItemPreviewSprite;
-		}
+		ResolvedItemSprite = FEquipmentItemDataTableUtil::CreatePreviewSprite(this, *EquipmentData);
+		RuntimeItemPreviewSprite = Cast<UMKRuntimePaperSprite>(ResolvedItemSprite);
 	}
 
 	if (::IsValid(ResolvedItemSprite) == false)

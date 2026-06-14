@@ -1070,7 +1070,12 @@ bool AMKCharacter::GetCurrentAnimationPlaybackData(const UPaperZDAnimSequence*& 
 	OutAnimationSequence = AnimPlayer->GetCurrentAnimSequence();
 	OutPlaybackTime = AnimPlayer->GetCurrentPlaybackTime();
 	OutPlaybackProgress = AnimPlayer->GetPlaybackProgress();
-	return OutAnimationSequence != nullptr;
+	if (OutAnimationSequence == nullptr)
+	{
+		return false;
+	}
+
+	return true;
 }
 
 int32 AMKCharacter::ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress) const

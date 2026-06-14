@@ -34,6 +34,22 @@ namespace MKCharacterVisualComponentLocals
 		return EquipmentTypes;
 	}
 
+	const TArray<ECharacterAnimationType>& GetVisualSupportedAnimationTypes()
+	{
+		static const TArray<ECharacterAnimationType> AnimationTypes =
+		{
+			ECharacterAnimationType::Idle,
+			ECharacterAnimationType::Run,
+			ECharacterAnimationType::Fly,
+			ECharacterAnimationType::Fall,
+			ECharacterAnimationType::Drill_Side,
+			ECharacterAnimationType::Drill_Up,
+			ECharacterAnimationType::Drill_Down,
+		};
+
+		return AnimationTypes;
+	}
+
 	FName GetVisualOverlayComponentName(EEuipmentType EquipmentType)
 	{
 		return FName(*FString::Printf(TEXT("EquipmentOverlay_%s"), *StaticEnum<EEuipmentType>()->GetNameStringByValue(static_cast<int64>(EquipmentType))));
@@ -44,6 +60,7 @@ namespace MKCharacterVisualComponentLocals
 		const float ClampedScale = FMath::Max(VisualScale, KINDA_SMALL_NUMBER);
 		return FVector(bReverseFacingDirection ? -ClampedScale : ClampedScale, 1.f, ClampedScale);
 	}
+
 }
 
 UMKCharacterVisualComponent::UMKCharacterVisualComponent()
@@ -69,6 +86,7 @@ void UMKCharacterVisualComponent::InitializeVisuals()
 	CacheStateSpriteComponents();
 	BindVisualDelegates();
 	RefreshEquippedOverlayItems();
+	PreloadEquippedVisualAssets();
 	UpdateEquipmentOverlayZOrders();
 
 	const FGameplayTag InvincibleTag = FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"));
@@ -116,6 +134,7 @@ void UMKCharacterVisualComponent::HandleInventoryChanged()
 	}
 
 	RefreshEquippedOverlayItems();
+	PreloadEquippedVisualAssets();
 	UpdateEquipmentOverlayZOrders();
 	UpdateVisuals();
 }
@@ -448,6 +467,39 @@ void UMKCharacterVisualComponent::RefreshEquippedOverlayItems()
 	}
 }
 
+void UMKCharacterVisualComponent::PreloadEquippedVisualAssets()
+{
+	for (const TPair<EEuipmentType, FName>& EquippedOverlayItem : EquippedOverlayItemKeys)
+	{
+		if (PreloadedEquipmentVisualItemKeys.Contains(EquippedOverlayItem.Value))
+		{
+			continue;
+		}
+
+		const FEquipmentItemDataTableRow* EquipmentData = GetEquipmentItemData(EquippedOverlayItem.Value);
+		if (EquipmentData == nullptr)
+		{
+			continue;
+		}
+
+		for (const ECharacterAnimationType AnimationType : MKCharacterVisualComponentLocals::GetVisualSupportedAnimationTypes())
+		{
+			const TSoftObjectPtr<UTexture2D>* OverlayTexturePtr = EquipmentData->AnimationOverlayTextures.FindTexture(AnimationType);
+			if (OverlayTexturePtr != nullptr && OverlayTexturePtr->IsNull() == false)
+			{
+				OverlayTexturePtr->LoadSynchronous();
+			}
+		}
+
+		if (EquipmentData->StateDisplaySprite.IsNull() == false)
+		{
+			EquipmentData->StateDisplaySprite.LoadSynchronous();
+		}
+
+		PreloadedEquipmentVisualItemKeys.Add(EquippedOverlayItem.Value);
+	}
+}
+
 void UMKCharacterVisualComponent::UpdateEquipmentOverlays()
 {
 	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
@@ -757,7 +809,8 @@ const UPaperSprite* UMKCharacterVisualComponent::ResolveEquipmentStateSprite(con
 		return nullptr;
 	}
 
-	return EquipmentData.StateDisplaySprite.LoadSynchronous();
+	UPaperSprite* StateSprite = EquipmentData.StateDisplaySprite.LoadSynchronous();
+	return StateSprite;
 }
 
 const UPaperSprite* UMKCharacterVisualComponent::ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex, float PixelsPerUnrealUnit)

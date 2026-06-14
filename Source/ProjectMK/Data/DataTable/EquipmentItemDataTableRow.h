@@ -44,6 +44,9 @@ struct FEquipmentItemDataTableRow : public FItemDataTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText EquipmentName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	TSoftObjectPtr<UPaperSprite> EquipmentIcon;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation Overlay")
 	FCharacterAnimationTextureSet AnimationOverlayTextures;
 

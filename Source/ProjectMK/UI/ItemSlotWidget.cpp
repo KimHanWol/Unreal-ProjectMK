@@ -14,6 +14,8 @@
 
 namespace
 {
+	const FVector2D InventoryIconBrushSize(64.f, 64.f);
+
 	bool TrySetBrushFromTextureRegion(UImage* TargetImage, UTexture2D* Texture, const FVector2D& SourceUV, const FVector2D& SourceSize)
 	{
 		if (::IsValid(TargetImage) == false || ::IsValid(Texture) == false)
@@ -34,7 +36,7 @@ namespace
 		FSlateBrush Brush;
 		Brush.DrawAs = ESlateBrushDrawType::Image;
 		Brush.SetResourceObject(Texture);
-		Brush.ImageSize = FVector2D(64.f, 64.f);
+		Brush.ImageSize = InventoryIconBrushSize;
 		Brush.SetUVRegion(FBox2D(MinUV, MaxUV));
 
 		TargetImage->SetBrush(Brush);
@@ -87,15 +89,33 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 		Text_Count->SetText(FText::AsNumber(ItemCount));
 	}
 
-	if (const FEquipmentItemDataTableRow* EquipmentData = DataManager->GetDataTableRow<FEquipmentItemDataTableRow>(EDataTableType::EquipmentItem, ItemKey))
+	if (const FEquipmentItemDataTableRow* EquipmentData = FEquipmentItemDataTableUtil::FindEquipmentItemData(this, ItemKey))
 	{
+		if (EquipmentData->EquipmentIcon.IsNull() == false)
+		{
+			if (TrySetBrushFromSprite(Image_Item, EquipmentData->EquipmentIcon.LoadSynchronous()))
+			{
+				return;
+			}
+		}
+
 		UTexture2D* PreviewTexture = nullptr;
 		FVector2D SourceUV = FVector2D::ZeroVector;
 		FVector2D SourceSize = FVector2D::ZeroVector;
 		if (FEquipmentItemDataTableUtil::GetIdlePreviewTextureRegion(*EquipmentData, PreviewTexture, SourceUV, SourceSize))
 		{
-			TrySetBrushFromTextureRegion(Image_Item, PreviewTexture, SourceUV, SourceSize);
-			return;
+			if (TrySetBrushFromTextureRegion(Image_Item, PreviewTexture, SourceUV, SourceSize))
+			{
+				return;
+			}
+		}
+
+		if (UPaperSprite* StatePreviewSprite = FEquipmentItemDataTableUtil::LoadStatePreviewSprite(*EquipmentData))
+		{
+			if (TrySetBrushFromSprite(Image_Item, StatePreviewSprite))
+			{
+				return;
+			}
 		}
 	}
 

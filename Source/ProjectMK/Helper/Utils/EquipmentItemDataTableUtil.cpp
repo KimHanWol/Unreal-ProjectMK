@@ -133,6 +133,16 @@ UTexture2D* FEquipmentItemDataTableUtil::LoadIdlePreviewTexture(const FEquipment
 	return IdleTexturePtr->LoadSynchronous();
 }
 
+UPaperSprite* FEquipmentItemDataTableUtil::LoadStatePreviewSprite(const FEquipmentItemDataTableRow& EquipmentData)
+{
+	if (EquipmentData.StateDisplaySprite.IsNull())
+	{
+		return nullptr;
+	}
+
+	return EquipmentData.StateDisplaySprite.LoadSynchronous();
+}
+
 bool FEquipmentItemDataTableUtil::GetIdlePreviewTextureRegion(const FEquipmentItemDataTableRow& EquipmentData, UTexture2D*& OutTexture, FVector2D& OutSourceUV, FVector2D& OutSourceSize)
 {
 	OutTexture = LoadIdlePreviewTexture(EquipmentData);
@@ -181,4 +191,19 @@ UPaperSprite* FEquipmentItemDataTableUtil::CreateIdlePreviewSprite(UObject* Oute
 		FMath::Max(DefaultPixelsPerUnrealUnit, KINDA_SMALL_NUMBER));
 
 	return RuntimeSprite;
+}
+
+UPaperSprite* FEquipmentItemDataTableUtil::CreatePreviewSprite(UObject* Outer, const FEquipmentItemDataTableRow& EquipmentData, float DefaultPixelsPerUnrealUnit)
+{
+	if (EquipmentData.EquipmentIcon.IsNull() == false)
+	{
+		return EquipmentData.EquipmentIcon.LoadSynchronous();
+	}
+
+	if (UPaperSprite* IdlePreviewSprite = CreateIdlePreviewSprite(Outer, EquipmentData, DefaultPixelsPerUnrealUnit))
+	{
+		return IdlePreviewSprite;
+	}
+
+	return LoadStatePreviewSprite(EquipmentData);
 }

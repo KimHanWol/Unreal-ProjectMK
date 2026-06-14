@@ -48,6 +48,7 @@ private:
 	void EnsureCharacterVisualMaterialInstance();
 
 	void RefreshEquippedOverlayItems();
+	void PreloadEquippedVisualAssets();
 	void UpdateEquipmentOverlays();
 	void UpdateEquipmentOverlayZOrders();
 	void UpdateDrillShakeVisuals();
@@ -123,6 +124,7 @@ private:
 	TObjectPtr<UPaperSpriteComponent> DrillUpStateSpriteComponent;
 
 	TMap<EEuipmentType, FName> EquippedOverlayItemKeys;
+	TSet<FName> PreloadedEquipmentVisualItemKeys;
 	FVector BalloonLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillSideLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillDownLeftFacingRelativeLocation = FVector::ZeroVector;
