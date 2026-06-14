@@ -1,0 +1,8 @@
+---,TileIndex,bHasCollision,TileSprite,BlockDurability,bIsMineable,SpawnableItemDataList,bNeedTobeHide
+Border,"57","True","/Game/Asset/Tiles/world_tileset_Sprite_58.world_tileset_Sprite_58","0.000000","False","","True"
+Rock,"24","True","/Game/Asset/Tiles/world_tileset_Sprite_25.world_tileset_Sprite_25","0.000000","False","","False"
+Shop,"56","True","/Game/Asset/Tiles/world_tileset_Sprite_57.world_tileset_Sprite_57","0.000000","False","","False"
+Dirt_Grass,"0","True","/Game/Asset/Tiles/world_tileset_Sprite_1.world_tileset_Sprite_1","100.000000","True","","False"
+Dirt,"16","True","/Game/Asset/Tiles/world_tileset_Sprite_17.world_tileset_Sprite_17","100.000000","True","((SpawnableItemKey=""Ore_Coal"",SpawnProbability=0.020000,ItemSprite=""/Game/Asset/Ore/OreStarter_32_Sprite_6.OreStarter_32_Sprite_6""),(SpawnableItemKey=""Ore_Copper"",SpawnProbability=0.010000,ItemSprite=""/Game/Asset/Ore/OreStarter_32_Sprite_45.OreStarter_32_Sprite_45""))","False"
+Sand,"18","True","/Game/Asset/Tiles/world_tileset_Sprite_19.world_tileset_Sprite_19","150.000000","True","","False"
+Ice,"0","True","/Game/Asset/Tiles/world_tileset_Sprite_39.world_tileset_Sprite_39","0.000000","False","","False"

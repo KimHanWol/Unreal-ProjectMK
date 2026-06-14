@@ -1,0 +1,12 @@
+---,ItemIcon,bIsOre,SellPrice
+Ore_Test,"/Game/Asset/Tiles/world_tileset_Sprite_10.world_tileset_Sprite_10","True","0"
+Ore_Coal,"/Game/Asset/Ore/OreStarter_32_Sprite_19.OreStarter_32_Sprite_19","True","0"
+Ore_Copper,"/Game/Asset/Ore/OreStarter_32_Sprite_50.OreStarter_32_Sprite_50","True","0"
+Ore_Iron,"/Game/Asset/Ore/OreStarter_32_Sprite_58.OreStarter_32_Sprite_58","True","0"
+Ore_Gold,"/Game/Asset/Ore/OreStarter_32_Sprite_55.OreStarter_32_Sprite_55","True","0"
+Ore_Emerald,"/Game/Asset/Ore/OreStarter_32_Sprite_44.OreStarter_32_Sprite_44","True","0"
+Ore_Diamond,"/Game/Asset/Ore/OreStarter_32_Sprite_14.OreStarter_32_Sprite_14","True","0"
+Ore_Titanium,"/Game/Asset/Ore/OreStarter_32_Sprite_72.OreStarter_32_Sprite_72","True","0"
+Ore_Lithium,"/Game/Asset/Ore/OreStarter_32_Sprite_5.OreStarter_32_Sprite_5","True","0"
+Slime,"/Game/Asset/Ore/OreStarter_32_Sprite_31.OreStarter_32_Sprite_31","False","0"
+Chain,"None","False","0"
