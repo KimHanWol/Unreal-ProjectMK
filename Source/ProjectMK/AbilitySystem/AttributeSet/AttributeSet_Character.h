@@ -16,6 +16,10 @@ public:
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData InventorySlotCount;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, InventorySlotCount)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData ItemCollectRange;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, ItemCollectRange)
 

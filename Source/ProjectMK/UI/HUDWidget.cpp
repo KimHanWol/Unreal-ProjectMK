@@ -6,6 +6,16 @@
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/ShopWidget.h"
 
+void UHUDWidget::NativeConstruct()
+{
+	Super::NativeConstruct();
+
+	if (::IsValid(Inventory))
+	{
+		Inventory->SetVisibility(ESlateVisibility::Visible);
+	}
+}
+
 bool UHUDWidget::ToggleInventoryWidget()
 {
 	if (::IsValid(Inventory) == false)
@@ -13,9 +23,8 @@ bool UHUDWidget::ToggleInventoryWidget()
 		return false;
 	}
 
-	const bool bWillOpen = Inventory->GetVisibility() != ESlateVisibility::Visible;
-	Inventory->SetVisibility(bWillOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	return bWillOpen;
+	Inventory->SetVisibility(ESlateVisibility::Visible);
+	return false;
 }
 
 bool UHUDWidget::ToggleShopWidget()
@@ -32,6 +41,5 @@ bool UHUDWidget::ToggleShopWidget()
 
 bool UHUDWidget::IsMenuVisible() const
 {
-	return (::IsValid(Inventory) && Inventory->GetVisibility() == ESlateVisibility::Visible)
-		|| (::IsValid(Shop) && Shop->GetVisibility() == ESlateVisibility::Visible);
+	return ::IsValid(Shop) && Shop->GetVisibility() == ESlateVisibility::Visible;
 }

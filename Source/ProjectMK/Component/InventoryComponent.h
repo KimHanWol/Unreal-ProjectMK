@@ -32,6 +32,7 @@ public:
 	UInventoryComponent();
 
 	int32 GetItemCount(FName ItemUID);
+	int32 GetMaxInventoryCount() const;
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 	bool AddItem(FName ItemUID, int32 ItemCount);
 
@@ -76,7 +77,7 @@ private:
 	float ItemCollectRange = 0.f;
 
 	UPROPERTY(EditAnywhere)
-	int32 MaxInventoryCount = 30;
+	int32 MaxInventoryCount = 8;
 
 	UPROPERTY(EditAnywhere)
 	float LootableDistance = 0.f;

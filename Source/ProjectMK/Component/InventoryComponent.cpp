@@ -100,6 +100,31 @@ int32 UInventoryComponent::GetItemCount(FName ItemUID)
 	return 0;
 }
 
+int32 UInventoryComponent::GetMaxInventoryCount() const
+{
+	const int32 FallbackInventorySlotCount = FMath::Max(1, MaxInventoryCount);
+
+	const AActor* Owner = GetOwner();
+	if (::IsValid(Owner) == false)
+	{
+		return FallbackInventorySlotCount;
+	}
+
+	const UAbilitySystemComponent* OwnerASC = Owner->GetComponentByClass<UAbilitySystemComponent>();
+	if (::IsValid(OwnerASC) == false)
+	{
+		return FallbackInventorySlotCount;
+	}
+
+	const UAttributeSet_Character* CharacterAttributes = Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
+	if (::IsValid(CharacterAttributes) == false)
+	{
+		return FallbackInventorySlotCount;
+	}
+
+	return FMath::Max(1, FMath::RoundToInt(CharacterAttributes->GetInventorySlotCount()));
+}
+
 void UInventoryComponent::AddItemOrder(FName ItemUID)
 {
 	if (ItemUID.IsNone() || InventoryItemOrder.Contains(ItemUID))
@@ -156,7 +181,7 @@ bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
 
 bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
 {
-	if (InventoryItemMap.Contains(ItemUID) == false && InventoryItemMap.Num() >= MaxInventoryCount)
+	if (InventoryItemMap.Contains(ItemUID) == false && InventoryItemMap.Num() >= GetMaxInventoryCount())
 	{
 		return false;
 	}
@@ -228,7 +253,7 @@ bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& Shop
 		}
 	}
 
-	if (SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false && SimulatedInventory.Num() >= MaxInventoryCount)
+	if (SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false && SimulatedInventory.Num() >= GetMaxInventoryCount())
 	{
 		return false;
 	}

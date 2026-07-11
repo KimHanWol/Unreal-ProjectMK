@@ -6,6 +6,7 @@
 
 UAttributeSet_Character::UAttributeSet_Character()
 {
+	InitInventorySlotCount(8.f);
 }
 
 void UAttributeSet_Character::PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue)
@@ -15,6 +16,10 @@ void UAttributeSet_Character::PreAttributeChange(const FGameplayAttribute& Attri
 	if (Attribute == GetCurrentOxygenAttribute())
 	{
 		NewValue = FMath::Clamp(NewValue, 0.f, GetMaxOxygen());
+	}
+	else if (Attribute == GetInventorySlotCountAttribute())
+	{
+		NewValue = FMath::Max(1.f, NewValue);
 	}
 	else if (Attribute == GetCurrentHealthAttribute())
 	{
@@ -41,6 +46,10 @@ void UAttributeSet_Character::PostGameplayEffectExecute(const FGameplayEffectMod
 	if (Data.EvaluatedData.Attribute == GetCurrentOxygenAttribute())
 	{
 		SetCurrentOxygen(FMath::Clamp(GetCurrentOxygen(), 0.f, GetMaxOxygen()));
+	}
+	else if (Data.EvaluatedData.Attribute == GetInventorySlotCountAttribute())
+	{
+		SetInventorySlotCount(FMath::Max(1.f, GetInventorySlotCount()));
 	}
 	else if (Data.EvaluatedData.Attribute == GetCurrentHealthAttribute())
 	{
