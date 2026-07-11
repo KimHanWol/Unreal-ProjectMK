@@ -2,7 +2,6 @@
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
-#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "InventoryEquipmentWidget.generated.h"
 
 class UItemSlotWidget;
@@ -14,12 +13,6 @@ class PROJECTMK_API UInventoryEquipmentWidget : public UMKUserWidget
 
 protected:
 	virtual void NativeConstruct() override;
-	virtual void BindEvents() override;
-	virtual void UnbindEvents() override;
-
-private:
-	void OnInventoryChanged();
-	void RefreshEquipmentSlot(EEuipmentType EquipmentType, UItemSlotWidget* PreferredSlot, UItemSlotWidget* FallbackSlot = nullptr);
 
 protected:
 	UPROPERTY(meta = (BindWidgetOptional))

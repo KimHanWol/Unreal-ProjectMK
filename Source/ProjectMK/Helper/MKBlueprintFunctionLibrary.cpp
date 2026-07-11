@@ -9,7 +9,6 @@
 #include "PaperSprite.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
-#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/System/GlobalConstants.h"
 
@@ -75,17 +74,6 @@ TArray<FString> UMKBlueprintFunctionLibrary::GetItemRowNames()
 {
 	TSet<FName> UniqueRowNames;
 	CollectDataTableRowNames(GetDataTableAssets(), TEXT("ItemDataTableRow"), FItemDataTableRow::StaticStruct(), UniqueRowNames);
-	return ConvertRowNamesToStrings(UniqueRowNames);
-}
-
-TArray<FString> UMKBlueprintFunctionLibrary::GetItemAndEquipmentRowNames()
-{
-	const TArray<FAssetData> DataTableAssets = GetDataTableAssets();
-
-	TSet<FName> UniqueRowNames;
-	CollectDataTableRowNames(DataTableAssets, TEXT("ItemDataTableRow"), FItemDataTableRow::StaticStruct(), UniqueRowNames);
-	CollectDataTableRowNames(DataTableAssets, TEXT("EquipmentItemDataTableRow"), FEquipmentItemDataTableRow::StaticStruct(), UniqueRowNames);
-
 	return ConvertRowNamesToStrings(UniqueRowNames);
 }
 

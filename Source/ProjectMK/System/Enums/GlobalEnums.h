@@ -8,13 +8,13 @@
 UENUM(BlueprintType)
 enum class EDataTableType : uint8
 {
-	None,
-	Block,
-	Item,
-	EquipmentItem,
-	Character,
-	ShopRecipe,
-	Sound,
+	None = 0,
+	Block = 1,
+	Item = 2,
+	LegacyReserved = 3 UMETA(Hidden),
+	Character = 4,
+	ShopRecipe = 5,
+	Sound = 6,
 };
 
 UENUM(BlueprintType)

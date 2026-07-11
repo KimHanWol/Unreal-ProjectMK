@@ -10,50 +10,12 @@
 #include "PaperSprite.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
-#include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKRuntimePaperSprite.h"
-#include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
 
 namespace MKCharacterVisualComponentLocals
 {
-	constexpr int32 VisualEquipmentOverlayAtlasCellSize = 256;
-
-	const TArray<EEuipmentType>& GetVisualSupportedEquipmentTypes()
-	{
-		static const TArray<EEuipmentType> EquipmentTypes =
-		{
-			EEuipmentType::Halmet,
-			EEuipmentType::Armor,
-			EEuipmentType::Drill,
-			EEuipmentType::Balloon,
-			EEuipmentType::Gloves,
-			EEuipmentType::Shoes,
-		};
-
-		return EquipmentTypes;
-	}
-
-	const TArray<ECharacterAnimationType>& GetVisualSupportedAnimationTypes()
-	{
-		static const TArray<ECharacterAnimationType> AnimationTypes =
-		{
-			ECharacterAnimationType::Idle,
-			ECharacterAnimationType::Run,
-			ECharacterAnimationType::Fly,
-			ECharacterAnimationType::Fall,
-			ECharacterAnimationType::Drill_Side,
-			ECharacterAnimationType::Drill_Up,
-			ECharacterAnimationType::Drill_Down,
-		};
-
-		return AnimationTypes;
-	}
-
-	FName GetVisualOverlayComponentName(EEuipmentType EquipmentType)
-	{
-		return FName(*FString::Printf(TEXT("EquipmentOverlay_%s"), *StaticEnum<EEuipmentType>()->GetNameStringByValue(static_cast<int64>(EquipmentType))));
-	}
+	constexpr int32 VisualAnimationAtlasCellSize = 256;
 
 	FVector GetVisualOverrideVisualRelativeScale(bool bReverseFacingDirection, float VisualScale)
 	{
@@ -82,12 +44,8 @@ void UMKCharacterVisualComponent::InitializeVisuals()
 		BaseCharacterSpriteRelativeLocation = OwnerCharacter->GetSprite()->GetRelativeLocation();
 	}
 	InitializeInvincibleMaterial();
-	InitializeEquipmentOverlayComponents();
 	CacheStateSpriteComponents();
 	BindVisualDelegates();
-	RefreshEquippedOverlayItems();
-	PreloadEquippedVisualAssets();
-	UpdateEquipmentOverlayZOrders();
 
 	const FGameplayTag InvincibleTag = FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"));
 	int32 InvincibleTagCount = 0;
@@ -121,22 +79,8 @@ void UMKCharacterVisualComponent::UpdateVisuals()
 	CachedAnimationFrameIndex = OwnerCharacter->ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
 
 	UpdateCharacterAnimationVisual();
-	UpdateEquipmentOverlays();
 	UpdateDrillShakeVisuals();
 	UpdateStateSpriteVisuals();
-}
-
-void UMKCharacterVisualComponent::HandleInventoryChanged()
-{
-	if (bVisualsInitialized == false)
-	{
-		return;
-	}
-
-	RefreshEquippedOverlayItems();
-	PreloadEquippedVisualAssets();
-	UpdateEquipmentOverlayZOrders();
-	UpdateVisuals();
 }
 
 void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -186,12 +130,6 @@ void UMKCharacterVisualComponent::BindVisualDelegates()
 		AbilitySystemComponent->RegisterGameplayTagEvent(InvincibleTag).RemoveAll(this);
 		AbilitySystemComponent->RegisterGameplayTagEvent(InvincibleTag).AddUObject(this, &UMKCharacterVisualComponent::HandleInvincibleTagChanged);
 	}
-
-	if (UInventoryComponent* InventoryComponent = GetInventoryComponent())
-	{
-		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UMKCharacterVisualComponent::HandleInventoryChanged);
-	}
 }
 
 void UMKCharacterVisualComponent::UnbindVisualDelegates()
@@ -199,11 +137,6 @@ void UMKCharacterVisualComponent::UnbindVisualDelegates()
 	if (UAbilitySystemComponent* AbilitySystemComponent = GetOwnerAbilitySystemComponent())
 	{
 		AbilitySystemComponent->RegisterGameplayTagEvent(FGameplayTag::RequestGameplayTag(TEXT("State.Invincible"))).RemoveAll(this);
-	}
-
-	if (UInventoryComponent* InventoryComponent = GetInventoryComponent())
-	{
-		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 	}
 }
 
@@ -223,44 +156,6 @@ void UMKCharacterVisualComponent::InitializeInvincibleMaterial()
 	}
 
 	InvincibleMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-}
-
-void UMKCharacterVisualComponent::InitializeEquipmentOverlayComponents()
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false || ::IsValid(OwnerCharacter->GetSprite()) == false)
-	{
-		return;
-	}
-
-	for (const EEuipmentType EquipmentType : MKCharacterVisualComponentLocals::GetVisualSupportedEquipmentTypes())
-	{
-		if (EquipmentOverlayComponents.Contains(EquipmentType))
-		{
-			continue;
-		}
-
-		UPaperSpriteComponent* OverlayComponent = NewObject<UPaperSpriteComponent>(OwnerCharacter, MKCharacterVisualComponentLocals::GetVisualOverlayComponentName(EquipmentType));
-		if (::IsValid(OverlayComponent) == false)
-		{
-			continue;
-		}
-
-		OverlayComponent->SetupAttachment(OwnerCharacter->GetSprite());
-		OverlayComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		OverlayComponent->SetGenerateOverlapEvents(false);
-		OverlayComponent->SetCanEverAffectNavigation(false);
-		OverlayComponent->SetRelativeLocation(FVector::ZeroVector);
-		OverlayComponent->SetRelativeRotation(FRotator::ZeroRotator);
-		OverlayComponent->SetRelativeScale3D(FVector::OneVector);
-		OverlayComponent->SetVisibility(false);
-		OverlayComponent->SetHiddenInGame(true);
-		OverlayComponent->RegisterComponent();
-
-		EquipmentOverlayComponents.Add(EquipmentType, OverlayComponent);
-	}
-
-	UpdateEquipmentOverlayZOrders();
 }
 
 void UMKCharacterVisualComponent::CacheStateSpriteComponents()
@@ -412,16 +307,6 @@ void UMKCharacterVisualComponent::UpdateOverrideVisualFacingDirection()
 	{
 		CharacterVisualComponent->SetRelativeScale3D(RelativeScale);
 	}
-
-	for (const TPair<EEuipmentType, TObjectPtr<UPaperSpriteComponent>>& OverlayPair : EquipmentOverlayComponents)
-	{
-		if (::IsValid(OverlayPair.Value) == false)
-		{
-			continue;
-		}
-
-		OverlayPair.Value->SetRelativeScale3D(RelativeScale);
-	}
 }
 
 void UMKCharacterVisualComponent::EnsureCharacterVisualMaterialInstance()
@@ -447,115 +332,6 @@ void UMKCharacterVisualComponent::EnsureCharacterVisualMaterialInstance()
 	if (::IsValid(CharacterVisualMaterialInstance))
 	{
 		CharacterVisualMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
-}
-
-void UMKCharacterVisualComponent::RefreshEquippedOverlayItems()
-{
-	EquippedOverlayItemKeys.Reset();
-
-	if (UInventoryComponent* InventoryComponent = GetInventoryComponent())
-	{
-		for (const EEuipmentType EquipmentType : MKCharacterVisualComponentLocals::GetVisualSupportedEquipmentTypes())
-		{
-			const FName EquippedItemKey = InventoryComponent->GetEquippedItem(EquipmentType);
-			if (EquippedItemKey.IsNone() == false)
-			{
-				EquippedOverlayItemKeys.Add(EquipmentType, EquippedItemKey);
-			}
-		}
-	}
-}
-
-void UMKCharacterVisualComponent::PreloadEquippedVisualAssets()
-{
-	for (const TPair<EEuipmentType, FName>& EquippedOverlayItem : EquippedOverlayItemKeys)
-	{
-		if (PreloadedEquipmentVisualItemKeys.Contains(EquippedOverlayItem.Value))
-		{
-			continue;
-		}
-
-		const FEquipmentItemDataTableRow* EquipmentData = GetEquipmentItemData(EquippedOverlayItem.Value);
-		if (EquipmentData == nullptr)
-		{
-			continue;
-		}
-
-		for (const ECharacterAnimationType AnimationType : MKCharacterVisualComponentLocals::GetVisualSupportedAnimationTypes())
-		{
-			const TSoftObjectPtr<UTexture2D>* OverlayTexturePtr = EquipmentData->AnimationOverlayTextures.FindTexture(AnimationType);
-			if (OverlayTexturePtr != nullptr && OverlayTexturePtr->IsNull() == false)
-			{
-				OverlayTexturePtr->LoadSynchronous();
-			}
-		}
-
-		if (EquipmentData->StateDisplaySprite.IsNull() == false)
-		{
-			EquipmentData->StateDisplaySprite.LoadSynchronous();
-		}
-
-		PreloadedEquipmentVisualItemKeys.Add(EquippedOverlayItem.Value);
-	}
-}
-
-void UMKCharacterVisualComponent::UpdateEquipmentOverlays()
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	for (const EEuipmentType EquipmentType : MKCharacterVisualComponentLocals::GetVisualSupportedEquipmentTypes())
-	{
-		const TObjectPtr<UPaperSpriteComponent>* OverlayComponentPtr = EquipmentOverlayComponents.Find(EquipmentType);
-		if (OverlayComponentPtr == nullptr || ::IsValid(OverlayComponentPtr->Get()) == false)
-		{
-			continue;
-		}
-
-		UPaperSpriteComponent* OverlayComponent = OverlayComponentPtr->Get();
-		const FName* EquippedItemKeyPtr = EquippedOverlayItemKeys.Find(EquipmentType);
-		if (EquippedItemKeyPtr == nullptr || EquippedItemKeyPtr->IsNone())
-		{
-			OverlayComponent->SetSprite(nullptr);
-			OverlayComponent->SetVisibility(false);
-			OverlayComponent->SetHiddenInGame(true);
-			continue;
-		}
-
-		const FEquipmentItemDataTableRow* EquipmentData = GetEquipmentItemData(*EquippedItemKeyPtr);
-		const UPaperSprite* OverlaySprite = EquipmentData != nullptr
-			? ResolveEquipmentOverlaySprite(*EquipmentData, CachedAnimationType, CachedAnimationFrameIndex)
-			: nullptr;
-
-		OverlayComponent->SetSprite(const_cast<UPaperSprite*>(OverlaySprite));
-		const bool bShouldShow = OverlaySprite != nullptr;
-		OverlayComponent->SetVisibility(bShouldShow);
-		OverlayComponent->SetHiddenInGame(!bShouldShow);
-	}
-}
-
-void UMKCharacterVisualComponent::UpdateEquipmentOverlayZOrders()
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	const UGameSettingDataAsset* GameSettings = OwnerCharacter->GetGameSettings();
-	for (const TPair<EEuipmentType, TObjectPtr<UPaperSpriteComponent>>& OverlayPair : EquipmentOverlayComponents)
-	{
-		if (::IsValid(OverlayPair.Value) == false)
-		{
-			continue;
-		}
-
-		const int32 ZOrder = ::IsValid(GameSettings) ? GameSettings->GetEquipmentOverlayZOrder(OverlayPair.Key) : 0;
-		OverlayPair.Value->SetTranslucentSortPriority(ZOrder);
 	}
 }
 
@@ -587,106 +363,7 @@ void UMKCharacterVisualComponent::UpdateDrillShakeVisuals()
 
 void UMKCharacterVisualComponent::UpdateStateSpriteVisuals()
 {
-	UpdateStateSpriteLocations();
 	HideAllStateSprites();
-
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	if (CachedAnimationType == ECharacterAnimationType::Drill_Side
-		|| CachedAnimationType == ECharacterAnimationType::Drill_Up
-		|| CachedAnimationType == ECharacterAnimationType::Drill_Down)
-	{
-		const FName* EquippedDrillItemKeyPtr = EquippedOverlayItemKeys.Find(EEuipmentType::Drill);
-		const FEquipmentItemDataTableRow* DrillEquipmentData = EquippedDrillItemKeyPtr != nullptr
-			? GetEquipmentItemData(*EquippedDrillItemKeyPtr)
-			: nullptr;
-
-		UPaperSpriteComponent* TargetComponent = nullptr;
-		switch (CachedAnimationType)
-		{
-		case ECharacterAnimationType::Drill_Side:
-			TargetComponent = DrillSideStateSpriteComponent.Get();
-			break;
-		case ECharacterAnimationType::Drill_Up:
-			TargetComponent = DrillUpStateSpriteComponent.Get();
-			break;
-		case ECharacterAnimationType::Drill_Down:
-			TargetComponent = DrillDownStateSpriteComponent.Get();
-			break;
-		default:
-			break;
-		}
-
-		const UPaperSprite* DrillStateSprite = DrillEquipmentData != nullptr
-			? ResolveEquipmentStateSprite(*DrillEquipmentData)
-			: nullptr;
-		ApplyStateSpriteDisplay(TargetComponent, DrillStateSprite);
-		return;
-	}
-
-	const UCharacterMovementComponent* MoveComponent = OwnerCharacter->GetCharacterMovement();
-	if (::IsValid(MoveComponent) == false || MoveComponent->MovementMode != MOVE_Flying)
-	{
-		return;
-	}
-
-	const FName* EquippedBalloonItemKeyPtr = EquippedOverlayItemKeys.Find(EEuipmentType::Balloon);
-	const FEquipmentItemDataTableRow* BalloonEquipmentData = EquippedBalloonItemKeyPtr != nullptr
-		? GetEquipmentItemData(*EquippedBalloonItemKeyPtr)
-		: nullptr;
-
-	const UPaperSprite* BalloonStateSprite = BalloonEquipmentData != nullptr
-		? ResolveEquipmentStateSprite(*BalloonEquipmentData)
-		: nullptr;
-	ApplyStateSpriteDisplay(BalloonStateSpriteComponent.Get(), BalloonStateSprite);
-}
-
-void UMKCharacterVisualComponent::UpdateStateSpriteLocations()
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	const USceneComponent* OwnerSpriteComponent = ::IsValid(OwnerCharacter) ? OwnerCharacter->GetSprite() : nullptr;
-
-	const auto ApplyFacingLocation = [this, OwnerSpriteComponent](UPaperSpriteComponent* StateSpriteComponent, const FVector& LeftFacingLocation)
-	{
-		if (::IsValid(StateSpriteComponent) == false)
-		{
-			return;
-		}
-
-		FVector UpdatedLocation = LeftFacingLocation;
-		if (bFacingRight)
-		{
-			UpdatedLocation.X *= -1.f;
-		}
-
-		if (CachedDrillShakeOffset.IsNearlyZero() == false
-			&& (OwnerSpriteComponent == nullptr || StateSpriteComponent->IsAttachedTo(OwnerSpriteComponent) == false))
-		{
-			UpdatedLocation += CachedDrillShakeOffset;
-		}
-
-		StateSpriteComponent->SetRelativeLocation(UpdatedLocation);
-	};
-
-	ApplyFacingLocation(BalloonStateSpriteComponent, BalloonLeftFacingRelativeLocation);
-	ApplyFacingLocation(DrillSideStateSpriteComponent, DrillSideLeftFacingRelativeLocation);
-	ApplyFacingLocation(DrillDownStateSpriteComponent, DrillDownLeftFacingRelativeLocation);
-	ApplyFacingLocation(DrillUpStateSpriteComponent, DrillUpLeftFacingRelativeLocation);
-
-	if (::IsValid(DrillSideStateSpriteComponent))
-	{
-		FRotator UpdatedRotation = DrillSideLeftFacingRelativeRotation;
-		if (bFacingRight)
-		{
-			UpdatedRotation.Yaw += 180.f;
-		}
-
-		DrillSideStateSpriteComponent->SetRelativeRotation(UpdatedRotation);
-	}
 }
 
 void UMKCharacterVisualComponent::HideAllStateSprites()
@@ -702,19 +379,6 @@ void UMKCharacterVisualComponent::HideAllStateSprites()
 		StateSpriteComponent->SetVisibility(false);
 		StateSpriteComponent->SetHiddenInGame(true);
 	}
-}
-
-void UMKCharacterVisualComponent::ApplyStateSpriteDisplay(UPaperSpriteComponent* TargetComponent, const UPaperSprite* TargetSprite)
-{
-	if (::IsValid(TargetComponent) == false)
-	{
-		return;
-	}
-
-	TargetComponent->SetSprite(const_cast<UPaperSprite*>(TargetSprite));
-	const bool bShouldShow = TargetSprite != nullptr;
-	TargetComponent->SetVisibility(bShouldShow);
-	TargetComponent->SetHiddenInGame(!bShouldShow);
 }
 
 UPaperSpriteComponent* UMKCharacterVisualComponent::FindSpriteComponentByName(FName ComponentName) const
@@ -743,12 +407,6 @@ AMKCharacter* UMKCharacterVisualComponent::GetOwnerCharacter() const
 	return Cast<AMKCharacter>(GetOwner());
 }
 
-UInventoryComponent* UMKCharacterVisualComponent::GetInventoryComponent() const
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	return ::IsValid(OwnerCharacter) ? OwnerCharacter->FindComponentByClass<UInventoryComponent>() : nullptr;
-}
-
 UAbilitySystemComponent* UMKCharacterVisualComponent::GetOwnerAbilitySystemComponent() const
 {
 	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
@@ -757,60 +415,7 @@ UAbilitySystemComponent* UMKCharacterVisualComponent::GetOwnerAbilitySystemCompo
 
 int32 UMKCharacterVisualComponent::ResolveStateSpriteSortPriority() const
 {
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return 1;
-	}
-
-	const UGameSettingDataAsset* GameSettings = OwnerCharacter->GetGameSettings();
-	int32 HighestEquipmentZOrder = 0;
-	for (const EEuipmentType EquipmentType : MKCharacterVisualComponentLocals::GetVisualSupportedEquipmentTypes())
-	{
-		HighestEquipmentZOrder = FMath::Max(HighestEquipmentZOrder, ::IsValid(GameSettings) ? GameSettings->GetEquipmentOverlayZOrder(EquipmentType) : 0);
-	}
-
-	return HighestEquipmentZOrder + 1;
-}
-
-const FEquipmentItemDataTableRow* UMKCharacterVisualComponent::GetEquipmentItemData(FName EquipmentKey) const
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	return ::IsValid(OwnerCharacter) ? FEquipmentItemDataTableUtil::FindEquipmentItemData(OwnerCharacter, EquipmentKey) : nullptr;
-}
-
-const UPaperSprite* UMKCharacterVisualComponent::ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType AnimationType, int32 AnimationFrameIndex)
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return nullptr;
-	}
-
-	const TSoftObjectPtr<UTexture2D>* OverlayTexturePtr = EquipmentData.AnimationOverlayTextures.FindTexture(AnimationType);
-	if (OverlayTexturePtr != nullptr && OverlayTexturePtr->IsNull() == false)
-	{
-		UTexture2D* OverlayAtlasTexture = OverlayTexturePtr->LoadSynchronous();
-		return ResolveAnimationAtlasSprite(OverlayAtlasTexture, AnimationFrameIndex, OwnerCharacter->ResolveCurrentBasePixelsPerUnrealUnit());
-	}
-
-	if (UTexture2D* IdlePreviewTexture = FEquipmentItemDataTableUtil::LoadIdlePreviewTexture(EquipmentData))
-	{
-		return ResolveAnimationAtlasSprite(IdlePreviewTexture, 0, OwnerCharacter->ResolveCurrentBasePixelsPerUnrealUnit());
-	}
-
-	return nullptr;
-}
-
-const UPaperSprite* UMKCharacterVisualComponent::ResolveEquipmentStateSprite(const FEquipmentItemDataTableRow& EquipmentData)
-{
-	if (EquipmentData.StateDisplaySprite.IsNull())
-	{
-		return nullptr;
-	}
-
-	UPaperSprite* StateSprite = EquipmentData.StateDisplaySprite.LoadSynchronous();
-	return StateSprite;
+	return 1;
 }
 
 const UPaperSprite* UMKCharacterVisualComponent::ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex, float PixelsPerUnrealUnit)
@@ -820,8 +425,8 @@ const UPaperSprite* UMKCharacterVisualComponent::ResolveAnimationAtlasSprite(UTe
 		return nullptr;
 	}
 
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize;
-	const int32 AtlasRows = AtlasTexture->GetSizeY() / MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize;
+	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
+	const int32 AtlasRows = AtlasTexture->GetSizeY() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
 	const int32 AtlasCellCount = AtlasColumns * AtlasRows;
 	if (AtlasCellCount <= 0)
 	{
@@ -848,15 +453,15 @@ UMKRuntimePaperSprite* UMKCharacterVisualComponent::GetOrCreateRuntimeAtlasSprit
 		return CachedSpritePtr->Get();
 	}
 
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize;
+	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
 	if (AtlasColumns <= 0)
 	{
 		return nullptr;
 	}
 
 	const FIntPoint CellOrigin(
-		(AtlasCellIndex % AtlasColumns) * MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize,
-		(AtlasCellIndex / AtlasColumns) * MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize);
+		(AtlasCellIndex % AtlasColumns) * MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize,
+		(AtlasCellIndex / AtlasColumns) * MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize);
 
 	UMKRuntimePaperSprite* RuntimeSprite = NewObject<UMKRuntimePaperSprite>(this);
 	if (::IsValid(RuntimeSprite) == false)
@@ -867,7 +472,7 @@ UMKRuntimePaperSprite* UMKCharacterVisualComponent::GetOrCreateRuntimeAtlasSprit
 		RuntimeSprite->InitializeFromAtlasCell(
 		AtlasTexture,
 		CellOrigin,
-		FIntPoint(MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize, MKCharacterVisualComponentLocals::VisualEquipmentOverlayAtlasCellSize),
+		FIntPoint(MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize, MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize),
 		PixelsPerUnrealUnit);
 
 	RuntimeAtlasSpriteCache.Add(CacheKey, RuntimeSprite);

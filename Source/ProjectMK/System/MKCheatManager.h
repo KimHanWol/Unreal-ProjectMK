@@ -22,12 +22,6 @@ public:
 	void GetItem(FName ItemUID = NAME_None, int32 ItemCount = 1);
 
 	UFUNCTION(Exec)
-	void EquipItem(FName ItemUID = NAME_None);
-
-	UFUNCTION(Exec)
-	void ListEquippedItems();
-
-	UFUNCTION(Exec)
 	void EnableBlockDebugNumbers();
 
 	UFUNCTION(Exec)

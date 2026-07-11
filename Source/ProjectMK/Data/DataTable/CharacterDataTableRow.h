@@ -13,7 +13,7 @@ struct FCharacterInitialInventoryEntry
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemAndEquipmentRowNames"))
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))
 	FName ItemKey = NAME_None;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1"))

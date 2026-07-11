@@ -7,7 +7,6 @@
 class UHealthBarWidget;
 class UInventoryWidget;
 class UOxygenBarWidget;
-class UQuickInventoryWidget;
 class UShopWidget;
 
 UCLASS()
@@ -26,9 +25,6 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	UOxygenBarWidget* OxygenBar;
-
-	UPROPERTY(meta = (BindWidget))
-	UQuickInventoryWidget* QuickInventory;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	UInventoryWidget* Inventory;

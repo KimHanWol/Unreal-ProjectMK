@@ -5,7 +5,6 @@
 #include "PaperZDCharacter.h"
 #include "GameplayEffectTypes.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
-#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Interface/Damageable.h"
 #include "MKCharacter.generated.h"
 
@@ -27,8 +26,6 @@ class UTexture2D;
 struct FGameplayTag;
 class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
-struct FEquipmentItemDataTableRow;
-
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperZDCharacter, public IAbilitySystemInterface
 														   , public IDamageable
@@ -104,14 +101,8 @@ private:
 	const FCharacterDataTableRow* GetCharacterData() const;
 	const TSoftObjectPtr<UTexture2D>* FindCharacterAnimationTexture(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const;
 	void EnsureCharacterVisualMaterialInstance();
-	void InitializeEquipmentOverlayComponents();
-	void RefreshEquippedOverlayItems();
-	void UpdateEquipmentOverlays();
-	void UpdateEquipmentOverlayZOrders();
 	bool GetCurrentAnimationPlaybackData(const UPaperZDAnimSequence*& OutAnimationSequence, float& OutPlaybackTime, float& OutPlaybackProgress) const;
 	int32 ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress) const;
-	const FEquipmentItemDataTableRow* GetEquipmentItemData(FName EquipmentKey);
-	const UPaperSprite* ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType CurrentAnimationType, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress);
 	const UPaperSprite* ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex);
 	UMKRuntimePaperSprite* GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit);
 	FName MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const;
@@ -174,11 +165,6 @@ private:
 	bool bCharacterVisualOverrideEnabled = false;
 
 	UPROPERTY(Transient)
-	TMap<EEuipmentType, TObjectPtr<UPaperSpriteComponent>> EquipmentOverlayComponents;
-
-	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UMKRuntimePaperSprite>> RuntimeAtlasSpriteCache;
-
-	TMap<EEuipmentType, FName> EquippedOverlayItemKeys;
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };

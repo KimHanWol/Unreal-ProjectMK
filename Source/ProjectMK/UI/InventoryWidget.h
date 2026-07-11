@@ -5,7 +5,6 @@
 #include "InventoryWidget.generated.h"
 
 class UInventoryBagWidget;
-class UInventoryEquipmentWidget;
 
 UCLASS()
 class PROJECTMK_API UInventoryWidget : public UMKUserWidget
@@ -15,7 +14,4 @@ class PROJECTMK_API UInventoryWidget : public UMKUserWidget
 protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	UInventoryBagWidget* InventoryBag;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	UInventoryEquipmentWidget* InventoryEquipment;
 };

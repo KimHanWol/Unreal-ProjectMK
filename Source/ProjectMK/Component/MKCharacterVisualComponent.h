@@ -2,13 +2,11 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
-#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 
 #include "MKCharacterVisualComponent.generated.h"
 
 class AMKCharacter;
 class UAbilitySystemComponent;
-class UInventoryComponent;
 class UMaterialInterface;
 class UMaterialInstanceDynamic;
 class UMKRuntimePaperSprite;
@@ -27,7 +25,6 @@ public:
 
 	void InitializeVisuals();
 	void UpdateVisuals();
-	void HandleInventoryChanged();
 	void HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 protected:
@@ -37,7 +34,6 @@ private:
 	void BindVisualDelegates();
 	void UnbindVisualDelegates();
 	void InitializeInvincibleMaterial();
-	void InitializeEquipmentOverlayComponents();
 	void CacheStateSpriteComponents();
 	void CacheStateSpriteComponent(FName ComponentName, TObjectPtr<UPaperSpriteComponent>& OutComponent, FVector& OutLeftFacingRelativeLocation);
 
@@ -47,26 +43,15 @@ private:
 	void UpdateOverrideVisualFacingDirection();
 	void EnsureCharacterVisualMaterialInstance();
 
-	void RefreshEquippedOverlayItems();
-	void PreloadEquippedVisualAssets();
-	void UpdateEquipmentOverlays();
-	void UpdateEquipmentOverlayZOrders();
 	void UpdateDrillShakeVisuals();
 
 	void UpdateStateSpriteVisuals();
-	void UpdateStateSpriteLocations();
 	void HideAllStateSprites();
-	void ApplyStateSpriteDisplay(UPaperSpriteComponent* TargetComponent, const UPaperSprite* TargetSprite);
 
 	UPaperSpriteComponent* FindSpriteComponentByName(FName ComponentName) const;
 	AMKCharacter* GetOwnerCharacter() const;
-	UInventoryComponent* GetInventoryComponent() const;
 	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
 	int32 ResolveStateSpriteSortPriority() const;
-
-	const FEquipmentItemDataTableRow* GetEquipmentItemData(FName EquipmentKey) const;
-	const UPaperSprite* ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType AnimationType, int32 AnimationFrameIndex);
-	const UPaperSprite* ResolveEquipmentStateSprite(const FEquipmentItemDataTableRow& EquipmentData);
 	const UPaperSprite* ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex, float PixelsPerUnrealUnit);
 	UMKRuntimePaperSprite* GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit);
 	FName MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const;
@@ -106,9 +91,6 @@ private:
 	TWeakObjectPtr<UMaterialInterface> CharacterVisualMaterialSource;
 
 	UPROPERTY(Transient)
-	TMap<EEuipmentType, TObjectPtr<UPaperSpriteComponent>> EquipmentOverlayComponents;
-
-	UPROPERTY(Transient)
 	TMap<FName, TObjectPtr<UMKRuntimePaperSprite>> RuntimeAtlasSpriteCache;
 
 	UPROPERTY(Transient)
@@ -123,8 +105,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPaperSpriteComponent> DrillUpStateSpriteComponent;
 
-	TMap<EEuipmentType, FName> EquippedOverlayItemKeys;
-	TSet<FName> PreloadedEquipmentVisualItemKeys;
 	FVector BalloonLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillSideLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillDownLeftFacingRelativeLocation = FVector::ZeroVector;

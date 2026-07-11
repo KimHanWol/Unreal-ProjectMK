@@ -25,40 +25,18 @@
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
-#include "ProjectMK/Data/DataTable/EquipmentItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/MKRuntimePaperSprite.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
-#include "ProjectMK/Helper/Utils/EquipmentItemDataTableUtil.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 namespace
 {
-	constexpr int32 EquipmentOverlayAtlasCellSize = 256;
+	constexpr int32 AnimationAtlasCellSize = 256;
 	const FName DrillingVectorVariableName(TEXT("DrillingVector"));
 	constexpr float DisabledPostProcessValue = 0.f;
 	constexpr float LockedExposureValue = 1.f;
 	constexpr TextureFilter StableSpriteTextureFilter = TF_Bilinear;
-
-	const TArray<EEuipmentType>& GetSupportedEquipmentTypes()
-	{
-		static const TArray<EEuipmentType> EquipmentTypes =
-		{
-			EEuipmentType::Halmet,
-			EEuipmentType::Armor,
-			EEuipmentType::Drill,
-			EEuipmentType::Balloon,
-			EEuipmentType::Gloves,
-			EEuipmentType::Shoes,
-		};
-
-		return EquipmentTypes;
-	}
-
-	FName GetOverlayComponentName(EEuipmentType EquipmentType)
-	{
-		return FName(*FString::Printf(TEXT("EquipmentOverlay_%s"), *StaticEnum<EEuipmentType>()->GetNameStringByValue(static_cast<int64>(EquipmentType))));
-	}
 
 	FVector GetOverrideVisualRelativeScale(bool bReverseFacingDirection, float VisualScale)
 	{
@@ -324,9 +302,7 @@ void AMKCharacter::GrantInitialInventoryItems()
 			continue;
 		}
 
-		const bool bHasItemData = ValidItemKeys.Contains(ItemKey);
-		const bool bHasEquipmentData = FEquipmentItemDataTableUtil::FindEquipmentItemData(this, ItemKey) != nullptr;
-		if (bHasItemData == false && bHasEquipmentData == false)
+		if (ValidItemKeys.Contains(ItemKey) == false)
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Invalid initial item key '%s' on '%s'."), *ItemKey.ToString(), *GetName());
 			continue;
@@ -336,11 +312,6 @@ void AMKCharacter::GrantInitialInventoryItems()
 		{
 			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Failed to add '%s' x%d to '%s'."), *ItemKey.ToString(), InitialItem.ItemCount, *GetName());
 			continue;
-		}
-
-		if (bHasEquipmentData && InventoryComponent->EquipItem(ItemKey) == false)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Failed to equip initial equipment '%s' on '%s'."), *ItemKey.ToString(), *GetName());
 		}
 	}
 }
@@ -725,16 +696,6 @@ void AMKCharacter::UpdateOverrideVisualFacingDirection()
 	{
 		CharacterVisualComponent->SetRelativeScale3D(RelativeScale);
 	}
-
-	for (const TPair<EEuipmentType, TObjectPtr<UPaperSpriteComponent>>& OverlayPair : EquipmentOverlayComponents)
-	{
-		if (::IsValid(OverlayPair.Value) == false)
-		{
-			continue;
-		}
-
-		OverlayPair.Value->SetRelativeScale3D(RelativeScale);
-	}
 }
 
 float AMKCharacter::ResolveOverrideVisualScale(const UPaperSprite* OverrideSprite) const
@@ -899,8 +860,8 @@ const UPaperSprite* AMKCharacter::ResolveAnimationAtlasSprite(UTexture2D* AtlasT
 		return nullptr;
 	}
 
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / EquipmentOverlayAtlasCellSize;
-	const int32 AtlasRows = AtlasTexture->GetSizeY() / EquipmentOverlayAtlasCellSize;
+	const int32 AtlasColumns = AtlasTexture->GetSizeX() / AnimationAtlasCellSize;
+	const int32 AtlasRows = AtlasTexture->GetSizeY() / AnimationAtlasCellSize;
 	const int32 AtlasCellCount = AtlasColumns * AtlasRows;
 	if (AtlasCellCount <= 0)
 	{
@@ -933,119 +894,6 @@ void AMKCharacter::EnsureCharacterVisualMaterialInstance()
 	if (::IsValid(CharacterVisualMaterialInstance))
 	{
 		CharacterVisualMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
-}
-
-void AMKCharacter::InitializeEquipmentOverlayComponents()
-{
-	if (::IsValid(GetSprite()) == false)
-	{
-		return;
-	}
-
-	for (const EEuipmentType EquipmentType : GetSupportedEquipmentTypes())
-	{
-		if (EquipmentOverlayComponents.Contains(EquipmentType))
-		{
-			continue;
-		}
-
-		UPaperSpriteComponent* OverlayComponent = NewObject<UPaperSpriteComponent>(this, GetOverlayComponentName(EquipmentType));
-		if (::IsValid(OverlayComponent) == false)
-		{
-			continue;
-		}
-
-		OverlayComponent->SetupAttachment(GetSprite());
-		OverlayComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-		OverlayComponent->SetGenerateOverlapEvents(false);
-		OverlayComponent->SetCanEverAffectNavigation(false);
-		OverlayComponent->SetRelativeLocation(FVector::ZeroVector);
-		OverlayComponent->SetRelativeRotation(FRotator::ZeroRotator);
-		OverlayComponent->SetRelativeScale3D(FVector::OneVector);
-		OverlayComponent->SetVisibility(false);
-		OverlayComponent->SetHiddenInGame(true);
-		OverlayComponent->RegisterComponent();
-
-		EquipmentOverlayComponents.Add(EquipmentType, OverlayComponent);
-	}
-
-	UpdateEquipmentOverlayZOrders();
-}
-
-void AMKCharacter::RefreshEquippedOverlayItems()
-{
-	EquippedOverlayItemKeys.Reset();
-
-	if (::IsValid(InventoryComponent) == false)
-	{
-		UpdateEquipmentOverlays();
-		return;
-	}
-
-	for (const EEuipmentType EquipmentType : GetSupportedEquipmentTypes())
-	{
-		const FName EquippedItemKey = InventoryComponent->GetEquippedItem(EquipmentType);
-		if (EquippedItemKey.IsNone() == false)
-		{
-			EquippedOverlayItemKeys.Add(EquipmentType, EquippedItemKey);
-		}
-	}
-
-	UpdateEquipmentOverlayZOrders();
-	UpdateEquipmentOverlays();
-}
-
-void AMKCharacter::UpdateEquipmentOverlays()
-{
-	const UPaperZDAnimSequence* CurrentAnimationSequence = nullptr;
-	float PlaybackTime = 0.f;
-	float PlaybackProgress = 0.f;
-	GetCurrentAnimationPlaybackData(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-	const ECharacterAnimationType CurrentAnimationType = ResolveCurrentCharacterAnimationType();
-
-	for (const EEuipmentType EquipmentType : GetSupportedEquipmentTypes())
-	{
-		const TObjectPtr<UPaperSpriteComponent>* OverlayComponentPtr = EquipmentOverlayComponents.Find(EquipmentType);
-		if (OverlayComponentPtr == nullptr || ::IsValid(OverlayComponentPtr->Get()) == false)
-		{
-			continue;
-		}
-
-		UPaperSpriteComponent* OverlayComponent = OverlayComponentPtr->Get();
-		const FName* EquippedItemKeyPtr = EquippedOverlayItemKeys.Find(EquipmentType);
-		if (EquippedItemKeyPtr == nullptr || EquippedItemKeyPtr->IsNone())
-		{
-			OverlayComponent->SetSprite(nullptr);
-			OverlayComponent->SetVisibility(false);
-			OverlayComponent->SetHiddenInGame(true);
-			continue;
-		}
-
-		const FEquipmentItemDataTableRow* EquipmentData = GetEquipmentItemData(*EquippedItemKeyPtr);
-		const UPaperSprite* OverlaySprite = EquipmentData != nullptr
-			? ResolveEquipmentOverlaySprite(*EquipmentData, CurrentAnimationType, CurrentAnimationSequence, PlaybackTime, PlaybackProgress)
-			: nullptr;
-
-		OverlayComponent->SetSprite(const_cast<UPaperSprite*>(OverlaySprite));
-		const bool bShouldShow = OverlaySprite != nullptr;
-		OverlayComponent->SetVisibility(bShouldShow);
-		OverlayComponent->SetHiddenInGame(!bShouldShow);
-	}
-}
-
-void AMKCharacter::UpdateEquipmentOverlayZOrders()
-{
-	const UGameSettingDataAsset* GameSettings = GetGameSettings();
-	for (const TPair<EEuipmentType, TObjectPtr<UPaperSpriteComponent>>& OverlayPair : EquipmentOverlayComponents)
-	{
-		if (::IsValid(OverlayPair.Value) == false)
-		{
-			continue;
-		}
-
-		const int32 ZOrder = ::IsValid(GameSettings) ? GameSettings->GetEquipmentOverlayZOrder(OverlayPair.Key) : 0;
-		OverlayPair.Value->SetTranslucentSortPriority(ZOrder);
 	}
 }
 
@@ -1099,29 +947,6 @@ int32 AMKCharacter::ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence
 	return FMath::Clamp(FrameIndex, 0, AnimationFrameCount - 1);
 }
 
-const FEquipmentItemDataTableRow* AMKCharacter::GetEquipmentItemData(FName EquipmentKey)
-{
-	return FEquipmentItemDataTableUtil::FindEquipmentItemData(this, EquipmentKey);
-}
-
-const UPaperSprite* AMKCharacter::ResolveEquipmentOverlaySprite(const FEquipmentItemDataTableRow& EquipmentData, ECharacterAnimationType CurrentAnimationType, const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress)
-{
-	const int32 AnimationFrameIndex = ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-	const TSoftObjectPtr<UTexture2D>* InlineOverlayTexturePtr = EquipmentData.AnimationOverlayTextures.FindTexture(CurrentAnimationType);
-	if (InlineOverlayTexturePtr != nullptr && InlineOverlayTexturePtr->IsNull() == false)
-	{
-		UTexture2D* OverlayAtlasTexture = InlineOverlayTexturePtr->LoadSynchronous();
-		return ResolveAnimationAtlasSprite(OverlayAtlasTexture, AnimationFrameIndex);
-	}
-
-	if (UTexture2D* IdlePreviewTexture = FEquipmentItemDataTableUtil::LoadIdlePreviewTexture(EquipmentData))
-	{
-		return ResolveAnimationAtlasSprite(IdlePreviewTexture, 0);
-	}
-
-	return nullptr;
-}
-
 UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit)
 {
 	if (::IsValid(AtlasTexture) == false || AtlasCellIndex < 0)
@@ -1137,15 +962,15 @@ UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* A
 		return CachedSpritePtr->Get();
 	}
 
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / EquipmentOverlayAtlasCellSize;
+	const int32 AtlasColumns = AtlasTexture->GetSizeX() / AnimationAtlasCellSize;
 	if (AtlasColumns <= 0)
 	{
 		return nullptr;
 	}
 
 	const FIntPoint CellOrigin(
-		(AtlasCellIndex % AtlasColumns) * EquipmentOverlayAtlasCellSize,
-		(AtlasCellIndex / AtlasColumns) * EquipmentOverlayAtlasCellSize);
+		(AtlasCellIndex % AtlasColumns) * AnimationAtlasCellSize,
+		(AtlasCellIndex / AtlasColumns) * AnimationAtlasCellSize);
 
 	UMKRuntimePaperSprite* RuntimeSprite = NewObject<UMKRuntimePaperSprite>(const_cast<AMKCharacter*>(this));
 	if (::IsValid(RuntimeSprite) == false)
@@ -1156,7 +981,7 @@ UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* A
 	RuntimeSprite->InitializeFromAtlasCell(
 		AtlasTexture,
 		CellOrigin,
-		FIntPoint(EquipmentOverlayAtlasCellSize, EquipmentOverlayAtlasCellSize),
+		FIntPoint(AnimationAtlasCellSize, AnimationAtlasCellSize),
 		PixelsPerUnrealUnit);
 
 	RuntimeAtlasSpriteCache.Add(CacheKey, RuntimeSprite);

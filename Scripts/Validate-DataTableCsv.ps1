@@ -9,7 +9,6 @@ $script:Issues = New-Object System.Collections.Generic.List[string]
 $script:AssetReferencePattern = "^(?:[A-Za-z0-9_]+')?/(?:Game|Engine|Script)/.+\..+(?:')?$"
 $script:EnumValues = @{
     ECharacterAnimationType = @("Idle", "Run", "Fly", "Fall", "Drill_Side", "Drill_Up", "Drill_Down")
-    EEuipmentType = @("Halmet", "Armor", "Drill", "Balloon", "Gloves", "Shoes")
     ESFXType = @("None", "Floating", "Drill", "Break_Dirt")
     ESFXInstanceParamType = @("None", "DestroyedBlockCount", "Max")
     ESFXContinuousParamType = @("None", "HP", "Flying", "Drill")
@@ -88,24 +87,6 @@ $script:TableSchemas = @{
         columns = [ordered]@{
             "---" = New-ScalarSchema -Kind "name"
             ItemIcon = New-ScalarSchema -Kind "softObject" -Nullable $true
-            bIsOre = New-ScalarSchema -Kind "bool"
-            SellPrice = New-ScalarSchema -Kind "int"
-        }
-    }
-    "EquipmentItem.csv" = @{
-        columns = [ordered]@{
-            "---" = New-ScalarSchema -Kind "name"
-            EquipmentName = New-ScalarSchema -Kind "text"
-            EquipmentIcon = New-ScalarSchema -Kind "softObject" -Nullable $true
-            AnimationOverlayTextures = New-ScalarSchema -Kind "ueStruct" -Nullable $true -Node $AnimationTextureNode
-            StateDisplaySprite = New-ScalarSchema -Kind "softObject" -Nullable $true
-            EquipmentType = New-ScalarSchema -Kind "enum" -Values $script:EnumValues.EEuipmentType
-            EquipmentPrice = New-ScalarSchema -Kind "int"
-            EqiupEffectClasses = New-ScalarSchema -Kind "ueArray" -Nullable $true -Node (New-ArrayNodeSchema -Item (New-ObjectNodeSchema -Required @("EffectClass", "SetByCallerTag", "SetByCallerValue") -Properties @{
-                EffectClass = New-ScalarSchema -Kind "softClass"
-                SetByCallerTag = New-ScalarSchema -Kind "string" -Nullable $true
-                SetByCallerValue = New-ScalarSchema -Kind "float"
-            }))
             bIsOre = New-ScalarSchema -Kind "bool"
             SellPrice = New-ScalarSchema -Kind "int"
         }

@@ -8,7 +8,6 @@
 
 class AMKCharacter;
 class USphereComponent;
-class UMKRuntimePaperSprite;
 class UPaperSpriteComponent;
 
 UCLASS()
@@ -43,9 +42,6 @@ protected:
 
 private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
-
-	UPROPERTY(Transient)
-	TObjectPtr<UMKRuntimePaperSprite> RuntimeItemPreviewSprite;
 
 	UPROPERTY(Transient)
 	bool bIsInitialized = false;
