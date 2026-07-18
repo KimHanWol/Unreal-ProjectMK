@@ -1,28 +1,23 @@
-﻿#include "ProjectMK/Component/MKCharacterVisualComponent.h"
+#include "ProjectMK/Component/MKCharacterVisualComponent.h"
 
 #include "AbilitySystemComponent.h"
-#include "AnimSequences/PaperZDAnimSequence.h"
-#include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
 #include "Logging/LogMacros.h"
 #include "Materials/MaterialInstanceDynamic.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperSprite.h"
-#include "PaperSpriteComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
-#include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
-#include "ProjectMK/Helper/MKRuntimePaperSprite.h"
+#include "ProjectMK/Data/DataAsset/CharacterAnimationDataAsset.h"
 
 namespace MKCharacterVisualComponentLocals
 {
-	constexpr int32 VisualAnimationAtlasCellSize = 256;
+	constexpr float DefaultAnimationPlayRateScale = 2.f;
 
-	FVector GetVisualOverrideVisualRelativeScale(bool bReverseFacingDirection, float VisualScale)
+	FVector GetVisualOverrideVisualRelativeScale(float VisualScale)
 	{
 		const float ClampedScale = FMath::Max(VisualScale, KINDA_SMALL_NUMBER);
-		return FVector(bReverseFacingDirection ? -ClampedScale : ClampedScale, 1.f, ClampedScale);
+		return FVector(ClampedScale, 1.f, ClampedScale);
 	}
-
 }
 
 UMKCharacterVisualComponent::UMKCharacterVisualComponent()
@@ -38,11 +33,11 @@ void UMKCharacterVisualComponent::InitializeVisuals()
 		return;
 	}
 
-	CharacterVisualComponent = OwnerCharacter->CharacterVisualComponent;
 	if (::IsValid(OwnerCharacter->GetSprite()))
 	{
 		BaseCharacterSpriteRelativeLocation = OwnerCharacter->GetSprite()->GetRelativeLocation();
 	}
+
 	InitializeInvincibleMaterial();
 	CacheStateSpriteComponents();
 	BindVisualDelegates();
@@ -72,15 +67,23 @@ void UMKCharacterVisualComponent::UpdateVisuals()
 	CachedAnimationType = OwnerCharacter->ResolveCurrentCharacterAnimationType();
 	OwnerCharacter->CurrentCharacterAnimationType = CachedAnimationType;
 
-	const UPaperZDAnimSequence* CurrentAnimationSequence = nullptr;
-	float PlaybackTime = 0.f;
-	float PlaybackProgress = 0.f;
-	bHasCachedPlaybackData = OwnerCharacter->GetCurrentAnimationPlaybackData(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-	CachedAnimationFrameIndex = OwnerCharacter->ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-
 	UpdateCharacterAnimationVisual();
 	UpdateDrillShakeVisuals();
 	UpdateStateSpriteVisuals();
+}
+
+void UMKCharacterVisualComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	if (AMKCharacter* OwnerCharacter = GetOwnerCharacter())
+	{
+		if (::IsValid(OwnerCharacter->GetSprite()))
+		{
+			OwnerCharacter->GetSprite()->SetRelativeLocation(BaseCharacterSpriteRelativeLocation);
+		}
+	}
+
+	UnbindVisualDelegates();
+	Super::EndPlay(EndPlayReason);
 }
 
 void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
@@ -106,20 +109,6 @@ void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag 
 	{
 		CharacterVisualMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
 	}
-}
-
-void UMKCharacterVisualComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	if (AMKCharacter* OwnerCharacter = GetOwnerCharacter())
-	{
-		if (::IsValid(OwnerCharacter->GetSprite()))
-		{
-			OwnerCharacter->GetSprite()->SetRelativeLocation(BaseCharacterSpriteRelativeLocation);
-		}
-	}
-
-	UnbindVisualDelegates();
-	Super::EndPlay(EndPlayReason);
 }
 
 void UMKCharacterVisualComponent::BindVisualDelegates()
@@ -161,16 +150,22 @@ void UMKCharacterVisualComponent::InitializeInvincibleMaterial()
 void UMKCharacterVisualComponent::CacheStateSpriteComponents()
 {
 	CacheStateSpriteComponent(BalloonSpriteComponentName, BalloonStateSpriteComponent, BalloonLeftFacingRelativeLocation);
-	CacheStateSpriteComponent(DrillSideSpriteComponentName, DrillSideStateSpriteComponent, DrillSideLeftFacingRelativeLocation);
+	CacheStateSpriteComponent(DrillLeftSpriteComponentName, DrillLeftStateSpriteComponent, DrillLeftLeftFacingRelativeLocation);
+	CacheStateSpriteComponent(DrillRightSpriteComponentName, DrillRightStateSpriteComponent, DrillRightLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillDownSpriteComponentName, DrillDownStateSpriteComponent, DrillDownLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillUpSpriteComponentName, DrillUpStateSpriteComponent, DrillUpLeftFacingRelativeLocation);
-	if (::IsValid(DrillSideStateSpriteComponent))
+	if (::IsValid(DrillLeftStateSpriteComponent))
 	{
-		DrillSideLeftFacingRelativeRotation = DrillSideStateSpriteComponent->GetRelativeRotation();
+		DrillLeftLeftFacingRelativeRotation = DrillLeftStateSpriteComponent->GetRelativeRotation();
+	}
+
+	if (::IsValid(DrillRightStateSpriteComponent))
+	{
+		DrillRightLeftFacingRelativeRotation = DrillRightStateSpriteComponent->GetRelativeRotation();
 	}
 
 	const int32 StateSpriteSortPriority = ResolveStateSpriteSortPriority();
-	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillSideStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
+	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillLeftStateSpriteComponent.Get(), DrillRightStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
 	{
 		if (::IsValid(StateSpriteComponent) == false)
 		{
@@ -181,7 +176,6 @@ void UMKCharacterVisualComponent::CacheStateSpriteComponents()
 		StateSpriteComponent->SetGenerateOverlapEvents(false);
 		StateSpriteComponent->SetCanEverAffectNavigation(false);
 		StateSpriteComponent->SetTranslucentSortPriority(StateSpriteSortPriority);
-		StateSpriteComponent->SetSprite(nullptr);
 		StateSpriteComponent->SetVisibility(false);
 		StateSpriteComponent->SetHiddenInGame(true);
 	}
@@ -221,7 +215,7 @@ void UMKCharacterVisualComponent::UpdateFacingDirectionCache()
 void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 {
 	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false || ::IsValid(CharacterVisualComponent) == false)
+	if (::IsValid(OwnerCharacter) == false)
 	{
 		return;
 	}
@@ -230,25 +224,33 @@ void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 	UpdateOverrideVisualFacingDirection();
 
 	const FCharacterDataTableRow* CharacterData = OwnerCharacter->GetCharacterData();
-	if (CharacterData == nullptr || bHasCachedPlaybackData == false)
+	if (CharacterData == nullptr || CharacterData->AnimationDataAsset.IsNull())
 	{
 		SetCharacterVisualOverrideEnabled(false);
 		return;
 	}
 
-	const TSoftObjectPtr<UTexture2D>* CharacterAnimationTexturePtr = CharacterData->AnimationTextures.FindTexture(CachedAnimationType);
-	if (CharacterAnimationTexturePtr == nullptr || CharacterAnimationTexturePtr->IsNull())
+	UCharacterAnimationDataAsset* AnimationDataAsset = CharacterData->AnimationDataAsset.LoadSynchronous();
+	if (::IsValid(AnimationDataAsset) == false)
 	{
 		SetCharacterVisualOverrideEnabled(false);
 		return;
 	}
 
-	UTexture2D* CharacterAtlasTexture = CharacterAnimationTexturePtr->LoadSynchronous();
-	const UPaperSprite* CharacterSprite = ResolveAnimationAtlasSprite(CharacterAtlasTexture, CachedAnimationFrameIndex, OwnerCharacter->ResolveCurrentBasePixelsPerUnrealUnit());
+	const bool bIsDrilling = OwnerCharacter->GetDrillingVector().IsNearlyZero() == false;
+	const FCharacterSpriteAnimationClip* AnimationClip = ResolveAnimationClip(AnimationDataAsset);
+	const UPaperSprite* CharacterSprite = nullptr;
 	if (CharacterSprite == nullptr)
 	{
-		CurrentOverrideVisualScale = 1.f;
-		UpdateOverrideVisualFacingDirection();
+		if (AnimationClip != nullptr && AnimationClip->HasSprites())
+		{
+			const int32 FrameIndex = bIsDrilling ? 0 : ResolveAnimationFrameIndex(*AnimationClip);
+			CharacterSprite = AnimationClip->GetSpriteByFrameIndex(FrameIndex);
+		}
+	}
+
+	if (CharacterSprite == nullptr)
+	{
 		SetCharacterVisualOverrideEnabled(false);
 		return;
 	}
@@ -256,7 +258,7 @@ void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 	CurrentOverrideVisualScale = 1.f;
 	UpdateOverrideVisualFacingDirection();
 	OwnerCharacter->ApplySpriteRenderingOverrides(CharacterSprite);
-	CharacterVisualComponent->SetSprite(const_cast<UPaperSprite*>(CharacterSprite));
+	SetSprite(const_cast<UPaperSprite*>(CharacterSprite));
 	SetCharacterVisualOverrideEnabled(true);
 	EnsureCharacterVisualMaterialInstance();
 }
@@ -271,16 +273,13 @@ void UMKCharacterVisualComponent::SetCharacterVisualOverrideEnabled(bool bEnable
 
 	bCharacterVisualOverrideEnabled = bEnabled;
 
-	if (::IsValid(CharacterVisualComponent))
+	SetVisibility(bEnabled);
+	SetHiddenInGame(!bEnabled);
+	if (bEnabled == false)
 	{
-		CharacterVisualComponent->SetVisibility(bEnabled);
-		CharacterVisualComponent->SetHiddenInGame(!bEnabled);
-		if (bEnabled == false)
-		{
-			CurrentOverrideVisualScale = 1.f;
-			UpdateOverrideVisualFacingDirection();
-			CharacterVisualComponent->SetSprite(nullptr);
-		}
+		CurrentOverrideVisualScale = 1.f;
+		UpdateOverrideVisualFacingDirection();
+		SetSprite(nullptr);
 	}
 
 	if (::IsValid(OwnerCharacter->GetSprite()))
@@ -293,26 +292,13 @@ void UMKCharacterVisualComponent::SetCharacterVisualOverrideEnabled(bool bEnable
 
 void UMKCharacterVisualComponent::UpdateOverrideVisualFacingDirection()
 {
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	const UGameSettingDataAsset* GameSettings = OwnerCharacter->GetGameSettings();
-	const bool bReverseFacingDirection = ::IsValid(GameSettings) && GameSettings->bReverseOverrideVisualFacingDirection;
-	const FVector RelativeScale = MKCharacterVisualComponentLocals::GetVisualOverrideVisualRelativeScale(bReverseFacingDirection, CurrentOverrideVisualScale);
-
-	if (::IsValid(CharacterVisualComponent))
-	{
-		CharacterVisualComponent->SetRelativeScale3D(RelativeScale);
-	}
+	SetRelativeScale3D(MKCharacterVisualComponentLocals::GetVisualOverrideVisualRelativeScale(CurrentOverrideVisualScale));
 }
 
 void UMKCharacterVisualComponent::EnsureCharacterVisualMaterialInstance()
 {
 	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false || ::IsValid(CharacterVisualComponent) == false || ::IsValid(OwnerCharacter->GetSprite()) == false)
+	if (::IsValid(OwnerCharacter) == false || ::IsValid(OwnerCharacter->GetSprite()) == false)
 	{
 		return;
 	}
@@ -326,7 +312,7 @@ void UMKCharacterVisualComponent::EnsureCharacterVisualMaterialInstance()
 	if (::IsValid(CharacterVisualMaterialInstance) == false || CharacterVisualMaterialSource.Get() != BaseSpriteMaterial)
 	{
 		CharacterVisualMaterialSource = BaseSpriteMaterial;
-		CharacterVisualMaterialInstance = CharacterVisualComponent->CreateDynamicMaterialInstance(0, BaseSpriteMaterial);
+		CharacterVisualMaterialInstance = CreateDynamicMaterialInstance(0, BaseSpriteMaterial);
 	}
 
 	if (::IsValid(CharacterVisualMaterialInstance))
@@ -364,21 +350,80 @@ void UMKCharacterVisualComponent::UpdateDrillShakeVisuals()
 void UMKCharacterVisualComponent::UpdateStateSpriteVisuals()
 {
 	HideAllStateSprites();
+
+	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
+	if (::IsValid(OwnerCharacter) == false)
+	{
+		return;
+	}
+
+	const FVector DrillingDirection = OwnerCharacter->GetDrillingVector();
+	if (DrillingDirection.IsNearlyZero())
+	{
+		return;
+	}
+
+	UPaperSpriteComponent* TargetStateSpriteComponent = nullptr;
+	if (FMath::Abs(DrillingDirection.X) >= FMath::Abs(DrillingDirection.Z))
+	{
+		TargetStateSpriteComponent = DrillingDirection.X >= 0.f
+			? DrillRightStateSpriteComponent.Get()
+			: DrillLeftStateSpriteComponent.Get();
+	}
+	else
+	{
+		TargetStateSpriteComponent = DrillingDirection.Z >= 0.f
+			? DrillUpStateSpriteComponent.Get()
+			: DrillDownStateSpriteComponent.Get();
+	}
+
+	if (::IsValid(TargetStateSpriteComponent))
+	{
+		TargetStateSpriteComponent->SetVisibility(true);
+		TargetStateSpriteComponent->SetHiddenInGame(false);
+	}
 }
 
 void UMKCharacterVisualComponent::HideAllStateSprites()
 {
-	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillSideStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
+	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillLeftStateSpriteComponent.Get(), DrillRightStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
 	{
 		if (::IsValid(StateSpriteComponent) == false)
 		{
 			continue;
 		}
 
-		StateSpriteComponent->SetSprite(nullptr);
 		StateSpriteComponent->SetVisibility(false);
 		StateSpriteComponent->SetHiddenInGame(true);
 	}
+}
+
+const FCharacterSpriteAnimationClip* UMKCharacterVisualComponent::ResolveAnimationClip(const UCharacterAnimationDataAsset* AnimationDataAsset) const
+{
+	if (::IsValid(AnimationDataAsset) == false)
+	{
+		return nullptr;
+	}
+
+	return AnimationDataAsset->Animations.FindClip(CachedAnimationType);
+}
+
+int32 UMKCharacterVisualComponent::ResolveAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const
+{
+	if (AnimationClip.Sprites.IsEmpty())
+	{
+		return 0;
+	}
+
+	const float EffectivePlayRate = FMath::Max(AnimationClip.PlayRate * MKCharacterVisualComponentLocals::DefaultAnimationPlayRateScale, 0.f);
+	if (EffectivePlayRate <= KINDA_SMALL_NUMBER || AnimationClip.Sprites.Num() == 1)
+	{
+		return 0;
+	}
+
+	const UWorld* World = GetWorld();
+	const float TimeSeconds = ::IsValid(World) ? World->GetTimeSeconds() : 0.f;
+	return FMath::FloorToInt(TimeSeconds * EffectivePlayRate) % AnimationClip.Sprites.Num();
 }
 
 UPaperSpriteComponent* UMKCharacterVisualComponent::FindSpriteComponentByName(FName ComponentName) const
@@ -391,11 +436,11 @@ UPaperSpriteComponent* UMKCharacterVisualComponent::FindSpriteComponentByName(FN
 
 	TArray<UPaperSpriteComponent*> SpriteComponents;
 	OwnerCharacter->GetComponents<UPaperSpriteComponent>(SpriteComponents);
-	for (UPaperSpriteComponent* SpriteComponent : SpriteComponents)
+	for (UPaperSpriteComponent* StateSpriteComponent : SpriteComponents)
 	{
-		if (::IsValid(SpriteComponent) && SpriteComponent->GetFName() == ComponentName)
+		if (::IsValid(StateSpriteComponent) && StateSpriteComponent->GetFName() == ComponentName)
 		{
-			return SpriteComponent;
+			return StateSpriteComponent;
 		}
 	}
 
@@ -416,76 +461,4 @@ UAbilitySystemComponent* UMKCharacterVisualComponent::GetOwnerAbilitySystemCompo
 int32 UMKCharacterVisualComponent::ResolveStateSpriteSortPriority() const
 {
 	return 1;
-}
-
-const UPaperSprite* UMKCharacterVisualComponent::ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex, float PixelsPerUnrealUnit)
-{
-	if (::IsValid(AtlasTexture) == false)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
-	const int32 AtlasRows = AtlasTexture->GetSizeY() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
-	const int32 AtlasCellCount = AtlasColumns * AtlasRows;
-	if (AtlasCellCount <= 0)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasCellIndex = FMath::Clamp(AnimationFrameIndex, 0, AtlasCellCount - 1);
-	return GetOrCreateRuntimeAtlasSprite(AtlasTexture, AtlasCellIndex, PixelsPerUnrealUnit);
-}
-
-UMKRuntimePaperSprite* UMKCharacterVisualComponent::GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit)
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false || ::IsValid(AtlasTexture) == false || AtlasCellIndex < 0)
-	{
-		return nullptr;
-	}
-
-	OwnerCharacter->ApplyTextureRenderingOverrides(AtlasTexture);
-
-	const FName CacheKey = MakeRuntimeAtlasSpriteCacheKey(AtlasTexture, AtlasCellIndex, PixelsPerUnrealUnit);
-	if (TObjectPtr<UMKRuntimePaperSprite>* CachedSpritePtr = RuntimeAtlasSpriteCache.Find(CacheKey))
-	{
-		return CachedSpritePtr->Get();
-	}
-
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize;
-	if (AtlasColumns <= 0)
-	{
-		return nullptr;
-	}
-
-	const FIntPoint CellOrigin(
-		(AtlasCellIndex % AtlasColumns) * MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize,
-		(AtlasCellIndex / AtlasColumns) * MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize);
-
-	UMKRuntimePaperSprite* RuntimeSprite = NewObject<UMKRuntimePaperSprite>(this);
-	if (::IsValid(RuntimeSprite) == false)
-	{
-		return nullptr;
-	}
-
-		RuntimeSprite->InitializeFromAtlasCell(
-		AtlasTexture,
-		CellOrigin,
-		FIntPoint(MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize, MKCharacterVisualComponentLocals::VisualAnimationAtlasCellSize),
-		PixelsPerUnrealUnit);
-
-	RuntimeAtlasSpriteCache.Add(CacheKey, RuntimeSprite);
-	return RuntimeSprite;
-}
-
-FName UMKCharacterVisualComponent::MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const
-{
-	if (AtlasTexture == nullptr)
-	{
-		return NAME_None;
-	}
-
-	const int32 QuantizedPixelsPerUnit = FMath::RoundToInt(PixelsPerUnrealUnit * 1000.f);
-	return FName(*FString::Printf(TEXT("%s_%d_%d"), *AtlasTexture->GetPathName(), AtlasCellIndex, QuantizedPixelsPerUnit));
 }

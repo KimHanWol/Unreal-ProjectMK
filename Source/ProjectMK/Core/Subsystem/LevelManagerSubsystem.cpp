@@ -134,7 +134,6 @@ namespace
 		FCollisionObjectQueryParams SweepObjectQueryParams;
 		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
-		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 
 		TArray<FHitResult> SweepHitResults;
 		const bool bHasSweepHit = World->SweepMultiByObjectType(
@@ -309,7 +308,6 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 				AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitActor);
 				if (::IsValid(HitCharacter))
 				{
-					bIsOnBottom = true;
 					const int32 FallingDamage = GetFallingDamage(BottomBlock.Get(), VerticalBlockData);
 					if (FallingDamage > 0.f)
 					{

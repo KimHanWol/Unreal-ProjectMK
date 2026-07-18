@@ -7,42 +7,24 @@
 #include "Components/CapsuleComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
-#include "Logging/LogMacros.h"
-#include "Materials/MaterialInstanceDynamic.h"
 #include "Engine/Texture2D.h"
-#include "UObject/UnrealType.h"
-#include "PaperZDAnimInstance.h"
-#include "PaperZDAnimationComponent.h"
-#include "AnimSequences/PaperZDAnimSequence.h"
-#include "AnimSequences/Players/PaperZDAnimPlayer.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperSprite.h"
-#include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
-#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
-#include "ProjectMK/Helper/MKRuntimePaperSprite.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/DamageableUtil.h"
 
 namespace
 {
-	constexpr int32 AnimationAtlasCellSize = 256;
-	const FName DrillingVectorVariableName(TEXT("DrillingVector"));
 	constexpr float DisabledPostProcessValue = 0.f;
 	constexpr float LockedExposureValue = 1.f;
 	constexpr TextureFilter StableSpriteTextureFilter = TF_Bilinear;
-
-	FVector GetOverrideVisualRelativeScale(bool bReverseFacingDirection, float VisualScale)
-	{
-		const float ClampedScale = FMath::Max(VisualScale, KINDA_SMALL_NUMBER);
-		return FVector(bReverseFacingDirection ? -ClampedScale : ClampedScale, 1.f, ClampedScale);
-	}
 
 	void ApplyCameraPostProcessOverrides(FPostProcessSettings& PostProcessSettings)
 	{
@@ -72,7 +54,7 @@ AMKCharacter::AMKCharacter()
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetupAttachment(GetRootComponent());
 
-	CharacterVisualComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("CharacterVisualComponent"));
+	CharacterVisualComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualComponent"));
 	CharacterVisualComponent->SetupAttachment(GetSprite());
 	CharacterVisualComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	CharacterVisualComponent->SetGenerateOverlapEvents(false);
@@ -80,10 +62,8 @@ AMKCharacter::AMKCharacter()
 	CharacterVisualComponent->SetRelativeLocation(FVector::ZeroVector);
 	CharacterVisualComponent->SetRelativeRotation(FRotator::ZeroRotator);
 	CharacterVisualComponent->SetRelativeScale3D(FVector::OneVector);
-	CharacterVisualComponent->SetVisibility(false);
+	CharacterVisualComponent->SetVisibility(true);
 	CharacterVisualComponent->SetHiddenInGame(true);
-
-	CharacterVisualLogicComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualLogicComponent"));
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 	AttributeSet_Character = CreateDefaultSubobject<UAttributeSet_Character>(TEXT("AttributeSet_Character"));
@@ -96,14 +76,12 @@ UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
 
 void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
 {
-	if (bHasAppliedDrillingVectorToAnimInstance && DrillingVector.Equals(InDrillingVector))
+	if (DrillingVector.Equals(InDrillingVector))
 	{
 		return;
 	}
 
 	DrillingVector = InDrillingVector;
-	SetAnimInstanceVectorVariable(DrillingVectorVariableName, DrillingVector);
-	bHasAppliedDrillingVectorToAnimInstance = true;
 }
 
 void AMKCharacter::BeginPlay()
@@ -120,11 +98,10 @@ void AMKCharacter::BeginPlay()
 	GiveAbilities();
 	InitializeCharacterAttributes();
 	ApplyInitialEffects();
-	GrantInitialInventoryItems();
 	BindEvents();
-	if (::IsValid(CharacterVisualLogicComponent))
+	if (::IsValid(CharacterVisualComponent))
 	{
-		CharacterVisualLogicComponent->InitializeVisuals();
+		CharacterVisualComponent->InitializeVisuals();
 	}
 }
 
@@ -139,26 +116,6 @@ void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AMKCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
-}
-
-void AMKCharacter::InitializeInvincibleMaterial()
-{
-	UPaperFlipbookComponent* SpriteComponent = GetSprite();
-	if (::IsValid(SpriteComponent) == false)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: SpriteComponent is invalid"));
-		return;
-	}
-
-	InvincibleMaterialInstance = SpriteComponent->CreateDynamicMaterialInstance(0);
-	if (::IsValid(InvincibleMaterialInstance) == false)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: Failed to create dynamic material instance"));
-		return;
-	}
-
-	InvincibleMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, 0.f);
-	UE_LOG(LogTemp, Warning, TEXT("InitializeInvincibleMaterial: Created DMI, parameter=%s set to 0.0"), *InvincibleDarkenParameterName.ToString());
 }
 
 void AMKCharacter::Apply2DCameraOverrides()
@@ -273,47 +230,6 @@ void AMKCharacter::ApplyInitialEffects()
 	}
 
 	RestoreOxygenToMax();
-}
-
-void AMKCharacter::GrantInitialInventoryItems()
-{
-	if (::IsValid(InventoryComponent) == false)
-	{
-		return;
-	}
-
-	const FCharacterDataTableRow* CharacterData = GetCharacterData();
-	if (CharacterData == nullptr)
-	{
-		return;
-	}
-
-	TSet<FName> ValidItemKeys;
-	for (const FString& ItemRowName : UMKBlueprintFunctionLibrary::GetItemRowNames())
-	{
-		ValidItemKeys.Add(FName(*ItemRowName));
-	}
-
-	for (const FCharacterInitialInventoryEntry& InitialItem : CharacterData->InitialInventoryItems)
-	{
-		const FName ItemKey = InitialItem.GetItemKey();
-		if (ItemKey.IsNone() || InitialItem.ItemCount <= 0)
-		{
-			continue;
-		}
-
-		if (ValidItemKeys.Contains(ItemKey) == false)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Invalid initial item key '%s' on '%s'."), *ItemKey.ToString(), *GetName());
-			continue;
-		}
-
-		if (InventoryComponent->AddItem(ItemKey, InitialItem.ItemCount) == false)
-		{
-			UE_LOG(LogTemp, Warning, TEXT("GrantInitialInventoryItems: Failed to add '%s' x%d to '%s'."), *ItemKey.ToString(), InitialItem.ItemCount, *GetName());
-			continue;
-		}
-	}
 }
 
 void AMKCharacter::BindEvents()
@@ -488,9 +404,9 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
-	if (::IsValid(CharacterVisualLogicComponent))
+	if (::IsValid(CharacterVisualComponent))
 	{
-		CharacterVisualLogicComponent->UpdateVisuals();
+		CharacterVisualComponent->UpdateVisuals();
 	}
 
 	if (bIsFlying)
@@ -608,131 +524,6 @@ const UGameSettingDataAsset* AMKCharacter::GetGameSettings() const
 	return DataManager->GetGameSettingDataAsset();
 }
 
-void AMKCharacter::UpdateCharacterAnimationVisual()
-{
-	if (::IsValid(CharacterVisualComponent) == false)
-	{
-		return;
-	}
-
-	ApplySpriteRenderingOverrides(ResolveCurrentBaseFrameSprite());
-
-	const FCharacterDataTableRow* CharacterData = GetCharacterData();
-	UpdateOverrideVisualFacingDirection();
-	if (CharacterData == nullptr)
-	{
-		SetCharacterVisualOverrideEnabled(false);
-		return;
-	}
-
-	const UPaperZDAnimSequence* CurrentAnimationSequence = nullptr;
-	float PlaybackTime = 0.f;
-	float PlaybackProgress = 0.f;
-	if (GetCurrentAnimationPlaybackData(CurrentAnimationSequence, PlaybackTime, PlaybackProgress) == false)
-	{
-		SetCharacterVisualOverrideEnabled(false);
-		return;
-	}
-
-	CurrentCharacterAnimationType = ResolveCurrentCharacterAnimationType();
-
-	const TSoftObjectPtr<UTexture2D>* CharacterAnimationTexturePtr = FindCharacterAnimationTexture(*CharacterData, CurrentCharacterAnimationType);
-	if (CharacterAnimationTexturePtr == nullptr || CharacterAnimationTexturePtr->IsNull())
-	{
-		SetCharacterVisualOverrideEnabled(false);
-		return;
-	}
-
-	const int32 AnimationFrameIndex = ResolveCurrentAnimationFrameIndex(CurrentAnimationSequence, PlaybackTime, PlaybackProgress);
-	UTexture2D* CharacterAtlasTexture = CharacterAnimationTexturePtr->LoadSynchronous();
-	const UPaperSprite* CharacterSprite = ResolveAnimationAtlasSprite(CharacterAtlasTexture, AnimationFrameIndex);
-	if (CharacterSprite == nullptr)
-	{
-		CurrentOverrideVisualScale = 1.f;
-		UpdateOverrideVisualFacingDirection();
-		SetCharacterVisualOverrideEnabled(false);
-		return;
-	}
-
-	CurrentOverrideVisualScale = 1.f;
-	UpdateOverrideVisualFacingDirection();
-	ApplySpriteRenderingOverrides(CharacterSprite);
-	CharacterVisualComponent->SetSprite(const_cast<UPaperSprite*>(CharacterSprite));
-	SetCharacterVisualOverrideEnabled(true);
-	EnsureCharacterVisualMaterialInstance();
-}
-
-void AMKCharacter::SetCharacterVisualOverrideEnabled(bool bEnabled)
-{
-	bCharacterVisualOverrideEnabled = bEnabled;
-
-	if (::IsValid(CharacterVisualComponent))
-	{
-		CharacterVisualComponent->SetVisibility(bEnabled);
-		CharacterVisualComponent->SetHiddenInGame(!bEnabled);
-		if (bEnabled == false)
-		{
-			CurrentOverrideVisualScale = 1.f;
-			UpdateOverrideVisualFacingDirection();
-			CharacterVisualComponent->SetSprite(nullptr);
-		}
-	}
-
-	if (::IsValid(GetSprite()))
-	{
-		GetSprite()->SetSpriteColor(FLinearColor::White);
-		GetSprite()->SetRenderInMainPass(!bEnabled);
-		GetSprite()->SetRenderInDepthPass(false);
-	}
-}
-
-void AMKCharacter::UpdateOverrideVisualFacingDirection()
-{
-	const UGameSettingDataAsset* GameSettings = GetGameSettings();
-	const bool bReverseFacingDirection = ::IsValid(GameSettings) && GameSettings->bReverseOverrideVisualFacingDirection;
-	const FVector RelativeScale = GetOverrideVisualRelativeScale(bReverseFacingDirection, CurrentOverrideVisualScale);
-
-	if (::IsValid(CharacterVisualComponent))
-	{
-		CharacterVisualComponent->SetRelativeScale3D(RelativeScale);
-	}
-}
-
-float AMKCharacter::ResolveOverrideVisualScale(const UPaperSprite* OverrideSprite) const
-{
-	if (::IsValid(OverrideSprite) == false)
-	{
-		return 1.f;
-	}
-
-	const UPaperSprite* BaseSprite = ResolveCurrentBaseFrameSprite();
-	if (::IsValid(BaseSprite) == false)
-	{
-		return 1.f;
-	}
-
-	const FVector2D BaseSourceSize = BaseSprite->GetSourceSize();
-	const float BasePixelsPerUnit = FMath::Max(BaseSprite->GetPixelsPerUnrealUnit(), KINDA_SMALL_NUMBER);
-	const float BaseLocalWidth = BaseSourceSize.X / BasePixelsPerUnit;
-	const float BaseLocalHeight = BaseSourceSize.Y / BasePixelsPerUnit;
-	const FVector2D OverrideSourceSize = OverrideSprite->GetSourceSize();
-	const float OverridePixelsPerUnit = FMath::Max(OverrideSprite->GetPixelsPerUnrealUnit(), KINDA_SMALL_NUMBER);
-	const float OverrideLocalWidth = OverrideSourceSize.X / OverridePixelsPerUnit;
-	const float OverrideLocalHeight = OverrideSourceSize.Y / OverridePixelsPerUnit;
-
-	if (BaseLocalHeight > KINDA_SMALL_NUMBER && OverrideLocalHeight > KINDA_SMALL_NUMBER)
-	{
-		return BaseLocalHeight / OverrideLocalHeight;
-	}
-
-	if (BaseLocalWidth > KINDA_SMALL_NUMBER && OverrideLocalWidth > KINDA_SMALL_NUMBER)
-	{
-		return BaseLocalWidth / OverrideLocalWidth;
-	}
-
-	return 1.f;
-}
-
 const UPaperSprite* AMKCharacter::ResolveCurrentBaseFrameSprite() const
 {
 	if (::IsValid(GetSprite()) == false)
@@ -763,39 +554,87 @@ float AMKCharacter::ResolveCurrentBasePixelsPerUnrealUnit() const
 
 ECharacterAnimationType AMKCharacter::ResolveCurrentCharacterAnimationType() const
 {
+	const auto ResolveLastIdleAnimationType = [this]() -> ECharacterAnimationType
+	{
+		switch (CurrentCharacterAnimationType)
+		{
+		case ECharacterAnimationType::Walk_Left:
+		case ECharacterAnimationType::Idle_Left:
+			return ECharacterAnimationType::Idle_Left;
+		case ECharacterAnimationType::Walk_Right:
+		case ECharacterAnimationType::Idle_Right:
+			return ECharacterAnimationType::Idle_Right;
+		case ECharacterAnimationType::Idle_Up:
+			return ECharacterAnimationType::Idle_Up;
+		default:
+			return ECharacterAnimationType::Idle_Down;
+		}
+	};
+
 	if (DrillingVector.IsNearlyZero() == false)
 	{
-		if (FMath::Abs(DrillingVector.Z) > FMath::Abs(DrillingVector.X))
+		if (FMath::Abs(DrillingVector.X) >= FMath::Abs(DrillingVector.Z))
 		{
-			return DrillingVector.Z >= 0.f
-				? ECharacterAnimationType::Drill_Up
-				: ECharacterAnimationType::Drill_Down;
+			return DrillingVector.X < 0.f
+				? ECharacterAnimationType::Idle_Left
+				: ECharacterAnimationType::Idle_Right;
 		}
 
-		return ECharacterAnimationType::Drill_Side;
+		return DrillingVector.Z < 0.f
+			? ECharacterAnimationType::Idle_Down
+			: ECharacterAnimationType::Idle_Up;
 	}
 
-	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (::IsValid(MoveComp))
+	if (const UCharacterMovementComponent* MoveComp = GetCharacterMovement())
 	{
 		if (MoveComp->MovementMode == MOVE_Flying)
 		{
-			return ECharacterAnimationType::Fly;
-		}
+			if (CharacterDir.X < -KINDA_SMALL_NUMBER || GetVelocity().X < -KINDA_SMALL_NUMBER)
+			{
+				return ECharacterAnimationType::Idle_Left;
+			}
 
-		if (MoveComp->IsFalling())
-		{
-			return ECharacterAnimationType::Fall;
+			if (CharacterDir.X > KINDA_SMALL_NUMBER || GetVelocity().X > KINDA_SMALL_NUMBER)
+			{
+				return ECharacterAnimationType::Idle_Right;
+			}
+
+			return ResolveLastIdleAnimationType();
 		}
 	}
 
-	const float HorizontalVelocity = FMath::Abs(GetVelocity().X);
-	if (HorizontalVelocity > KINDA_SMALL_NUMBER || FMath::Abs(CharacterDir.X) > KINDA_SMALL_NUMBER)
+	if (CharacterDir.X < -KINDA_SMALL_NUMBER)
 	{
-		return ECharacterAnimationType::Run;
+		return ECharacterAnimationType::Walk_Left;
 	}
 
-	return ECharacterAnimationType::Idle;
+	if (CharacterDir.X > KINDA_SMALL_NUMBER)
+	{
+		return ECharacterAnimationType::Walk_Right;
+	}
+
+	const float HorizontalVelocity = GetVelocity().X;
+	if (HorizontalVelocity < -KINDA_SMALL_NUMBER)
+	{
+		return ECharacterAnimationType::Walk_Left;
+	}
+
+	if (HorizontalVelocity > KINDA_SMALL_NUMBER)
+	{
+		return ECharacterAnimationType::Walk_Right;
+	}
+
+	if (CharacterDir.Z < -KINDA_SMALL_NUMBER)
+	{
+		return ECharacterAnimationType::Idle_Down;
+	}
+
+	if (CharacterDir.Z > KINDA_SMALL_NUMBER)
+	{
+		return ECharacterAnimationType::Idle_Down;
+	}
+
+	return ResolveLastIdleAnimationType();
 }
 
 const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
@@ -840,206 +679,6 @@ const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
 	}
 
 	return nullptr;
-}
-
-const TSoftObjectPtr<UTexture2D>* AMKCharacter::FindCharacterAnimationTexture(const FCharacterDataTableRow& CharacterData, ECharacterAnimationType AnimationType) const
-{
-	const TSoftObjectPtr<UTexture2D>* AnimationTexturePtr = CharacterData.AnimationTextures.FindTexture(AnimationType);
-	if (AnimationTexturePtr != nullptr)
-	{
-		return AnimationTexturePtr;
-	}
-
-	return nullptr;
-}
-
-const UPaperSprite* AMKCharacter::ResolveAnimationAtlasSprite(UTexture2D* AtlasTexture, int32 AnimationFrameIndex)
-{
-	if (::IsValid(AtlasTexture) == false)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / AnimationAtlasCellSize;
-	const int32 AtlasRows = AtlasTexture->GetSizeY() / AnimationAtlasCellSize;
-	const int32 AtlasCellCount = AtlasColumns * AtlasRows;
-	if (AtlasCellCount <= 0)
-	{
-		return nullptr;
-	}
-
-	const int32 AtlasCellIndex = FMath::Clamp(AnimationFrameIndex, 0, AtlasCellCount - 1);
-	return GetOrCreateRuntimeAtlasSprite(AtlasTexture, AtlasCellIndex, ResolveCurrentBasePixelsPerUnrealUnit());
-}
-
-void AMKCharacter::EnsureCharacterVisualMaterialInstance()
-{
-	if (::IsValid(CharacterVisualComponent) == false || ::IsValid(GetSprite()) == false)
-	{
-		return;
-	}
-
-	UMaterialInterface* BaseSpriteMaterial = GetSprite()->GetMaterial(0);
-	if (::IsValid(BaseSpriteMaterial) == false)
-	{
-		return;
-	}
-
-	if (::IsValid(CharacterVisualMaterialInstance) == false || CharacterVisualMaterialSource.Get() != BaseSpriteMaterial)
-	{
-		CharacterVisualMaterialSource = BaseSpriteMaterial;
-		CharacterVisualMaterialInstance = CharacterVisualComponent->CreateDynamicMaterialInstance(0, BaseSpriteMaterial);
-	}
-
-	if (::IsValid(CharacterVisualMaterialInstance))
-	{
-		CharacterVisualMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
-}
-
-bool AMKCharacter::GetCurrentAnimationPlaybackData(const UPaperZDAnimSequence*& OutAnimationSequence, float& OutPlaybackTime, float& OutPlaybackProgress) const
-{
-	OutAnimationSequence = nullptr;
-	OutPlaybackTime = 0.f;
-	OutPlaybackProgress = 0.f;
-
-	UPaperZDAnimInstance* CurrentAnimInstance = GetAnimInstance();
-	if (::IsValid(CurrentAnimInstance) == false)
-	{
-		return false;
-	}
-
-	UPaperZDAnimPlayer* AnimPlayer = CurrentAnimInstance->GetPlayer();
-	if (::IsValid(AnimPlayer) == false)
-	{
-		return false;
-	}
-
-	OutAnimationSequence = AnimPlayer->GetCurrentAnimSequence();
-	OutPlaybackTime = AnimPlayer->GetCurrentPlaybackTime();
-	OutPlaybackProgress = AnimPlayer->GetPlaybackProgress();
-	if (OutAnimationSequence == nullptr)
-	{
-		return false;
-	}
-
-	return true;
-}
-
-int32 AMKCharacter::ResolveCurrentAnimationFrameIndex(const UPaperZDAnimSequence* CurrentAnimationSequence, float PlaybackTime, float PlaybackProgress) const
-{
-	if (CurrentAnimationSequence == nullptr)
-	{
-		return 0;
-	}
-
-	const int32 AnimationFrameCount = FMath::Max(CurrentAnimationSequence->GetNumberOfFrames(), 1);
-	int32 FrameIndex = 0;
-	if (PlaybackTime >= 0.f)
-	{
-		FrameIndex = CurrentAnimationSequence->GetFrameAtTime(PlaybackTime);
-	}
-	else
-	{
-		FrameIndex = FMath::FloorToInt(FMath::Clamp(PlaybackProgress, 0.f, 1.f) * static_cast<float>(AnimationFrameCount));
-	}
-
-	return FMath::Clamp(FrameIndex, 0, AnimationFrameCount - 1);
-}
-
-UMKRuntimePaperSprite* AMKCharacter::GetOrCreateRuntimeAtlasSprite(UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit)
-{
-	if (::IsValid(AtlasTexture) == false || AtlasCellIndex < 0)
-	{
-		return nullptr;
-	}
-
-	ApplyTextureRenderingOverrides(AtlasTexture);
-
-	const FName CacheKey = MakeRuntimeAtlasSpriteCacheKey(AtlasTexture, AtlasCellIndex, PixelsPerUnrealUnit);
-	if (TObjectPtr<UMKRuntimePaperSprite>* CachedSpritePtr = RuntimeAtlasSpriteCache.Find(CacheKey))
-	{
-		return CachedSpritePtr->Get();
-	}
-
-	const int32 AtlasColumns = AtlasTexture->GetSizeX() / AnimationAtlasCellSize;
-	if (AtlasColumns <= 0)
-	{
-		return nullptr;
-	}
-
-	const FIntPoint CellOrigin(
-		(AtlasCellIndex % AtlasColumns) * AnimationAtlasCellSize,
-		(AtlasCellIndex / AtlasColumns) * AnimationAtlasCellSize);
-
-	UMKRuntimePaperSprite* RuntimeSprite = NewObject<UMKRuntimePaperSprite>(const_cast<AMKCharacter*>(this));
-	if (::IsValid(RuntimeSprite) == false)
-	{
-		return nullptr;
-	}
-
-	RuntimeSprite->InitializeFromAtlasCell(
-		AtlasTexture,
-		CellOrigin,
-		FIntPoint(AnimationAtlasCellSize, AnimationAtlasCellSize),
-		PixelsPerUnrealUnit);
-
-	RuntimeAtlasSpriteCache.Add(CacheKey, RuntimeSprite);
-	return RuntimeSprite;
-}
-
-FName AMKCharacter::MakeRuntimeAtlasSpriteCacheKey(const UTexture2D* AtlasTexture, int32 AtlasCellIndex, float PixelsPerUnrealUnit) const
-{
-	if (AtlasTexture == nullptr)
-	{
-		return NAME_None;
-	}
-
-	const int32 QuantizedPixelsPerUnit = FMath::RoundToInt(PixelsPerUnrealUnit * 1000.f);
-	return FName(*FString::Printf(TEXT("%s_%d_%d"), *AtlasTexture->GetPathName(), AtlasCellIndex, QuantizedPixelsPerUnit));
-}
-
-void AMKCharacter::SetAnimInstanceVectorVariable(FName VariableName, const FVector& Value)
-{
-	UPaperZDAnimInstance* CurrentAnimInstance = GetAnimInstance();
-	if (::IsValid(CurrentAnimInstance) == false)
-	{
-		return;
-	}
-
-	FStructProperty* VectorProperty = FindFProperty<FStructProperty>(CurrentAnimInstance->GetClass(), VariableName);
-	if (VectorProperty == nullptr || VectorProperty->Struct != TBaseStructure<FVector>::Get())
-	{
-		return;
-	}
-
-	FVector* PropertyValuePtr = VectorProperty->ContainerPtrToValuePtr<FVector>(CurrentAnimInstance);
-	if (PropertyValuePtr == nullptr)
-	{
-		return;
-	}
-
-	*PropertyValuePtr = Value;
-}
-
-void AMKCharacter::OnInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
-{
-	CurrentInvincibleDarkenValue = NewCount > 0 ? InvincibleDarkenAmount : 0.f;
-
-	if (::IsValid(InvincibleMaterialInstance) == false)
-	{
-		UE_LOG(LogTemp, Warning, TEXT("OnInvincibleTagChanged: DMI is invalid, Tag=%s, NewCount=%d"), *Tag.ToString(), NewCount);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("OnInvincibleTagChanged: Tag=%s, NewCount=%d, Set %s=%.3f"), *Tag.ToString(), NewCount, *InvincibleDarkenParameterName.ToString(), CurrentInvincibleDarkenValue);
-		InvincibleMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
-
-	if (::IsValid(CharacterVisualMaterialInstance))
-	{
-		CharacterVisualMaterialInstance->SetScalarParameterValue(InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
 }
 
 void AMKCharacter::ApplyDamageInvincibility()
