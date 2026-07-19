@@ -6,6 +6,7 @@ void UInventoryEquipmentWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Characters no longer equip items, so keep the legacy panel hidden without touching the UMG asset graph.
+	// Characters no longer use this panel, but existing widget blueprints may still reference it.
+	// Keep it collapsed until those references are removed from the UMG asset graph.
 	SetVisibility(ESlateVisibility::Collapsed);
 }

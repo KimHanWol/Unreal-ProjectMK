@@ -12,10 +12,10 @@ struct FCharacterSpriteAnimationClip
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	TArray<TObjectPtr<UPaperSprite>> Sprites;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation", meta = (ClampMin = "0.0"))
 	float PlayRate = 1.f;
 
 	const UPaperSprite* GetSpriteByFrameIndex(int32 FrameIndex) const
@@ -40,22 +40,22 @@ struct FCharacterSpriteAnimationSet
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip IdleDown;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip IdleUp;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip IdleLeft;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip IdleRight;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip WalkLeft;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationClip WalkRight;
 
 	const FCharacterSpriteAnimationClip* FindClip(ECharacterAnimationType AnimationType) const
@@ -86,6 +86,6 @@ class PROJECTMK_API UCharacterAnimationDataAsset : public UMKDataAssetBase
 	GENERATED_BODY()
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Animation")
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Animation")
 	FCharacterSpriteAnimationSet Animations;
 };

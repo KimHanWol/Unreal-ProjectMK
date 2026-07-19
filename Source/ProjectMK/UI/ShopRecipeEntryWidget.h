@@ -25,7 +25,7 @@ protected:
 	UFUNCTION()
 	void HandleCraftButtonClicked();
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UItemSlotWidget> ItemSlotClass;
 
 	UPROPERTY(meta = (BindWidget))

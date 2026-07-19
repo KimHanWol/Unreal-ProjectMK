@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
@@ -9,10 +9,8 @@
 #include "ProjectMK/Interface/Damageable.h"
 #include "MKCharacter.generated.h"
 
-class UCameraComponent;
 class UGameplayAbility;
 class UGameplayEffect;
-class UInteractComponent;
 class UInventoryComponent;
 class UAttributeSet_Character;
 class UMKCharacterVisualComponent;
@@ -22,14 +20,12 @@ class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
 
 UCLASS()
-class PROJECTMK_API AMKCharacter : public APaperCharacter, public IAbilitySystemInterface
-														   , public IDamageable
+class PROJECTMK_API AMKCharacter : public APaperCharacter, public IAbilitySystemInterface, public IDamageable
 {
 	GENERATED_BODY()
 
 public:
 	AMKCharacter();
-
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
@@ -38,25 +34,46 @@ protected:
 	virtual void PostInitializeComponents() override;
 	virtual void SetupPlayerInputComponent(UInputComponent* PlayerInputComponent) override;
 	virtual void Tick(float DeltaSeconds) override;
-	void GiveAbilities();
-	void InitializeCharacterAttributes();
-	void ApplyInitialEffects();
 
 	virtual void BindEvents();
 	virtual void UnbindEvents();
 
-protected:
 	virtual UAbilitySystemComponent* GetOwnerASC() override;
 	virtual bool CheckIsDestroyed() override;
 	virtual void OnDestroyed() override;
 
 public:
-	FVector GetCharacterDirection() const { return CharacterDir; }
-	FVector GetDrillingVector() const { return DrillingVector; }
 	void SetDrillingVector(const FVector& InDrillingVector);
+	FVector GetCharacterDirection() const;
+	FVector GetDrillingVector() const;
 
 private:
-	friend class UMKCharacterVisualComponent;
+	void GiveAbilities();
+	void InitializeCharacterAttributes();
+	void ApplyInitialEffects();
+
+	void TryDrill();
+
+	void UpdateHorizontalMovement();
+	void UpdateFlyingVerticalVelocity() const;
+
+	void Apply2DCameraOverrides();
+	void ApplyTextureRenderingOverrides(UTexture2D* Texture) const;
+	void ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const;
+
+	void ApplyDamageInvincibility();
+	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
+	void ClearOxygenDrainEffect();
+	void RestoreOxygenToMax();
+	void UpdateOxygen();
+
+	TSubclassOf<UGameplayAbility> GetPrimaryDrillAbilityClass() const;
+	int32 GetCurrentBlockDepth() const;
+	const UGameSettingDataAsset* GetGameSettings() const;
+	ECharacterAnimationType GetCurrentCharacterAnimationType() const;
+	const UPaperSprite* GetCurrentBaseFrameSprite() const;
+	float GetCurrentBasePixelsPerUnrealUnit() const;
+	const FCharacterDataTableRow* GetCharacterData() const;
 
 	void OnLookRight(float Value);
 	void OnLookUp(float Value);
@@ -64,25 +81,12 @@ private:
 	void OnFly();
 	void OnFinishFly();
 
-	void TryDrill();
-
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
-	void ApplyDamageInvincibility();
-	void UpdateOxygen();
-	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
-	void ClearOxygenDrainEffect();
-	void RestoreOxygenToMax();
-	void Apply2DCameraOverrides();
-	void ApplyTextureRenderingOverrides(UTexture2D* Texture) const;
-	void ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const;
-	int32 GetCurrentBlockDepth() const;
-	const UGameSettingDataAsset* GetGameSettings() const;
-	ECharacterAnimationType ResolveCurrentCharacterAnimationType() const;
-	const UPaperSprite* ResolveCurrentBaseFrameSprite() const;
-	float ResolveCurrentBasePixelsPerUnrealUnit() const;
-	const FCharacterDataTableRow* GetCharacterData() const;
+
+private:
+	friend class UMKCharacterVisualComponent;
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -100,19 +104,19 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Character Animation")
 	ECharacterAnimationType CurrentCharacterAnimationType = ECharacterAnimationType::Idle_Down;
 
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly, Category = "Ability System")
 	TArray<TSubclassOf<UGameplayAbility>> InitialGameplayAbilities;
 
-	UPROPERTY(EditAnywhere, Category = "Ability System")
+	UPROPERTY(EditDefaultsOnly, Category = "Ability System")
 	TArray<TSubclassOf<UGameplayEffect>> InitialGameplayEffects;
 
 	UPROPERTY(Transient)
 	UAttributeSet_Character* AttributeSet_Character;
 
-	UPROPERTY(EditAnywhere, Category = "Invincible")
+	UPROPERTY(EditDefaultsOnly, Category = "Invincible")
 	FName InvincibleDarkenParameterName = TEXT("DarkenAmount");
 
-	UPROPERTY(EditAnywhere, Category = "Invincible")
+	UPROPERTY(EditDefaultsOnly, Category = "Invincible")
 	float InvincibleDarkenAmount = 1.f;
 
 	bool bIsFlying = false;

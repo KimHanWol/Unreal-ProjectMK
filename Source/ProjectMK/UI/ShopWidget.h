@@ -18,7 +18,7 @@ public:
 	virtual void NativeDestruct() override;
 
 protected:
-	UPROPERTY(EditAnywhere)
+	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UShopRecipeEntryWidget> ShopRecipeEntryClass;
 
 	UPROPERTY(meta = (BindWidget))

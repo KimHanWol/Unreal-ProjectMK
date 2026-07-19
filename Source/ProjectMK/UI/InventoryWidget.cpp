@@ -30,12 +30,9 @@ void UInventoryWidget::BindEvents()
 {
 	Super::BindEvents();
 
-	if (::IsValid(LocalPlayerCharacter))
+	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
 	{
-		if (UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>())
-		{
-			InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UInventoryWidget::OnInventoryChanged);
-		}
+		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UInventoryWidget::OnInventoryChanged);
 	}
 
 	if (::IsValid(OwnerASC))
@@ -48,12 +45,9 @@ void UInventoryWidget::UnbindEvents()
 {
 	Super::UnbindEvents();
 
-	if (::IsValid(LocalPlayerCharacter))
+	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
 	{
-		if (UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>())
-		{
-			InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-		}
+		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 	}
 
 	if (::IsValid(OwnerASC))
@@ -112,12 +106,7 @@ void UInventoryWidget::RefreshInventory()
 		}
 	}
 
-	if (::IsValid(LocalPlayerCharacter) == false)
-	{
-		return;
-	}
-
-	UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		return;
@@ -146,12 +135,7 @@ void UInventoryWidget::RefreshInventory()
 
 int32 UInventoryWidget::GetDesiredSlotCount() const
 {
-	if (::IsValid(LocalPlayerCharacter) == false)
-	{
-		return 0;
-	}
-
-	const UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	const UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		return 0;

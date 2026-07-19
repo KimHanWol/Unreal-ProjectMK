@@ -11,6 +11,7 @@ enum class EDataTableType : uint8
 	None = 0,
 	Block = 1,
 	Item = 2,
+	// Do not reuse this value. It preserves historic enum ordering used by older serialized assets.
 	LegacyReserved = 3 UMETA(Hidden),
 	Character = 4,
 	ShopRecipe = 5,

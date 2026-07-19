@@ -51,8 +51,8 @@ void AItemBase::InitializeItemBase(FName InItemKey)
 		return;
 	}
 
-	UPaperSprite* ResolvedItemSprite = ItemDataTableRow->ItemIcon.LoadSynchronous();
-	PaperSpriteComponent->SetSprite(ResolvedItemSprite);
+	UPaperSprite* LoadedItemSprite = ItemDataTableRow->ItemIcon.LoadSynchronous();
+	PaperSpriteComponent->SetSprite(LoadedItemSprite);
 
 	float ItemSpriteScale = 0.7f;
 	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())

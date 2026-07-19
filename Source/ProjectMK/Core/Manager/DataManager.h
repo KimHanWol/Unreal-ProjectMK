@@ -7,6 +7,7 @@
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
+#include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
@@ -49,7 +50,10 @@ public:
 	}
 
 	const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
+	bool GetCharacterDataTableRow(FName PreferredRowKey, FCharacterDataTableRow& OutRow) const;
 	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
+	TArray<FName> GetShopRecipeRowNames() const;
+	const FShopRecipeDataTableRow* GetShopRecipeDataTableRow(FName RowName) const;
 	const UGameSettingDataAsset* GetGameSettingDataAsset() const;
 	UDataTable* GetDataTable(EDataTableType DataTableType) const;
 
@@ -57,15 +61,15 @@ public:
 	TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UDataTableDataAsset* DataTableDataAsset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UGameplayEffectDataAsset* GameplayEffectDataAsset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UBlueprintDataAsset* BlueprintDataAsset;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UGameSettingDataAsset* GameSettingDataAsset;
 };

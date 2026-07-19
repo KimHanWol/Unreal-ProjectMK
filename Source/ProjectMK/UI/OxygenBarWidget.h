@@ -14,20 +14,22 @@ protected:
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
-	void OnMaxOxygenChanged(const FOnAttributeChangeData& Data);
-	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
-
 private:
 	float GetOxygenRatio() const;
+	void StartProgressInterpolation();
 	void UpdateOxygenProgressBar();
+
+	void OnMaxOxygenChanged(const FOnAttributeChangeData& Data);
+	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
 
 protected:
 	UPROPERTY(meta = (BindWidget))
 	class UProgressBar* ProgressBar_Oxygen;
 
-	UPROPERTY(EditAnywhere, Category = "HUD")
+	UPROPERTY(EditDefaultsOnly, Category = "HUD")
 	float ProgressBarInterpSpeed = 6.f;
 
+	bool bIsInterpolatingOxygen = false;
 	float CurrentOxygenPercent = 1.f;
 	float TargetOxygenPercent = 1.f;
 };

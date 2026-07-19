@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #pragma once
 
@@ -20,5 +20,6 @@ public:
 	void ToggleShopTestWidget();
 
 private:
+	UHUDWidget* GetHUDWidget();
 	void SetMenuInputMode(bool bEnableMenuInput);
 };

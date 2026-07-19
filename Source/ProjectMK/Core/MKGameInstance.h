@@ -23,10 +23,10 @@ public:
 	USoundManager* GetSoundManager();
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<UDataManager> DataManagerClass;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TSubclassOf<USoundManager> SoundManagerClass;
 
 private:

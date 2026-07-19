@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/Component/InventoryComponent.h"
 
@@ -18,25 +18,13 @@ void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
 
-	AActor* Owner = GetOwner();
-	if (::IsValid(Owner) == false)
+	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
+	if (::IsValid(CharacterAttributeSet) == false)
 	{
 		return;
 	}
 
-	UAbilitySystemComponent* OwnerASC = Owner->GetComponentByClass<UAbilitySystemComponent>();
-	if (::IsValid(OwnerASC) == false)
-	{
-		return;
-	}
-
-	const UAttributeSet_Character* AttributeSet_Character = Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
-	if (::IsValid(AttributeSet_Character) == false)
-	{
-		return;
-	}
-
-	ItemCollectRange = AttributeSet_Character->GetItemCollectRange();
+	ItemCollectRange = CharacterAttributeSet->GetItemCollectRange();
 	SetGainRadius(ItemCollectRange);
 
 	OnComponentBeginOverlap.AddDynamic(this, &UInventoryComponent::OnSphereOverlap);
@@ -104,45 +92,13 @@ int32 UInventoryComponent::GetMaxInventoryCount() const
 {
 	const int32 FallbackInventorySlotCount = FMath::Max(1, MaxInventoryCount);
 
-	const AActor* Owner = GetOwner();
-	if (::IsValid(Owner) == false)
+	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
+	if (::IsValid(CharacterAttributeSet) == false)
 	{
 		return FallbackInventorySlotCount;
 	}
 
-	const UAbilitySystemComponent* OwnerASC = Owner->GetComponentByClass<UAbilitySystemComponent>();
-	if (::IsValid(OwnerASC) == false)
-	{
-		return FallbackInventorySlotCount;
-	}
-
-	const UAttributeSet_Character* CharacterAttributes = Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
-	if (::IsValid(CharacterAttributes) == false)
-	{
-		return FallbackInventorySlotCount;
-	}
-
-	return FMath::Max(1, FMath::RoundToInt(CharacterAttributes->GetInventorySlotCount()));
-}
-
-void UInventoryComponent::AddItemOrder(FName ItemUID)
-{
-	if (ItemUID.IsNone() || InventoryItemOrder.Contains(ItemUID))
-	{
-		return;
-	}
-
-	InventoryItemOrder.Add(ItemUID);
-}
-
-void UInventoryComponent::RemoveItemOrder(FName ItemUID)
-{
-	if (ItemUID.IsNone())
-	{
-		return;
-	}
-
-	InventoryItemOrder.Remove(ItemUID);
+	return FMath::Max(1, FMath::RoundToInt(CharacterAttributeSet->GetInventorySlotCount()));
 }
 
 void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
@@ -261,23 +217,24 @@ bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& Shop
 	return true;
 }
 
-void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent *OverlappedComponent, AActor *OtherActor, UPrimitiveComponent *OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult &SweepResult)
+void UInventoryComponent::AddItemOrder(FName ItemUID)
 {
-	if (::IsValid(OtherActor) == false || OtherActor == GetOwner())
+	if (ItemUID.IsNone() || InventoryItemOrder.Contains(ItemUID))
 	{
 		return;
 	}
 
-	AItemBase* GainableItem = Cast<AItemBase>(OtherActor);
-	if (::IsValid(GainableItem) == false)
+	InventoryItemOrder.Add(ItemUID);
+}
+
+void UInventoryComponent::RemoveItemOrder(FName ItemUID)
+{
+	if (ItemUID.IsNone())
 	{
 		return;
 	}
 
-	if (GainableItem->IsOccupied() == false && CanGainItem(GainableItem->GetItemKey(), 1))
-	{
-		GainableItem->TryLoot(Cast<AMKCharacter>(GetOwner()));
-	}
+	InventoryItemOrder.Remove(ItemUID);
 }
 
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
@@ -310,4 +267,40 @@ void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 void UInventoryComponent::OnInventoryUpdated()
 {
 	OnInventoryChangedDelegate.Broadcast();
+}
+
+const UAttributeSet_Character* UInventoryComponent::GetCharacterAttributeSet() const
+{
+	const AActor* Owner = GetOwner();
+	if (::IsValid(Owner) == false)
+	{
+		return nullptr;
+	}
+
+	const UAbilitySystemComponent* OwnerASC = Owner->GetComponentByClass<UAbilitySystemComponent>();
+	if (::IsValid(OwnerASC) == false)
+	{
+		return nullptr;
+	}
+
+	return Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
+}
+
+void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
+{
+	if (::IsValid(OtherActor) == false || OtherActor == GetOwner())
+	{
+		return;
+	}
+
+	AItemBase* GainableItem = Cast<AItemBase>(OtherActor);
+	if (::IsValid(GainableItem) == false)
+	{
+		return;
+	}
+
+	if (GainableItem->IsOccupied() == false && CanGainItem(GainableItem->GetItemKey(), 1))
+	{
+		GainableItem->TryLoot(Cast<AMKCharacter>(GetOwner()));
+	}
 }

@@ -19,7 +19,8 @@ struct FCharacterDataTableRow : public FTableRowBase
 	TSoftObjectPtr<UCharacterAnimationDataAsset> AnimationDataAsset;
 };
 
-// Legacy row struct kept for compatibility with existing DataTable assets.
+// Legacy row struct kept only so older Character DataTable assets can still load.
+// Remove it after all Character DataTables are migrated to FCharacterDataTableRow and resaved.
 USTRUCT(BlueprintType)
 struct FCharacterAnimationDataTableRow : public FTableRowBase
 {

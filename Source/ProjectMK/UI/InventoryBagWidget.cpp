@@ -6,6 +6,7 @@ void UInventoryBagWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	// Legacy widget kept only so existing UMG assets do not break while the inventory UI moves into UInventoryWidget.
+	// Keep this widget only to preserve existing UMG references during the inventory UI cleanup.
+	// Remove it after every dependent widget blueprint has been moved to UInventoryWidget.
 	SetVisibility(ESlateVisibility::Collapsed);
 }

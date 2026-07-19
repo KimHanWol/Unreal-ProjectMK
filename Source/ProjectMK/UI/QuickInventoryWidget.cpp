@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/UI/QuickInventoryWidget.h"
 
@@ -10,7 +10,7 @@ void UQuickInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	SetInventorySlot();
+	RebuildQuickInventorySlots();
 	OnInventoryChanged();
 }
 
@@ -18,13 +18,9 @@ void UQuickInventoryWidget::BindEvents()
 {
 	Super::BindEvents();
 
-	if (::IsValid(LocalPlayerCharacter))
+	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
 	{
-		UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
-		if (::IsValid(InventoryComponent))
-		{
-			InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UQuickInventoryWidget::OnInventoryChanged);
-		}
+		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UQuickInventoryWidget::OnInventoryChanged);
 	}
 }
 
@@ -32,19 +28,13 @@ void UQuickInventoryWidget::UnbindEvents()
 {
 	Super::UnbindEvents();
 
-	if (::IsValid(LocalPlayerCharacter) == false)
-	{
-		return;
-	}
-
-	UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
-	if (::IsValid(InventoryComponent))
+	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
 	{
 		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 	}
 }
 
-void UQuickInventoryWidget::SetInventorySlot()
+void UQuickInventoryWidget::RebuildQuickInventorySlots()
 {
 	if (::IsValid(HBox_Slot) == false || ItemSlotList.Num() > 0)
 	{
@@ -64,11 +54,6 @@ void UQuickInventoryWidget::SetInventorySlot()
 
 void UQuickInventoryWidget::OnInventoryChanged()
 {
-	if (::IsValid(LocalPlayerCharacter) == false)
-	{
-		return;
-	}
-
 	for (UItemSlotWidget* ItemSlot : ItemSlotList)
 	{
 		if (::IsValid(ItemSlot))
@@ -77,7 +62,7 @@ void UQuickInventoryWidget::OnInventoryChanged()
 		}
 	}
 
-	UInventoryComponent* InventoryComponent = LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		return;

@@ -1,8 +1,8 @@
-﻿#include "ProjectMK/UI/ShopWidget.h"
+// LINK
+
+#include "ProjectMK/UI/ShopWidget.h"
 
 #include "Components/VerticalBox.h"
-#include "Kismet/GameplayStatics.h"
-#include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
@@ -43,16 +43,10 @@ void UShopWidget::BuildRecipeList()
 		return;
 	}
 
-	UDataTable* ShopRecipeDataTable = DataManager->GetDataTable(EDataTableType::ShopRecipe);
-	if (ShopRecipeDataTable == nullptr)
-	{
-		return;
-	}
-
-	TArray<FName> RowNames = ShopRecipeDataTable->GetRowNames();
+	const TArray<FName> RowNames = DataManager->GetShopRecipeRowNames();
 	for (const FName& RowName : RowNames)
 	{
-		const FShopRecipeDataTableRow* ShopRecipeRow = ShopRecipeDataTable->FindRow<FShopRecipeDataTableRow>(RowName, TEXT("BuildRecipeList"));
+		const FShopRecipeDataTableRow* ShopRecipeRow = DataManager->GetShopRecipeDataTableRow(RowName);
 		if (ShopRecipeRow == nullptr)
 		{
 			continue;
@@ -80,13 +74,7 @@ void UShopWidget::BindInventory()
 		BoundInventoryComponent = nullptr;
 	}
 
-	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (::IsValid(PlayerCharacter) == false)
-	{
-		return;
-	}
-
-	BoundInventoryComponent = PlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	BoundInventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(BoundInventoryComponent))
 	{
 		BoundInventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopWidget::HandleInventoryChanged);

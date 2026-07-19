@@ -21,8 +21,8 @@ public:
 
 protected:
 	UPROPERTY(meta = (BindWidget))
-	UInventoryWidget* Inventory;
+	TObjectPtr<UInventoryWidget> Inventory;
 
 	UPROPERTY(meta = (BindWidget))
-	UShopWidget* Shop;
+	TObjectPtr<UShopWidget> Shop;
 };

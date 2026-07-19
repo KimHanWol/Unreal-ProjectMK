@@ -13,6 +13,8 @@ protected:
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
+private:
+	void RefreshCoinText();
 	void OnCoinChanged(const FOnAttributeChangeData& Data);
 
 protected:

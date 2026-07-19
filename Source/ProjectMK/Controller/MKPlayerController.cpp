@@ -11,11 +11,16 @@ AMKPlayerController::AMKPlayerController()
 	CheatClass = UMKCheatManager::StaticClass();
 }
 
-void AMKPlayerController::ToggleInventoryWidget()
+UHUDWidget* AMKPlayerController::GetHUDWidget()
 {
 	TArray<UUserWidget*> FoundWidgets;
 	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, UHUDWidget::StaticClass(), false);
-	UHUDWidget* HUDWidget = FoundWidgets.Num() > 0 ? Cast<UHUDWidget>(FoundWidgets[0]) : nullptr;
+	return FoundWidgets.Num() > 0 ? Cast<UHUDWidget>(FoundWidgets[0]) : nullptr;
+}
+
+void AMKPlayerController::ToggleInventoryWidget()
+{
+	UHUDWidget* HUDWidget = GetHUDWidget();
 	if (::IsValid(HUDWidget) == false)
 	{
 		return;
@@ -27,9 +32,7 @@ void AMKPlayerController::ToggleInventoryWidget()
 
 void AMKPlayerController::ToggleShopTestWidget()
 {
-	TArray<UUserWidget*> FoundWidgets;
-	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(this, FoundWidgets, UHUDWidget::StaticClass(), false);
-	UHUDWidget* HUDWidget = FoundWidgets.Num() > 0 ? Cast<UHUDWidget>(FoundWidgets[0]) : nullptr;
+	UHUDWidget* HUDWidget = GetHUDWidget();
 	if (::IsValid(HUDWidget) == false)
 	{
 		return;

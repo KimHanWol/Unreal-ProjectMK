@@ -1,0 +1,128 @@
+ProjectMK 코딩 컨벤션 요약
+
+이 파일은 사람이 빠르게 읽기 위한 요약본이다.
+공식 기준은 `CODING_CONVENTION.md` 이고, 둘은 항상 같이 수정한다.
+
+1. 기본 원칙
+
+- 언리얼 기본 스타일을 따른다.
+- 기존 프로젝트 문맥과 충돌하지 않는 범위에서 정리한다.
+- 구조를 억지로 잘게 쪼개지 않는다.
+- 수정한 파일은 가능하면 같은 작업에서 함께 정리한다.
+
+2. 인코딩과 공백
+
+- 코드와 문서는 UTF-8 BOM, CRLF 를 사용한다.
+- 마지막 줄바꿈을 유지한다.
+- trailing whitespace 는 남기지 않는다.
+- 함수 묶음과 변수 묶음 사이에는 한 줄 개행을 둔다.
+
+3. 파일 / include
+
+- Unreal placeholder 주석은 넣지 않는다.
+- `// LINK` 가 있는 파일은 기존 형식을 유지한다.
+- 헤더는 `#pragma once` 를 사용한다.
+- `*.generated.h` 는 마지막 include 로 둔다.
+- `.cpp` 는 자기 헤더를 가장 먼저 include 한다.
+
+4. 네이밍
+
+- PascalCase 를 사용한다.
+- bool 은 `b` 접두어를 사용한다.
+- 애매한 축약은 피한다.
+- 같은 역할의 함수는 같은 접두어를 사용한다.
+
+5. 함수 이름 규칙
+
+- `On~` : 바인딩 콜백
+- `Try~` : 조건 확인 후 시도
+- `Apply~` : 상태나 효과 적용
+- `Clear~` : 적용한 것 해제
+- `Update~` : 현재 상태 기준 갱신
+- `Refresh~` : UI 다시 표시
+- `Find~` : 탐색
+- `Get~` : 이미 가진 값 반환
+- `Calculate~` : 계산해서 결과 반환
+- `Is~`, `Can~`, `Has~` : 조건 판단
+
+- `Resolve~` 는 쓰지 않고 가능하면 `Calculate~` 나 더 직관적인 이름으로 바꾼다.
+
+6. 구조 원칙
+
+- `Manager` 는 공용 데이터, 설정, 자산 조회 같은 서비스 역할을 맡는다.
+- `Subsystem` 은 월드 생명주기와 월드 흐름 제어를 맡는다.
+- `Actor` 는 조합과 상위 흐름을 맡는다.
+- `Component` 는 재사용 가능하거나 책임이 많이 얽힌 경우에만 분리한다.
+- 체력, 산소 같은 실제 수치는 GAS `AttributeSet` 이 기준이다.
+
+7. Widget 원칙
+
+- 모든 위젯은 `UMKUserWidget` 계열이어야 한다.
+- `UHUDWidget` 도 같은 위젯 계열이다.
+- Controller, Character, ASC 공통 접근은 `UMKUserWidget` 공통 접근 지점을 통해 처리한다.
+
+8. 데이터 접근
+
+- DataTable, DataAsset, 설정값 접근은 `UDataManager` 경유를 원칙으로 한다.
+- 게임 전반 규칙값은 `GameSettingDataAsset` 이동 여부를 먼저 본다.
+- 단순 UI 조정값은 BP 노출 프로퍼티를 우선한다.
+
+9. UPROPERTY / UFUNCTION
+
+- UObject 참조는 기본적으로 `UPROPERTY` + `TObjectPtr` 를 사용한다.
+- `EditAnywhere` 보다 좁힐 수 있으면 `EditDefaultsOnly`, `VisibleAnywhere` 를 우선한다.
+- `BlueprintReadWrite` 는 꼭 필요할 때만 사용한다.
+- 기본은 `BlueprintReadOnly` 로 본다.
+
+10. Tick / 이벤트 바인딩
+
+- `Tick` 은 기본 선택지가 아니다.
+- delegate, timer, overlap, GAS attribute change, 명시적 갱신으로 대체 가능한지 먼저 본다.
+- Widget 은 가능하면 이벤트 기반 갱신을 우선한다.
+- 이벤트 바인딩은 `BindEvents()` / `UnbindEvents()` 쌍으로 관리한다.
+
+11. 헤더 선언 순서
+
+헤더 함수 선언은 아래 순서를 따른다.
+
+1. 생성자 / 소멸자
+2. 엔진 override
+3. `BindEvents()` / `UnbindEvents()`
+4. 외부 상호작용 함수
+5. 내부 동작 함수
+6. 조회 / 계산 / 설정 / 유틸
+7. `On~` 콜백
+8. delegate 선언
+9. 멤버 변수
+
+- 함수는 이름순이 아니라 역할순으로 묶는다.
+- 묶음과 묶음 사이에는 한 줄 개행을 둔다.
+
+12. cpp 정의 순서
+
+- `.cpp` 구현 순서는 헤더 선언 순서와 반드시 맞춘다.
+- 리팩토링 때는 선언 순서와 구현 순서를 같이 다시 맞춘다.
+- 새 함수 추가 시 헤더와 `.cpp` 양쪽에 같은 묶음, 같은 위치에 둔다.
+
+13. 함수 묶음 예시
+
+- Input 묶음: `OnLookRight`, `OnLookUp`, `OnMoveRight`, `OnFly`, `OnFinishFly`
+- Movement 묶음: `UpdateHorizontalMovement`, `UpdateFlyingVerticalVelocity`
+- Status 묶음: `ApplyDamageInvincibility`, `ApplyOxygenDrainEffect`, `ClearOxygenDrainEffect`, `RestoreOxygenToMax`, `UpdateOxygen`
+- Rendering 묶음: `Apply2DCameraOverrides`, `ApplyTextureRenderingOverrides`, `ApplySpriteRenderingOverrides`
+- Query / Calculate 묶음: `GetGameSettings`, `GetCharacterData`, `CalculateCurrentAnimationType`
+- Callback 묶음: `OnItemCollectRangeChanged`, `OnCurrentHealthChanged`, `OnCurrentOxygenChanged`
+
+14. 레거시와 주석
+
+- 호환용 코드는 기본적으로 남겨두지 않는다.
+- 남겨야 하면 이유, 의존 자산, 제거 조건을 주석으로 남긴다.
+- 주석은 왜 필요한지만 짧게 적는다.
+- TODO 는 `// TODO: ...` 형식으로 쓴다.
+
+15. 리팩토링 마감 전 확인
+
+- 직접 참조가 다시 늘어나지 않았는지 확인한다.
+- Tick 과 이벤트 바인딩이 불필요하게 늘어나지 않았는지 확인한다.
+- Blueprint 노출 범위가 과하게 넓어지지 않았는지 확인한다.
+- 가능하면 빌드나 최소 동작 확인까지 하고 마감한다.

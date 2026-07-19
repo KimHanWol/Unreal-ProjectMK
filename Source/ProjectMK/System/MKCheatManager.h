@@ -29,4 +29,8 @@ public:
 
 	UFUNCTION(Exec)
 	void ToggleShopTestWidget();
+
+private:
+	class AMKCharacter* GetLocalPlayerCharacter() const;
+	class AMKPlayerController* GetMKPlayerController() const;
 };

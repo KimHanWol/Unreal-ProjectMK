@@ -30,10 +30,10 @@ private:
 	void OnInventorySlotCountChanged(const FOnAttributeChangeData& Data);
 
 protected:
-	UPROPERTY(EditAnywhere, Category = "Inventory")
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	TSubclassOf<UItemSlotWidget> ItemSlotClass;
 
-	UPROPERTY(EditAnywhere, Category = "Inventory", meta = (ClampMin = "1"))
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory", meta = (ClampMin = "1"))
 	int32 InventoryColumnCount = 4;
 
 	UPROPERTY(meta = (BindWidget))

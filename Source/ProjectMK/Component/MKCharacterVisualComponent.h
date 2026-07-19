@@ -29,30 +29,30 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 private:
-	void HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount);
 	void BindVisualDelegates();
 	void UnbindVisualDelegates();
+
 	void InitializeInvincibleMaterial();
 	void CacheStateSpriteComponents();
 	void CacheStateSpriteComponent(FName ComponentName, TObjectPtr<UPaperSpriteComponent>& OutComponent, FVector& OutLeftFacingRelativeLocation);
 
 	void UpdateFacingDirectionCache();
 	void UpdateCharacterAnimationVisual();
-	void SetCharacterVisualOverrideEnabled(bool bEnabled);
 	void UpdateOverrideVisualFacingDirection();
 	void EnsureCharacterVisualMaterialInstance();
-
 	void UpdateDrillShakeVisuals();
-
 	void UpdateStateSpriteVisuals();
 	void HideAllStateSprites();
+	void SetCharacterVisualOverrideEnabled(bool bEnabled);
 
-	const FCharacterSpriteAnimationClip* ResolveAnimationClip(const UCharacterAnimationDataAsset* AnimationDataAsset) const;
-	int32 ResolveAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const;
+	const FCharacterSpriteAnimationClip* GetAnimationClipForCurrentState(const UCharacterAnimationDataAsset* AnimationDataAsset) const;
+	int32 CalculateAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const;
 	UPaperSpriteComponent* FindSpriteComponentByName(FName ComponentName) const;
 	AMKCharacter* GetOwnerCharacter() const;
 	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
-	int32 ResolveStateSpriteSortPriority() const;
+	int32 GetStateSpriteSortPriority() const;
+
+	void HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount);
 
 private:
 	UPROPERTY(EditDefaultsOnly, Category = "State Sprite")
@@ -70,13 +70,13 @@ private:
 	UPROPERTY(EditDefaultsOnly, Category = "State Sprite")
 	FName DrillUpSpriteComponentName = TEXT("DrillUpSprite");
 
-	UPROPERTY(EditAnywhere, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
 	float DrillShakeHorizontalAmplitude = 1.25f;
 
-	UPROPERTY(EditAnywhere, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
 	float DrillShakeVerticalAmplitude = 0.9f;
 
-	UPROPERTY(EditAnywhere, Category = "Drill Shake", meta = (ClampMin = "0.0"))
+	UPROPERTY(EditDefaultsOnly, Category = "Drill Shake", meta = (ClampMin = "0.0"))
 	float DrillShakeOscillationSpeed = 40.f;
 
 	UPROPERTY(Transient)

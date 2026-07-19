@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/UI/HealthBarWidget.h"
 
@@ -10,7 +10,7 @@ void UHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (::IsValid(ProgressBar_Health) == false)
+	if (::IsValid(ProgressBar_Health) == false || bIsInterpolatingHealth == false)
 	{
 		return;
 	}
@@ -19,6 +19,7 @@ void UHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	if (FMath::IsNearlyEqual(CurrentHealthPercent, TargetHealthPercent, KINDA_SMALL_NUMBER))
 	{
 		CurrentHealthPercent = TargetHealthPercent;
+		bIsInterpolatingHealth = false;
 	}
 
 	ProgressBar_Health->SetPercent(CurrentHealthPercent);
@@ -33,10 +34,11 @@ void UHealthBarWidget::BindEvents()
 		return;
 	}
 
-	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetMaxHealthAttribute()).AddUObject(this, &::UHealthBarWidget::OnMaxHealthChanged);
-	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &::UHealthBarWidget::OnCurrentHealthChanged);
+	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetMaxHealthAttribute()).AddUObject(this, &UHealthBarWidget::OnMaxHealthChanged);
+	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &UHealthBarWidget::OnCurrentHealthChanged);
 
 	CurrentHealthPercent = TargetHealthPercent = GetHealthRatio();
+	bIsInterpolatingHealth = false;
 	UpdateHealthProgressBar();
 }
 
@@ -53,36 +55,34 @@ void UHealthBarWidget::UnbindEvents()
 	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
 }
 
-void UHealthBarWidget::OnMaxHealthChanged(const FOnAttributeChangeData& Data)
-{
-	TargetHealthPercent = GetHealthRatio();
-}
-
-void UHealthBarWidget::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
-{
-	TargetHealthPercent = GetHealthRatio();
-}
-
 float UHealthBarWidget::GetHealthRatio() const
 {
-	if (::IsValid(OwnerASC) == false)
+	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
+	if (::IsValid(CharacterAttributeSet) == false)
 	{
 		return 0.f;
 	}
 
-	const UAttributeSet_Character* AttributeSet_Character = Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
-	if (::IsValid(AttributeSet_Character) == false)
-	{
-		return 0.f;
-	}
-
-	const float MaxHealth = AttributeSet_Character->GetMaxHealth();
+	const float MaxHealth = CharacterAttributeSet->GetMaxHealth();
 	if (MaxHealth <= 0.f)
 	{
 		return 0.f;
 	}
 
-	return AttributeSet_Character->GetCurrentHealth() / MaxHealth;
+	return CharacterAttributeSet->GetCurrentHealth() / MaxHealth;
+}
+
+void UHealthBarWidget::StartProgressInterpolation()
+{
+	if (FMath::IsNearlyEqual(CurrentHealthPercent, TargetHealthPercent, KINDA_SMALL_NUMBER))
+	{
+		CurrentHealthPercent = TargetHealthPercent;
+		bIsInterpolatingHealth = false;
+		UpdateHealthProgressBar();
+		return;
+	}
+
+	bIsInterpolatingHealth = true;
 }
 
 void UHealthBarWidget::UpdateHealthProgressBar()
@@ -93,4 +93,16 @@ void UHealthBarWidget::UpdateHealthProgressBar()
 	}
 
 	ProgressBar_Health->SetPercent(CurrentHealthPercent);
+}
+
+void UHealthBarWidget::OnMaxHealthChanged(const FOnAttributeChangeData& Data)
+{
+	TargetHealthPercent = GetHealthRatio();
+	StartProgressInterpolation();
+}
+
+void UHealthBarWidget::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
+{
+	TargetHealthPercent = GetHealthRatio();
+	StartProgressInterpolation();
 }

@@ -24,6 +24,6 @@ public:
 	TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType);
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TMap<EBlueprintClassType, TSubclassOf<AActor>> BlueprintClassMap;
 };

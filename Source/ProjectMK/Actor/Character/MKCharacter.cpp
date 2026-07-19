@@ -1,13 +1,13 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Engine/Texture2D.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
-#include "Engine/Texture2D.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperSprite.h"
@@ -74,16 +74,6 @@ UAbilitySystemComponent* AMKCharacter::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
-void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
-{
-	if (DrillingVector.Equals(InDrillingVector))
-	{
-		return;
-	}
-
-	DrillingVector = InDrillingVector;
-}
-
 void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
@@ -99,6 +89,7 @@ void AMKCharacter::BeginPlay()
 	InitializeCharacterAttributes();
 	ApplyInitialEffects();
 	BindEvents();
+
 	if (::IsValid(CharacterVisualComponent))
 	{
 		CharacterVisualComponent->InitializeVisuals();
@@ -116,6 +107,195 @@ void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 void AMKCharacter::PostInitializeComponents()
 {
 	Super::PostInitializeComponents();
+}
+
+void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
+{
+	Super::SetupPlayerInputComponent(PlayerInputComponent);
+
+	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
+	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
+
+	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::OnMoveRight);
+	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::OnLookRight);
+	PlayerInputComponent->BindAxis("LookUp", this, &AMKCharacter::OnLookUp);
+}
+
+void AMKCharacter::Tick(float DeltaSeconds)
+{
+	Super::Tick(DeltaSeconds);
+
+	UpdateOxygen();
+
+	if (::IsValid(CharacterVisualComponent))
+	{
+		CharacterVisualComponent->UpdateVisuals();
+	}
+
+	if (bIsFlying)
+	{
+		UpdateFlyingVerticalVelocity();
+	}
+}
+
+void AMKCharacter::BindEvents()
+{
+	if (::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &AMKCharacter::OnCurrentOxygenChanged);
+	}
+}
+
+void AMKCharacter::UnbindEvents()
+{
+	if (::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
+		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
+	}
+}
+
+UAbilitySystemComponent* AMKCharacter::GetOwnerASC()
+{
+	return GetAbilitySystemComponent();
+}
+
+bool AMKCharacter::CheckIsDestroyed()
+{
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return false;
+	}
+
+	return AttributeSet_Character->GetCurrentHealth() <= 0.f;
+}
+
+void AMKCharacter::OnDestroyed()
+{
+}
+
+void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
+{
+	if (DrillingVector.Equals(InDrillingVector))
+	{
+		return;
+	}
+
+	DrillingVector = InDrillingVector;
+}
+
+void AMKCharacter::GiveAbilities()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	for (const auto& InitialGameplayAbility : InitialGameplayAbilities)
+	{
+		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(InitialGameplayAbility));
+	}
+}
+
+void AMKCharacter::InitializeCharacterAttributes()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet_Character);
+}
+
+void AMKCharacter::ApplyInitialEffects()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	for (const TSubclassOf<UGameplayEffect>& InitialGameplayEffect : InitialGameplayEffects)
+	{
+		if (::IsValid(InitialGameplayEffect) == false)
+		{
+			continue;
+		}
+
+		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitialGameplayEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
+		if (SpecHandle.IsValid())
+		{
+			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		}
+	}
+
+	RestoreOxygenToMax();
+}
+
+void AMKCharacter::TryDrill()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	const TSubclassOf<UGameplayAbility> PrimaryDrillAbilityClass = GetPrimaryDrillAbilityClass();
+	if (::IsValid(PrimaryDrillAbilityClass) == false)
+	{
+		return;
+	}
+
+	if (CharacterDir != FVector::ZeroVector)
+	{
+		// TODO: 드릴 어빌리티 선택 방식을 명시적으로 정리
+		AbilitySystemComponent->TryActivateAbilityByClass(PrimaryDrillAbilityClass);
+	}
+	else
+	{
+		FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(PrimaryDrillAbilityClass);
+		if (AbilitySpec)
+		{
+			AbilitySystemComponent->CancelAbility(AbilitySpec->Ability);
+		}
+	}
+}
+
+void AMKCharacter::UpdateHorizontalMovement()
+{
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	if (MoveComp->IsFlying())
+	{
+		FVector NewVelocity = MoveComp->Velocity;
+		NewVelocity.X = CharacterDir.X * AttributeSet_Character->GetMoveSpeed();
+		MoveComp->Velocity = NewVelocity;
+		return;
+	}
+
+	MoveComp->MaxWalkSpeed = AttributeSet_Character->GetMoveSpeed();
+	if (FMath::IsNearlyZero(CharacterDir.X) == false)
+	{
+		AddMovementInput(FVector::ForwardVector, CharacterDir.X);
+	}
+}
+
+void AMKCharacter::UpdateFlyingVerticalVelocity() const
+{
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	FVector NewVelocity = MoveComp->Velocity;
+	NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
+	MoveComp->Velocity = NewVelocity;
 }
 
 void AMKCharacter::Apply2DCameraOverrides()
@@ -173,279 +353,30 @@ void AMKCharacter::ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite
 	ApplyTextureRenderingOverrides(PaperSprite->GetBakedTexture());
 }
 
-void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputComponent)
-{
-	Super::SetupPlayerInputComponent(PlayerInputComponent);
-
-	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
-	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
-
-	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::OnMoveRight);
-	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::OnLookRight);
-	PlayerInputComponent->BindAxis("LookUp", this, &AMKCharacter::OnLookUp);
-}
-
-void AMKCharacter::GiveAbilities()
+void AMKCharacter::ApplyDamageInvincibility()
 {
 	if (::IsValid(AbilitySystemComponent) == false)
 	{
 		return;
 	}
 
-	for (const auto& InitialGameplayAbility : InitialGameplayAbilities)
-	{
-		AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(InitialGameplayAbility));
-	}
-}
-
-void AMKCharacter::InitializeCharacterAttributes()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
+	const UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
 	{
 		return;
 	}
 
-	AbilitySystemComponent->AddAttributeSetSubobject(AttributeSet_Character);
-}
-
-void AMKCharacter::ApplyInitialEffects()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
+	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Invincible);
+	if (::IsValid(EffectClass) == false)
 	{
 		return;
 	}
 
-	for (const TSubclassOf<UGameplayEffect>& InitialGameplayEffect : InitialGameplayEffects)
+	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
+	if (SpecHandle.IsValid())
 	{
-		if (::IsValid(InitialGameplayEffect) == false)
-		{
-			continue;
-		}
-
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitialGameplayEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
-		if (SpecHandle.IsValid())
-		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
+		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 	}
-
-	RestoreOxygenToMax();
-}
-
-void AMKCharacter::BindEvents()
-{
-	if (::IsValid(AbilitySystemComponent))
-	{
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).AddUObject(this, &AMKCharacter::OnItemCollectRangeChanged);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &AMKCharacter::OnCurrentOxygenChanged);
-	}
-}
-
-void AMKCharacter::UnbindEvents()
-{
-	if (::IsValid(AbilitySystemComponent))
-	{
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
-		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
-	}
-}
-
-UAbilitySystemComponent* AMKCharacter::GetOwnerASC()
-{
-	return GetAbilitySystemComponent();
-}
-
-bool AMKCharacter::CheckIsDestroyed()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
-	{
-		return false;
-	}
-
-	const UAttributeSet_Character* CharacterAttributeSet =Cast<UAttributeSet_Character>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Character::StaticClass()));
-	if (::IsValid(CharacterAttributeSet) == false)
-	{
-		return false;
-	}
-
-	return CharacterAttributeSet->GetCurrentHealth() <= 0.f;
-}
-
-void AMKCharacter::OnDestroyed()
-{
-
-}
-
-void AMKCharacter::OnLookRight(float Value)
-{
-	CharacterDir.X = Value;
-
-	TryDrill();
-}
-
-void AMKCharacter::OnLookUp(float Value)
-{
-	CharacterDir.Z = Value;
-
-	TryDrill();
-}
-
-void AMKCharacter::OnMoveRight(float Value)
-{
-	CharacterDir.X = Value;
-
-	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
-	{
-		return;
-	}
-
-	if (MoveComp->IsFlying())
-	{
-		FVector NewVelocity = MoveComp->Velocity;
-		NewVelocity.X = CharacterDir.X * AttributeSet_Character->GetMoveSpeed();
-
-		MoveComp->Velocity = NewVelocity;
-	}
-	else
-	{
-		MoveComp->MaxWalkSpeed = AttributeSet_Character->GetMoveSpeed();
-		if (FMath::IsNearlyZero(CharacterDir.X) == false)
-		{
-			AddMovementInput(FVector::ForwardVector, CharacterDir.X);
-		}
-	}
-}
-
-void AMKCharacter::OnFly()
-{
-	bIsFlying = true;
-
-	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (!MoveComp)
-	{
-		return;
-	}
-
-	MoveComp->SetMovementMode(MOVE_Flying);
-
-	FVector NewVelocity = MoveComp->Velocity;
-	NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
-	MoveComp->Velocity = NewVelocity;
-}
-
-void AMKCharacter::OnFinishFly()
-{
-	bIsFlying = false;
-
-	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	if (!MoveComp)
-	{
-		return;
-	}
-
-	if (MoveComp->MovementMode == MOVE_Flying)
-	{
-		MoveComp->SetMovementMode(MOVE_Falling);
-	}
-}
-
-void AMKCharacter::TryDrill()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
-	{
-		return;
-	}
-
-	if (CharacterDir != FVector::ZeroVector)
-	{
-		// TODO: 드릴 어빌리티 선택 방식을 명시적으로 정리
-		AbilitySystemComponent->TryActivateAbilityByClass(InitialGameplayAbilities[0]);
-	}
-	else
-	{
-		FGameplayAbilitySpec* AbilitySpec = AbilitySystemComponent->FindAbilitySpecFromClass(InitialGameplayAbilities[0]);
-		if (AbilitySpec)
-		{
-			AbilitySystemComponent->CancelAbility(AbilitySpec->Ability);
-		}
-	}
-}
-
-void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
-{
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->SetGainRadius(Data.NewValue);
-	}
-}
-
-void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
-{
-	if (Data.NewValue < Data.OldValue)
-	{
-		ApplyDamageInvincibility();
-	}
-
-	if (CheckIsDestroyed())
-	{
-		OnDestroyed();
-	}
-}
-
-void AMKCharacter::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
-{
-}
-
-void AMKCharacter::Tick(float DeltaSeconds)
-{
-	Super::Tick(DeltaSeconds);
-
-	UpdateOxygen();
-	if (::IsValid(CharacterVisualComponent))
-	{
-		CharacterVisualComponent->UpdateVisuals();
-	}
-
-	if (bIsFlying)
-	{
-		UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-		if (::IsValid(MoveComp) && ::IsValid(AttributeSet_Character))
-		{
-			FVector NewVelocity = MoveComp->Velocity;
-			NewVelocity.Z = AttributeSet_Character->GetFlyingSpeed();
-			MoveComp->Velocity = NewVelocity;
-		}
-	}
-}
-
-void AMKCharacter::UpdateOxygen()
-{
-	if (::IsValid(AbilitySystemComponent) == false || ::IsValid(AttributeSet_Character) == false)
-	{
-		return;
-	}
-
-	const UGameSettingDataAsset* GameSettings = GetGameSettings();
-	if (::IsValid(GameSettings) == false)
-	{
-		return;
-	}
-
-	const int32 CurrentBlockDepth = GetCurrentBlockDepth();
-	if (CurrentBlockDepth <= GameSettings->SurfaceBlockPositionY)
-	{
-		ClearOxygenDrainEffect();
-		RestoreOxygenToMax();
-		return;
-	}
-
-	const int32 DepthBelowSurface = CurrentBlockDepth - GameSettings->SurfaceBlockPositionY;
-	const int32 DepthPerOxygenLoss = FMath::Max(1, GameSettings->DepthPerOxygenLoss);
-	const float OxygenDrainPerSecond = static_cast<float>(FMath::Max(1, DepthBelowSurface / DepthPerOxygenLoss));
-	ApplyOxygenDrainEffect(OxygenDrainPerSecond);
 }
 
 void AMKCharacter::ApplyOxygenDrainEffect(float OxygenDrainPerSecond)
@@ -508,6 +439,53 @@ void AMKCharacter::RestoreOxygenToMax()
 	FDamageableUtil::ApplyOxygen(AbilitySystemComponent, OxygenToRestore);
 }
 
+void AMKCharacter::UpdateOxygen()
+{
+	if (::IsValid(AbilitySystemComponent) == false || ::IsValid(AttributeSet_Character) == false)
+	{
+		return;
+	}
+
+	const UGameSettingDataAsset* GameSettings = GetGameSettings();
+	if (::IsValid(GameSettings) == false)
+	{
+		return;
+	}
+
+	const int32 CurrentBlockDepth = GetCurrentBlockDepth();
+	if (CurrentBlockDepth <= GameSettings->SurfaceBlockPositionY)
+	{
+		ClearOxygenDrainEffect();
+		RestoreOxygenToMax();
+		return;
+	}
+
+	const int32 DepthBelowSurface = CurrentBlockDepth - GameSettings->SurfaceBlockPositionY;
+	const int32 DepthPerOxygenLoss = FMath::Max(1, GameSettings->DepthPerOxygenLoss);
+	const float OxygenDrainPerSecond = static_cast<float>(FMath::Max(1, DepthBelowSurface / DepthPerOxygenLoss));
+	ApplyOxygenDrainEffect(OxygenDrainPerSecond);
+}
+
+FVector AMKCharacter::GetCharacterDirection() const
+{
+	return CharacterDir;
+}
+
+FVector AMKCharacter::GetDrillingVector() const
+{
+	return DrillingVector;
+}
+
+TSubclassOf<UGameplayAbility> AMKCharacter::GetPrimaryDrillAbilityClass() const
+{
+	if (InitialGameplayAbilities.IsEmpty())
+	{
+		return nullptr;
+	}
+
+	return InitialGameplayAbilities[0];
+}
+
 int32 AMKCharacter::GetCurrentBlockDepth() const
 {
 	return FMath::FloorToInt(UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation()).Y);
@@ -524,37 +502,9 @@ const UGameSettingDataAsset* AMKCharacter::GetGameSettings() const
 	return DataManager->GetGameSettingDataAsset();
 }
 
-const UPaperSprite* AMKCharacter::ResolveCurrentBaseFrameSprite() const
+ECharacterAnimationType AMKCharacter::GetCurrentCharacterAnimationType() const
 {
-	if (::IsValid(GetSprite()) == false)
-	{
-		return nullptr;
-	}
-
-	UPaperFlipbook* CurrentFlipbook = GetSprite()->GetFlipbook();
-	if (::IsValid(CurrentFlipbook) == false)
-	{
-		return nullptr;
-	}
-
-	const int32 BaseFrameIndex = GetSprite()->GetPlaybackPositionInFrames();
-	return CurrentFlipbook->GetSpriteAtFrame(BaseFrameIndex);
-}
-
-float AMKCharacter::ResolveCurrentBasePixelsPerUnrealUnit() const
-{
-	const UPaperSprite* BaseSprite = ResolveCurrentBaseFrameSprite();
-	if (::IsValid(BaseSprite))
-	{
-		return FMath::Max(BaseSprite->GetPixelsPerUnrealUnit(), KINDA_SMALL_NUMBER);
-	}
-
-	return 2.56f;
-}
-
-ECharacterAnimationType AMKCharacter::ResolveCurrentCharacterAnimationType() const
-{
-	const auto ResolveLastIdleAnimationType = [this]() -> ECharacterAnimationType
+	const auto GetLastIdleAnimationType = [this]() -> ECharacterAnimationType
 	{
 		switch (CurrentCharacterAnimationType)
 		{
@@ -575,14 +525,10 @@ ECharacterAnimationType AMKCharacter::ResolveCurrentCharacterAnimationType() con
 	{
 		if (FMath::Abs(DrillingVector.X) >= FMath::Abs(DrillingVector.Z))
 		{
-			return DrillingVector.X < 0.f
-				? ECharacterAnimationType::Idle_Left
-				: ECharacterAnimationType::Idle_Right;
+			return DrillingVector.X < 0.f ? ECharacterAnimationType::Idle_Left : ECharacterAnimationType::Idle_Right;
 		}
 
-		return DrillingVector.Z < 0.f
-			? ECharacterAnimationType::Idle_Down
-			: ECharacterAnimationType::Idle_Up;
+		return DrillingVector.Z < 0.f ? ECharacterAnimationType::Idle_Down : ECharacterAnimationType::Idle_Up;
 	}
 
 	if (const UCharacterMovementComponent* MoveComp = GetCharacterMovement())
@@ -599,7 +545,7 @@ ECharacterAnimationType AMKCharacter::ResolveCurrentCharacterAnimationType() con
 				return ECharacterAnimationType::Idle_Right;
 			}
 
-			return ResolveLastIdleAnimationType();
+			return GetLastIdleAnimationType();
 		}
 	}
 
@@ -634,7 +580,35 @@ ECharacterAnimationType AMKCharacter::ResolveCurrentCharacterAnimationType() con
 		return ECharacterAnimationType::Idle_Down;
 	}
 
-	return ResolveLastIdleAnimationType();
+	return GetLastIdleAnimationType();
+}
+
+const UPaperSprite* AMKCharacter::GetCurrentBaseFrameSprite() const
+{
+	if (::IsValid(GetSprite()) == false)
+	{
+		return nullptr;
+	}
+
+	UPaperFlipbook* CurrentFlipbook = GetSprite()->GetFlipbook();
+	if (::IsValid(CurrentFlipbook) == false)
+	{
+		return nullptr;
+	}
+
+	const int32 BaseFrameIndex = GetSprite()->GetPlaybackPositionInFrames();
+	return CurrentFlipbook->GetSpriteAtFrame(BaseFrameIndex);
+}
+
+float AMKCharacter::GetCurrentBasePixelsPerUnrealUnit() const
+{
+	const UPaperSprite* BaseSprite = GetCurrentBaseFrameSprite();
+	if (::IsValid(BaseSprite))
+	{
+		return FMath::Max(BaseSprite->GetPixelsPerUnrealUnit(), KINDA_SMALL_NUMBER);
+	}
+
+	return 2.56f;
 }
 
 const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
@@ -645,64 +619,83 @@ const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
 		return nullptr;
 	}
 
-	UDataTable* CharacterDataTable = DataManager->GetDataTable(EDataTableType::Character);
-	if (::IsValid(CharacterDataTable) == false)
+	if (DataManager->GetCharacterDataTableRow(CharacterDataRowKey, CharacterDataCompatibilityCache) == false)
 	{
 		return nullptr;
 	}
 
-	const TArray<FName> RowNames = CharacterDataTable->GetRowNames();
-	if (RowNames.IsEmpty())
-	{
-		return nullptr;
-	}
-
-	const FName TargetRowName = CharacterDataRowKey.IsNone() == false && RowNames.Contains(CharacterDataRowKey)
-		? CharacterDataRowKey
-		: RowNames[0];
-
-	if (CharacterDataTable->GetRowStruct() == FCharacterDataTableRow::StaticStruct())
-	{
-		return CharacterDataTable->FindRow<FCharacterDataTableRow>(TargetRowName, TEXT("GetCharacterData"));
-	}
-
-	if (CharacterDataTable->GetRowStruct() == FCharacterAnimationDataTableRow::StaticStruct())
-	{
-		const FCharacterAnimationDataTableRow* LegacyCharacterData = CharacterDataTable->FindRow<FCharacterAnimationDataTableRow>(TargetRowName, TEXT("GetCharacterDataLegacy"));
-		if (LegacyCharacterData == nullptr)
-		{
-			return nullptr;
-		}
-
-		CharacterDataCompatibilityCache = LegacyCharacterData->ToCharacterDataTableRow();
-		return &CharacterDataCompatibilityCache;
-	}
-
-	return nullptr;
+	return &CharacterDataCompatibilityCache;
 }
 
-void AMKCharacter::ApplyDamageInvincibility()
+void AMKCharacter::OnLookRight(float Value)
 {
-	if (::IsValid(AbilitySystemComponent) == false)
+	CharacterDir.X = Value;
+	TryDrill();
+}
+
+void AMKCharacter::OnLookUp(float Value)
+{
+	CharacterDir.Z = Value;
+	TryDrill();
+}
+
+void AMKCharacter::OnMoveRight(float Value)
+{
+	CharacterDir.X = Value;
+	UpdateHorizontalMovement();
+}
+
+void AMKCharacter::OnFly()
+{
+	bIsFlying = true;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp) == false)
 	{
 		return;
 	}
 
-	const UDataManager* DataManager = UDataManager::Get(this);
-	if (::IsValid(DataManager) == false)
+	MoveComp->SetMovementMode(MOVE_Flying);
+	UpdateFlyingVerticalVelocity();
+}
+
+void AMKCharacter::OnFinishFly()
+{
+	bIsFlying = false;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp) == false)
 	{
 		return;
 	}
 
-	TSubclassOf<UGameplayEffect> EffectClass = DataManager->GetGameplayEffect(EGameplayEffectType::Invincible);
-	if (::IsValid(EffectClass) == false)
+	if (MoveComp->MovementMode == MOVE_Flying)
 	{
-		return;
+		MoveComp->SetMovementMode(MOVE_Falling);
+	}
+}
+
+void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
+{
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->SetGainRadius(Data.NewValue);
+	}
+}
+
+void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
+{
+	if (Data.NewValue < Data.OldValue)
+	{
+		ApplyDamageInvincibility();
 	}
 
-	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-	if (SpecHandle.IsValid())
+	if (CheckIsDestroyed())
 	{
-		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
+		OnDestroyed();
 	}
+}
+
+void AMKCharacter::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
+{
 }

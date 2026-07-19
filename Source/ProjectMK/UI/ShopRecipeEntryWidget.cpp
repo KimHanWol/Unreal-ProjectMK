@@ -1,10 +1,10 @@
-﻿#include "ProjectMK/UI/ShopRecipeEntryWidget.h"
+// LINK
+
+#include "ProjectMK/UI/ShopRecipeEntryWidget.h"
 
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
-#include "Kismet/GameplayStatics.h"
-#include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
@@ -66,14 +66,7 @@ void UShopRecipeEntryWidget::RefreshState()
 		return;
 	}
 
-	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (::IsValid(PlayerCharacter) == false)
-	{
-		Button_Craft->SetIsEnabled(false);
-		return;
-	}
-
-	UInventoryComponent* InventoryComponent = PlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		Button_Craft->SetIsEnabled(false);
@@ -85,13 +78,7 @@ void UShopRecipeEntryWidget::RefreshState()
 
 void UShopRecipeEntryWidget::HandleCraftButtonClicked()
 {
-	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (::IsValid(PlayerCharacter) == false)
-	{
-		return;
-	}
-
-	UInventoryComponent* InventoryComponent = PlayerCharacter->GetComponentByClass<UInventoryComponent>();
+	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
 	if (::IsValid(InventoryComponent) == false)
 	{
 		return;

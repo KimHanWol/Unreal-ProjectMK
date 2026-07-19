@@ -51,7 +51,7 @@ void UGA_Drill::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 		return;
 	}
 
-	SourceASC = SourceCharacter->GetComponentByClass<UAbilitySystemComponent>();
+	SourceASC = SourceCharacter->GetAbilitySystemComponent();
 	if (SourceASC.IsValid() == false)
 	{
 		EndAbility(Handle, ActorInfo, ActivationInfo, true, true);

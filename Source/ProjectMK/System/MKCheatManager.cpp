@@ -70,6 +70,16 @@ namespace
 	}
 }
 
+AMKCharacter* UMKCheatManager::GetLocalPlayerCharacter() const
+{
+	return Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+}
+
+AMKPlayerController* UMKCheatManager::GetMKPlayerController() const
+{
+	return Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+}
+
 void UMKCheatManager::DamagePlayer(float Damage)
 {
 	if (Damage <= 0.f)
@@ -77,7 +87,7 @@ void UMKCheatManager::DamagePlayer(float Damage)
 		return;
 	}
 
-	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+	AMKCharacter* PlayerCharacter = GetLocalPlayerCharacter();
 	if (::IsValid(PlayerCharacter) == false)
 	{
 		return;
@@ -105,7 +115,7 @@ void UMKCheatManager::GiveItem(FName ItemUID, int32 ItemCount)
 		return;
 	}
 
-	AMKCharacter* PlayerCharacter = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+	AMKCharacter* PlayerCharacter = GetLocalPlayerCharacter();
 	if (::IsValid(PlayerCharacter) == false)
 	{
 		SendCheatMessage(this, TEXT("GiveItem failed: PlayerCharacter is invalid."));
@@ -158,7 +168,7 @@ void UMKCheatManager::EnableBlockDebugNumbers()
 
 void UMKCheatManager::ToggleInventoryWidget()
 {
-	AMKPlayerController* PlayerController = Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+	AMKPlayerController* PlayerController = GetMKPlayerController();
 	if (::IsValid(PlayerController) == false)
 	{
 		return;
@@ -169,7 +179,7 @@ void UMKCheatManager::ToggleInventoryWidget()
 
 void UMKCheatManager::ToggleShopTestWidget()
 {
-	AMKPlayerController* PlayerController = Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+	AMKPlayerController* PlayerController = GetMKPlayerController();
 	if (::IsValid(PlayerController) == false)
 	{
 		return;

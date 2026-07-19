@@ -64,7 +64,7 @@ void UMKCharacterVisualComponent::UpdateVisuals()
 
 	UpdateFacingDirectionCache();
 
-	CachedAnimationType = OwnerCharacter->ResolveCurrentCharacterAnimationType();
+	CachedAnimationType = OwnerCharacter->GetCurrentCharacterAnimationType();
 	OwnerCharacter->CurrentCharacterAnimationType = CachedAnimationType;
 
 	UpdateCharacterAnimationVisual();
@@ -84,31 +84,6 @@ void UMKCharacterVisualComponent::EndPlay(const EEndPlayReason::Type EndPlayReas
 
 	UnbindVisualDelegates();
 	Super::EndPlay(EndPlayReason);
-}
-
-void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	CurrentInvincibleDarkenValue = NewCount > 0 ? OwnerCharacter->InvincibleDarkenAmount : 0.f;
-
-	if (::IsValid(InvincibleMaterialInstance))
-	{
-		InvincibleMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
-	else
-	{
-		UE_LOG(LogTemp, Warning, TEXT("HandleInvincibleTagChanged: base DMI is invalid, Tag=%s, NewCount=%d"), *Tag.ToString(), NewCount);
-	}
-
-	if (::IsValid(CharacterVisualMaterialInstance))
-	{
-		CharacterVisualMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
-	}
 }
 
 void UMKCharacterVisualComponent::BindVisualDelegates()
@@ -154,6 +129,7 @@ void UMKCharacterVisualComponent::CacheStateSpriteComponents()
 	CacheStateSpriteComponent(DrillRightSpriteComponentName, DrillRightStateSpriteComponent, DrillRightLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillDownSpriteComponentName, DrillDownStateSpriteComponent, DrillDownLeftFacingRelativeLocation);
 	CacheStateSpriteComponent(DrillUpSpriteComponentName, DrillUpStateSpriteComponent, DrillUpLeftFacingRelativeLocation);
+
 	if (::IsValid(DrillLeftStateSpriteComponent))
 	{
 		DrillLeftLeftFacingRelativeRotation = DrillLeftStateSpriteComponent->GetRelativeRotation();
@@ -164,7 +140,7 @@ void UMKCharacterVisualComponent::CacheStateSpriteComponents()
 		DrillRightLeftFacingRelativeRotation = DrillRightStateSpriteComponent->GetRelativeRotation();
 	}
 
-	const int32 StateSpriteSortPriority = ResolveStateSpriteSortPriority();
+	const int32 StateSpriteSortPriority = GetStateSpriteSortPriority();
 	for (UPaperSpriteComponent* StateSpriteComponent : { BalloonStateSpriteComponent.Get(), DrillLeftStateSpriteComponent.Get(), DrillRightStateSpriteComponent.Get(), DrillDownStateSpriteComponent.Get(), DrillUpStateSpriteComponent.Get() })
 	{
 		if (::IsValid(StateSpriteComponent) == false)
@@ -220,7 +196,7 @@ void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 		return;
 	}
 
-	OwnerCharacter->ApplySpriteRenderingOverrides(OwnerCharacter->ResolveCurrentBaseFrameSprite());
+	OwnerCharacter->ApplySpriteRenderingOverrides(OwnerCharacter->GetCurrentBaseFrameSprite());
 	UpdateOverrideVisualFacingDirection();
 
 	const FCharacterDataTableRow* CharacterData = OwnerCharacter->GetCharacterData();
@@ -238,15 +214,12 @@ void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 	}
 
 	const bool bIsDrilling = OwnerCharacter->GetDrillingVector().IsNearlyZero() == false;
-	const FCharacterSpriteAnimationClip* AnimationClip = ResolveAnimationClip(AnimationDataAsset);
+	const FCharacterSpriteAnimationClip* AnimationClip = GetAnimationClipForCurrentState(AnimationDataAsset);
 	const UPaperSprite* CharacterSprite = nullptr;
-	if (CharacterSprite == nullptr)
+	if (AnimationClip != nullptr && AnimationClip->HasSprites())
 	{
-		if (AnimationClip != nullptr && AnimationClip->HasSprites())
-		{
-			const int32 FrameIndex = bIsDrilling ? 0 : ResolveAnimationFrameIndex(*AnimationClip);
-			CharacterSprite = AnimationClip->GetSpriteByFrameIndex(FrameIndex);
-		}
+		const int32 FrameIndex = bIsDrilling ? 0 : CalculateAnimationFrameIndex(*AnimationClip);
+		CharacterSprite = AnimationClip->GetSpriteByFrameIndex(FrameIndex);
 	}
 
 	if (CharacterSprite == nullptr)
@@ -261,33 +234,6 @@ void UMKCharacterVisualComponent::UpdateCharacterAnimationVisual()
 	SetSprite(const_cast<UPaperSprite*>(CharacterSprite));
 	SetCharacterVisualOverrideEnabled(true);
 	EnsureCharacterVisualMaterialInstance();
-}
-
-void UMKCharacterVisualComponent::SetCharacterVisualOverrideEnabled(bool bEnabled)
-{
-	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
-	if (::IsValid(OwnerCharacter) == false)
-	{
-		return;
-	}
-
-	bCharacterVisualOverrideEnabled = bEnabled;
-
-	SetVisibility(bEnabled);
-	SetHiddenInGame(!bEnabled);
-	if (bEnabled == false)
-	{
-		CurrentOverrideVisualScale = 1.f;
-		UpdateOverrideVisualFacingDirection();
-		SetSprite(nullptr);
-	}
-
-	if (::IsValid(OwnerCharacter->GetSprite()))
-	{
-		OwnerCharacter->GetSprite()->SetSpriteColor(FLinearColor::White);
-		OwnerCharacter->GetSprite()->SetRenderInMainPass(!bEnabled);
-		OwnerCharacter->GetSprite()->SetRenderInDepthPass(false);
-	}
 }
 
 void UMKCharacterVisualComponent::UpdateOverrideVisualFacingDirection()
@@ -366,15 +312,11 @@ void UMKCharacterVisualComponent::UpdateStateSpriteVisuals()
 	UPaperSpriteComponent* TargetStateSpriteComponent = nullptr;
 	if (FMath::Abs(DrillingDirection.X) >= FMath::Abs(DrillingDirection.Z))
 	{
-		TargetStateSpriteComponent = DrillingDirection.X >= 0.f
-			? DrillRightStateSpriteComponent.Get()
-			: DrillLeftStateSpriteComponent.Get();
+		TargetStateSpriteComponent = DrillingDirection.X >= 0.f ? DrillRightStateSpriteComponent.Get() : DrillLeftStateSpriteComponent.Get();
 	}
 	else
 	{
-		TargetStateSpriteComponent = DrillingDirection.Z >= 0.f
-			? DrillUpStateSpriteComponent.Get()
-			: DrillDownStateSpriteComponent.Get();
+		TargetStateSpriteComponent = DrillingDirection.Z >= 0.f ? DrillUpStateSpriteComponent.Get() : DrillDownStateSpriteComponent.Get();
 	}
 
 	if (::IsValid(TargetStateSpriteComponent))
@@ -398,7 +340,34 @@ void UMKCharacterVisualComponent::HideAllStateSprites()
 	}
 }
 
-const FCharacterSpriteAnimationClip* UMKCharacterVisualComponent::ResolveAnimationClip(const UCharacterAnimationDataAsset* AnimationDataAsset) const
+void UMKCharacterVisualComponent::SetCharacterVisualOverrideEnabled(bool bEnabled)
+{
+	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
+	if (::IsValid(OwnerCharacter) == false)
+	{
+		return;
+	}
+
+	bCharacterVisualOverrideEnabled = bEnabled;
+
+	SetVisibility(bEnabled);
+	SetHiddenInGame(!bEnabled);
+	if (bEnabled == false)
+	{
+		CurrentOverrideVisualScale = 1.f;
+		UpdateOverrideVisualFacingDirection();
+		SetSprite(nullptr);
+	}
+
+	if (::IsValid(OwnerCharacter->GetSprite()))
+	{
+		OwnerCharacter->GetSprite()->SetSpriteColor(FLinearColor::White);
+		OwnerCharacter->GetSprite()->SetRenderInMainPass(!bEnabled);
+		OwnerCharacter->GetSprite()->SetRenderInDepthPass(false);
+	}
+}
+
+const FCharacterSpriteAnimationClip* UMKCharacterVisualComponent::GetAnimationClipForCurrentState(const UCharacterAnimationDataAsset* AnimationDataAsset) const
 {
 	if (::IsValid(AnimationDataAsset) == false)
 	{
@@ -408,7 +377,7 @@ const FCharacterSpriteAnimationClip* UMKCharacterVisualComponent::ResolveAnimati
 	return AnimationDataAsset->Animations.FindClip(CachedAnimationType);
 }
 
-int32 UMKCharacterVisualComponent::ResolveAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const
+int32 UMKCharacterVisualComponent::CalculateAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const
 {
 	if (AnimationClip.Sprites.IsEmpty())
 	{
@@ -458,7 +427,32 @@ UAbilitySystemComponent* UMKCharacterVisualComponent::GetOwnerAbilitySystemCompo
 	return ::IsValid(OwnerCharacter) ? OwnerCharacter->GetAbilitySystemComponent() : nullptr;
 }
 
-int32 UMKCharacterVisualComponent::ResolveStateSpriteSortPriority() const
+int32 UMKCharacterVisualComponent::GetStateSpriteSortPriority() const
 {
 	return 1;
+}
+
+void UMKCharacterVisualComponent::HandleInvincibleTagChanged(const FGameplayTag Tag, int32 NewCount)
+{
+	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
+	if (::IsValid(OwnerCharacter) == false)
+	{
+		return;
+	}
+
+	CurrentInvincibleDarkenValue = NewCount > 0 ? OwnerCharacter->InvincibleDarkenAmount : 0.f;
+
+	if (::IsValid(InvincibleMaterialInstance))
+	{
+		InvincibleMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
+	}
+	else
+	{
+		UE_LOG(LogTemp, Warning, TEXT("HandleInvincibleTagChanged: base DMI is invalid, Tag=%s, NewCount=%d"), *Tag.ToString(), NewCount);
+	}
+
+	if (::IsValid(CharacterVisualMaterialInstance))
+	{
+		CharacterVisualMaterialInstance->SetScalarParameterValue(OwnerCharacter->InvincibleDarkenParameterName, CurrentInvincibleDarkenValue);
+	}
 }

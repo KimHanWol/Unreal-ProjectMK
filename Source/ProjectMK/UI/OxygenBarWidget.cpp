@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/UI/OxygenBarWidget.h"
 
@@ -10,7 +10,7 @@ void UOxygenBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (::IsValid(ProgressBar_Oxygen) == false)
+	if (::IsValid(ProgressBar_Oxygen) == false || bIsInterpolatingOxygen == false)
 	{
 		return;
 	}
@@ -19,6 +19,7 @@ void UOxygenBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 	if (FMath::IsNearlyEqual(CurrentOxygenPercent, TargetOxygenPercent, KINDA_SMALL_NUMBER))
 	{
 		CurrentOxygenPercent = TargetOxygenPercent;
+		bIsInterpolatingOxygen = false;
 	}
 
 	ProgressBar_Oxygen->SetPercent(CurrentOxygenPercent);
@@ -33,10 +34,11 @@ void UOxygenBarWidget::BindEvents()
 		return;
 	}
 
-	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetMaxOxygenAttribute()).AddUObject(this, &::UOxygenBarWidget::OnMaxOxygenChanged);
-	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &::UOxygenBarWidget::OnCurrentOxygenChanged);
+	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetMaxOxygenAttribute()).AddUObject(this, &UOxygenBarWidget::OnMaxOxygenChanged);
+	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &UOxygenBarWidget::OnCurrentOxygenChanged);
 
 	CurrentOxygenPercent = TargetOxygenPercent = GetOxygenRatio();
+	bIsInterpolatingOxygen = false;
 	UpdateOxygenProgressBar();
 }
 
@@ -53,31 +55,29 @@ void UOxygenBarWidget::UnbindEvents()
 	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
 }
 
-void UOxygenBarWidget::OnMaxOxygenChanged(const FOnAttributeChangeData& Data)
-{
-	TargetOxygenPercent = GetOxygenRatio();
-}
-
-void UOxygenBarWidget::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
-{
-	TargetOxygenPercent = GetOxygenRatio();
-}
-
 float UOxygenBarWidget::GetOxygenRatio() const
 {
-	if (::IsValid(OwnerASC) == false)
+	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
+	if (::IsValid(CharacterAttributeSet) == false)
 	{
 		return 0.f;
 	}
 
-	const UAttributeSet_Character* AttributeSet_Character = Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
-	if (::IsValid(AttributeSet_Character) == false)
+	const float MaxOxygen = CharacterAttributeSet->GetMaxOxygen();
+	return MaxOxygen > 0.f ? (CharacterAttributeSet->GetCurrentOxygen() / MaxOxygen) : 0.f;
+}
+
+void UOxygenBarWidget::StartProgressInterpolation()
+{
+	if (FMath::IsNearlyEqual(CurrentOxygenPercent, TargetOxygenPercent, KINDA_SMALL_NUMBER))
 	{
-		return 0.f;
+		CurrentOxygenPercent = TargetOxygenPercent;
+		bIsInterpolatingOxygen = false;
+		UpdateOxygenProgressBar();
+		return;
 	}
 
-	const float MaxOxygen = AttributeSet_Character->GetMaxOxygen();
-	return MaxOxygen > 0.f ? (AttributeSet_Character->GetCurrentOxygen() / MaxOxygen) : 0.f;
+	bIsInterpolatingOxygen = true;
 }
 
 void UOxygenBarWidget::UpdateOxygenProgressBar()
@@ -88,4 +88,16 @@ void UOxygenBarWidget::UpdateOxygenProgressBar()
 	}
 
 	ProgressBar_Oxygen->SetPercent(CurrentOxygenPercent);
+}
+
+void UOxygenBarWidget::OnMaxOxygenChanged(const FOnAttributeChangeData& Data)
+{
+	TargetOxygenPercent = GetOxygenRatio();
+	StartProgressInterpolation();
+}
+
+void UOxygenBarWidget::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
+{
+	TargetOxygenPercent = GetOxygenRatio();
+	StartProgressInterpolation();
 }

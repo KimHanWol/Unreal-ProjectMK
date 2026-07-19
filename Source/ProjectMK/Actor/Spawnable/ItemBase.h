@@ -34,11 +34,11 @@ private:
 	void UpdatePosition();
 
 protected:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
-	USphereComponent* SphereCollision;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USphereComponent> SphereCollision;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Components")
-	UPaperSpriteComponent* PaperSpriteComponent;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
 
 private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
@@ -52,10 +52,10 @@ private:
 	UPROPERTY(Transient)
 	FName ItemKey;
 
-	UPROPERTY(EditAnywhere, Category = "Floating")
+	UPROPERTY(EditDefaultsOnly, Category = "Floating")
 	float FloatAmplitude = 5.0f; // 위아래 움직임의 크기
 
-	UPROPERTY(EditAnywhere, Category = "Floating")
+	UPROPERTY(EditDefaultsOnly, Category = "Floating")
 	float FloatSpeed = 3.0f; // 움직임 속도
 
 	FTimerHandle LootingTimerHandle;
@@ -63,6 +63,6 @@ private:
 	UPROPERTY(Transient)
 	float CurrentLootingSpeed = 30.f;
 
-	UPROPERTY(EditAnywhere, Category = "Looting")
+	UPROPERTY(EditDefaultsOnly, Category = "Looting")
 	float LootingAccelerationRate = 150.f;
 };

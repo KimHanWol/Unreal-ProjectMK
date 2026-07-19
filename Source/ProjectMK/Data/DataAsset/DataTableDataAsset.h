@@ -21,6 +21,6 @@ private:
 	virtual void AsyncLoadAsset() override;
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TMap<EDataTableType, TSoftObjectPtr<UDataTable>> DataTableList;
 };

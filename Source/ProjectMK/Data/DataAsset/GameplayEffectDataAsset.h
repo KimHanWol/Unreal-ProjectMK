@@ -36,6 +36,6 @@ public:
 	TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType);
 
 public:
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	TMap<EGameplayEffectType, TSubclassOf<UGameplayEffect>> GameplayEffectList;
 };
