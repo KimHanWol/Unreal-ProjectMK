@@ -9,9 +9,7 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
-#include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
-#include "Engine/OverlapResult.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -20,49 +18,6 @@
 
 namespace
 {
-	bool RangesOverlap(float MinA, float MaxA, float MinB, float MaxB)
-	{
-		return MaxA > MinB && MinA < MaxB;
-	}
-
-	bool IsCharacterOverlappingFallingBlockPath(
-		const ABlockBase* FallingBlock,
-		const FVector& TargetLocation,
-		const AMKCharacter* CharacterActor)
-	{
-		if (::IsValid(FallingBlock) == false || ::IsValid(CharacterActor) == false)
-		{
-			return false;
-		}
-
-		const UBoxComponent* BoxComponent = FallingBlock->FindComponentByClass<UBoxComponent>();
-		const UCapsuleComponent* CapsuleComponent = CharacterActor->GetCapsuleComponent();
-		if (::IsValid(BoxComponent) == false || ::IsValid(CapsuleComponent) == false)
-		{
-			return false;
-		}
-
-		const FVector BoxExtent = BoxComponent->GetScaledBoxExtent();
-		const FVector BlockLocation = FallingBlock->GetActorLocation();
-		const float BlockMinX = BlockLocation.X - BoxExtent.X;
-		const float BlockMaxX = BlockLocation.X + BoxExtent.X;
-		const float BlockMinZ = FMath::Min(BlockLocation.Z, TargetLocation.Z) - BoxExtent.Z;
-		const float BlockMaxZ = FMath::Max(BlockLocation.Z, TargetLocation.Z) + BoxExtent.Z;
-
-		const float CapsuleRadius = CapsuleComponent->GetScaledCapsuleRadius();
-		const float CharacterCenterX = CharacterActor->GetActorLocation().X;
-		const float CharacterMinX = CharacterCenterX - CapsuleRadius;
-		const float CharacterMaxX = CharacterCenterX + CapsuleRadius;
-
-		const float CapsuleHalfHeight = CapsuleComponent->GetScaledCapsuleHalfHeight();
-		const float CharacterCenterZ = CharacterActor->GetActorLocation().Z;
-		const float CharacterMinZ = CharacterCenterZ - CapsuleHalfHeight;
-		const float CharacterMaxZ = CharacterCenterZ + CapsuleHalfHeight;
-
-		return RangesOverlap(BlockMinX, BlockMaxX, CharacterMinX, CharacterMaxX) &&
-			RangesOverlap(BlockMinZ, BlockMaxZ, CharacterMinZ, CharacterMaxZ);
-	}
-
 	bool CollectFallingBlockHits(
 		ABlockBase* FallingBlock,
 		const TArray<TWeakObjectPtr<ABlockBase>>& FallingBlocks,
@@ -99,39 +54,8 @@ namespace
 			}
 		}
 
-		FCollisionObjectQueryParams CharacterOverlapQueryParams;
-		CharacterOverlapQueryParams.AddObjectTypesToQuery(ECC_Pawn);
-
-		for (TActorIterator<AMKCharacter> It(World); It; ++It)
-		{
-			AMKCharacter* CharacterActor = *It;
-			if (IsCharacterOverlappingFallingBlockPath(FallingBlock, TargetLocation, CharacterActor))
-			{
-				OutHitActors.AddUnique(CharacterActor);
-			}
-		}
-
-		TArray<FOverlapResult> OverlapResults;
-		if (World->OverlapMultiByObjectType(
-			OverlapResults,
-			BlockLocation,
-			FQuat::Identity,
-			CharacterOverlapQueryParams,
-			FCollisionShape::MakeBox(BoxExtent),
-			QueryParams))
-		{
-			for (const FOverlapResult& OverlapResult : OverlapResults)
-			{
-				AActor* OverlappedActor = OverlapResult.GetActor();
-				AMKCharacter* OverlappedCharacter = Cast<AMKCharacter>(OverlappedActor);
-				if (::IsValid(OverlappedCharacter))
-				{
-					OutHitActors.AddUnique(OverlappedActor);
-				}
-			}
-		}
-
 		FCollisionObjectQueryParams SweepObjectQueryParams;
+		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_Pawn);
 		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_WorldStatic);
 		SweepObjectQueryParams.AddObjectTypesToQuery(ECC_WorldDynamic);
 
@@ -166,13 +90,13 @@ namespace
 				continue;
 			}
 
-		ABlockBase* HitBlock = Cast<ABlockBase>(HitActor);
-		if (::IsValid(HitBlock) &&
-			UMKBlueprintFunctionLibrary::GetBlockPosition(HitBlock).X == FallingBlockPositionX)
-		{
-			OutHitActors.AddUnique(HitActor);
-			continue;
-		}
+			ABlockBase* HitBlock = Cast<ABlockBase>(HitActor);
+			if (::IsValid(HitBlock) &&
+				UMKBlueprintFunctionLibrary::GetBlockPosition(HitBlock).X == FallingBlockPositionX)
+			{
+				OutHitActors.AddUnique(HitActor);
+				continue;
+			}
 
 			AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitActor);
 			if (::IsValid(HitCharacter))
@@ -294,7 +218,7 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 		FVector TargetLocation = BlockLocation + FVector(0.f, 0.f, -8.f);
 
 		TArray<TWeakObjectPtr<AActor>> HitActors;
-		bool bIsOnBottom = false;
+		bool bShouldStopFalling = false;
 		if (DetectFallingBlockObstacle(BottomBlock.Get(), VerticalBlockData.FallingBlocks, TargetLocation, HitActors))
 		{
 			for (const auto& HitActorPtr : HitActors)
@@ -302,12 +226,14 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 				AActor* HitActor = HitActorPtr.Get();
 				if (Cast<ABlockBase>(HitActor))
 				{
-					bIsOnBottom = true;
+					bShouldStopFalling = true;
 				}
 
 				AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitActor);
 				if (::IsValid(HitCharacter))
 				{
+					bShouldStopFalling = true;
+
 					const int32 FallingDamage = GetFallingDamage(BottomBlock.Get(), VerticalBlockData);
 					if (FallingDamage > 0.f)
 					{
@@ -317,7 +243,7 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 			}
 		}
 
-		if (bIsOnBottom)
+		if (bShouldStopFalling)
 		{
 			FFallingVerticalBlocksData* FallFinishedVerticalBlocksPtr = FallingBlockMap.Find(UMKBlueprintFunctionLibrary::GetBlockPosition(BottomBlock.Get()).X);
 			if (FallFinishedVerticalBlocksPtr)
