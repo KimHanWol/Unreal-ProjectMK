@@ -28,6 +28,16 @@ void UMKUserWidget::NativeDestruct()
 	UnbindEvents();
 }
 
+AMKCharacter* UMKUserWidget::GetLocalPlayerCharacter() const
+{
+	return LocalPlayerCharacter.Get();
+}
+
+UAbilitySystemComponent* UMKUserWidget::GetOwnerAbilitySystemComponent() const
+{
+	return OwnerASC.Get();
+}
+
 UInventoryComponent* UMKUserWidget::GetLocalInventoryComponent() const
 {
 	if (::IsValid(LocalPlayerCharacter) == false)

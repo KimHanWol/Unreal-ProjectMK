@@ -17,6 +17,7 @@ public:
 
 	bool ToggleInventoryWidget();
 	bool ToggleShopWidget();
+
 	bool IsMenuVisible() const;
 
 protected:

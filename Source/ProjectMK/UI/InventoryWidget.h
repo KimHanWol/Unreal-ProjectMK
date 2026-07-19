@@ -18,12 +18,14 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
 private:
 	void RebuildItemSlotPanel();
 	void RefreshInventory();
+
 	int32 GetDesiredSlotCount() const;
 
 	void OnInventoryChanged();

@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -17,6 +17,14 @@ public:
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
 
+private:
+	void BindInventory();
+
+	void BuildRecipeList();
+	void RefreshEntries();
+
+	void HandleInventoryChanged();
+
 protected:
 	UPROPERTY(EditDefaultsOnly)
 	TSubclassOf<UShopRecipeEntryWidget> ShopRecipeEntryClass;
@@ -25,11 +33,6 @@ protected:
 	UVerticalBox* VBox_RecipeList;
 
 private:
-	void BuildRecipeList();
-	void BindInventory();
-	void RefreshEntries();
-	void HandleInventoryChanged();
-
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UShopRecipeEntryWidget>> RecipeEntries;
 

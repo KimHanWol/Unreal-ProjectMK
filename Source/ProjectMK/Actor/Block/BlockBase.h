@@ -1,4 +1,4 @@
-﻿#pragma once
+#pragma once
 
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
@@ -12,12 +12,9 @@
 class UAbilitySystemComponent;
 class UAttributeSet_Block;
 class UBoxComponent;
-class UGameplayAbility;
 class UPaperSprite;
 class UPaperSpriteComponent;
 class IMinable;
-
-enum class EGameplayAbilityType : uint8;
 
 USTRUCT(BlueprintType)
 struct FBlockTileData
@@ -44,46 +41,42 @@ class PROJECTMK_API ABlockBase : public AActor, public IDamageable, public IAbil
 
 public:
 	ABlockBase();
-
-	void InitializeBlock(FBlockTileData InBlockData);
-
-public:
-	void StartMineBlock(IMinable* Miner);
-	void EndMineBlock();
-
-	//IAbilitySystemInterface
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
-	//~IAbilitySystemInterface
-
-	void SetMineableState(bool bInIsMineableState);
-	bool IsMineable();
-
-	UFUNCTION(BlueprintImplementableEvent)
-	void BP_EnableDebugState(int32 Count);
 
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
-	virtual void OnPreDestroy();
-
 	void BindEvents();
 	void UnbindEvents();
 
-	//IDamageable
 	virtual UAbilitySystemComponent* GetOwnerASC() override;
 	virtual bool CheckIsDestroyed() override;
 	virtual void OnDestroyed() override;
-	//~IDamageable
+
+public:
+	void InitializeBlock(FBlockTileData InBlockData);
+
+	void StartMineBlock(IMinable* Miner);
+	void EndMineBlock();
+	void SetMineableState(bool bInIsMineableState);
+
+	bool IsMineable();
+
+	UFUNCTION(BlueprintImplementableEvent)
+	void BP_EnableDebugState(int32 Count);
 
 private:
+	virtual void OnPreDestroy();
+
 	void ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier = 1.f);
 	void OnPaperSpriteLoaded();
+
 	void InitializeBlockAttribute();
 
-	void OnDurationChanged(const FOnAttributeChangeData& Data);
-
 	void SpawnItem();
+
+	void OnDurationChanged(const FOnAttributeChangeData& Data);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")

@@ -21,8 +21,9 @@ protected:
 	virtual void BindEvents() {}
 	virtual void UnbindEvents() {}
 
-	AMKCharacter* GetLocalPlayerCharacter() const { return LocalPlayerCharacter.Get(); }
-	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const { return OwnerASC.Get(); }
+	AMKCharacter* GetLocalPlayerCharacter() const;
+	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
+
 	UInventoryComponent* GetLocalInventoryComponent() const;
 	const UAttributeSet_Character* GetCharacterAttributeSet() const;
 

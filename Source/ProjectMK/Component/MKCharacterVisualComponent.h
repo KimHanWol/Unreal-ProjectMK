@@ -37,16 +37,20 @@ private:
 	void CacheStateSpriteComponent(FName ComponentName, TObjectPtr<UPaperSpriteComponent>& OutComponent, FVector& OutLeftFacingRelativeLocation);
 
 	void UpdateFacingDirectionCache();
+
 	void UpdateCharacterAnimationVisual();
 	void UpdateOverrideVisualFacingDirection();
 	void EnsureCharacterVisualMaterialInstance();
+	void SetCharacterVisualOverrideEnabled(bool bEnabled);
+
 	void UpdateDrillShakeVisuals();
+
 	void UpdateStateSpriteVisuals();
 	void HideAllStateSprites();
-	void SetCharacterVisualOverrideEnabled(bool bEnabled);
 
 	const FCharacterSpriteAnimationClip* GetAnimationClipForCurrentState(const UCharacterAnimationDataAsset* AnimationDataAsset) const;
 	int32 CalculateAnimationFrameIndex(const FCharacterSpriteAnimationClip& AnimationClip) const;
+
 	UPaperSpriteComponent* FindSpriteComponentByName(FName ComponentName) const;
 	AMKCharacter* GetOwnerCharacter() const;
 	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
@@ -108,12 +112,16 @@ private:
 	FVector DrillRightLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillDownLeftFacingRelativeLocation = FVector::ZeroVector;
 	FVector DrillUpLeftFacingRelativeLocation = FVector::ZeroVector;
+
 	FRotator DrillLeftLeftFacingRelativeRotation = FRotator::ZeroRotator;
 	FRotator DrillRightLeftFacingRelativeRotation = FRotator::ZeroRotator;
+
 	float CurrentInvincibleDarkenValue = 0.f;
 	float CurrentOverrideVisualScale = 1.f;
+
 	FVector BaseCharacterSpriteRelativeLocation = FVector::ZeroVector;
 	FVector CachedDrillShakeOffset = FVector::ZeroVector;
+
 	bool bCharacterVisualOverrideEnabled = false;
 	bool bFacingRight = false;
 	ECharacterAnimationType CachedAnimationType = ECharacterAnimationType::Idle_Down;

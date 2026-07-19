@@ -44,6 +44,7 @@ protected:
 
 public:
 	void SetDrillingVector(const FVector& InDrillingVector);
+
 	FVector GetCharacterDirection() const;
 	FVector GetDrillingVector() const;
 
@@ -58,21 +59,26 @@ private:
 	void UpdateFlyingVerticalVelocity() const;
 
 	void Apply2DCameraOverrides();
+
 	void ApplyTextureRenderingOverrides(UTexture2D* Texture) const;
 	void ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const;
 
 	void ApplyDamageInvincibility();
+
 	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
 	void ClearOxygenDrainEffect();
 	void RestoreOxygenToMax();
 	void UpdateOxygen();
 
 	TSubclassOf<UGameplayAbility> GetPrimaryDrillAbilityClass() const;
+
 	int32 GetCurrentBlockDepth() const;
 	const UGameSettingDataAsset* GetGameSettings() const;
+
 	ECharacterAnimationType GetCurrentCharacterAnimationType() const;
 	const UPaperSprite* GetCurrentBaseFrameSprite() const;
 	float GetCurrentBasePixelsPerUnrealUnit() const;
+
 	const FCharacterDataTableRow* GetCharacterData() const;
 
 	void OnLookRight(float Value);
@@ -124,7 +130,9 @@ protected:
 private:
 	FVector CharacterDir;
 	FVector DrillingVector = FVector::ZeroVector;
+
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
+
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };

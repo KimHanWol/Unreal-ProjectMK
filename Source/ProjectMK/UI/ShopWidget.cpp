@@ -26,6 +26,21 @@ void UShopWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
+void UShopWidget::BindInventory()
+{
+	if (::IsValid(BoundInventoryComponent))
+	{
+		BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+		BoundInventoryComponent = nullptr;
+	}
+
+	BoundInventoryComponent = GetLocalInventoryComponent();
+	if (::IsValid(BoundInventoryComponent))
+	{
+		BoundInventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopWidget::HandleInventoryChanged);
+	}
+}
+
 void UShopWidget::BuildRecipeList()
 {
 	RecipeEntries.Reset();
@@ -64,21 +79,6 @@ void UShopWidget::BuildRecipeList()
 	}
 
 	RefreshEntries();
-}
-
-void UShopWidget::BindInventory()
-{
-	if (::IsValid(BoundInventoryComponent))
-	{
-		BoundInventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-		BoundInventoryComponent = nullptr;
-	}
-
-	BoundInventoryComponent = GetLocalInventoryComponent();
-	if (::IsValid(BoundInventoryComponent))
-	{
-		BoundInventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopWidget::HandleInventoryChanged);
-	}
 }
 
 void UShopWidget::RefreshEntries()

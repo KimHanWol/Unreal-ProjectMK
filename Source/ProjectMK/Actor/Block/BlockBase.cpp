@@ -1,4 +1,4 @@
-﻿// LINK
+// LINK
 
 #include "ProjectMK/Actor/Block/BlockBase.h"
 
@@ -37,6 +37,72 @@ ABlockBase::ABlockBase()
 	ItemSpriteComponent->SetTranslucentSortPriority(1);
 
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
+}
+
+UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
+{
+	return AbilitySystemComponent;
+}
+
+void ABlockBase::BeginPlay()
+{
+	Super::BeginPlay();
+
+	BindEvents();
+}
+
+void ABlockBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
+{
+	Super::EndPlay(EndPlayReason);
+
+	UnbindEvents();
+}
+
+void ABlockBase::BindEvents()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).AddUObject(this, &ABlockBase::OnDurationChanged);
+}
+
+void ABlockBase::UnbindEvents()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
+}
+
+UAbilitySystemComponent* ABlockBase::GetOwnerASC()
+{
+	return GetAbilitySystemComponent();
+}
+
+bool ABlockBase::CheckIsDestroyed()
+{
+	if (::IsValid(AbilitySystemComponent) == false)
+	{
+		return false;
+	}
+
+	const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
+	if (::IsValid(BlockAttributeSet) == false)
+	{
+		return false;
+	}
+
+	return BlockAttributeSet->GetDurability() <= 0.f;
+}
+
+void ABlockBase::OnDestroyed()
+{
+	OnPreDestroy();
+	Destroy();
 }
 
 void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
@@ -88,7 +154,6 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	}
 
 	TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedBaseTileSprite;
-
 	if (SoftPaperSprite.IsNull())
 	{
 		return;
@@ -140,13 +205,9 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 		if (BlockDataTableRow->bHasCollision)
 		{
 			const FVector2D TileSize = FVector2D(BlockTileData.TileSize.X, BlockTileData.TileSize.Y);
-			FVector BoxExtent = FVector(
-				TileSize.X * 0.5f,
-				10.f,
-				TileSize.Y * 0.5f
-			);
+			FVector BoxExtent = FVector(TileSize.X * 0.5f, 10.f, TileSize.Y * 0.5f);
 
-			BoxCollision->SetBoxExtent(BoxExtent, false); // false: 스케일 적용 안 함
+			BoxCollision->SetBoxExtent(BoxExtent, false);
 			BoxCollision->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 			BoxCollision->SetCollisionProfileName(TEXT("BlockAll"));
 		}
@@ -157,17 +218,13 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 
 		SetActorLocation(BlockTileData.WorldLocation);
 	}
-	else
+	else if (SoftPaperSprite.IsNull() == false)
 	{
-		// 비동기 로딩 처리
-		if (!SoftPaperSprite.IsNull())
-		{
-			FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
-			Streamable.RequestAsyncLoad(
-				SoftPaperSprite.ToSoftObjectPath(),
-				FStreamableDelegate::CreateUObject(this, &ABlockBase::OnPaperSpriteLoaded)
-			);
-		}
+		FStreamableManager& Streamable = UAssetManager::GetStreamableManager();
+		Streamable.RequestAsyncLoad(
+			SoftPaperSprite.ToSoftObjectPath(),
+			FStreamableDelegate::CreateUObject(this, &ABlockBase::OnPaperSpriteLoaded)
+		);
 	}
 
 	if (bBlockAttributesInitialized == false)
@@ -188,6 +245,7 @@ void ABlockBase::StartMineBlock(IMinable* Miner)
 	{
 		return;
 	}
+
 	bIsMining = true;
 
 	float MiningDamage = Miner->GetMiningDamage();
@@ -209,11 +267,6 @@ void ABlockBase::EndMineBlock()
 	bIsMining = false;
 
 	GetWorld()->GetTimerManager().ClearTimer(BreakingTimerHandle);
-}
-
-UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
-{
-	return AbilitySystemComponent;
 }
 
 void ABlockBase::SetMineableState(bool bInIsMineableState)
@@ -238,20 +291,6 @@ bool ABlockBase::IsMineable()
 	return BlockDataTableRow->bIsMineable && bIsMineableState;
 }
 
-void ABlockBase::BeginPlay()
-{
-	Super::BeginPlay();
-
-	BindEvents();
-}
-
-void ABlockBase::EndPlay(const EEndPlayReason::Type EndPlayReason)
-{
-	Super::EndPlay(EndPlayReason);
-
-	UnbindEvents();
-}
-
 void ABlockBase::OnPreDestroy()
 {
 	if (SpawnableItemKey.IsNone() == false)
@@ -260,58 +299,6 @@ void ABlockBase::OnPreDestroy()
 	}
 
 	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
-}
-
-void ABlockBase::BindEvents()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
-	{
-		return;
-	}
-
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).AddUObject(this, &ABlockBase::OnDurationChanged);
-}
-
-void ABlockBase::UnbindEvents()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
-	{
-		return;
-	}
-
-	AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Block::GetDurabilityAttribute()).RemoveAll(this);
-}
-
-UAbilitySystemComponent* ABlockBase::GetOwnerASC()
-{
-	return GetAbilitySystemComponent();
-}
-
-bool ABlockBase::CheckIsDestroyed()
-{
-	if (::IsValid(AbilitySystemComponent) == false)
-	{
-		return false;
-	}
-
-	const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
-	if (::IsValid(BlockAttributeSet) == false)
-	{
-		return false;
-	}
-
-	return BlockAttributeSet->GetDurability() <= 0.f;
-}
-
-void ABlockBase::OnDestroyed()
-{
-	OnPreDestroy();
-	Destroy();
-}
-
-void ABlockBase::OnPaperSpriteLoaded()
-{
-	InitializeBlock(BlockTileData);
 }
 
 void ABlockBase::ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier)
@@ -333,6 +320,11 @@ void ABlockBase::ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, 
 	);
 
 	SpriteComponent->SetRelativeScale3D(InSpriteScale);
+}
+
+void ABlockBase::OnPaperSpriteLoaded()
+{
+	InitializeBlock(BlockTileData);
 }
 
 void ABlockBase::InitializeBlockAttribute()
@@ -371,14 +363,6 @@ void ABlockBase::InitializeBlockAttribute()
 	}
 }
 
-void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
-{
-	if (CheckIsDestroyed())
-	{
-		OnDestroyed();
-	}
-}
-
 void ABlockBase::SpawnItem()
 {
 	AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
@@ -389,4 +373,12 @@ void ABlockBase::SpawnItem()
 
 	SpawnedItem->InitializeItemBase(SpawnableItemKey);
 	SpawnedItem->SetActorLocation(GetActorLocation());
+}
+
+void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
+{
+	if (CheckIsDestroyed())
+	{
+		OnDestroyed();
+	}
 }
