@@ -27,9 +27,6 @@ public:
 	UFUNCTION(Exec)
 	void ToggleInventoryWidget();
 
-	UFUNCTION(Exec)
-	void ToggleShopTestWidget();
-
 private:
 	class AMKCharacter* GetLocalPlayerCharacter() const;
 	class AMKPlayerController* GetMKPlayerController() const;

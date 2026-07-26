@@ -15,7 +15,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
-#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/Interface/Minable.h"
 
 ABlockBase::ABlockBase()
@@ -257,7 +257,7 @@ void ABlockBase::StartMineBlock(IMinable* Miner)
 	{
 		if (WeakBlock.IsValid() && Miner == nullptr)
 		{
-			FDamageableUtil::ApplyDamage(WeakBlock.Get()->GetAbilitySystemComponent(), Miner->GetOwnerASC(), MiningDamage);
+			FGameplayAbilityUtils::ApplyDamage(WeakBlock.Get()->GetAbilitySystemComponent(), Miner->GetOwnerASC(), MiningDamage);
 		}
 	}, MiningDuration, true, MiningDuration);
 }
@@ -354,13 +354,8 @@ void ABlockBase::InitializeBlockAttribute()
 		return;
 	}
 
-	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-	if (SpecHandle.IsValid())
-	{
-		FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
-		SpecHandle.Data->SetSetByCallerMagnitude(DurabilityTag, BlockDataTableRow->BlockDurability);
-		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	}
+	const FGameplayTag DurabilityTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Block.Durability"));
+	FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass, DurabilityTag, BlockDataTableRow->BlockDurability);
 }
 
 void ABlockBase::SpawnItem()

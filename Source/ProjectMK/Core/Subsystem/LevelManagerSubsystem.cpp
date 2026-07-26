@@ -14,7 +14,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
-#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 
 namespace
 {
@@ -237,7 +237,7 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 					const int32 FallingDamage = GetFallingDamage(BottomBlock.Get(), VerticalBlockData);
 					if (FallingDamage > 0.f)
 					{
-						FDamageableUtil::ApplyDamage(HitCharacter->GetAbilitySystemComponent(), nullptr, static_cast<float>(FallingDamage));
+						FGameplayAbilityUtils::ApplyDamage(HitCharacter->GetAbilitySystemComponent(), nullptr, static_cast<float>(FallingDamage));
 					}
 				}
 			}

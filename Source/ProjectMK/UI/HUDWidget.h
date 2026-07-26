@@ -5,7 +5,7 @@
 #include "HUDWidget.generated.h"
 
 class UInventoryWidget;
-class UShopWidget;
+class UMKMenuBase;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -16,14 +16,13 @@ public:
 	virtual void NativeConstruct() override;
 
 	bool ToggleInventoryWidget();
-	bool ToggleShopWidget();
-
+	bool ToggleSkillTree();
 	bool IsMenuVisible() const;
 
 protected:
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UInventoryWidget> Inventory;
 
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UShopWidget> Shop;
+	UPROPERTY(meta = (BindWidgetOptional))
+	TObjectPtr<UMKMenuBase> Menu;
 };

@@ -126,6 +126,11 @@ const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType)
 	return nullptr;
 }
 
+const FSkillDataTableRow* UDataManager::GetSkillDataTableRow(FName RowName) const
+{
+	return GetDataTableRow<FSkillDataTableRow>(EDataTableType::Skill, RowName);
+}
+
 TArray<FName> UDataManager::GetShopRecipeRowNames() const
 {
 	if (::IsValid(DataTableDataAsset) == false)

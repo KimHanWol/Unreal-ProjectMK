@@ -13,7 +13,7 @@
 #include "ProjectMK/Controller/MKPlayerController.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
-#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 
 namespace
 {
@@ -93,7 +93,7 @@ void UMKCheatManager::DamagePlayer(float Damage)
 		return;
 	}
 
-	FDamageableUtil::ApplyDamage(PlayerCharacter->GetAbilitySystemComponent(), nullptr, Damage);
+	FGameplayAbilityUtils::ApplyDamage(PlayerCharacter->GetAbilitySystemComponent(), nullptr, Damage);
 }
 
 void UMKCheatManager::GiveItem(FName ItemUID, int32 ItemCount)
@@ -177,13 +177,3 @@ void UMKCheatManager::ToggleInventoryWidget()
 	PlayerController->ToggleInventoryWidget();
 }
 
-void UMKCheatManager::ToggleShopTestWidget()
-{
-	AMKPlayerController* PlayerController = GetMKPlayerController();
-	if (::IsValid(PlayerController) == false)
-	{
-		return;
-	}
-
-	PlayerController->ToggleShopTestWidget();
-}

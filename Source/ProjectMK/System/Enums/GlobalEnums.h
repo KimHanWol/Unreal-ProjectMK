@@ -16,6 +16,7 @@ enum class EDataTableType : uint8
 	Character = 4,
 	ShopRecipe = 5,
 	Sound = 6,
+	Skill = 7,
 };
 
 UENUM(BlueprintType)
@@ -42,4 +43,11 @@ enum class ESFXContinuousParamType : uint8
 	HP,
 	Flying,
 	Drill,
+};
+
+UENUM(BlueprintType)
+enum class EMenuContentsType : uint8
+{
+	None,
+	SkillTree,
 };

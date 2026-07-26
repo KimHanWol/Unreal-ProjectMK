@@ -4,11 +4,31 @@
 
 #include "ProjectMK/System/MKCheatManager.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
+#include "InputCoreTypes.h"
 #include "ProjectMK/UI/HUDWidget.h"
 
 AMKPlayerController::AMKPlayerController()
 {
 	CheatClass = UMKCheatManager::StaticClass();
+}
+
+void AMKPlayerController::BeginPlay()
+{
+	Super::BeginPlay();
+
+	bShowMouseCursor = true;
+	bEnableClickEvents = true;
+	bEnableMouseOverEvents = true;
+}
+
+void AMKPlayerController::SetupInputComponent()
+{
+	Super::SetupInputComponent();
+
+	if (InputComponent)
+	{
+		InputComponent->BindKey(EKeys::K, IE_Pressed, this, &AMKPlayerController::ToggleSkillTree);
+	}
 }
 
 UHUDWidget* AMKPlayerController::GetHUDWidget()
@@ -27,10 +47,9 @@ void AMKPlayerController::ToggleInventoryWidget()
 	}
 
 	HUDWidget->ToggleInventoryWidget();
-	SetMenuInputMode(HUDWidget->IsMenuVisible());
 }
 
-void AMKPlayerController::ToggleShopTestWidget()
+void AMKPlayerController::ToggleSkillTree()
 {
 	UHUDWidget* HUDWidget = GetHUDWidget();
 	if (::IsValid(HUDWidget) == false)
@@ -38,21 +57,5 @@ void AMKPlayerController::ToggleShopTestWidget()
 		return;
 	}
 
-	HUDWidget->ToggleShopWidget();
-	SetMenuInputMode(HUDWidget->IsMenuVisible());
-}
-
-void AMKPlayerController::SetMenuInputMode(bool bEnableMenuInput)
-{
-	if (bEnableMenuInput)
-	{
-		FInputModeGameAndUI InputMode;
-		InputMode.SetHideCursorDuringCapture(false);
-		SetInputMode(InputMode);
-		bShowMouseCursor = true;
-		return;
-	}
-
-	SetInputMode(FInputModeGameOnly());
-	bShowMouseCursor = false;
+	HUDWidget->ToggleSkillTree();
 }

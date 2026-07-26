@@ -15,11 +15,12 @@ class PROJECTMK_API AMKPlayerController : public APlayerController
 
 public:
 	AMKPlayerController();
+	virtual void BeginPlay() override;
+	virtual void SetupInputComponent() override;
 
 	void ToggleInventoryWidget();
-	void ToggleShopTestWidget();
+	void ToggleSkillTree();
 
 private:
 	UHUDWidget* GetHUDWidget();
-	void SetMenuInputMode(bool bEnableMenuInput);
 };

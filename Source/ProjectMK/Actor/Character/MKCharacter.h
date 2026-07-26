@@ -15,6 +15,7 @@ class UInventoryComponent;
 class UAttributeSet_Character;
 class UMKCharacterVisualComponent;
 class UPaperSprite;
+class USkillComponent;
 class UTexture2D;
 class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
@@ -47,6 +48,7 @@ public:
 
 	FVector GetCharacterDirection() const;
 	FVector GetDrillingVector() const;
+	USkillComponent* GetSkillComponent() const;
 
 private:
 	void GiveAbilities();
@@ -100,6 +102,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<USkillComponent> SkillComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UMKCharacterVisualComponent> CharacterVisualComponent;

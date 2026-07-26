@@ -21,6 +21,9 @@ public:
 	UFUNCTION()
 	static TArray<FString> GetCharacterRowNames();
 
+	UFUNCTION()
+	static TArray<FString> GetSkillRowNames();
+
 	UFUNCTION(BlueprintCallable)
 	static TSoftObjectPtr<UTexture2D> ConvItemTextureFromPaperSprite(TSoftObjectPtr<UPaperSprite> TargetSprite);
 

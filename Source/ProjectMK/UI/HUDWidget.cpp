@@ -4,7 +4,8 @@
 
 #include "Components/Widget.h"
 #include "ProjectMK/UI/InventoryWidget.h"
-#include "ProjectMK/UI/ShopWidget.h"
+#include "ProjectMK/UI/MKMenuBase.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 
 void UHUDWidget::NativeConstruct()
 {
@@ -27,19 +28,23 @@ bool UHUDWidget::ToggleInventoryWidget()
 	return false;
 }
 
-bool UHUDWidget::ToggleShopWidget()
+bool UHUDWidget::ToggleSkillTree()
 {
-	if (::IsValid(Shop) == false)
+	if (::IsValid(Menu) == false)
 	{
 		return false;
 	}
 
-	const bool bWillOpen = Shop->GetVisibility() != ESlateVisibility::Visible;
-	Shop->SetVisibility(bWillOpen ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-	return bWillOpen;
+	if (Menu->IsMenuOpen())
+	{
+		Menu->CloseMenu();
+		return false;
+	}
+
+	return Menu->OpenMenu(EMenuContentsType::SkillTree);
 }
 
 bool UHUDWidget::IsMenuVisible() const
 {
-	return ::IsValid(Shop) && Shop->GetVisibility() == ESlateVisibility::Visible;
+	return ::IsValid(Menu) && Menu->IsMenuOpen();
 }

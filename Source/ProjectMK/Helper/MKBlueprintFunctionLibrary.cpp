@@ -10,6 +10,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/System/GlobalConstants.h"
 
 namespace
@@ -129,6 +130,13 @@ TArray<FString> UMKBlueprintFunctionLibrary::GetCharacterRowNames()
 	}
 
 	return CharacterRowNames;
+}
+
+TArray<FString> UMKBlueprintFunctionLibrary::GetSkillRowNames()
+{
+	TSet<FName> UniqueRowNames;
+	CollectDataTableRowNames(GetDataTableAssets(), TEXT("SkillDataTableRow"), FSkillDataTableRow::StaticStruct(), UniqueRowNames);
+	return ConvertRowNamesToStrings(UniqueRowNames);
 }
 
 TSoftObjectPtr<UTexture2D> UMKBlueprintFunctionLibrary::ConvItemTextureFromPaperSprite(TSoftObjectPtr<UPaperSprite> TargetSprite)

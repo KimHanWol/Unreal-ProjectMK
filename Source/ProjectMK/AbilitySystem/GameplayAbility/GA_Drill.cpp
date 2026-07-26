@@ -11,7 +11,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
-#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/System/GlobalConstants.h"
 
 void UGA_Drill::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const FGameplayAbilityActorInfo* ActorInfo, const FGameplayAbilityActivationInfo ActivationInfo, const FGameplayEventData* TriggerEventData)
@@ -264,7 +264,7 @@ void UGA_Drill::Drill_Instant()
 			continue;
 		}
 
-		FDamageableUtil::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
+		FGameplayAbilityUtils::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
 	}
 
 	if (DelayTask.IsValid())
@@ -301,11 +301,7 @@ void UGA_Drill::EnableDrill(bool bEnable)
 			return;
 		}
 
-		FGameplayEffectSpecHandle SpecHandle = SourceASC->MakeOutgoingSpec(EffectClass, 1.f, SourceASC->MakeEffectContext());
-		if (SpecHandle.IsValid())
-		{
-			DrillEffectHandle = SourceASC->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
+		DrillEffectHandle = FGameplayAbilityUtils::ApplyGameplayEffectToSelf(SourceASC.Get(), EffectClass);
 
 		WaitPeriodAndMine();
 	}

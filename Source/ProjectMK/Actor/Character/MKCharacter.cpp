@@ -6,6 +6,7 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/Texture2D.h"
+#include "GameplayEffect.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameplayTagContainer.h"
 #include "PaperFlipbook.h"
@@ -15,10 +16,11 @@
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
+#include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
-#include "ProjectMK/Helper/Utils/DamageableUtil.h"
+#include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 
 namespace
 {
@@ -53,6 +55,8 @@ AMKCharacter::AMKCharacter()
 
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetupAttachment(GetRootComponent());
+
+	SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
 
 	CharacterVisualComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualComponent"));
 	CharacterVisualComponent->SetupAttachment(GetSprite());
@@ -224,11 +228,7 @@ void AMKCharacter::ApplyInitialEffects()
 			continue;
 		}
 
-		FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(InitialGameplayEffect, 1.f, AbilitySystemComponent->MakeEffectContext());
-		if (SpecHandle.IsValid())
-		{
-			AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-		}
+		FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, InitialGameplayEffect);
 	}
 
 	RestoreOxygenToMax();
@@ -372,11 +372,7 @@ void AMKCharacter::ApplyDamageInvincibility()
 		return;
 	}
 
-	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-	if (SpecHandle.IsValid())
-	{
-		AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
-	}
+	FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass);
 }
 
 void AMKCharacter::ApplyOxygenDrainEffect(float OxygenDrainPerSecond)
@@ -407,12 +403,10 @@ void AMKCharacter::ApplyOxygenDrainEffect(float OxygenDrainPerSecond)
 	}
 
 	const float PeriodicDrainAmount = -(OxygenDrainPerSecond * GameSettings->OxygenDrainTickInterval);
-	FGameplayEffectSpecHandle SpecHandle = AbilitySystemComponent->MakeOutgoingSpec(EffectClass, 1.f, AbilitySystemComponent->MakeEffectContext());
-	if (SpecHandle.IsValid())
+	const FGameplayTag ValueTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Common.Value"));
+	OxygenDrainEffectHandle = FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass, ValueTag, PeriodicDrainAmount);
+	if (OxygenDrainEffectHandle.IsValid())
 	{
-		const FGameplayTag ValueTag = FGameplayTag::RequestGameplayTag(TEXT("SetByCaller.Common.Value"));
-		SpecHandle.Data->SetSetByCallerMagnitude(ValueTag, PeriodicDrainAmount);
-		OxygenDrainEffectHandle = AbilitySystemComponent->ApplyGameplayEffectSpecToSelf(*SpecHandle.Data.Get());
 		AppliedOxygenDrainPerSecond = OxygenDrainPerSecond;
 	}
 }
@@ -436,7 +430,7 @@ void AMKCharacter::RestoreOxygenToMax()
 	}
 
 	const float OxygenToRestore = AttributeSet_Character->GetMaxOxygen() - AttributeSet_Character->GetCurrentOxygen();
-	FDamageableUtil::ApplyOxygen(AbilitySystemComponent, OxygenToRestore);
+	FGameplayAbilityUtils::ApplyOxygen(AbilitySystemComponent, OxygenToRestore);
 }
 
 void AMKCharacter::UpdateOxygen()
@@ -474,6 +468,11 @@ FVector AMKCharacter::GetCharacterDirection() const
 FVector AMKCharacter::GetDrillingVector() const
 {
 	return DrillingVector;
+}
+
+USkillComponent* AMKCharacter::GetSkillComponent() const
+{
+	return SkillComponent.Get();
 }
 
 TSubclassOf<UGameplayAbility> AMKCharacter::GetPrimaryDrillAbilityClass() const

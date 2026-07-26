@@ -7,6 +7,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Component/SkillComponent.h"
 
 void UMKUserWidget::NativeConstruct()
 {
@@ -19,6 +20,7 @@ void UMKUserWidget::NativeConstruct()
 	}
 
 	BindEvents();
+	UpdateWidget();
 }
 
 void UMKUserWidget::NativeDestruct()
@@ -48,6 +50,16 @@ UInventoryComponent* UMKUserWidget::GetLocalInventoryComponent() const
 	return LocalPlayerCharacter->GetComponentByClass<UInventoryComponent>();
 }
 
+USkillComponent* UMKUserWidget::GetLocalSkillComponent() const
+{
+	if (::IsValid(LocalPlayerCharacter) == false)
+	{
+		return nullptr;
+	}
+
+	return LocalPlayerCharacter->GetComponentByClass<USkillComponent>();
+}
+
 const UAttributeSet_Character* UMKUserWidget::GetCharacterAttributeSet() const
 {
 	if (::IsValid(OwnerASC) == false)
@@ -56,4 +68,14 @@ const UAttributeSet_Character* UMKUserWidget::GetCharacterAttributeSet() const
 	}
 
 	return Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
+}
+
+bool UMKUserWidget::IsVisible() const
+{
+	return GetVisibility() != ESlateVisibility::Collapsed;
+}
+
+void UMKUserWidget::SetVisible(bool bVisible)
+{
+	SetVisibility(bVisible ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
 }
