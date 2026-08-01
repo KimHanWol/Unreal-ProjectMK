@@ -7,8 +7,6 @@
 
 struct FOnAttributeChangeData;
 
-class UImage;
-
 UCLASS()
 class PROJECTMK_API USkillSlotWidget : public UMKSlotBase
 {
@@ -20,6 +18,7 @@ protected:
 	virtual void UpdateWidget() override;
 	virtual bool CanClickSlot() const override;
 	virtual void OnSlotClicked() override;
+	virtual void UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const override;
 
 private:
 	void UpdateCompleteImage();
@@ -30,9 +29,6 @@ private:
 protected:
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetSkillRowNames"))
 	FName SkillKeyName;
-
-	UPROPERTY(meta = (BindWidget))
-	TObjectPtr<UImage> SkillImage;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> CompleteImage;

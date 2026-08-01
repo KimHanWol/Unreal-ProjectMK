@@ -10,7 +10,7 @@ void UQuickInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	RebuildQuickInventorySlots();
+	UpdateQuickInventorySlots();
 	OnInventoryChanged();
 }
 
@@ -34,7 +34,7 @@ void UQuickInventoryWidget::UnbindEvents()
 	}
 }
 
-void UQuickInventoryWidget::RebuildQuickInventorySlots()
+void UQuickInventoryWidget::UpdateQuickInventorySlots()
 {
 	if (::IsValid(HBox_Slot) == false || ItemSlotList.Num() > 0)
 	{
@@ -46,6 +46,7 @@ void UQuickInventoryWidget::RebuildQuickInventorySlots()
 		UItemSlotWidget* NewItemSlot = CreateWidget<UItemSlotWidget>(this, ItemSlotClass);
 		if (::IsValid(NewItemSlot))
 		{
+			NewItemSlot->SetSlotIndex(i);
 			HBox_Slot->AddChildToHorizontalBox(NewItemSlot);
 			ItemSlotList.Add(NewItemSlot);
 		}
@@ -68,23 +69,21 @@ void UQuickInventoryWidget::OnInventoryChanged()
 		return;
 	}
 
-	const TMap<FName, int32> InventoryItems = InventoryComponent->GetInventoryItems();
-	const TArray<FName>& InventoryItemOrder = InventoryComponent->GetInventoryItemOrder();
+	const TArray<FInventorySlotData>& InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
 
 	for (int32 SlotIndex = 0; SlotIndex < QuickInventorySlotCount; ++SlotIndex)
 	{
-		if (InventoryItemOrder.IsValidIndex(SlotIndex) == false || ItemSlotList.IsValidIndex(SlotIndex) == false)
+		if (InventorySlotDataList.IsValidIndex(SlotIndex) == false || ItemSlotList.IsValidIndex(SlotIndex) == false)
 		{
 			break;
 		}
 
-		const FName& ItemKey = InventoryItemOrder[SlotIndex];
-		const int32* ItemCountPtr = InventoryItems.Find(ItemKey);
-		if (ItemCountPtr == nullptr)
+		const FInventorySlotData& InventorySlotData = InventorySlotDataList[SlotIndex];
+		if (InventorySlotData.IsEmpty())
 		{
 			continue;
 		}
 
-		ItemSlotList[SlotIndex]->SetItem(ItemKey, *ItemCountPtr);
+		ItemSlotList[SlotIndex]->SetItem(InventorySlotData.ItemUID, InventorySlotData.ItemCount);
 	}
 }

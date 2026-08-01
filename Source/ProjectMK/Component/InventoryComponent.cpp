@@ -7,6 +7,8 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 
 UInventoryComponent::UInventoryComponent()
@@ -79,7 +81,9 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 
 int32 UInventoryComponent::GetItemCount(FName ItemUID)
 {
-	int32* ItemCountPtr = InventoryItemMap.Find(ItemUID);
+	UpdateInventoryItemMap();
+
+	const int32* ItemCountPtr = InventoryItemMap.Find(ItemUID);
 	if (ItemCountPtr)
 	{
 		return *ItemCountPtr;
@@ -103,20 +107,12 @@ int32 UInventoryComponent::GetMaxInventoryCount() const
 
 void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
 {
-	if (InventoryItemMap.Contains(ItemUID) == false)
+	if (ItemUID.IsNone() || ItemCount <= 0)
 	{
 		return;
 	}
 
-	InventoryItemMap[ItemUID] = FMath::Max(InventoryItemMap[ItemUID] - ItemCount, 0);
-
-	if (InventoryItemMap[ItemUID] == 0)
-	{
-		InventoryItemMap.Remove(ItemUID);
-		RemoveItemOrder(ItemUID);
-	}
-
-	OnInventoryUpdated();
+	SpendItem(ItemUID, ItemCount);
 }
 
 bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
@@ -137,11 +133,62 @@ bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
 
 bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
 {
-	if (InventoryItemMap.Contains(ItemUID) == false && InventoryItemMap.Num() >= GetMaxInventoryCount())
+	const_cast<UInventoryComponent*>(this)->UpdateInventorySlotDataList();
+	return CalculateAvailableItemCapacity(ItemUID) >= ItemCount;
+}
+
+bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex)
+{
+	UpdateInventorySlotDataList();
+
+	if (IsValidSlotIndex(SourceSlotIndex) == false || IsValidSlotIndex(TargetSlotIndex) == false || SourceSlotIndex == TargetSlotIndex)
 	{
 		return false;
 	}
 
+	FInventorySlotData& SourceSlotData = InventorySlotDataList[SourceSlotIndex];
+	FInventorySlotData& TargetSlotData = InventorySlotDataList[TargetSlotIndex];
+
+	if (SourceSlotData.IsEmpty())
+	{
+		return false;
+	}
+
+	if (TargetSlotData.IsEmpty())
+	{
+		TargetSlotData = SourceSlotData;
+		SourceSlotData.Clear();
+		OnInventoryUpdated();
+		return true;
+	}
+
+	if (SourceSlotData.ItemUID == TargetSlotData.ItemUID)
+	{
+		const int32 MaxStackCount = GetItemMaxStackCount(SourceSlotData.ItemUID);
+		if (TargetSlotData.ItemCount >= MaxStackCount)
+		{
+			return false;
+		}
+
+		const int32 MoveCount = FMath::Min(SourceSlotData.ItemCount, MaxStackCount - TargetSlotData.ItemCount);
+		if (MoveCount <= 0)
+		{
+			return false;
+		}
+
+		TargetSlotData.ItemCount += MoveCount;
+		SourceSlotData.ItemCount -= MoveCount;
+		if (SourceSlotData.ItemCount <= 0)
+		{
+			SourceSlotData.Clear();
+		}
+
+		OnInventoryUpdated();
+		return true;
+	}
+
+	Swap(SourceSlotData, TargetSlotData);
+	OnInventoryUpdated();
 	return true;
 }
 
@@ -159,35 +206,23 @@ bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRec
 
 	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
 	{
-		InventoryItemMap.FindOrAdd(RequiredItem.GetItemKey()) -= RequiredItem.ItemCount;
+		SpendItem(RequiredItem.GetItemKey(), RequiredItem.ItemCount);
 	}
-
-	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
-	{
-		const FName RequiredItemKey = RequiredItem.GetItemKey();
-		const int32* InventoryItemCountPtr = InventoryItemMap.Find(RequiredItemKey);
-		if (InventoryItemCountPtr != nullptr && (*InventoryItemCountPtr) <= 0)
-		{
-			InventoryItemMap.Remove(RequiredItemKey);
-			RemoveItemOrder(RequiredItemKey);
-		}
-	}
-
-	AddItemOrder(ShopRecipeData.GetResultItemKey());
-	InventoryItemMap.FindOrAdd(ShopRecipeData.GetResultItemKey()) += 1;
-	OnInventoryUpdated();
+	AddItem(ShopRecipeData.GetResultItemKey(), 1);
 
 	return true;
 }
 
 bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const
 {
+	const_cast<UInventoryComponent*>(this)->UpdateInventorySlotDataList();
+
 	if (ShopRecipeData.GetResultItemKey().IsNone())
 	{
 		return false;
 	}
 
-	TMap<FName, int32> SimulatedInventory = InventoryItemMap;
+	TMap<FName, int32> SimulatedInventory = GetInventoryItems();
 	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
 	{
 		const FName RequiredItemKey = RequiredItem.GetItemKey();
@@ -209,32 +244,12 @@ bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& Shop
 		}
 	}
 
-	if (SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false && SimulatedInventory.Num() >= GetMaxInventoryCount())
+	if (CalculateAvailableItemCapacity(ShopRecipeData.GetResultItemKey()) <= 0 && SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false)
 	{
 		return false;
 	}
 
 	return true;
-}
-
-void UInventoryComponent::AddItemOrder(FName ItemUID)
-{
-	if (ItemUID.IsNone() || InventoryItemOrder.Contains(ItemUID))
-	{
-		return;
-	}
-
-	InventoryItemOrder.Add(ItemUID);
-}
-
-void UInventoryComponent::RemoveItemOrder(FName ItemUID)
-{
-	if (ItemUID.IsNone())
-	{
-		return;
-	}
-
-	InventoryItemOrder.Remove(ItemUID);
 }
 
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
@@ -245,20 +260,67 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 		return;
 	}
 
-	InventoryItemMap.FindOrAdd(ItemUID) += ItemCount;
-	AddItemOrder(ItemUID);
+	UpdateInventorySlotDataList();
+
+	int32 RemainingItemCount = ItemCount;
+	const int32 MaxStackCount = GetItemMaxStackCount(ItemUID);
+
+	while (RemainingItemCount > 0)
+	{
+		const int32 StackableSlotIndex = FindStackableSlotIndex(ItemUID);
+		if (StackableSlotIndex != INDEX_NONE)
+		{
+			FInventorySlotData& StackableSlotData = InventorySlotDataList[StackableSlotIndex];
+			const int32 AddedItemCount = FMath::Min(RemainingItemCount, MaxStackCount - StackableSlotData.ItemCount);
+			StackableSlotData.ItemCount += AddedItemCount;
+			RemainingItemCount -= AddedItemCount;
+			continue;
+		}
+
+		const int32 EmptySlotIndex = FindEmptySlotIndex();
+		if (EmptySlotIndex == INDEX_NONE)
+		{
+			break;
+		}
+
+		FInventorySlotData& EmptySlotData = InventorySlotDataList[EmptySlotIndex];
+		EmptySlotData.ItemUID = ItemUID;
+		EmptySlotData.ItemCount = FMath::Min(RemainingItemCount, MaxStackCount);
+		RemainingItemCount -= EmptySlotData.ItemCount;
+	}
 
 	OnInventoryUpdated();
 }
 
 void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 {
-	InventoryItemMap.FindOrAdd(ItemUID) -= ItemCount;
-
-	if (InventoryItemMap[ItemUID] == 0)
+	if (ItemUID.IsNone() || ItemCount <= 0)
 	{
-		InventoryItemMap.Remove(ItemUID);
-		RemoveItemOrder(ItemUID);
+		return;
+	}
+
+	UpdateInventorySlotDataList();
+
+	int32 RemainingItemCount = ItemCount;
+	for (FInventorySlotData& SlotData : InventorySlotDataList)
+	{
+		if (SlotData.ItemUID != ItemUID || SlotData.ItemCount <= 0)
+		{
+			continue;
+		}
+
+		const int32 SpentItemCount = FMath::Min(RemainingItemCount, SlotData.ItemCount);
+		SlotData.ItemCount -= SpentItemCount;
+		RemainingItemCount -= SpentItemCount;
+		if (SlotData.ItemCount <= 0)
+		{
+			SlotData.Clear();
+		}
+
+		if (RemainingItemCount <= 0)
+		{
+			break;
+		}
 	}
 
 	OnInventoryUpdated();
@@ -266,6 +328,9 @@ void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 
 void UInventoryComponent::OnInventoryUpdated()
 {
+	UpdateInventorySlotDataList();
+	NormalizeInventorySlotDataList();
+	UpdateInventoryItemMap();
 	OnInventoryChangedDelegate.Broadcast();
 }
 
@@ -284,6 +349,161 @@ const UAttributeSet_Character* UInventoryComponent::GetCharacterAttributeSet() c
 	}
 
 	return Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
+}
+
+void UInventoryComponent::UpdateInventorySlotDataList()
+{
+	const int32 DesiredSlotCount = GetMaxInventoryCount();
+	if (InventorySlotDataList.Num() == DesiredSlotCount)
+	{
+		return;
+	}
+
+	TArray<FInventorySlotData> PreviousSlotDataList = InventorySlotDataList;
+	InventorySlotDataList.Init(FInventorySlotData(), DesiredSlotCount);
+	for (int32 SlotIndex = 0; SlotIndex < PreviousSlotDataList.Num() && SlotIndex < DesiredSlotCount; ++SlotIndex)
+	{
+		InventorySlotDataList[SlotIndex] = PreviousSlotDataList[SlotIndex];
+	}
+}
+
+int32 UInventoryComponent::FindEmptySlotIndex() const
+{
+	for (int32 SlotIndex = 0; SlotIndex < InventorySlotDataList.Num(); ++SlotIndex)
+	{
+		if (InventorySlotDataList[SlotIndex].IsEmpty())
+		{
+			return SlotIndex;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+bool UInventoryComponent::IsValidSlotIndex(int32 SlotIndex) const
+{
+	return InventorySlotDataList.IsValidIndex(SlotIndex);
+}
+
+const TArray<FInventorySlotData>& UInventoryComponent::GetInventorySlotDataList()
+{
+	UpdateInventorySlotDataList();
+	return InventorySlotDataList;
+}
+
+void UInventoryComponent::UpdateInventoryItemMap()
+{
+	InventoryItemMap.Reset();
+
+	for (const FInventorySlotData& SlotData : InventorySlotDataList)
+	{
+		if (SlotData.IsEmpty())
+		{
+			continue;
+		}
+
+		InventoryItemMap.FindOrAdd(SlotData.ItemUID) += SlotData.ItemCount;
+	}
+}
+
+void UInventoryComponent::NormalizeInventorySlotDataList()
+{
+	for (int32 SourceSlotIndex = 0; SourceSlotIndex < InventorySlotDataList.Num(); ++SourceSlotIndex)
+	{
+		FInventorySlotData& SourceSlotData = InventorySlotDataList[SourceSlotIndex];
+		if (SourceSlotData.IsEmpty())
+		{
+			continue;
+		}
+
+		const int32 MaxStackCount = GetItemMaxStackCount(SourceSlotData.ItemUID);
+		if (SourceSlotData.ItemCount > MaxStackCount)
+		{
+			SourceSlotData.ItemCount = MaxStackCount;
+		}
+
+		for (int32 TargetSlotIndex = 0; TargetSlotIndex < SourceSlotIndex; ++TargetSlotIndex)
+		{
+			FInventorySlotData& TargetSlotData = InventorySlotDataList[TargetSlotIndex];
+			if (TargetSlotData.ItemUID != SourceSlotData.ItemUID || TargetSlotData.ItemCount >= MaxStackCount)
+			{
+				continue;
+			}
+
+			const int32 MergeItemCount = FMath::Min(SourceSlotData.ItemCount, MaxStackCount - TargetSlotData.ItemCount);
+			if (MergeItemCount <= 0)
+			{
+				continue;
+			}
+
+			TargetSlotData.ItemCount += MergeItemCount;
+			SourceSlotData.ItemCount -= MergeItemCount;
+			if (SourceSlotData.ItemCount <= 0)
+			{
+				SourceSlotData.Clear();
+				break;
+			}
+		}
+	}
+}
+
+int32 UInventoryComponent::GetItemMaxStackCount(FName ItemUID) const
+{
+	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	if (::IsValid(DataManager) == false)
+	{
+		return 99;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
+	if (ItemDataTableRow == nullptr)
+	{
+		return 99;
+	}
+
+	return FMath::Max(1, ItemDataTableRow->MaxStackCount);
+}
+
+int32 UInventoryComponent::FindStackableSlotIndex(FName ItemUID) const
+{
+	const int32 MaxStackCount = GetItemMaxStackCount(ItemUID);
+	for (int32 SlotIndex = 0; SlotIndex < InventorySlotDataList.Num(); ++SlotIndex)
+	{
+		const FInventorySlotData& SlotData = InventorySlotDataList[SlotIndex];
+		if (SlotData.ItemUID == ItemUID && SlotData.ItemCount < MaxStackCount)
+		{
+			return SlotIndex;
+		}
+	}
+
+	return INDEX_NONE;
+}
+
+int32 UInventoryComponent::CalculateAvailableItemCapacity(FName ItemUID) const
+{
+	if (ItemUID.IsNone())
+	{
+		return 0;
+	}
+
+	const int32 MaxStackCount = GetItemMaxStackCount(ItemUID);
+	int32 AvailableCapacity = 0;
+
+	for (const FInventorySlotData& SlotData : InventorySlotDataList)
+	{
+		if (SlotData.IsEmpty())
+		{
+			AvailableCapacity += MaxStackCount;
+			continue;
+		}
+
+		if (SlotData.ItemUID == ItemUID)
+		{
+			AvailableCapacity += FMath::Max(0, MaxStackCount - SlotData.ItemCount);
+		}
+	}
+
+	return AvailableCapacity;
 }
 
 void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

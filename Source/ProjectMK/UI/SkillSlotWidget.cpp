@@ -9,6 +9,7 @@
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
+#include "ProjectMK/UI/MKTooltipBase.h"
 
 void USkillSlotWidget::BindEvents()
 {
@@ -61,6 +62,18 @@ void USkillSlotWidget::OnSlotClicked()
 	}
 }
 
+void USkillSlotWidget::UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const
+{
+	Super::UpdateTooltipWidget(TooltipWidget);
+
+	if (::IsValid(TooltipWidget) == false || SkillKeyName.IsNone())
+	{
+		return;
+	}
+
+	TooltipWidget->ShowSkillTooltip(SkillKeyName);
+}
+
 void USkillSlotWidget::UpdateCompleteImage()
 {
 	if (::IsValid(CompleteImage) == false)
@@ -75,12 +88,12 @@ void USkillSlotWidget::UpdateCompleteImage()
 
 void USkillSlotWidget::UpdateSkillImage()
 {
-	if (::IsValid(SkillImage) == false)
+	if (::IsValid(IconImage) == false)
 	{
 		return;
 	}
 
-	SkillImage->SetBrush(FSlateBrush());
+	IconImage->SetBrush(FSlateBrush());
 
 	if (SkillKeyName.IsNone())
 	{
@@ -105,7 +118,7 @@ void USkillSlotWidget::UpdateSkillImage()
 		return;
 	}
 
-	SkillImage->SetBrushFromTexture(IconTexture, true);
+	IconImage->SetBrushFromTexture(IconTexture, true);
 }
 
 void USkillSlotWidget::OnCoinChanged(const FOnAttributeChangeData& Data)

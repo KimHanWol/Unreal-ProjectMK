@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
@@ -13,9 +13,6 @@ class PROJECTMK_API UInventoryWidget : public UMKUserWidget
 {
 	GENERATED_BODY()
 
-public:
-	UInventoryWidget();
-
 protected:
 	virtual void NativeConstruct() override;
 
@@ -23,7 +20,7 @@ protected:
 	virtual void UnbindEvents() override;
 
 private:
-	void RebuildItemSlotPanel();
+	void UpdateItemSlotPanel();
 	void RefreshInventory();
 
 	int32 GetDesiredSlotCount() const;

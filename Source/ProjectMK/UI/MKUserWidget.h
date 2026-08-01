@@ -7,6 +7,7 @@
 class AMKCharacter;
 class UAbilitySystemComponent;
 class UAttributeSet_Character;
+class UHUDWidget;
 class UInventoryComponent;
 class USkillComponent;
 
@@ -27,6 +28,7 @@ protected:
 	virtual void UpdateWidget() {}
 
 	AMKCharacter* GetLocalPlayerCharacter() const;
+	UHUDWidget* GetHUDWidget() const;
 
 	UAbilitySystemComponent* GetOwnerAbilitySystemComponent() const;
 	UInventoryComponent* GetLocalInventoryComponent() const;

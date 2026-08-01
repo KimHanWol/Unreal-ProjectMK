@@ -19,11 +19,11 @@ protected:
 	virtual void UnbindEvents() override;
 
 private:
-	void RebuildQuickInventorySlots();
+	void UpdateQuickInventorySlots();
 	void OnInventoryChanged();
 
 protected:
-	UPROPERTY(EditDefaultsOnly)
+	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
 	TSubclassOf<UItemSlotWidget> ItemSlotClass;
 
 	UPROPERTY(meta = (BindWidget))

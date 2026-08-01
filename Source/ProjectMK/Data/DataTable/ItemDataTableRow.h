@@ -23,5 +23,8 @@ struct FItemDataTableRow : public FItemDataTableRowBase
 	GENERATED_BODY()
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	int32 MaxStackCount = 99;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UPaperSprite> ItemIcon;
 };

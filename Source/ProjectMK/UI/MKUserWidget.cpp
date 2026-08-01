@@ -3,11 +3,13 @@
 #include "ProjectMK/UI/MKUserWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Kismet/GameplayStatics.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
+#include "ProjectMK/UI/HUDWidget.h"
 
 void UMKUserWidget::NativeConstruct()
 {
@@ -33,6 +35,13 @@ void UMKUserWidget::NativeDestruct()
 AMKCharacter* UMKUserWidget::GetLocalPlayerCharacter() const
 {
 	return LocalPlayerCharacter.Get();
+}
+
+UHUDWidget* UMKUserWidget::GetHUDWidget() const
+{
+	TArray<UUserWidget*> FoundWidgets;
+	UWidgetBlueprintLibrary::GetAllWidgetsOfClass(const_cast<UMKUserWidget*>(this), FoundWidgets, UHUDWidget::StaticClass(), false);
+	return FoundWidgets.Num() > 0 ? Cast<UHUDWidget>(FoundWidgets[0]) : nullptr;
 }
 
 UAbilitySystemComponent* UMKUserWidget::GetOwnerAbilitySystemComponent() const

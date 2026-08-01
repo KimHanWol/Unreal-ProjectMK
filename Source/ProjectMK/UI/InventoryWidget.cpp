@@ -1,28 +1,19 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/UI/InventoryWidget.h"
 
 #include "AbilitySystemComponent.h"
 #include "Components/GridPanel.h"
+#include "Components/GridSlot.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
-#include "UObject/ConstructorHelpers.h"
-
-UInventoryWidget::UInventoryWidget()
-{
-	static ConstructorHelpers::FClassFinder<UItemSlotWidget> ItemSlotWidgetClass(TEXT("/Game/UI/Inventory/W_ItemSlot"));
-	if (ItemSlotWidgetClass.Succeeded())
-	{
-		ItemSlotClass = ItemSlotWidgetClass.Class;
-	}
-}
 
 void UInventoryWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
 
-	RebuildItemSlotPanel();
+	UpdateItemSlotPanel();
 	RefreshInventory();
 }
 
@@ -56,7 +47,7 @@ void UInventoryWidget::UnbindEvents()
 	}
 }
 
-void UInventoryWidget::RebuildItemSlotPanel()
+void UInventoryWidget::UpdateItemSlotPanel()
 {
 	if (::IsValid(ItemSlotPanel) == false)
 	{
@@ -74,6 +65,17 @@ void UInventoryWidget::RebuildItemSlotPanel()
 
 	const int32 DesiredSlotCount = GetDesiredSlotCount();
 	const int32 ColumnCount = FMath::Max(1, InventoryColumnCount);
+	const int32 RowCount = FMath::Max(1, FMath::CeilToInt(static_cast<float>(DesiredSlotCount) / static_cast<float>(ColumnCount)));
+
+	for (int32 ColumnIndex = 0; ColumnIndex < ColumnCount; ++ColumnIndex)
+	{
+		ItemSlotPanel->SetColumnFill(ColumnIndex, 1.f);
+	}
+
+	for (int32 RowIndex = 0; RowIndex < RowCount; ++RowIndex)
+	{
+		ItemSlotPanel->SetRowFill(RowIndex, 1.f);
+	}
 
 	for (int32 SlotIndex = 0; SlotIndex < DesiredSlotCount; ++SlotIndex)
 	{
@@ -86,7 +88,14 @@ void UInventoryWidget::RebuildItemSlotPanel()
 		const int32 Row = SlotIndex / ColumnCount;
 		const int32 Column = SlotIndex % ColumnCount;
 
-		ItemSlotPanel->AddChildToGrid(NewItemSlot, Row, Column);
+		if (UGridSlot* ItemGridSlot = ItemSlotPanel->AddChildToGrid(NewItemSlot, Row, Column))
+		{
+			ItemGridSlot->SetPadding(FMargin(0.f));
+			ItemGridSlot->SetHorizontalAlignment(HAlign_Fill);
+			ItemGridSlot->SetVerticalAlignment(VAlign_Fill);
+		}
+
+		NewItemSlot->SetSlotIndex(SlotIndex);
 		ItemSlotList.Add(NewItemSlot);
 	}
 }
@@ -95,7 +104,7 @@ void UInventoryWidget::RefreshInventory()
 {
 	if (ItemSlotList.Num() != GetDesiredSlotCount())
 	{
-		RebuildItemSlotPanel();
+		UpdateItemSlotPanel();
 	}
 
 	for (UItemSlotWidget* ItemSlot : ItemSlotList)
@@ -112,24 +121,22 @@ void UInventoryWidget::RefreshInventory()
 		return;
 	}
 
-	const TMap<FName, int32> InventoryItems = InventoryComponent->GetInventoryItems();
-	const TArray<FName>& InventoryItemOrder = InventoryComponent->GetInventoryItemOrder();
+	const TArray<FInventorySlotData>& InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
 
-	for (int32 SlotIndex = 0; SlotIndex < InventoryItemOrder.Num(); ++SlotIndex)
+	for (int32 SlotIndex = 0; SlotIndex < InventorySlotDataList.Num(); ++SlotIndex)
 	{
 		if (ItemSlotList.IsValidIndex(SlotIndex) == false)
 		{
 			break;
 		}
 
-		const FName& ItemKey = InventoryItemOrder[SlotIndex];
-		const int32* ItemCountPtr = InventoryItems.Find(ItemKey);
-		if (ItemCountPtr == nullptr)
+		const FInventorySlotData& InventorySlotData = InventorySlotDataList[SlotIndex];
+		if (InventorySlotData.IsEmpty())
 		{
 			continue;
 		}
 
-		ItemSlotList[SlotIndex]->SetItem(ItemKey, *ItemCountPtr);
+		ItemSlotList[SlotIndex]->SetItem(InventorySlotData.ItemUID, InventorySlotData.ItemCount);
 	}
 }
 
@@ -151,6 +158,6 @@ void UInventoryWidget::OnInventoryChanged()
 
 void UInventoryWidget::OnInventorySlotCountChanged(const FOnAttributeChangeData& Data)
 {
-	RebuildItemSlotPanel();
+	UpdateItemSlotPanel();
 	RefreshInventory();
 }

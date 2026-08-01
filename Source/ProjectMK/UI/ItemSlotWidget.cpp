@@ -2,19 +2,24 @@
 
 #include "ProjectMK/UI/ItemSlotWidget.h"
 
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "Blueprint/DragDropOperation.h"
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
-#include "Components/CanvasPanelSlot.h"
+#include "InputCoreTypes.h"
 #include "Engine/Texture2D.h"
 #include "PaperSprite.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/UI/MKTooltipBase.h"
 
 namespace
 {
 	const FVector2D InventoryIconBrushSize(64.f, 64.f);
 
-	bool TrySetBrushFromTextureRegion(UImage* TargetImage, UTexture2D* Texture, const FVector2D& SourceUV, const FVector2D& SourceSize)
+	bool TrySetInventoryBrushFromTextureRegion(UImage* TargetImage, UTexture2D* Texture, const FVector2D& SourceUV, const FVector2D& SourceSize)
 	{
 		if (::IsValid(TargetImage) == false || ::IsValid(Texture) == false)
 		{
@@ -49,32 +54,37 @@ namespace
 			return false;
 		}
 
-		return TrySetBrushFromTextureRegion(TargetImage, Sprite->GetSourceTexture(), Sprite->GetSourceUV(), Sprite->GetSourceSize());
+		return TrySetInventoryBrushFromTextureRegion(TargetImage, Sprite->GetSourceTexture(), Sprite->GetSourceUV(), Sprite->GetSourceSize());
 	}
 }
 
 void UItemSlotWidget::ClearItem()
 {
+	CurrentItemKey = NAME_None;
+	CurrentItemCount = 0;
+
 	if (::IsValid(Text_Count))
 	{
 		Text_Count->SetText(FText::GetEmpty());
 	}
 
-	if (::IsValid(Image_Item))
+	if (::IsValid(IconImage))
 	{
-		Image_Item->SetBrush(FSlateBrush());
-		Image_Item->SetVisibility(ESlateVisibility::Collapsed);
+		IconImage->SetBrush(FSlateBrush());
+		IconImage->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 
 void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 {
-	if (::IsValid(Image_Item) == false)
+	if (::IsValid(IconImage) == false)
 	{
 		return;
 	}
 
 	ClearItem();
+	CurrentItemKey = ItemKey;
+	CurrentItemCount = ItemCount;
 
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
@@ -93,8 +103,103 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 		return;
 	}
 
-	if (::IsValid(Image_Item) && ItemDataTableRow->ItemIcon.IsNull() == false)
+	if (::IsValid(IconImage) && ItemDataTableRow->ItemIcon.IsNull() == false)
 	{
-		TrySetBrushFromSprite(Image_Item, ItemDataTableRow->ItemIcon.LoadSynchronous());
+		TrySetBrushFromSprite(IconImage, ItemDataTableRow->ItemIcon.LoadSynchronous());
 	}
+}
+
+void UItemSlotWidget::SetSlotIndex(int32 InSlotIndex)
+{
+	SlotIndex = InSlotIndex;
+}
+
+void UItemSlotWidget::UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const
+{
+	Super::UpdateTooltipWidget(TooltipWidget);
+
+	if (::IsValid(TooltipWidget) == false || CurrentItemKey.IsNone())
+	{
+		return;
+	}
+
+	TooltipWidget->ShowItemTooltip(CurrentItemKey);
+}
+
+FReply UItemSlotWidget::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
+{
+	if (HasItem())
+	{
+		return UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton).NativeReply;
+	}
+
+	return Super::NativeOnPreviewMouseButtonDown(InGeometry, InMouseEvent);
+}
+
+void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation)
+{
+	Super::NativeOnDragDetected(InGeometry, InMouseEvent, OutOperation);
+
+	if (HasItem() == false)
+	{
+		return;
+	}
+
+	UItemSlotDragDropOperation* DragDropOperation = NewObject<UItemSlotDragDropOperation>();
+	if (::IsValid(DragDropOperation) == false)
+	{
+		return;
+	}
+
+	DragDropOperation->SourceSlotIndex = SlotIndex;
+	DragDropOperation->Payload = this;
+	DragDropOperation->Pivot = EDragPivot::MouseDown;
+	DragDropOperation->DefaultDragVisual = CreateDragVisualWidget();
+	OutOperation = DragDropOperation;
+}
+
+bool UItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
+{
+	const UItemSlotDragDropOperation* DragDropOperation = Cast<UItemSlotDragDropOperation>(InOperation);
+	if (::IsValid(DragDropOperation) == false || SlotIndex == INDEX_NONE)
+	{
+		return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+	}
+
+	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
+	if (::IsValid(InventoryComponent) == false)
+	{
+		return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
+	}
+
+	return InventoryComponent->TryMoveItemSlot(DragDropOperation->SourceSlotIndex, SlotIndex);
+}
+
+bool UItemSlotWidget::CanClickSlot() const
+{
+	return false;
+}
+
+UWidget* UItemSlotWidget::CreateDragVisualWidget() const
+{
+	if (::IsValid(IconImage) == false)
+	{
+		return nullptr;
+	}
+
+	UImage* DragVisualImage = NewObject<UImage>(GetTransientPackage());
+	if (::IsValid(DragVisualImage) == false)
+	{
+		return nullptr;
+	}
+
+	DragVisualImage->SetBrush(IconImage->GetBrush());
+	DragVisualImage->SetRenderOpacity(0.6f);
+	DragVisualImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+	return DragVisualImage;
+}
+
+bool UItemSlotWidget::HasItem() const
+{
+	return CurrentItemKey.IsNone() == false && CurrentItemCount > 0;
 }
