@@ -15,5 +15,6 @@ struct FGameplayAbilityUtils
 	static FActiveGameplayEffectHandle ApplyGameplayEffectToSelf(UAbilitySystemComponent* TargetASC, TSubclassOf<UGameplayEffect> EffectClass, const FGameplayTag& SetByCallerTag, float SetByCallerValue);
 	static void ApplyDamage(UAbilitySystemComponent* TargetASC, UAbilitySystemComponent* SourceASC, float Damage);
 	static void ApplyDamageToDurability(UAbilitySystemComponent* TargetASC, UAbilitySystemComponent* SourceASC, float Damage);
+	static int32 CalculateAdjustedItemCount(UObject* WorldContextObject, UAbilitySystemComponent* InstigatorASC, FName ItemUID, int32 ItemCount);
 	static void ApplyOxygen(UAbilitySystemComponent* TargetASC, float OxygenDelta);
 };

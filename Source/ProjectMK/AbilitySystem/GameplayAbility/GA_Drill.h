@@ -46,7 +46,6 @@ private:
 
 	void EnableDrill(bool bEnable);
 
-	float DrillingPeriod = 0.f;
 	float DrillingPower = 0.f;
 	float DrillingDistance = 0.f;
 

@@ -81,6 +81,7 @@ public:
 	void GenerateTileActors();
 
 	int32 GetTileSize();
+	ABlockBase* GetBlockAtPosition(const FVector2D& BlockPosition) const;
 	void SetBlockDebugNumbersEnabled(bool bEnabled);
 	bool IsBlockDebugNumbersEnabled() const { return bBlockDebugNumbersEnabled; }
 
@@ -89,7 +90,6 @@ private:
 	void OnBlockDestroyed(ABlockBase* DestroyedBlock);
 
 	bool CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount);
-	TArray<ABlockBase*> GetSurroundBlocks(ABlockBase* TargetBlock);
 
 	void CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
 	void SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList);

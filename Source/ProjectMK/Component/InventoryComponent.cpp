@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Component/InventoryComponent.h"
 
@@ -7,9 +7,16 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
+#include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
+
+namespace
+{
+	const FName InventoryCoinItemKey = TEXT("Coin");
+	const FName InventoryOxygenItemKey = TEXT("Oxygen");
+}
 
 UInventoryComponent::UInventoryComponent()
 {
@@ -68,15 +75,18 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 			continue;
 		}
 
-		if (OverlappedItem->IsInitialized() == false)
+		if (OverlappedItem->IsOccupied() || CanCollectWorldItem(OverlappedItem) == false)
 		{
 			continue;
 		}
 
-		const FName& ItemKey = OverlappedItem->GetItemKey();
-		GainItem(ItemKey, 1);
-		OverlappedItem->OnLootFinished();
+		OverlappedItem->TryLoot(Cast<AMKCharacter>(GetOwner()));
 	}
+}
+
+float UInventoryComponent::GetItemGainRange() const
+{
+	return ItemGainRange;
 }
 
 int32 UInventoryComponent::GetItemCount(FName ItemUID)
@@ -105,6 +115,23 @@ int32 UInventoryComponent::GetMaxInventoryCount() const
 	return FMath::Max(1, FMath::RoundToInt(CharacterAttributeSet->GetInventorySlotCount()));
 }
 
+float UInventoryComponent::GetInventoryOccupancyRatio() const
+{
+	const_cast<UInventoryComponent*>(this)->UpdateInventorySlotDataList();
+
+	const int32 MaxInventorySlotCount = FMath::Max(1, GetMaxInventoryCount());
+	int32 OccupiedSlotCount = 0;
+	for (const FInventorySlotData& SlotData : InventorySlotDataList)
+	{
+		if (SlotData.IsEmpty() == false)
+		{
+			OccupiedSlotCount++;
+		}
+	}
+
+	return FMath::Clamp(static_cast<float>(OccupiedSlotCount) / static_cast<float>(MaxInventorySlotCount), 0.f, 1.f);
+}
+
 void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
 {
 	if (ItemUID.IsNone() || ItemCount <= 0)
@@ -131,10 +158,91 @@ bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
 	return true;
 }
 
+void UInventoryComponent::RemoveAllOreItems()
+{
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return;
+	}
+
+	UpdateInventorySlotDataList();
+	bool bRemovedOre = false;
+	for (FInventorySlotData& SlotData : InventorySlotDataList)
+	{
+		if (SlotData.IsEmpty())
+		{
+			continue;
+		}
+
+		const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, SlotData.ItemUID);
+		if (ItemDataTableRow == nullptr || ItemDataTableRow->bIsOre == false)
+		{
+			continue;
+		}
+
+		SlotData.Clear();
+		bRemovedOre = true;
+	}
+
+	if (bRemovedOre)
+	{
+		OnInventoryUpdated();
+	}
+}
+
 bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
 {
 	const_cast<UInventoryComponent*>(this)->UpdateInventorySlotDataList();
 	return CalculateAvailableItemCapacity(ItemUID) >= ItemCount;
+}
+
+bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
+{
+	if (::IsValid(ItemActor) == false)
+	{
+		return false;
+	}
+
+	const FName ItemKey = ItemActor->GetItemKey();
+	if (ItemActor->IsInitialized() == false)
+	{
+		return false;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
+	if (ItemDataTableRow == nullptr)
+	{
+		return false;
+	}
+
+	const int32 ItemCount = FMath::Max(1, ItemActor->GetItemCount());
+	if (ItemDataTableRow->bIsInventoryItem)
+	{
+		if (CanGainItem(ItemKey, ItemCount) == false)
+		{
+			return false;
+		}
+
+		GainItem(ItemKey, ItemCount);
+	}
+	else
+	{
+		const bool bGrantedItemReward = TryGrantNonInventoryItem(ItemKey, ItemCount);
+		if (bGrantedItemReward == false)
+		{
+			return false;
+		}
+	}
+
+	ItemActor->OnLootFinished();
+	return true;
 }
 
 bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex)
@@ -194,7 +302,8 @@ bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlo
 
 void UInventoryComponent::SetGainRadius(float NewRadius)
 {
-	SetSphereRadius(NewRadius);
+	ItemGainRange = FMath::Max(0.f, NewRadius);
+	SetSphereRadius(ItemGainRange);
 }
 
 bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData)
@@ -506,6 +615,77 @@ int32 UInventoryComponent::CalculateAvailableItemCapacity(FName ItemUID) const
 	return AvailableCapacity;
 }
 
+bool UInventoryComponent::CanCollectWorldItem(AItemBase* ItemActor) const
+{
+	if (::IsValid(ItemActor) == false)
+	{
+		return false;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemActor->GetItemKey());
+	if (ItemDataTableRow == nullptr)
+	{
+		return false;
+	}
+
+	const int32 ItemCount = FMath::Max(1, ItemActor->GetItemCount());
+	if (ItemDataTableRow->bIsInventoryItem)
+	{
+		return const_cast<UInventoryComponent*>(this)->CanGainItem(ItemActor->GetItemKey(), ItemCount);
+	}
+
+	return CanGrantNonInventoryItem(ItemActor->GetItemKey(), ItemCount);
+}
+
+bool UInventoryComponent::CanGrantNonInventoryItem(FName ItemKey, int32 ItemCount) const
+{
+	if (ItemCount <= 0)
+	{
+		return false;
+	}
+
+	AMKCharacter* OwnerCharacter = Cast<AMKCharacter>(GetOwner());
+	if (::IsValid(OwnerCharacter) == false || ::IsValid(OwnerCharacter->GetSkillComponent()) == false)
+	{
+		return false;
+	}
+
+	return ItemKey == InventoryCoinItemKey || ItemKey == InventoryOxygenItemKey;
+}
+
+bool UInventoryComponent::TryGrantNonInventoryItem(FName ItemKey, int32 ItemCount)
+{
+	AMKCharacter* OwnerCharacter = Cast<AMKCharacter>(GetOwner());
+	if (::IsValid(OwnerCharacter) == false || ItemCount <= 0)
+	{
+		return false;
+	}
+
+	USkillComponent* SkillComponent = OwnerCharacter->GetSkillComponent();
+	if (::IsValid(SkillComponent) == false)
+	{
+		return false;
+	}
+
+	if (ItemKey == InventoryCoinItemKey)
+	{
+		return SkillComponent->TryAddCoin(ItemCount);
+	}
+
+	if (ItemKey == InventoryOxygenItemKey)
+	{
+		return SkillComponent->TryAddOxygen(ItemCount);
+	}
+
+	return false;
+}
+
 void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
 	if (::IsValid(OtherActor) == false || OtherActor == GetOwner())
@@ -519,7 +699,8 @@ void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedCompone
 		return;
 	}
 
-	if (GainableItem->IsOccupied() == false && CanGainItem(GainableItem->GetItemKey(), 1))
+	const bool bCanCollectItem = CanCollectWorldItem(GainableItem);
+	if (GainableItem->IsOccupied() == false && bCanCollectItem)
 	{
 		GainableItem->TryLoot(Cast<AMKCharacter>(GetOwner()));
 	}

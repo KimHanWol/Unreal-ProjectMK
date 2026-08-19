@@ -14,7 +14,9 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "ProjectMK/Helper/Utils/BlockUtils.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/GlobalConstants.h"
 
 namespace
 {
@@ -508,6 +510,12 @@ int32 ULevelManagerSubsystem::GetTileSize()
 	return TileMap->TileWidth;
 }
 
+ABlockBase* ULevelManagerSubsystem::GetBlockAtPosition(const FVector2D& BlockPosition) const
+{
+	const TWeakObjectPtr<ABlockBase>* BlockPtr = BlockActorMap.Find(BlockPosition);
+	return BlockPtr != nullptr ? BlockPtr->Get() : nullptr;
+}
+
 void ULevelManagerSubsystem::OnGenerateFinished()
 {
 	if (TileMapActor.IsValid() == false)
@@ -529,7 +537,7 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 	BlockActorMap.Remove(BlockPosition);
 
 	TArray<ABlockBase*> ProcessedBlocks;
-	const TArray<ABlockBase*>& SurroundBlocks = GetSurroundBlocks(DestroyedBlock);
+	const TArray<ABlockBase*> SurroundBlocks = FBlockUtils::GetSurroundBlocks(this, DestroyedBlock);
 	for (const auto& SurroundBlock : SurroundBlocks)
 	{
 		if (::IsValid(SurroundBlock) == false || ProcessedBlocks.Contains(SurroundBlock))
@@ -574,7 +582,7 @@ bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock,
 
 	OutDisconnectedBlocks.Add(StartBlock);
 
-	const TArray<ABlockBase*>& SurroundBlocks = GetSurroundBlocks(StartBlock);
+	const TArray<ABlockBase*> SurroundBlocks = FBlockUtils::GetSurroundBlocks(this, StartBlock);
 	for (const auto& SurroundBlock : SurroundBlocks)
 	{
 		if (CheckBlockIsAllDisconnected(SurroundBlock, OutDisconnectedBlocks, DFSCheckedBlocks, DebugCount + 1) == false)
@@ -584,40 +592,6 @@ bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock,
 	}
 
 	return true;
-}
-
-TArray<ABlockBase*> ULevelManagerSubsystem::GetSurroundBlocks(ABlockBase* TargetBlock)
-{
-	TArray<ABlockBase*> SurroundBlocks;
-	if (::IsValid(TargetBlock) == false)
-	{
-		return SurroundBlocks;
-	}
-
-	const FVector2D& TargetBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(TargetBlock);
-
-	TArray<FVector2D> SurroundBlockPositions;
-	SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(0, 1));
-	SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(0, -1));
-	SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(1, 0));
-	SurroundBlockPositions.Add(TargetBlockPosition + FVector2D(-1, 0));
-
-	for (const auto SurroundBlockPosition : SurroundBlockPositions)
-	{
-		TWeakObjectPtr<ABlockBase>* SurroundBlockPtr = BlockActorMap.Find(SurroundBlockPosition);
-		if (SurroundBlockPtr == nullptr)
-		{
-			continue;
-		}
-
-		ABlockBase* SurroundBlock = (*SurroundBlockPtr).Get();
-		if (::IsValid(SurroundBlock))
-		{
-			SurroundBlocks.Add(SurroundBlock);
-		}
-	}
-
-	return SurroundBlocks;
 }
 
 void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks)
@@ -671,7 +645,10 @@ void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>
 			continue;
 		}
 
-		const FVector SnapSampleLocation = FallFinishedBlock->GetActorLocation() + FVector(0.f, 0.f, -(BLOCK_SIZE * 0.5f));
+		FVector SnapSampleOffset = FVector::ZeroVector;
+		SnapSampleOffset.Z = -(BLOCK_SIZE * 0.5f);
+
+		const FVector SnapSampleLocation = FallFinishedBlock->GetActorLocation() + SnapSampleOffset;
 		const FVector SnapLocation = UMKBlueprintFunctionLibrary::GetSnappingWorldPosition(SnapSampleLocation);
 		FallFinishedBlock->SetActorLocation(SnapLocation);
 		FallFinishedBlock->SetMineableState(true);

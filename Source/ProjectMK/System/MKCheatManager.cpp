@@ -96,6 +96,22 @@ void UMKCheatManager::DamagePlayer(float Damage)
 	FGameplayAbilityUtils::ApplyDamage(PlayerCharacter->GetAbilitySystemComponent(), nullptr, Damage);
 }
 
+void UMKCheatManager::DrainOxygen(float OxygenAmount)
+{
+	if (OxygenAmount <= 0.f)
+	{
+		return;
+	}
+
+	AMKCharacter* PlayerCharacter = GetLocalPlayerCharacter();
+	if (::IsValid(PlayerCharacter) == false)
+	{
+		return;
+	}
+
+	FGameplayAbilityUtils::ApplyOxygen(PlayerCharacter->GetAbilitySystemComponent(), -OxygenAmount);
+}
+
 void UMKCheatManager::GiveItem(FName ItemUID, int32 ItemCount)
 {
 	if (ItemUID.IsNone())

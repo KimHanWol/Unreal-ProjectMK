@@ -1,10 +1,11 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "DrawDebugHelpers.h"
 #include "Engine/Texture2D.h"
 #include "GameplayEffect.h"
 #include "GameFramework/CharacterMovementComponent.h"
@@ -18,6 +19,7 @@
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
@@ -82,6 +84,8 @@ void AMKCharacter::BeginPlay()
 {
 	Super::BeginPlay();
 
+	SpawnTransform = GetActorTransform();
+
 	Apply2DCameraOverrides();
 
 	if (::IsValid(AbilitySystemComponent))
@@ -91,8 +95,8 @@ void AMKCharacter::BeginPlay()
 
 	GiveAbilities();
 	InitializeCharacterAttributes();
-	ApplyInitialEffects();
 	BindEvents();
+	ApplyInitialEffects();
 
 	if (::IsValid(CharacterVisualComponent))
 	{
@@ -140,6 +144,11 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	{
 		UpdateFlyingVerticalVelocity();
 	}
+
+	if (::IsValid(AttributeSet_Character) && AttributeSet_Character->GetItemCollectRange() > 0.f)
+	{
+		DrawDebugSphere(GetWorld(), GetActorLocation(), AttributeSet_Character->GetItemCollectRange(), 24, FColor::Cyan, false, 0.f, 0, 1.5f);
+	}
 }
 
 void AMKCharacter::BindEvents()
@@ -150,6 +159,12 @@ void AMKCharacter::BindEvents()
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).AddUObject(this, &AMKCharacter::OnCurrentHealthChanged);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).AddUObject(this, &AMKCharacter::OnCurrentOxygenChanged);
 	}
+
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &AMKCharacter::OnInventoryChanged);
+	}
 }
 
 void AMKCharacter::UnbindEvents()
@@ -159,6 +174,11 @@ void AMKCharacter::UnbindEvents()
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetItemCollectRangeAttribute()).RemoveAll(this);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
 		AbilitySystemComponent->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentOxygenAttribute()).RemoveAll(this);
+	}
+
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 	}
 }
 
@@ -179,6 +199,72 @@ bool AMKCharacter::CheckIsDestroyed()
 
 void AMKCharacter::OnDestroyed()
 {
+	if (bIsRespawning)
+	{
+		return;
+	}
+
+	bIsRespawning = true;
+	ApplyDeathPenalty();
+	RespawnAtSpawnLocation();
+	bIsRespawning = false;
+}
+
+void AMKCharacter::ApplyDeathPenalty()
+{
+	if (::IsValid(AttributeSet_Character) == false || ::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	const float CurrentCoin = AttributeSet_Character->GetCoin();
+	const float CoinLossRatio = FMath::Clamp(AttributeSet_Character->GetDeathCoinLossRatio(), 0.f, 1.f);
+	const float LostCoin = FMath::CeilToFloat(FMath::Max(0.f, CurrentCoin) * CoinLossRatio);
+	const float NewCoin = FMath::Max(0.f, CurrentCoin - LostCoin);
+	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
+
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->RemoveAllOreItems();
+	}
+}
+
+void AMKCharacter::RespawnAtSpawnLocation()
+{
+	bIsFlying = false;
+
+	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	if (::IsValid(MoveComp))
+	{
+		MoveComp->StopMovementImmediately();
+		MoveComp->SetDefaultMovementMode();
+	}
+
+	SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+
+	if (::IsValid(AttributeSet_Character) && ::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCurrentHealthAttribute(), AttributeSet_Character->GetMaxHealth());
+	}
+}
+
+float AMKCharacter::CalculateCurrentMoveSpeed() const
+{
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return 0.f;
+	}
+
+	const float BaseMoveSpeed = AttributeSet_Character->GetMoveSpeed();
+	if (::IsValid(InventoryComponent) == false)
+	{
+		return BaseMoveSpeed;
+	}
+
+	const float InventoryOccupancyRatio = InventoryComponent->GetInventoryOccupancyRatio();
+	const float InventoryBurdenMoveSpeedPenaltyRate = AttributeSet_Character->GetInventoryBurdenMoveSpeedPenaltyRate();
+	const float MoveSpeedMultiplier = 1.f - (InventoryOccupancyRatio * InventoryBurdenMoveSpeedPenaltyRate);
+	return FMath::Max(0.f, BaseMoveSpeed * FMath::Max(0.f, MoveSpeedMultiplier));
 }
 
 void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
@@ -273,12 +359,12 @@ void AMKCharacter::UpdateHorizontalMovement()
 	if (MoveComp->IsFlying())
 	{
 		FVector NewVelocity = MoveComp->Velocity;
-		NewVelocity.X = CharacterDir.X * AttributeSet_Character->GetMoveSpeed();
+		NewVelocity.X = CharacterDir.X * CalculateCurrentMoveSpeed();
 		MoveComp->Velocity = NewVelocity;
 		return;
 	}
 
-	MoveComp->MaxWalkSpeed = AttributeSet_Character->GetMoveSpeed();
+	MoveComp->MaxWalkSpeed = CalculateCurrentMoveSpeed();
 	if (FMath::IsNearlyZero(CharacterDir.X) == false)
 	{
 		AddMovementInput(FVector::ForwardVector, CharacterDir.X);
@@ -456,7 +542,9 @@ void AMKCharacter::UpdateOxygen()
 
 	const int32 DepthBelowSurface = CurrentBlockDepth - GameSettings->SurfaceBlockPositionY;
 	const int32 DepthPerOxygenLoss = FMath::Max(1, GameSettings->DepthPerOxygenLoss);
-	const float OxygenDrainPerSecond = static_cast<float>(FMath::Max(1, DepthBelowSurface / DepthPerOxygenLoss));
+	const float BaseOxygenDrainPerSecond = static_cast<float>(FMath::Max(1, DepthBelowSurface / DepthPerOxygenLoss));
+	const float OxygenDrainMultiplier = AttributeSet_Character->GetOxygenDrainMultiplier();
+	const float OxygenDrainPerSecond = BaseOxygenDrainPerSecond * FMath::Max(0.f, OxygenDrainMultiplier);
 	ApplyOxygenDrainEffect(OxygenDrainPerSecond);
 }
 
@@ -680,6 +768,13 @@ void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 	{
 		InventoryComponent->SetGainRadius(Data.NewValue);
 	}
+
+	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Magnet] ItemCollectRange changed: %.2f -> %.2f"), Data.OldValue, Data.NewValue);
+}
+
+void AMKCharacter::OnInventoryChanged()
+{
+	UpdateHorizontalMovement();
 }
 
 void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)

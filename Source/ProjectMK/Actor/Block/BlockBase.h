@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "AbilitySystemInterface.h"
 #include "CoreMinimal.h"
@@ -12,9 +12,14 @@
 class UAbilitySystemComponent;
 class UAttributeSet_Block;
 class UBoxComponent;
+class UDataManager;
+class UMaterialInterface;
+class UPaperFlipbook;
+class UPaperFlipbookComponent;
 class UPaperSprite;
 class UPaperSpriteComponent;
 class IMinable;
+struct FBlockDataTableRow;
 
 USTRUCT(BlueprintType)
 struct FBlockTileData
@@ -32,6 +37,13 @@ struct FBlockTileData
 
 	DECLARE_MULTICAST_DELEGATE_OneParam(FOnBlockDestroyed, ABlockBase*);
 	FOnBlockDestroyed OnBlockDestroyedDelegate;
+};
+
+struct FSelectedBlockItemData
+{
+	FName ItemKey = NAME_None;
+	int32 ItemCount = 0;
+	bool bShouldSplitDrop = false;
 };
 
 UCLASS()
@@ -56,6 +68,9 @@ protected:
 
 public:
 	void InitializeBlock(FBlockTileData InBlockData);
+	bool TryAddSpawnItem(FName ItemKey, int32 ItemCount);
+	void SetLastDamageInstigatorASC(UAbilitySystemComponent* InInstigatorASC);
+	UAbilitySystemComponent* GetLastDamageInstigatorASC() const;
 
 	void StartMineBlock(IMinable* Miner);
 	void EndMineBlock();
@@ -68,13 +83,19 @@ public:
 
 private:
 	virtual void OnPreDestroy();
-
+	void PlayDestroyFlipbook();
+	void DestroyBlockActor();
 	void ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier = 1.f);
 	void OnPaperSpriteLoaded();
 
 	void InitializeBlockAttribute();
+	void InitializeDropSelection(const FBlockDataTableRow& BlockDataTableRow, UDataManager* DataManager);
+	void UpdateDamageFlipbook();
 
-	void SpawnItem();
+	void SpawnItems();
+
+	UFUNCTION()
+	void OnDestroyFlipbookFinished();
 
 	void OnDurationChanged(const FOnAttributeChangeData& Data);
 
@@ -89,19 +110,30 @@ protected:
 	TObjectPtr<UPaperSpriteComponent> ItemSpriteComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperFlipbookComponent> DestroyFlipbookComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperFlipbookComponent> DamageFlipbookComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	FBlockTileData BlockTileData;
 
 private:
 	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInterface> DamageFlipbookMaterial;
+
+	UPROPERTY(Transient)
 	bool bIsMining = false;
+
+	UPROPERTY(Transient)
+	TWeakObjectPtr<UAbilitySystemComponent> LastDamageInstigatorASC = nullptr;
 
 	UPROPERTY(Transient)
 	bool bIsMineableState = true;
 
-	UPROPERTY(Transient)
-	FName SpawnableItemKey;
+	TArray<FSelectedBlockItemData> SelectedSpawnItemDataList;
 
 	UPROPERTY(Transient)
 	TSoftObjectPtr<UPaperSprite> SelectedBaseTileSprite;
@@ -110,10 +142,16 @@ private:
 	TSoftObjectPtr<UPaperSprite> SelectedItemOverlaySprite;
 
 	UPROPERTY(Transient)
-	bool bVisualSelectionInitialized = false;
+	bool bDropSelectionInitialized = false;
 
 	UPROPERTY(Transient)
 	bool bBlockAttributesInitialized = false;
+
+	UPROPERTY(Transient)
+	bool bIsDestroying = false;
+
+	UPROPERTY(Transient)
+	float MaxDurability = 0.f;
 
 	FTimerHandle BreakingTimerHandle;
 };

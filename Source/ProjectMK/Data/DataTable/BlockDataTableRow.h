@@ -14,14 +14,17 @@ struct FBlockSpawnableItemData
 {
 	GENERATED_BODY()
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	FName SpawnableItemKey;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))
+	FName SpawnableItemKey = NAME_None;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	float SpawnProbability;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float OreSpawnWeight = 0.f;
 
-	UPROPERTY(EditAnywhere, BlueprintReadWrite)
-	TSoftObjectPtr<UPaperSprite> ItemSprite;
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	int32 MinSpawnItemCount = 1;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	int32 MaxSpawnItemCount = 1;
 };
 
 USTRUCT(BlueprintType)

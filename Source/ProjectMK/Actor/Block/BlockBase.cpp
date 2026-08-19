@@ -1,4 +1,4 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/Actor/Block/BlockBase.h"
 
@@ -8,6 +8,9 @@
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "GameplayTagContainer.h"
+#include "Materials/MaterialInterface.h"
+#include "PaperFlipbook.h"
+#include "PaperFlipbookComponent.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -15,8 +18,10 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
+#include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/Interface/Minable.h"
+#include "UObject/ConstructorHelpers.h"
 
 ABlockBase::ABlockBase()
 {
@@ -36,12 +41,45 @@ ABlockBase::ABlockBase()
 	ItemSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ItemSpriteComponent->SetTranslucentSortPriority(1);
 
+	DestroyFlipbookComponent = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("DestroyFlipbook"));
+	DestroyFlipbookComponent->SetupAttachment(RootComponent);
+	DestroyFlipbookComponent->SetRelativeLocation(FVector::ZeroVector);
+	DestroyFlipbookComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DestroyFlipbookComponent->SetLooping(false);
+	DestroyFlipbookComponent->SetVisibility(false);
+	DestroyFlipbookComponent->SetTranslucentSortPriority(2);
+
+	DamageFlipbookComponent = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("DamageFlipbook"));
+	DamageFlipbookComponent->SetupAttachment(RootComponent);
+	DamageFlipbookComponent->SetRelativeLocation(FVector(0.f, 0.2f, 0.f));
+	DamageFlipbookComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	DamageFlipbookComponent->SetLooping(false);
+	DamageFlipbookComponent->SetVisibility(false);
+	DamageFlipbookComponent->SetTranslucentSortPriority(2);
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> TranslucentSpriteMaterialFinder(TEXT("/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial"));
+	if (TranslucentSpriteMaterialFinder.Succeeded())
+	{
+		DamageFlipbookMaterial = TranslucentSpriteMaterialFinder.Object;
+		DamageFlipbookComponent->SetMaterial(0, DamageFlipbookMaterial);
+	}
+
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 }
 
 UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
 {
 	return AbilitySystemComponent;
+}
+
+void ABlockBase::SetLastDamageInstigatorASC(UAbilitySystemComponent* InInstigatorASC)
+{
+	LastDamageInstigatorASC = InInstigatorASC;
+}
+
+UAbilitySystemComponent* ABlockBase::GetLastDamageInstigatorASC() const
+{
+	return LastDamageInstigatorASC.Get();
 }
 
 void ABlockBase::BeginPlay()
@@ -101,8 +139,14 @@ bool ABlockBase::CheckIsDestroyed()
 
 void ABlockBase::OnDestroyed()
 {
+	if (bIsDestroying)
+	{
+		return;
+	}
+
+	bIsDestroying = true;
 	OnPreDestroy();
-	Destroy();
+	PlayDestroyFlipbook();
 }
 
 void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
@@ -131,26 +175,12 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 		return;
 	}
 
-	if (bVisualSelectionInitialized == false)
+	MaxDurability = BlockDataTableRow->BlockDurability;
+
+	if (bDropSelectionInitialized == false)
 	{
-		SpawnableItemKey = NAME_None;
-		SelectedBaseTileSprite = BlockDataTableRow->TileSprite;
-		SelectedItemOverlaySprite = nullptr;
-
-		float SpawnProbabilityValue = FMath::RandRange(0.f, 1.f);
-		float CurrntItemSpawnProb = 0.f;
-		for (const auto& SpawnableItemData : BlockDataTableRow->SpawnableItemDataList)
-		{
-			CurrntItemSpawnProb += SpawnableItemData.SpawnProbability;
-			if (SpawnProbabilityValue < CurrntItemSpawnProb)
-			{
-				SpawnableItemKey = SpawnableItemData.SpawnableItemKey;
-				SelectedItemOverlaySprite = SpawnableItemData.ItemSprite;
-				break;
-			}
-		}
-
-		bVisualSelectionInitialized = true;
+		InitializeDropSelection(*BlockDataTableRow, DataManager);
+		bDropSelectionInitialized = true;
 	}
 
 	TSoftObjectPtr<UPaperSprite> SoftPaperSprite = SelectedBaseTileSprite;
@@ -237,6 +267,43 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	{
 		AbilitySystemComponent->InitAbilityActorInfo(this, this);
 	}
+
+	UpdateDamageFlipbook();
+}
+
+bool ABlockBase::TryAddSpawnItem(FName ItemKey, int32 ItemCount)
+{
+	if (ItemKey.IsNone() || ItemCount <= 0)
+	{
+		return false;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
+	if (ItemDataTableRow == nullptr)
+	{
+		return false;
+	}
+
+	for (FSelectedBlockItemData& SelectedSpawnItemData : SelectedSpawnItemDataList)
+	{
+		if (SelectedSpawnItemData.ItemKey == ItemKey)
+		{
+			SelectedSpawnItemData.ItemCount += ItemCount;
+			return true;
+		}
+	}
+
+	FSelectedBlockItemData& SelectedSpawnItemData = SelectedSpawnItemDataList.AddDefaulted_GetRef();
+	SelectedSpawnItemData.ItemKey = ItemKey;
+	SelectedSpawnItemData.ItemCount = ItemCount;
+	SelectedSpawnItemData.bShouldSplitDrop = ItemDataTableRow->bIsSplitDrop;
+	return true;
 }
 
 void ABlockBase::StartMineBlock(IMinable* Miner)
@@ -293,12 +360,74 @@ bool ABlockBase::IsMineable()
 
 void ABlockBase::OnPreDestroy()
 {
-	if (SpawnableItemKey.IsNone() == false)
+	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
+	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Block] Destroyed block %s SpawnItemTypeCount=%d InstigatorASC=%s"),
+		*GetNameSafe(this),
+		SelectedSpawnItemDataList.Num(),
+		*GetNameSafe(GetLastDamageInstigatorASC()));
+
+	if (UAbilitySystemComponent* InstigatorAbilitySystemComponent = GetLastDamageInstigatorASC())
 	{
-		SpawnItem();
+		const FGameplayTag BlockDestroyedEventTag = FGameplayTag::RequestGameplayTag(TEXT("Event.Block.Destroyed"));
+		FGameplayEventData EventData;
+		EventData.EventTag = BlockDestroyedEventTag;
+		EventData.Instigator = InstigatorAbilitySystemComponent->GetAvatarActor();
+		EventData.Target = this;
+		EventData.OptionalObject = this;
+		InstigatorAbilitySystemComponent->HandleGameplayEvent(BlockDestroyedEventTag, &EventData);
+		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Block] Sent BlockDestroyed event to %s"), *GetNameSafe(InstigatorAbilitySystemComponent->GetAvatarActor()));
 	}
 
-	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
+	SpawnItems();
+}
+
+void ABlockBase::PlayDestroyFlipbook()
+{
+	if (::IsValid(BoxCollision))
+	{
+		BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
+	}
+
+	EndMineBlock();
+
+	if (::IsValid(PaperSpriteComponent))
+	{
+		PaperSpriteComponent->SetVisibility(false);
+	}
+
+	if (::IsValid(ItemSpriteComponent))
+	{
+		ItemSpriteComponent->SetVisibility(false);
+	}
+
+	if (::IsValid(DamageFlipbookComponent))
+	{
+		DamageFlipbookComponent->SetVisibility(false);
+	}
+
+	if (::IsValid(DestroyFlipbookComponent) == false)
+	{
+		DestroyBlockActor();
+		return;
+	}
+
+	UPaperFlipbook* DestroyFlipbook = DestroyFlipbookComponent->GetFlipbook();
+	if (::IsValid(DestroyFlipbook) == false)
+	{
+		DestroyBlockActor();
+		return;
+	}
+
+	DestroyFlipbookComponent->OnFinishedPlaying.RemoveAll(this);
+	DestroyFlipbookComponent->OnFinishedPlaying.AddDynamic(this, &ABlockBase::OnDestroyFlipbookFinished);
+	DestroyFlipbookComponent->SetLooping(false);
+	DestroyFlipbookComponent->SetVisibility(true);
+	DestroyFlipbookComponent->PlayFromStart();
+}
+
+void ABlockBase::DestroyBlockActor()
+{
+	Destroy();
 }
 
 void ABlockBase::ApplySpriteToComponent(UPaperSpriteComponent* SpriteComponent, UPaperSprite* Sprite, const FIntPoint& TileSize, float ScaleMultiplier)
@@ -358,16 +487,163 @@ void ABlockBase::InitializeBlockAttribute()
 	FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass, DurabilityTag, BlockDataTableRow->BlockDurability);
 }
 
-void ABlockBase::SpawnItem()
+void ABlockBase::InitializeDropSelection(const FBlockDataTableRow& BlockDataTableRow, UDataManager* DataManager)
 {
-	AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
-	if (::IsValid(SpawnedItem) == false)
+	SelectedSpawnItemDataList.Reset();
+	SelectedBaseTileSprite = BlockDataTableRow.TileSprite;
+	SelectedItemOverlaySprite = nullptr;
+
+	const float OreSelectionValue = FMath::FRand();
+	float AccumulatedOreSpawnWeight = 0.f;
+	bool bHasSelectedOre = false;
+
+	for (const FBlockSpawnableItemData& SpawnableItemData : BlockDataTableRow.SpawnableItemDataList)
+	{
+		if (SpawnableItemData.SpawnableItemKey.IsNone())
+		{
+			continue;
+		}
+
+		const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, SpawnableItemData.SpawnableItemKey);
+		if (ItemDataTableRow == nullptr)
+		{
+			continue;
+		}
+
+		if (ItemDataTableRow->bIsOre)
+		{
+			if (bHasSelectedOre)
+			{
+				continue;
+			}
+
+			AccumulatedOreSpawnWeight = FMath::Min(1.f, AccumulatedOreSpawnWeight + FMath::Clamp(SpawnableItemData.OreSpawnWeight, 0.f, 1.f));
+			if (OreSelectionValue >= AccumulatedOreSpawnWeight)
+			{
+				continue;
+			}
+
+			bHasSelectedOre = true;
+		}
+
+		const int32 MinSpawnItemCount = FMath::Max(0, SpawnableItemData.MinSpawnItemCount);
+		const int32 MaxSpawnItemCount = FMath::Max(MinSpawnItemCount, SpawnableItemData.MaxSpawnItemCount);
+		const int32 SpawnItemCount = FMath::RandRange(MinSpawnItemCount, MaxSpawnItemCount);
+		if (SpawnItemCount <= 0)
+		{
+			continue;
+		}
+
+		FSelectedBlockItemData& SelectedSpawnItemData = SelectedSpawnItemDataList.AddDefaulted_GetRef();
+		SelectedSpawnItemData.ItemKey = SpawnableItemData.SpawnableItemKey;
+		SelectedSpawnItemData.ItemCount = SpawnItemCount;
+		SelectedSpawnItemData.bShouldSplitDrop = ItemDataTableRow->bIsSplitDrop;
+
+		if (ItemDataTableRow->bIsOre)
+		{
+			SelectedItemOverlaySprite = ItemDataTableRow->ItemIcon;
+		}
+	}
+}
+
+void ABlockBase::UpdateDamageFlipbook()
+{
+	if (::IsValid(DamageFlipbookComponent) == false || MaxDurability <= 0.f)
 	{
 		return;
 	}
 
-	SpawnedItem->InitializeItemBase(SpawnableItemKey);
-	SpawnedItem->SetActorLocation(GetActorLocation());
+	if (::IsValid(DamageFlipbookMaterial))
+	{
+		DamageFlipbookComponent->SetMaterial(0, DamageFlipbookMaterial);
+	}
+
+	UPaperFlipbook* DamageFlipbook = DamageFlipbookComponent->GetFlipbook();
+	if (::IsValid(DamageFlipbook) == false)
+	{
+		DamageFlipbookComponent->SetVisibility(false);
+		return;
+	}
+
+	const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Block::StaticClass()));
+	if (::IsValid(BlockAttributeSet) == false)
+	{
+		DamageFlipbookComponent->SetVisibility(false);
+		return;
+	}
+
+	const float CurrentDurability = FMath::Clamp(BlockAttributeSet->GetDurability(), 0.f, MaxDurability);
+	const float RemainingDurabilityRatio = CurrentDurability / MaxDurability;
+	if (RemainingDurabilityRatio >= 1.f)
+	{
+		DamageFlipbookComponent->SetVisibility(false);
+		return;
+	}
+
+	const int32 FlipbookFrameCount = DamageFlipbook->GetNumFrames();
+	if (FlipbookFrameCount <= 0)
+	{
+		DamageFlipbookComponent->SetVisibility(false);
+		return;
+	}
+
+	const int32 DisplayFrameCount = FMath::Min(FlipbookFrameCount, 12);
+	const float DamageRatio = 1.f - RemainingDurabilityRatio;
+	const int32 FrameIndex = FMath::Clamp(FMath::FloorToInt(DamageRatio * (DisplayFrameCount - 1)), 0, DisplayFrameCount - 1);
+
+	DamageFlipbookComponent->SetLooping(false);
+	DamageFlipbookComponent->SetVisibility(true);
+	DamageFlipbookComponent->SetSpriteColor(FLinearColor(0.05f, 0.05f, 0.05f, 0.85f));
+	DamageFlipbookComponent->Stop();
+	DamageFlipbookComponent->SetPlaybackPositionInFrames(FrameIndex, false);
+}
+
+void ABlockBase::SpawnItems()
+{
+	int32 VisualLayerIndex = 1;
+	for (const FSelectedBlockItemData& SelectedSpawnItemData : SelectedSpawnItemDataList)
+	{
+		const int32 AdjustedSpawnItemCount = FGameplayAbilityUtils::CalculateAdjustedItemCount(
+			this,
+			GetLastDamageInstigatorASC(),
+			SelectedSpawnItemData.ItemKey,
+			SelectedSpawnItemData.ItemCount
+		);
+		if (AdjustedSpawnItemCount <= 0)
+		{
+			continue;
+		}
+
+		const int32 SpawnActorCount = SelectedSpawnItemData.bShouldSplitDrop ? AdjustedSpawnItemCount : 1;
+		const int32 ItemCountPerActor = SelectedSpawnItemData.bShouldSplitDrop ? 1 : AdjustedSpawnItemCount;
+		const bool bUseSpawnOffset = SelectedSpawnItemDataList.Num() > 1 || SpawnActorCount > 1;
+		for (int32 SpawnIndex = 0; SpawnIndex < SpawnActorCount; ++SpawnIndex)
+		{
+			AItemBase* SpawnedItem = GetWorld()->SpawnActor<AItemBase>();
+			if (::IsValid(SpawnedItem) == false)
+			{
+				continue;
+			}
+
+			SpawnedItem->InitializeItemBase(SelectedSpawnItemData.ItemKey, ItemCountPerActor);
+
+			const float HorizontalOffset = bUseSpawnOffset ? FMath::FRandRange(-8.f, 8.f) : 0.f;
+			const float VerticalOffset = bUseSpawnOffset ? FMath::FRandRange(-6.f, 6.f) : 0.f;
+			SpawnedItem->SetActorLocation(GetActorLocation() + FVector(HorizontalOffset, 0.f, VerticalOffset));
+			SpawnedItem->SetVisualLayer(static_cast<float>(VisualLayerIndex) * 0.1f, VisualLayerIndex);
+			++VisualLayerIndex;
+		}
+	}
+}
+
+void ABlockBase::OnDestroyFlipbookFinished()
+{
+	if (::IsValid(DestroyFlipbookComponent))
+	{
+		DestroyFlipbookComponent->OnFinishedPlaying.RemoveAll(this);
+	}
+
+	DestroyBlockActor();
 }
 
 void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
@@ -375,5 +651,8 @@ void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 	if (CheckIsDestroyed())
 	{
 		OnDestroyed();
+		return;
 	}
+
+	UpdateDamageFlipbook();
 }

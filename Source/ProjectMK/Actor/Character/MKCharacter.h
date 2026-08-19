@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "AbilitySystemInterface.h"
@@ -54,6 +54,9 @@ private:
 	void GiveAbilities();
 	void InitializeCharacterAttributes();
 	void ApplyInitialEffects();
+	void ApplyDeathPenalty();
+	void RespawnAtSpawnLocation();
+	float CalculateCurrentMoveSpeed() const;
 
 	void TryDrill();
 
@@ -90,6 +93,7 @@ private:
 	void OnFinishFly();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
+	void OnInventoryChanged();
 	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
 
@@ -135,9 +139,11 @@ protected:
 private:
 	FVector CharacterDir;
 	FVector DrillingVector = FVector::ZeroVector;
+	FTransform SpawnTransform;
 
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
+	bool bIsRespawning = false;
 
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };

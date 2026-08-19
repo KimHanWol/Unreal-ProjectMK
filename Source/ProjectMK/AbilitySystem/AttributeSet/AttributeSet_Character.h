@@ -15,6 +15,8 @@ public:
 	virtual void PreAttributeChange(const FGameplayAttribute& Attribute, float& NewValue) override;
 	virtual void PostGameplayEffectExecute(const FGameplayEffectModCallbackData& Data) override;
 
+	float CalculateEffectiveDrillingPeriod() const;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData InventorySlotCount;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, InventorySlotCount)
@@ -63,11 +65,43 @@ public:
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData DrillingDistance;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillingDistance)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData DrillPeriodPerOxygenIncreaseRate;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DrillPeriodPerOxygenIncreaseRate)
 	//~Drilling
 
 	//Currency
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
 	FGameplayAttributeData Coin;
 	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, Coin)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData OxygenDrainMultiplier;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, OxygenDrainMultiplier)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData OreBonusDropChance;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, OreBonusDropChance)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData CoinGainMultiplier;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, CoinGainMultiplier)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData DeathCoinLossRatio;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DeathCoinLossRatio)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData DeathItemLossRatio;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, DeathItemLossRatio)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData InventoryBurdenMoveSpeedPenaltyRate;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, InventoryBurdenMoveSpeedPenaltyRate)
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Attributes")
+	FGameplayAttributeData SurroundDamageRatio;
+	ATTRIBUTE_ACCESSORS(UAttributeSet_Character, SurroundDamageRatio)
 	//~Currency
 };

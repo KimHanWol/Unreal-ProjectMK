@@ -1,10 +1,12 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Components/SphereComponent.h"
 #include "InventoryComponent.generated.h"
 
 struct FShopRecipeDataTableRow;
+struct FItemDataTableRow;
+class AItemBase;
 
 USTRUCT(BlueprintType)
 struct FInventorySlotData
@@ -45,9 +47,13 @@ protected:
 public:
 	int32 GetItemCount(FName ItemUID);
 	int32 GetMaxInventoryCount() const;
+	float GetInventoryOccupancyRatio() const;
+	float GetItemGainRange() const;
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 	bool AddItem(FName ItemUID, int32 ItemCount);
+	void RemoveAllOreItems();
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
+	bool TryCollectWorldItem(AItemBase* ItemActor);
 	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex);
 	void SetGainRadius(float NewRadius);
 	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
@@ -70,6 +76,9 @@ private:
 	bool IsValidSlotIndex(int32 SlotIndex) const;
 	int32 FindStackableSlotIndex(FName ItemUID) const;
 	int32 CalculateAvailableItemCapacity(FName ItemUID) const;
+	bool CanCollectWorldItem(AItemBase* ItemActor) const;
+	bool CanGrantNonInventoryItem(FName ItemKey, int32 ItemCount) const;
+	bool TryGrantNonInventoryItem(FName ItemKey, int32 ItemCount);
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,

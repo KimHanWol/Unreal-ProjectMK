@@ -242,7 +242,8 @@
 - DataTable, DataAsset, Widget 참조가 직접 참조로 되돌아가지 않았는지 확인한다.
 - Tick, delegate, widget binding 이 불안하게 섞여있지 않았는지 확인한다.
 - Blueprint 노출 범위가 과하게 넓어지지 않았는지 확인한다.
-- 가능하면 빌드 또는 최소 동작 확인까지 하고 마감한다.
+- 사용자가 명시적으로 요청하지 않으면 컴파일, 빌드, Live Coding 을 실행하지 않는다.
+- 빌드 없이 가능한 정적 검증과 변경 내용 확인까지만 수행한다.
 
 ## 18. Commit Message
 
