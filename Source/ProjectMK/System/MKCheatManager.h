@@ -28,6 +28,12 @@ public:
 	void EnableBlockDebugNumbers();
 
 	UFUNCTION(Exec)
+	void SetSkillDebugLog(bool bEnabled = true);
+
+	UFUNCTION(Exec)
+	void ToggleSkillDebugLog();
+
+	UFUNCTION(Exec)
 	void ToggleInventoryWidget();
 
 private:

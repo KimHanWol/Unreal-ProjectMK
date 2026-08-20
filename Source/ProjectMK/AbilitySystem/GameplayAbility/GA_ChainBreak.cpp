@@ -10,6 +10,7 @@
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/Utils/BlockUtils.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -65,7 +66,7 @@ void UGA_ChainBreak::OnDrillHitBlockEvent(FGameplayEventData Payload)
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][ChainBreak] DirectHitBlock=%s DrillingPower=%.2f SurroundDamageRatio=%.3f SurroundDamage=%.2f"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][ChainBreak] DirectHitBlock=%s DrillingPower=%.2f SurroundDamageRatio=%.3f SurroundDamage=%.2f"),
 		*GetNameSafe(TargetBlock),
 		CharacterAttributeSet->GetDrillingPower(),
 		CharacterAttributeSet->GetSurroundDamageRatio(),
@@ -90,11 +91,11 @@ void UGA_ChainBreak::OnDrillHitBlockEvent(FGameplayEventData Payload)
 		{
 			FGameplayAbilityUtils::ApplyDamageToDurability(TargetAbilitySystemComponent, OwnerAbilitySystemComponent, SurroundDamage);
 			AppliedSurroundBlockCount++;
-			UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][ChainBreak] Applied %.2f damage to surround block %s"), SurroundDamage, *GetNameSafe(SurroundBlock));
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][ChainBreak] Applied %.2f damage to surround block %s"), SurroundDamage, *GetNameSafe(SurroundBlock));
 		}
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][ChainBreak] AppliedTo=%d SkippedDirectTargets=%d"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][ChainBreak] AppliedTo=%d SkippedDirectTargets=%d"),
 		AppliedSurroundBlockCount,
 		SkippedDirectBlockCount);
 }

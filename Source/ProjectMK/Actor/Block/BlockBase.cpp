@@ -21,6 +21,7 @@
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/Interface/Minable.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 #include "UObject/ConstructorHelpers.h"
 
 ABlockBase::ABlockBase()
@@ -358,10 +359,10 @@ bool ABlockBase::IsMineable()
 	return BlockDataTableRow->bIsMineable && bIsMineableState;
 }
 
-void ABlockBase::OnPreDestroy()
-{
+	void ABlockBase::OnPreDestroy()
+	{
 	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Block] Destroyed block %s SpawnItemTypeCount=%d InstigatorASC=%s"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Block] Destroyed block %s SpawnItemTypeCount=%d InstigatorASC=%s"),
 		*GetNameSafe(this),
 		SelectedSpawnItemDataList.Num(),
 		*GetNameSafe(GetLastDamageInstigatorASC()));
@@ -375,7 +376,7 @@ void ABlockBase::OnPreDestroy()
 		EventData.Target = this;
 		EventData.OptionalObject = this;
 		InstigatorAbilitySystemComponent->HandleGameplayEvent(BlockDestroyedEventTag, &EventData);
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Block] Sent BlockDestroyed event to %s"), *GetNameSafe(InstigatorAbilitySystemComponent->GetAvatarActor()));
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Block] Sent BlockDestroyed event to %s"), *GetNameSafe(InstigatorAbilitySystemComponent->GetAvatarActor()));
 	}
 
 	SpawnItems();

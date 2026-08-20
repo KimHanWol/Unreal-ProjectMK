@@ -5,6 +5,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameplayTagContainer.h"
 #include "ProjectMK/Component/SkillComponent.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -37,7 +38,7 @@ void UGA_Recycler::OnBlockDestroyedEvent(FGameplayEventData Payload)
 {
 	const float Roll = FMath::FRand();
 	const bool bGrantedRecyclerReward = Roll <= FMath::Clamp(RecyclerChance, 0.f, 1.f);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Recycler] DestroyedBlock=%s Roll=%.3f Chance=%.3f Triggered=%s Reward=%d"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Recycler] DestroyedBlock=%s Roll=%.3f Chance=%.3f Triggered=%s Reward=%d"),
 		*GetNameSafe(Payload.Target.Get()),
 		Roll,
 		RecyclerChance,

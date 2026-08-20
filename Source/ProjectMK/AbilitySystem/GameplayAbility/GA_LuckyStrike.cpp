@@ -8,6 +8,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -40,7 +41,7 @@ void UGA_LuckyStrike::OnDrillHitBlockEvent(FGameplayEventData Payload)
 {
 	const float Roll = FMath::FRand();
 	const bool bTriggeredLuckyStrike = Roll <= FMath::Clamp(LuckyStrikeChance, 0.f, 1.f);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LuckyStrike] TargetBlock=%s Roll=%.3f Chance=%.3f Triggered=%s"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyStrike] TargetBlock=%s Roll=%.3f Chance=%.3f Triggered=%s"),
 		*GetNameSafe(Payload.Target.Get()),
 		Roll,
 		LuckyStrikeChance,
@@ -68,5 +69,5 @@ void UGA_LuckyStrike::OnDrillHitBlockEvent(FGameplayEventData Payload)
 	}
 
 	FGameplayAbilityUtils::ApplyDamageToDurability(TargetAbilitySystemComponent, OwnerAbilitySystemComponent, BlockAttributeSet->GetDurability());
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LuckyStrike] Applied jackpot damage %.2f to %s"), BlockAttributeSet->GetDurability(), *GetNameSafe(TargetBlock));
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyStrike] Applied jackpot damage %.2f to %s"), BlockAttributeSet->GetDurability(), *GetNameSafe(TargetBlock));
 }

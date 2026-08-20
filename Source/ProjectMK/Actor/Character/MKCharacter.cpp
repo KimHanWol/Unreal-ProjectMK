@@ -23,6 +23,7 @@
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -145,7 +146,7 @@ void AMKCharacter::Tick(float DeltaSeconds)
 		UpdateFlyingVerticalVelocity();
 	}
 
-	if (::IsValid(AttributeSet_Character) && AttributeSet_Character->GetItemCollectRange() > 0.f)
+	if (FSkillDebugUtils::IsSkillDebugEnabled() && ::IsValid(AttributeSet_Character) && AttributeSet_Character->GetItemCollectRange() > 0.f)
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), AttributeSet_Character->GetItemCollectRange(), 24, FColor::Cyan, false, 0.f, 0, 1.5f);
 	}
@@ -769,7 +770,7 @@ void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 		InventoryComponent->SetGainRadius(Data.NewValue);
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Magnet] ItemCollectRange changed: %.2f -> %.2f"), Data.OldValue, Data.NewValue);
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Magnet] ItemCollectRange changed: %.2f -> %.2f"), Data.OldValue, Data.NewValue);
 }
 
 void AMKCharacter::OnInventoryChanged()

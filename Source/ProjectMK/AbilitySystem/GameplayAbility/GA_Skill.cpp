@@ -6,6 +6,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/SkillComponent.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 UGA_Skill::UGA_Skill()
 {
@@ -67,5 +68,5 @@ void UGA_Skill::TryActivatePassiveAbility(const FGameplayAbilityActorInfo* Actor
 	}
 
 	const bool bActivated = ActorInfo->AbilitySystemComponent->TryActivateAbility(Spec.Handle, false);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Passive] Try activate %s Result=%s"), *GetName(), bActivated ? TEXT("true") : TEXT("false"));
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Passive] Try activate %s Result=%s"), *GetName(), bActivated ? TEXT("true") : TEXT("false"));
 }

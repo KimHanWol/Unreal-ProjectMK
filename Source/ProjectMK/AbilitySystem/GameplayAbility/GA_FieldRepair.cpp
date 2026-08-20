@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "GameplayTagContainer.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -28,7 +29,7 @@ namespace
 		const UGameplayEffect* GameplayEffect = EffectClass.GetDefaultObject();
 		if (::IsValid(GameplayEffect) == false || GameplayEffect->DurationPolicy != EGameplayEffectDurationType::Infinite)
 		{
-			UE_LOG(LogTemp, Error, TEXT("[SkillDebug][FieldRepair] Effect must use Infinite policy so it can be removed: %s"),
+			MK_SKILL_DEBUG_LOG(Error, TEXT("[SkillDebug][FieldRepair] Effect must use Infinite policy so it can be removed: %s"),
 				*SkillGameplayEffectData.GameplayEffect.ToString());
 			return FActiveGameplayEffectHandle();
 		}
@@ -97,7 +98,7 @@ void UGA_FieldRepair::WaitForNextRepair()
 	RepairDelayTask->OnFinish.AddDynamic(this, &UGA_FieldRepair::OnRepairIntervalFinished);
 	RepairDelayTask->ReadyForActivation();
 
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][FieldRepair] Next activation in %.2f seconds"), RepairInterval);
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][FieldRepair] Next activation in %.2f seconds"), RepairInterval);
 }
 
 void UGA_FieldRepair::WaitForBuffEnd()
@@ -137,7 +138,7 @@ void UGA_FieldRepair::ClearBuffEffects()
 
 	if (ActiveBuffEffectHandleList.IsEmpty() == false)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][FieldRepair] Off EffectCount=%d"), ActiveBuffEffectHandleList.Num());
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][FieldRepair] Off EffectCount=%d"), ActiveBuffEffectHandleList.Num());
 	}
 
 	ActiveBuffEffectHandleList.Reset();
@@ -156,7 +157,7 @@ void UGA_FieldRepair::OnRepairIntervalFinished()
 			if (ActiveBuffEffectHandle.IsValid())
 			{
 				ActiveBuffEffectHandleList.Add(ActiveBuffEffectHandle);
-				UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][FieldRepair] On Effect=%s CancelAfter=%.2f seconds"),
+				MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][FieldRepair] On Effect=%s CancelAfter=%.2f seconds"),
 					*BuffEffectData.GameplayEffect.ToString(),
 					BuffDuration);
 			}

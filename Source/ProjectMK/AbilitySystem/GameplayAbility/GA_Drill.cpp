@@ -15,6 +15,7 @@
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 #include "ProjectMK/System/GlobalConstants.h"
 
 namespace
@@ -161,7 +162,10 @@ void UGA_Drill::Tick_UpdateTarget()
 
 	const FVector Start = SourceCharacter->GetActorLocation();
 	const FVector ContactTraceEnd = Start + (SourceCharDir * BLOCK_SIZE);
-	DrawDebugLine(GetWorld(), Start, ContactTraceEnd, FColor::Red, false);
+	if (FSkillDebugUtils::IsSkillDebugEnabled())
+	{
+		DrawDebugLine(GetWorld(), Start, ContactTraceEnd, FColor::Red, false);
+	}
 
 	TArray<FHitResult> Hits;
 	FCollisionQueryParams Params;
@@ -202,7 +206,10 @@ void UGA_Drill::Tick_UpdateTarget()
 	const int32 DrillStepCount = FMath::Max(1, FMath::CeilToInt(DrillingDistance / BLOCK_SIZE));
 	const FVector RangeTraceStart = FirstHitBlock->GetActorLocation();
 	const FVector RangeTraceEnd = RangeTraceStart + (SourceCharDir * ((DrillStepCount - 1) * BLOCK_SIZE));
-	DrawDebugLine(GetWorld(), RangeTraceStart, RangeTraceEnd, FColor::Green, false);
+	if (FSkillDebugUtils::IsSkillDebugEnabled())
+	{
+		DrawDebugLine(GetWorld(), RangeTraceStart, RangeTraceEnd, FColor::Green, false);
+	}
 
 	for (int32 StepIndex = 0; StepIndex < DrillStepCount; ++StepIndex)
 	{
@@ -341,7 +348,7 @@ void UGA_Drill::WaitPeriodAndMine()
 			: 0.f;
 		const bool bHasAppliedLastOxygenRate = FMath::IsNearlyZero(AppliedDrillingPeriodIncreaseRate) == false;
 
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LastOxygen][%s] CurrentOxygen=%.2f MaxOxygen=%.2f OxygenRatio=%.3f DrillPeriodPerOxygenIncreaseRate=%.3f AppliedPeriodIncreaseRate=%.3f AppliedSpeedIncreaseRate=%.3f DrillingPeriod=%.3f EffectiveDrillingPeriod=%.3f"),
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LastOxygen][%s] CurrentOxygen=%.2f MaxOxygen=%.2f OxygenRatio=%.3f DrillPeriodPerOxygenIncreaseRate=%.3f AppliedPeriodIncreaseRate=%.3f AppliedSpeedIncreaseRate=%.3f DrillingPeriod=%.3f EffectiveDrillingPeriod=%.3f"),
 			bHasAppliedLastOxygenRate ? TEXT("On") : TEXT("Off"),
 			CharacterAttributeSet->GetCurrentOxygen(),
 			MaxOxygenValue,
@@ -403,7 +410,7 @@ void UGA_Drill::Drill_Instant()
 		const UAttributeSet_Block* BlockAttributeSet = Cast<UAttributeSet_Block>(TargetASC->GetAttributeSet(UAttributeSet_Block::StaticClass()));
 		if (::IsValid(BlockAttributeSet))
 		{
-			UE_LOG(LogTemp, Warning, TEXT("Drill Target Block Durability: %.2f"), BlockAttributeSet->GetDurability());
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("Drill Target Block Durability: %.2f"), BlockAttributeSet->GetDurability());
 		}
 
 		SendDrillHitBlockEvent(SourceASC.Get(), SourceCharacter.Get(), TargetBlock, DirectTargetActorList);

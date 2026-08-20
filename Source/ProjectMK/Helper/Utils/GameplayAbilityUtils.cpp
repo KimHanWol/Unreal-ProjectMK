@@ -8,6 +8,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -191,7 +192,7 @@ int32 FGameplayAbilityUtils::CalculateAdjustedItemCount(UObject* WorldContextObj
 	const float OreBonusDropChance = CharacterAttributeSet->GetOreBonusDropChance();
 	if (OreBonusDropChance <= 0.f)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LuckyOre] Item=%s BaseCount=%d BonusChance=%.3f AdjustedCount=%d"), *ItemUID.ToString(), ItemCount, OreBonusDropChance, ItemCount);
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyOre] Item=%s BaseCount=%d BonusChance=%.3f AdjustedCount=%d"), *ItemUID.ToString(), ItemCount, OreBonusDropChance, ItemCount);
 		return ItemCount;
 	}
 
@@ -206,10 +207,10 @@ int32 FGameplayAbilityUtils::CalculateAdjustedItemCount(UObject* WorldContextObj
 			BonusItemCount++;
 		}
 
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LuckyOre] Item=%s RollIndex=%d Roll=%.3f BonusChance=%.3f GrantedBonus=%s"), *ItemUID.ToString(), ItemIndex, Roll, OreBonusDropChance, Roll <= OreBonusDropChance ? TEXT("true") : TEXT("false"));
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyOre] Item=%s RollIndex=%d Roll=%.3f BonusChance=%.3f GrantedBonus=%s"), *ItemUID.ToString(), ItemIndex, Roll, OreBonusDropChance, Roll <= OreBonusDropChance ? TEXT("true") : TEXT("false"));
 	}
 
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][LuckyOre] Item=%s BaseCount=%d BonusCount=%d AdjustedCount=%d"), *ItemUID.ToString(), ItemCount, BonusItemCount, AdjustedItemCount);
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyOre] Item=%s BaseCount=%d BonusCount=%d AdjustedCount=%d"), *ItemUID.ToString(), ItemCount, BonusItemCount, AdjustedItemCount);
 	return AdjustedItemCount;
 }
 

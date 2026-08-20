@@ -10,6 +10,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 bool USkillComponent::HasPurchasedSkill(FName SkillKeyName) const
 {
@@ -56,7 +57,7 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 	const FSkillDataTableRow* SkillDataTableRow = DataManager->GetSkillDataTableRow(SkillKeyName);
 	if (SkillDataTableRow == nullptr || CanPurchaseSkill(SkillKeyName, *SkillDataTableRow) == false)
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Failed to purchase skill %s"), *SkillKeyName.ToString());
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to purchase skill %s"), *SkillKeyName.ToString());
 		return false;
 	}
 
@@ -69,7 +70,7 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 	{
 		if (TryApplySkillGameplayEffect(AbilitySystemComponent, SkillGameplayEffectData) == false)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Failed to apply gameplay effect for skill %s"), *SkillKeyName.ToString());
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to apply gameplay effect for skill %s"), *SkillKeyName.ToString());
 			return false;
 		}
 	}
@@ -78,7 +79,7 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 	{
 		if (TryGrantSkillAbility(AbilitySystemComponent, SkillGameplayAbilityData) == false)
 		{
-			UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Failed to grant gameplay ability for skill %s"), *SkillKeyName.ToString());
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to grant gameplay ability for skill %s"), *SkillKeyName.ToString());
 			return false;
 		}
 	}
@@ -86,7 +87,7 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 	const float NewCoin = FMath::Max(0.f, CharacterAttributeSet->GetCoin() - static_cast<float>(SkillDataTableRow->Price));
 	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
 	PurchasedSkillKeySet.Add(SkillKeyName);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Purchased skill %s Price=%d RemainingCoin=%.2f EffectCount=%d AbilityCount=%d"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Purchased skill %s Price=%d RemainingCoin=%.2f EffectCount=%d AbilityCount=%d"),
 		*SkillKeyName.ToString(),
 		SkillDataTableRow->Price,
 		NewCoin,
@@ -112,7 +113,7 @@ bool USkillComponent::TryApplySkillGameplayEffect(UAbilitySystemComponent* Abili
 
 	if (SkillGameplayEffectData.SetByCallerDataList.IsEmpty())
 	{
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Apply effect %s without SetByCaller"), *GetNameSafe(EffectClass));
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Apply effect %s without SetByCaller"), *GetNameSafe(EffectClass));
 		return FGameplayAbilityUtils::TryApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass);
 	}
 
@@ -130,7 +131,7 @@ bool USkillComponent::TryApplySkillGameplayEffect(UAbilitySystemComponent* Abili
 		}
 
 		SpecHandle.Data->SetSetByCallerMagnitude(SetByCallerData.SetByCallerTag, SetByCallerData.SetByCallerValue);
-		UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Apply effect %s SetByCaller %s=%.3f"),
+		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Apply effect %s SetByCaller %s=%.3f"),
 			*GetNameSafe(EffectClass),
 			*SetByCallerData.SetByCallerTag.ToString(),
 			SetByCallerData.SetByCallerValue);
@@ -155,7 +156,7 @@ bool USkillComponent::TryGrantSkillAbility(UAbilitySystemComponent* AbilitySyste
 	}
 
 	AbilitySystemComponent->GiveAbility(FGameplayAbilitySpec(AbilityClass));
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Purchase] Granted ability %s"), *GetNameSafe(AbilityClass));
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Granted ability %s"), *GetNameSafe(AbilityClass));
 	return true;
 }
 
@@ -181,7 +182,7 @@ bool USkillComponent::TryAddCoin(int32 CoinAmount)
 
 	const float NewCoin = CharacterAttributeSet->GetCoin() + static_cast<float>(AdjustedCoinAmount);
 	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][Recycler] Coin reward applied Base=%d Adjusted=%d CurrentCoin=%.2f"), CoinAmount, AdjustedCoinAmount, NewCoin);
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Recycler] Coin reward applied Base=%d Adjusted=%d CurrentCoin=%.2f"), CoinAmount, AdjustedCoinAmount, NewCoin);
 	return true;
 }
 
@@ -199,7 +200,7 @@ bool USkillComponent::TryAddOxygen(int32 OxygenAmount)
 	}
 
 	FGameplayAbilityUtils::ApplyOxygen(AbilitySystemComponent, static_cast<float>(OxygenAmount));
-	UE_LOG(LogTemp, Warning, TEXT("[ItemReward] Oxygen reward applied Amount=%d"), OxygenAmount);
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[ItemReward] Oxygen reward applied Amount=%d"), OxygenAmount);
 	return true;
 }
 
@@ -218,7 +219,7 @@ int32 USkillComponent::CalculateAdjustedCoinAmount(int32 CoinAmount) const
 
 	const float CoinGainMultiplier = CharacterAttributeSet->GetCoinGainMultiplier();
 	const int32 AdjustedCoinAmount = FMath::Max(0, FMath::RoundToInt(static_cast<float>(CoinAmount) * FMath::Max(0.f, CoinGainMultiplier)));
-	UE_LOG(LogTemp, Warning, TEXT("[SkillDebug][CoinSense] BaseCoin=%d Multiplier=%.3f AdjustedCoin=%d BonusCoin=%d"),
+	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][CoinSense] BaseCoin=%d Multiplier=%.3f AdjustedCoin=%d BonusCoin=%d"),
 		CoinAmount,
 		CoinGainMultiplier,
 		AdjustedCoinAmount,

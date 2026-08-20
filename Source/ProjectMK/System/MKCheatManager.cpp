@@ -14,6 +14,7 @@
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
 {
@@ -180,6 +181,18 @@ void UMKCheatManager::EnableBlockDebugNumbers()
 	}
 
 	LevelManagerSubsystem->SetBlockDebugNumbersEnabled(true);
+}
+
+void UMKCheatManager::SetSkillDebugLog(bool bEnabled)
+{
+	FSkillDebugUtils::SetSkillDebugEnabled(bEnabled);
+	SendCheatMessage(this, FString::Printf(TEXT("Skill debug log %s"), bEnabled ? TEXT("enabled") : TEXT("disabled")));
+}
+
+void UMKCheatManager::ToggleSkillDebugLog()
+{
+	const bool bEnabled = FSkillDebugUtils::ToggleSkillDebugEnabled();
+	SendCheatMessage(this, FString::Printf(TEXT("Skill debug log %s"), bEnabled ? TEXT("enabled") : TEXT("disabled")));
 }
 
 void UMKCheatManager::ToggleInventoryWidget()
