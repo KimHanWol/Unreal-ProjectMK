@@ -16,6 +16,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Component/MagnetRangeComponent.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -59,6 +60,10 @@ AMKCharacter::AMKCharacter()
 	InventoryComponent = CreateDefaultSubobject<UInventoryComponent>(TEXT("InventoryComponent"));
 	InventoryComponent->SetupAttachment(GetRootComponent());
 
+	MagnetRangeComponent = CreateDefaultSubobject<UMagnetRangeComponent>(TEXT("MagnetRangeComponent"));
+	MagnetRangeComponent->SetupAttachment(GetRootComponent());
+	MagnetRangeComponent->SetVisibility(false);
+
 	SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
 
 	CharacterVisualComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualComponent"));
@@ -98,6 +103,11 @@ void AMKCharacter::BeginPlay()
 	InitializeCharacterAttributes();
 	BindEvents();
 	ApplyInitialEffects();
+
+	if (::IsValid(MagnetRangeComponent) && ::IsValid(AttributeSet_Character))
+	{
+		MagnetRangeComponent->SetExpandedRadius(AttributeSet_Character->GetItemCollectRange());
+	}
 
 	if (::IsValid(CharacterVisualComponent))
 	{
@@ -169,6 +179,12 @@ void AMKCharacter::BindEvents()
 		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
 		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &AMKCharacter::OnInventoryChanged);
 	}
+
+	if (::IsValid(MagnetRangeComponent))
+	{
+		MagnetRangeComponent->OnExpansionFinishedDelegate.RemoveAll(this);
+		MagnetRangeComponent->OnExpansionFinishedDelegate.AddUObject(this, &AMKCharacter::OnMagnetRangeExpansionFinished);
+	}
 }
 
 void AMKCharacter::UnbindEvents()
@@ -183,6 +199,11 @@ void AMKCharacter::UnbindEvents()
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+	}
+
+	if (::IsValid(MagnetRangeComponent))
+	{
+		MagnetRangeComponent->OnExpansionFinishedDelegate.RemoveAll(this);
 	}
 }
 
@@ -768,17 +789,40 @@ void AMKCharacter::OnFinishFly()
 
 void AMKCharacter::OnActivateMagnet()
 {
+	bIsMagnetInputHeld = true;
+
 	if (::IsValid(InventoryComponent))
 	{
-		InventoryComponent->SetItemCollectionActive(true);
+		InventoryComponent->SetItemCollectionActive(false);
+	}
+
+	if (::IsValid(MagnetRangeComponent) && ::IsValid(AttributeSet_Character))
+	{
+		MagnetRangeComponent->StartExpansion(AttributeSet_Character->GetItemCollectRange());
 	}
 }
 
 void AMKCharacter::OnDeactivateMagnet()
 {
+	bIsMagnetInputHeld = false;
+
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->SetItemCollectionActive(false);
+	}
+
+	if (::IsValid(MagnetRangeComponent))
+	{
+		MagnetRangeComponent->StartCollapse();
+	}
+}
+
+void AMKCharacter::OnMagnetRangeExpansionFinished()
+{
+	if (bIsMagnetInputHeld && ::IsValid(InventoryComponent) && ::IsValid(AttributeSet_Character)
+		&& AttributeSet_Character->GetItemCollectRange() > 0.f)
+	{
+		InventoryComponent->SetItemCollectionActive(true);
 	}
 }
 
@@ -787,6 +831,21 @@ void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->SetGainRadius(Data.NewValue);
+	}
+
+	if (::IsValid(MagnetRangeComponent))
+	{
+		MagnetRangeComponent->SetExpandedRadius(Data.NewValue);
+
+		if (bIsMagnetInputHeld && Data.NewValue > 0.f)
+		{
+			MagnetRangeComponent->StartExpansion(Data.NewValue);
+		}
+	}
+
+	if (Data.NewValue <= 0.f && ::IsValid(InventoryComponent))
+	{
+		InventoryComponent->SetItemCollectionActive(false);
 	}
 
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Magnet] ItemCollectRange changed: %.2f -> %.2f"), Data.OldValue, Data.NewValue);

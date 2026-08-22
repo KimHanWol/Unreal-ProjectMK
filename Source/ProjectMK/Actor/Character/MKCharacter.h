@@ -13,6 +13,7 @@ class UGameplayAbility;
 class UGameplayEffect;
 class UInventoryComponent;
 class UAttributeSet_Character;
+class UMagnetRangeComponent;
 class UMKCharacterVisualComponent;
 class UPaperSprite;
 class USkillComponent;
@@ -93,6 +94,7 @@ private:
 	void OnFinishFly();
 	void OnActivateMagnet();
 	void OnDeactivateMagnet();
+	void OnMagnetRangeExpansionFinished();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnInventoryChanged();
@@ -108,6 +110,9 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UInventoryComponent> InventoryComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UMagnetRangeComponent> MagnetRangeComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USkillComponent> SkillComponent;
@@ -146,6 +151,7 @@ private:
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
 	bool bIsRespawning = false;
+	bool bIsMagnetInputHeld = false;
 
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };
