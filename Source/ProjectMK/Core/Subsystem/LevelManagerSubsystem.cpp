@@ -9,6 +9,7 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
+#include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -101,7 +102,7 @@ namespace
 			}
 
 			AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitActor);
-			if (::IsValid(HitCharacter))
+			if (::IsValid(HitCharacter) && SweepHitResult.GetComponent() == HitCharacter->GetCapsuleComponent())
 			{
 				OutHitActors.AddUnique(HitActor);
 			}
