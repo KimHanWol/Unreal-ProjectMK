@@ -3,40 +3,55 @@
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 
 #include "Components/SphereComponent.h"
+#include "Materials/MaterialInterface.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "UObject/ConstructorHelpers.h"
 
 AItemBase::AItemBase()
 {
 	PrimaryActorTick.bCanEverTick = true;
 
 	SphereCollision = CreateDefaultSubobject<USphereComponent>(TEXT("SphereCollision"));
+	SphereCollision->InitSphereRadius(4.f);
+	SphereCollision->SetCollisionObjectType(ECC_WorldDynamic);
 	SphereCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	SphereCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+	SphereCollision->SetCollisionResponseToChannel(ECC_WorldStatic, ECR_Block);
+	SphereCollision->SetCollisionResponseToChannel(ECC_WorldDynamic, ECR_Overlap);
+	SphereCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Overlap);
+	SphereCollision->SetGenerateOverlapEvents(true);
 	RootComponent = SphereCollision;
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
-	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -1.f, -4.f));
+	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -1.f, 0.f));
 	PaperSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	PaperSpriteComponent->SetTranslucentSortPriority(1);
 	BaseSpriteRelativeLocation = PaperSpriteComponent->GetRelativeLocation();
+
+	static ConstructorHelpers::FObjectFinder<UMaterialInterface> TranslucentSpriteMaterialFinder(TEXT("/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial"));
+	if (TranslucentSpriteMaterialFinder.Succeeded())
+	{
+		PaperSpriteComponent->SetMaterial(0, TranslucentSpriteMaterialFinder.Object);
+	}
 }
 
 void AItemBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
-	UpdatePosition();
+	UpdatePosition(DeltaTime);
 }
 
 void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 {
 	ItemKey = InItemKey;
 	ItemCount = FMath::Max(1, InItemCount);
+	FloatPhase = FMath::FRandRange(0.f, UE_TWO_PI);
 
 	if (::IsValid(PaperSpriteComponent) == false)
 	{
@@ -65,13 +80,17 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 	}
 
 	PaperSpriteComponent->SetRelativeScale3D(FVector(ItemSpriteScale, 1.f, ItemSpriteScale));
+	bIsInitialized = true;
+}
 
-	FTimerHandle InitTimerHandle;
-	GetWorld()->GetTimerManager().SetTimer(InitTimerHandle, [this]()
-		{
-			bIsInitialized = true;
-		},
-		0.5f, false);
+float AItemBase::GetCollisionRadius() const
+{
+	if (::IsValid(SphereCollision) == false)
+	{
+		return 0.f;
+	}
+
+	return SphereCollision->GetScaledSphereRadius();
 }
 
 bool AItemBase::IsOccupied()
@@ -81,18 +100,20 @@ bool AItemBase::IsOccupied()
 
 void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 {
-	if (IsOccupied())
+	if (IsOccupied() || InLooter.IsValid() == false)
+	{
+		return;
+	}
+
+	UInventoryComponent* InventoryComponent = InLooter->GetComponentByClass<UInventoryComponent>();
+	if (::IsValid(InventoryComponent) == false || InventoryComponent->IsItemCollectionActive() == false)
 	{
 		return;
 	}
 
 	Looter = InLooter;
 	CurrentLootingSpeed = InitialLootingSpeed;
-
-	if (Looter.IsValid() == false)
-	{
-		return;
-	}
+	FallingVelocity = 0.f;
 
 	FVector BaseDirection = Looter->GetCharacterDirection();
 	BaseDirection.Y = 0.f;
@@ -123,17 +144,14 @@ void AItemBase::OnLootFinished()
 	Destroy();
 }
 
-void AItemBase::SetVisualLayer(float InActorYOffset, int32 InSortPriority)
+void AItemBase::SetVisualLayer(float InVisualYOffset)
 {
-	ActorYOffset = InActorYOffset;
-
-	FVector NewActorLocation = GetActorLocation();
-	NewActorLocation.Y += ActorYOffset;
-	SetActorLocation(NewActorLocation);
+	VisualYOffset = InVisualYOffset;
 
 	if (::IsValid(PaperSpriteComponent))
 	{
-		PaperSpriteComponent->SetTranslucentSortPriority(InSortPriority);
+		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f));
+		PaperSpriteComponent->SetTranslucentSortPriority(static_cast<int32>(GetUniqueID()));
 	}
 }
 
@@ -145,7 +163,7 @@ void AItemBase::ClearLooting()
 	LootLateralOffsetScale = 0.f;
 }
 
-void AItemBase::UpdatePosition()
+void AItemBase::UpdatePosition(float DeltaTime)
 {
 	if (bIsInitialized == false)
 	{
@@ -165,6 +183,13 @@ void AItemBase::UpdatePosition()
 			return;
 		}
 
+		UInventoryComponent* InventoryComponent = Looter->GetComponentByClass<UInventoryComponent>();
+		if (::IsValid(InventoryComponent) == false || InventoryComponent->IsItemCollectionActive() == false)
+		{
+			ClearLooting();
+			return;
+		}
+
 		FVector ItemLocation = GetActorLocation();
 		FVector PlayerLocation = Looter->GetActorLocation();
 		CurrentLootingSpeed += GetWorld()->GetDeltaSeconds() * LootingAccelerationRate;
@@ -178,14 +203,7 @@ void AItemBase::UpdatePosition()
 
 		if (FVector::DistSquared(NewLocation, PlayerLocation) <= FMath::Square(4.f))
 		{
-			if (UInventoryComponent* InventoryComponent = Looter->GetComponentByClass<UInventoryComponent>())
-			{
-				if (InventoryComponent->TryCollectWorldItem(this) == false)
-				{
-					ClearLooting();
-				}
-			}
-			else
+			if (InventoryComponent->TryCollectWorldItem(this) == false)
 			{
 				ClearLooting();
 			}
@@ -193,9 +211,19 @@ void AItemBase::UpdatePosition()
 	}
 	else
 	{
-		float Time = GetWorld()->GetTimeSeconds();
-		float OffsetZ = FMath::Sin(Time * FloatSpeed) * FloatAmplitude;
+		FallingVelocity = FMath::Max(FallingVelocity + (GetWorld()->GetGravityZ() * DeltaTime), -MaxFallingSpeed);
 
-		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, 0.f, OffsetZ));
+		FHitResult FallingHit;
+		AddActorWorldOffset(FVector(0.f, 0.f, FallingVelocity * DeltaTime), true, &FallingHit);
+		if (FallingHit.bBlockingHit && FallingVelocity < 0.f)
+		{
+			FallingVelocity = 0.f;
+		}
+
+		const float Time = GetWorld()->GetTimeSeconds();
+		const float FloatAlpha = FMath::Sin((Time * FloatSpeed) + FloatPhase) + 1.f;
+		const float OffsetZ = FloatAlpha * FloatAmplitude;
+
+		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, OffsetZ));
 	}
 }

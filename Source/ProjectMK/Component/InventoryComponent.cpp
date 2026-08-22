@@ -43,7 +43,7 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 {
 	Super::TickComponent(DeltaTime, TickType, ThisTickFunction);
 
-	if (ItemGainRange <= 0.f)
+	if (bIsItemCollectionActive == false || ItemGainRange <= 0.f)
 	{
 		return;
 	}
@@ -87,6 +87,11 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 float UInventoryComponent::GetItemGainRange() const
 {
 	return ItemGainRange;
+}
+
+bool UInventoryComponent::IsItemCollectionActive() const
+{
+	return bIsItemCollectionActive;
 }
 
 int32 UInventoryComponent::GetItemCount(FName ItemUID)
@@ -199,7 +204,7 @@ bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
 
 bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 {
-	if (::IsValid(ItemActor) == false)
+	if (bIsItemCollectionActive == false || ::IsValid(ItemActor) == false)
 	{
 		return false;
 	}
@@ -304,6 +309,11 @@ void UInventoryComponent::SetGainRadius(float NewRadius)
 {
 	ItemGainRange = FMath::Max(0.f, NewRadius);
 	SetSphereRadius(ItemGainRange);
+}
+
+void UInventoryComponent::SetItemCollectionActive(bool bActive)
+{
+	bIsItemCollectionActive = bActive;
 }
 
 bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData)
@@ -688,7 +698,7 @@ bool UInventoryComponent::TryGrantNonInventoryItem(FName ItemKey, int32 ItemCoun
 
 void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)
 {
-	if (::IsValid(OtherActor) == false || OtherActor == GetOwner())
+	if (bIsItemCollectionActive == false || ::IsValid(OtherActor) == false || OtherActor == GetOwner())
 	{
 		return;
 	}

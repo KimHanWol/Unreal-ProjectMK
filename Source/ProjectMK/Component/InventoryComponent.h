@@ -49,6 +49,7 @@ public:
 	int32 GetMaxInventoryCount() const;
 	float GetInventoryOccupancyRatio() const;
 	float GetItemGainRange() const;
+	bool IsItemCollectionActive() const;
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 	bool AddItem(FName ItemUID, int32 ItemCount);
 	void RemoveAllOreItems();
@@ -56,6 +57,7 @@ public:
 	bool TryCollectWorldItem(AItemBase* ItemActor);
 	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex);
 	void SetGainRadius(float NewRadius);
+	void SetItemCollectionActive(bool bActive);
 	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
 	bool CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const;
 
@@ -101,6 +103,9 @@ private:
 
 	UPROPERTY(Transient)
 	float ItemCollectRange = 0.f;
+
+	UPROPERTY(Transient)
+	bool bIsItemCollectionActive = false;
 
 	UPROPERTY(EditDefaultsOnly)
 	int32 MaxInventoryCount = 8;

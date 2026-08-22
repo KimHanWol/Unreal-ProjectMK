@@ -124,6 +124,8 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
 	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
+	PlayerInputComponent->BindAction("Magnet", IE_Pressed, this, &AMKCharacter::OnActivateMagnet);
+	PlayerInputComponent->BindAction("Magnet", IE_Released, this, &AMKCharacter::OnDeactivateMagnet);
 
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::OnMoveRight);
 	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::OnLookRight);
@@ -146,7 +148,8 @@ void AMKCharacter::Tick(float DeltaSeconds)
 		UpdateFlyingVerticalVelocity();
 	}
 
-	if (FSkillDebugUtils::IsSkillDebugEnabled() && ::IsValid(AttributeSet_Character) && AttributeSet_Character->GetItemCollectRange() > 0.f)
+	if (FSkillDebugUtils::IsSkillDebugEnabled() && ::IsValid(AttributeSet_Character) && ::IsValid(InventoryComponent)
+		&& InventoryComponent->IsItemCollectionActive() && AttributeSet_Character->GetItemCollectRange() > 0.f)
 	{
 		DrawDebugSphere(GetWorld(), GetActorLocation(), AttributeSet_Character->GetItemCollectRange(), 24, FColor::Cyan, false, 0.f, 0, 1.5f);
 	}
@@ -760,6 +763,22 @@ void AMKCharacter::OnFinishFly()
 	if (MoveComp->MovementMode == MOVE_Flying)
 	{
 		MoveComp->SetMovementMode(MOVE_Falling);
+	}
+}
+
+void AMKCharacter::OnActivateMagnet()
+{
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->SetItemCollectionActive(true);
+	}
+}
+
+void AMKCharacter::OnDeactivateMagnet()
+{
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->SetItemCollectionActive(false);
 	}
 }
 

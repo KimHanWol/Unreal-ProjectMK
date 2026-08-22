@@ -601,6 +601,8 @@ void ABlockBase::UpdateDamageFlipbook()
 
 void ABlockBase::SpawnItems()
 {
+	constexpr float SpawnCollisionClearance = 0.5f;
+
 	int32 VisualLayerIndex = 1;
 	for (const FSelectedBlockItemData& SelectedSpawnItemData : SelectedSpawnItemDataList)
 	{
@@ -628,10 +630,13 @@ void ABlockBase::SpawnItems()
 
 			SpawnedItem->InitializeItemBase(SelectedSpawnItemData.ItemKey, ItemCountPerActor);
 
-			const float HorizontalOffset = bUseSpawnOffset ? FMath::FRandRange(-8.f, 8.f) : 0.f;
-			const float VerticalOffset = bUseSpawnOffset ? FMath::FRandRange(-6.f, 6.f) : 0.f;
+			const float ItemCollisionRadius = SpawnedItem->GetCollisionRadius();
+			const float HorizontalSpawnExtent = FMath::Max(0.f, (static_cast<float>(BlockTileData.TileSize.X) * 0.5f) - ItemCollisionRadius - SpawnCollisionClearance);
+			const float VerticalSpawnExtent = FMath::Max(0.f, (static_cast<float>(BlockTileData.TileSize.Y) * 0.5f) - ItemCollisionRadius - SpawnCollisionClearance);
+			const float HorizontalOffset = bUseSpawnOffset ? FMath::FRandRange(-HorizontalSpawnExtent, HorizontalSpawnExtent) : 0.f;
+			const float VerticalOffset = bUseSpawnOffset ? FMath::FRandRange(-VerticalSpawnExtent, VerticalSpawnExtent) : 0.f;
 			SpawnedItem->SetActorLocation(GetActorLocation() + FVector(HorizontalOffset, 0.f, VerticalOffset));
-			SpawnedItem->SetVisualLayer(static_cast<float>(VisualLayerIndex) * 0.1f, VisualLayerIndex);
+			SpawnedItem->SetVisualLayer(static_cast<float>(VisualLayerIndex) * 0.1f);
 			++VisualLayerIndex;
 		}
 	}

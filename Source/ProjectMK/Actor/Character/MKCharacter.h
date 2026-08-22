@@ -91,6 +91,8 @@ private:
 	void OnMoveRight(float Value);
 	void OnFly();
 	void OnFinishFly();
+	void OnActivateMagnet();
+	void OnDeactivateMagnet();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnInventoryChanged();

@@ -23,18 +23,19 @@ public:
 	void InitializeItemBase(FName InItemKey, int32 InItemCount = 1);
 	FName GetItemKey() const { return ItemKey; }
 	int32 GetItemCount() const { return ItemCount; }
+	float GetCollisionRadius() const;
 	bool IsOccupied();
 
 	void TryLoot(TWeakObjectPtr<AMKCharacter> InLooter);
 	void OnLootFinished();
-	void SetVisualLayer(float InActorYOffset, int32 InSortPriority);
+	void SetVisualLayer(float InVisualYOffset);
 
 protected:
 	virtual void Tick(float DeltaTime) override;
 
 private:
 	void ClearLooting();
-	void UpdatePosition();
+	void UpdatePosition(float DeltaTime);
 
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -62,13 +63,22 @@ private:
 	FVector BaseSpriteRelativeLocation = FVector::ZeroVector;
 
 	UPROPERTY(Transient)
-	float ActorYOffset = 0.f;
+	float VisualYOffset = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Floating")
 	float FloatAmplitude = 5.0f; // 위아래 움직임의 크기
 
 	UPROPERTY(EditDefaultsOnly, Category = "Floating")
 	float FloatSpeed = 3.0f; // 움직임 속도
+
+	UPROPERTY(Transient)
+	float FloatPhase = 0.f;
+
+	UPROPERTY(Transient)
+	float FallingVelocity = 0.f;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Falling")
+	float MaxFallingSpeed = 400.f;
 
 	FTimerHandle LootingTimerHandle;
 
