@@ -476,7 +476,8 @@ void ULevelManagerSubsystem::GenerateTileActors()
 
 			SpawnedBlock->InitializeBlock(BlockData);
 
-			BlockActorMap.Add(FVector2D(X, Y), SpawnedBlock);
+			const FVector2D BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(BlockData.WorldLocation);
+			BlockActorMap.Add(BlockPosition, SpawnedBlock);
 		}
 	}
 
@@ -639,6 +640,28 @@ void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& Collapsin
 
 void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList)
 {
+	if (TileMapActor.IsValid() == false)
+	{
+		return;
+	}
+
+	UPaperTileMapComponent* TileMapComponent = TileMapActor->GetRenderComponent();
+	if (::IsValid(TileMapComponent) == false || ::IsValid(TileMapComponent->TileMap) == false)
+	{
+		return;
+	}
+
+	const UPaperTileMap* TileMap = TileMapComponent->TileMap;
+	if (FMath::IsNearlyZero(TileMap->PixelsPerUnrealUnit))
+	{
+		return;
+	}
+
+	const float TileWidth = TileMap->TileWidth / TileMap->PixelsPerUnrealUnit;
+	const float TileHeight = TileMap->TileHeight / TileMap->PixelsPerUnrealUnit;
+	const FVector LocalGridOrigin = TileMapComponent->GetTileCenterPosition(0, 0, 0);
+	const FTransform& TileMapTransform = TileMapComponent->GetComponentTransform();
+
 	for (auto& FallFinishedBlock : FallFinishedBlockList)
 	{
 		if (FallFinishedBlock.IsValid() == false)
@@ -646,11 +669,13 @@ void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>
 			continue;
 		}
 
-		FVector SnapSampleOffset = FVector::ZeroVector;
-		SnapSampleOffset.Z = -(BLOCK_SIZE * 0.5f);
+		FVector LocalSnapLocation = TileMapTransform.InverseTransformPosition(FallFinishedBlock->GetActorLocation());
+		LocalSnapLocation.X = LocalGridOrigin.X +
+			FMath::RoundToFloat((LocalSnapLocation.X - LocalGridOrigin.X) / TileWidth) * TileWidth;
+		LocalSnapLocation.Z = LocalGridOrigin.Z +
+			FMath::RoundToFloat((LocalSnapLocation.Z - LocalGridOrigin.Z) / TileHeight) * TileHeight;
 
-		const FVector SnapSampleLocation = FallFinishedBlock->GetActorLocation() + SnapSampleOffset;
-		const FVector SnapLocation = UMKBlueprintFunctionLibrary::GetSnappingWorldPosition(SnapSampleLocation);
+		const FVector SnapLocation = TileMapTransform.TransformPosition(LocalSnapLocation);
 		FallFinishedBlock->SetActorLocation(SnapLocation);
 		FallFinishedBlock->SetMineableState(true);
 
