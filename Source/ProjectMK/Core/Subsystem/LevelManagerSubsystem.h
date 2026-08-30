@@ -6,6 +6,9 @@
 
 class APaperTileMapActor;
 class ABlockBase;
+class UDataManager;
+class UPaperTileMapComponent;
+struct FMineableLevelGenerationSettings;
 
 USTRUCT(BlueprintType)
 struct FFallingVerticalBlocksData
@@ -33,10 +36,7 @@ struct FFallingBlockGroupData
 	GENERATED_BODY()
 
 	UPROPERTY()
-	int32 BlockCount = 0;
-
-	UPROPERTY()
-	float FallingVelocity;
+	float FallingVelocity = 0.f;
 
 	UPROPERTY()
 	float ShakeTime = 0.f;
@@ -61,7 +61,9 @@ struct FFallingBlockGroupData
 	bool IsFallingFinished();
 	TWeakObjectPtr<ABlockBase> GetBottomBlock(int32 BlockPositionX);
 	TArray<ABlockBase*> GetFallingBlocks();
-	int32 GetFallingDamage(UObject* WorldContextObject, const FFallingVerticalBlocksData& VerticalBlockData) const;
+	int32 CalculateCharacterFallingDamage(UObject* WorldContextObject, const FFallingVerticalBlocksData& VerticalBlockData) const;
+	float CalculateFallingBlockImpactDamage(UObject* WorldContextObject) const;
+	bool TryDestroyFallingBlockOnImpact(UObject* WorldContextObject, ABlockBase* FallingBlock) const;
 };
 
 UCLASS(Blueprintable)
@@ -80,30 +82,73 @@ public:
 	void LoadTileMap(bool bForce = false);
 	void GenerateTileActors();
 
+	UFUNCTION(BlueprintCallable, Category = "Level Generation")
+	void RegenerateMineableBlocks(int32 GenerationSeed = -1);
+
+	void SetBlockDebugNumbersEnabled(bool bEnabled);
 	int32 GetTileSize();
 	ABlockBase* GetBlockAtPosition(const FVector2D& BlockPosition) const;
-	void SetBlockDebugNumbersEnabled(bool bEnabled);
+
+	UFUNCTION(BlueprintPure, Category = "Level Generation")
+	int32 GetLastGenerationSeed() const { return LastGenerationSeed; }
+
 	bool IsBlockDebugNumbersEnabled() const { return bBlockDebugNumbersEnabled; }
 
 private:
+	friend struct FFallingBlockGroupData;
+
+	void CaptureTileTemplates(UDataManager* DataManager, UPaperTileMapComponent* TileMapComponent);
+	void ClearGeneratedBlocks();
+	void GenerateMineableLayout(
+		FRandomStream& RandomStream,
+		const FMineableLevelGenerationSettings& GenerationSettings,
+		int32 RockTileIndex,
+		TMap<FIntPoint, int32>& OutGeneratedMineableTiles) const;
+	void SpawnTileActor(
+		const FIntPoint& TileCoordinate,
+		int32 TileIndex,
+		UPaperTileMapComponent* TileMapComponent,
+		TSubclassOf<AActor> BlockClass);
+
 	void OnGenerateFinished();
 	void OnBlockDestroyed(ABlockBase* DestroyedBlock);
 
 	bool CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount);
 
+	void QueueCollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
+	void ProcessPendingCollapseBlocks();
 	void CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
 	void SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList);
+	void LogFallingStopDiagnostic(
+		ABlockBase* FallingBlock,
+		ABlockBase* HitBlock,
+		const FHitResult& HitResult,
+		float ContactMoveZ,
+		float RemainingMoveBeforeContactZ,
+		float RemainingMoveAfterContactZ);
+	bool IsBlockPendingCollapse(const ABlockBase* Block) const;
+	bool IsBlockFalling(const ABlockBase* Block) const;
+	ABlockBase* FindUnsettledBlockAtPosition(const FVector2D& BlockPosition, const ABlockBase* IgnoredBlock) const;
 
 	UPROPERTY(Transient)
 	TWeakObjectPtr<APaperTileMapActor> TileMapActor;
 
 	UPROPERTY(Transient)
-	TArray<ABlockBase*> BlockList;
+	TArray<TObjectPtr<ABlockBase>> BlockList;
 
 	UPROPERTY(Transient)
 	TArray<FFallingBlockGroupData> FallingBlockGroupList;
 
-	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> BlockActorMap;
+	TArray<TArray<TWeakObjectPtr<ABlockBase>>> PendingCollapseBlockLists;
 
+	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> BlockActorMap;
+	TMap<FIntPoint, int32> FixedTileTemplate;
+	TMap<FIntPoint, int32> MineableTileTemplate;
+
+	int32 LastGenerationSeed = INDEX_NONE;
+	bool bTileTemplatesCaptured = false;
 	bool bBlockDebugNumbersEnabled = false;
+	bool bHasLoggedFallingStopDiagnostic = false;
+	bool bHasLoggedDestroyedPendingBlockDiagnostic = false;
+	bool bHasLoggedSnapDiagnostic = false;
 };

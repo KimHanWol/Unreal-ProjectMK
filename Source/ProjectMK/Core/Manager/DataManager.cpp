@@ -48,6 +48,11 @@ const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) co
 	return nullptr;
 }
 
+const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(FName RowName) const
+{
+	return GetDataTableRow<FBlockDataTableRow>(EDataTableType::Block, RowName);
+}
+
 bool UDataManager::GetCharacterDataTableRow(FName PreferredRowKey, FCharacterDataTableRow& OutRow) const
 {
 	if (::IsValid(DataTableDataAsset) == false)

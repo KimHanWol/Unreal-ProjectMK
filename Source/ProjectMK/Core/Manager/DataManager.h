@@ -51,6 +51,7 @@ public:
 	}
 
 	const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
+	const FBlockDataTableRow* GetBlockDataTableRow(FName RowName) const;
 	bool GetCharacterDataTableRow(FName PreferredRowKey, FCharacterDataTableRow& OutRow) const;
 	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 	const FSkillDataTableRow* GetSkillDataTableRow(FName RowName) const;
