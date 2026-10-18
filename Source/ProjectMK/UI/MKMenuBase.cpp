@@ -4,7 +4,19 @@
 
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/MKMenuContentsBase.h"
+#include "ProjectMK/UI/CraftingMenuContents.h"
+#include "ProjectMK/UI/ShopMenuContents.h"
+
+UMKMenuBase::UMKMenuBase(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
+{
+	RuntimeMenuContentsClasses.Add(UShopMenuContents::StaticClass());
+	RuntimeMenuContentsClasses.Add(UCraftingMenuContents::StaticClass());
+}
 
 void UMKMenuBase::BindEvents()
 {
@@ -19,6 +31,10 @@ void UMKMenuBase::BindEvents()
 void UMKMenuBase::UnbindEvents()
 {
 	Super::UnbindEvents();
+	if (AMKCharacter* Character = GetLocalPlayerCharacter())
+	{
+		Character->SetMenuInputBlocked(false);
+	}
 
 	if (::IsValid(ExitButton))
 	{
@@ -45,19 +61,38 @@ bool UMKMenuBase::OpenMenu(EMenuContentsType InMenuContentsType)
 	}
 
 	CurrentMenuContentsType = InMenuContentsType;
+	if (AMKCharacter* Character = GetLocalPlayerCharacter())
+	{
+		Character->SetMenuInputBlocked(true);
+	}
 	SetVisible(true);
+	USoundManager::TryPlaySFX(this, ESFXType::UI_MenuOpen);
 	return true;
 }
 
 void UMKMenuBase::CloseMenu()
 {
+	if (IsMenuOpen())
+	{
+		USoundManager::TryPlaySFX(this, ESFXType::UI_MenuClose);
+	}
+
 	CurrentMenuContentsType = EMenuContentsType::None;
+	if (AMKCharacter* Character = GetLocalPlayerCharacter())
+	{
+		Character->SetMenuInputBlocked(false);
+	}
 	SetVisible(false);
 }
 
 bool UMKMenuBase::IsMenuOpen() const
 {
 	return IsVisible();
+}
+
+bool UMKMenuBase::IsMenuOpen(EMenuContentsType InMenuContentsType) const
+{
+	return IsMenuOpen() && CurrentMenuContentsType == InMenuContentsType;
 }
 
 void UMKMenuBase::OnExitButtonClicked()
@@ -119,6 +154,27 @@ void UMKMenuBase::CacheMenuContents()
 			continue;
 		}
 
+		MenuContentsMap.FindOrAdd(MenuContents->GetMenuContentsType()) = MenuContents;
+		MenuContents->SetVisibility(ESlateVisibility::Collapsed);
+	}
+
+	for (const TSubclassOf<UMKMenuContentsBase>& RuntimeMenuContentsClass : RuntimeMenuContentsClasses)
+	{
+		const UMKMenuContentsBase* MenuContentsCDO = RuntimeMenuContentsClass.GetDefaultObject();
+		if (::IsValid(MenuContentsCDO) == false || MenuContentsMap.Contains(MenuContentsCDO->GetMenuContentsType()))
+		{
+			continue;
+		}
+
+		UMKMenuContentsBase* MenuContents = CreateWidget<UMKMenuContentsBase>(this, RuntimeMenuContentsClass);
+		UCanvasPanelSlot* MenuContentsSlot = ::IsValid(MenuContents) ? MenuContentsCanvasPanel->AddChildToCanvas(MenuContents) : nullptr;
+		if (::IsValid(MenuContentsSlot) == false)
+		{
+			continue;
+		}
+
+		MenuContentsSlot->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+		MenuContentsSlot->SetOffsets(FMargin(0.f));
 		MenuContentsMap.FindOrAdd(MenuContents->GetMenuContentsType()) = MenuContents;
 		MenuContents->SetVisibility(ESlateVisibility::Collapsed);
 	}

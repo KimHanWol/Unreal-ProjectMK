@@ -9,6 +9,7 @@
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/MonsterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SoundDataTableRow.h"
@@ -53,6 +54,7 @@ public:
 	const FBlockDataTableRow* GetBlockDataTableRow(int32 TileIndex) const;
 	const FBlockDataTableRow* GetBlockDataTableRow(FName RowName) const;
 	bool GetCharacterDataTableRow(FName PreferredRowKey, FCharacterDataTableRow& OutRow) const;
+	const FMonsterDataTableRow* GetMonsterDataTableRow(FName RowName) const;
 	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 	const FSkillDataTableRow* GetSkillDataTableRow(FName RowName) const;
 	TArray<FName> GetShopRecipeRowNames() const;

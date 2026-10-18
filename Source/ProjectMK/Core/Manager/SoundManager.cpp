@@ -33,6 +33,24 @@ USoundManager* USoundManager::Get(UObject* WorldContextObject)
 	return nullptr;
 }
 
+void USoundManager::TryPlaySFX(UObject* WorldContextObject, ESFXType SFXType)
+{
+	USoundManager* SoundManager = Get(WorldContextObject);
+	if (::IsValid(SoundManager))
+	{
+		SoundManager->PlaySFX(SFXType);
+	}
+}
+
+void USoundManager::TryStopSFX(UObject* WorldContextObject, ESFXType SFXType)
+{
+	USoundManager* SoundManager = Get(WorldContextObject);
+	if (::IsValid(SoundManager))
+	{
+		SoundManager->StopSFX(SFXType);
+	}
+}
+
 void USoundManager::PlaySFX(ESFXType SFXType)
 {
 	if (CheckIntialParams(SFXType) == false)
@@ -41,6 +59,17 @@ void USoundManager::PlaySFX(ESFXType SFXType)
 	}
 
 	PlaySFX_Internal(SFXType);
+}
+
+void USoundManager::StopSFX(ESFXType SFXType)
+{
+	for (const TPair<ESFXType, TWeakObjectPtr<UAudioComponent>>& PlayingSFX : PlayingSFXList)
+	{
+		if (PlayingSFX.Key == SFXType && PlayingSFX.Value.IsValid())
+		{
+			PlayingSFX.Value->Stop();
+		}
+	}
 }
 
 void USoundManager::SetFloatSoundParam(ESFXType SFXType, ESFXInstanceParamType ParamType, float FloatParam)
@@ -73,7 +102,14 @@ void USoundManager::PlaySFX_Internal(ESFXType SFXType)
 		return;
 	}
 
-	UAudioComponent* AudioComp = UGameplayStatics::SpawnSound2D(this, SoundDataTableRow->SoundSource.Get());
+	USoundBase* SoundSource = SoundDataTableRow->SoundSource.LoadSynchronous();
+	if (::IsValid(SoundSource) == false)
+	{
+		InstantSFXParamMap.Remove(SFXType);
+		return;
+	}
+
+	UAudioComponent* AudioComp = UGameplayStatics::SpawnSound2D(this, SoundSource);
 	SetInstantParams(AudioComp, SFXType);
 
 	PlayingSFXList.Add(TPair<ESFXType, TWeakObjectPtr<UAudioComponent>>(SFXType, AudioComp));

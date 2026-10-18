@@ -52,4 +52,16 @@ struct FBlockDataTableRow : public FTableRowBase
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (DisplayName = "NeedToBeHide"))
 	bool bNeedTobeHide = false;
+
+	/** 채굴 가능하지만 Rock 처럼 붙은 덩어리를 지탱한다 (버팀목) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsSupportAnchor = false;
+
+	/** 발파 폭약으로도 부서지지 않는다 (Border, Shop 등) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsExplosionProof = false;
+
+	/** 캐릭터는 통과한다. 드릴과 낙하 블록 충돌은 그대로 받는다 (캐릭터 칸에 설치하는 버팀목) */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite)
+	bool bIsPassableByCharacter = false;
 };

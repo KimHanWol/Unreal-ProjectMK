@@ -22,6 +22,9 @@ public:
 	static TArray<FString> GetCharacterRowNames();
 
 	UFUNCTION()
+	static TArray<FString> GetMonsterRowNames();
+
+	UFUNCTION()
 	static TArray<FString> GetSkillRowNames();
 
 	UFUNCTION(BlueprintCallable)

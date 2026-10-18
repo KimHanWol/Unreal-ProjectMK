@@ -8,6 +8,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
@@ -57,31 +58,14 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 	const FSkillDataTableRow* SkillDataTableRow = DataManager->GetSkillDataTableRow(SkillKeyName);
 	if (SkillDataTableRow == nullptr || CanPurchaseSkill(SkillKeyName, *SkillDataTableRow) == false)
 	{
+		USoundManager::TryPlaySFX(GetOwner(), ESFXType::Skill_PurchaseFailed);
 		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to purchase skill %s"), *SkillKeyName.ToString());
 		return false;
 	}
 
-	if (SkillDataTableRow->GameplayEffectList.IsEmpty() && SkillDataTableRow->GameplayAbilityList.IsEmpty())
+	if (TryApplySkill(AbilitySystemComponent, SkillKeyName, *SkillDataTableRow) == false)
 	{
 		return false;
-	}
-
-	for (const FSkillGameplayEffectData& SkillGameplayEffectData : SkillDataTableRow->GameplayEffectList)
-	{
-		if (TryApplySkillGameplayEffect(AbilitySystemComponent, SkillGameplayEffectData) == false)
-		{
-			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to apply gameplay effect for skill %s"), *SkillKeyName.ToString());
-			return false;
-		}
-	}
-
-	for (const FSkillGameplayAbilityData& SkillGameplayAbilityData : SkillDataTableRow->GameplayAbilityList)
-	{
-		if (TryGrantSkillAbility(AbilitySystemComponent, SkillGameplayAbilityData) == false)
-		{
-			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to grant gameplay ability for skill %s"), *SkillKeyName.ToString());
-			return false;
-		}
 	}
 
 	const float NewCoin = FMath::Max(0.f, CharacterAttributeSet->GetCoin() - static_cast<float>(SkillDataTableRow->Price));
@@ -93,7 +77,67 @@ bool USkillComponent::TryPurchaseSkill(FName SkillKeyName)
 		NewCoin,
 		SkillDataTableRow->GameplayEffectList.Num(),
 		SkillDataTableRow->GameplayAbilityList.Num());
+	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Skill_Purchase);
 	OnSkillPurchasedDelegate.Broadcast(SkillKeyName);
+	return true;
+}
+
+void USkillComponent::ApplySavedSkills(const TArray<FName>& SavedSkillKeys)
+{
+	UDataManager* DataManager = UDataManager::Get(this);
+	UAbilitySystemComponent* AbilitySystemComponent = GetOwnerAbilitySystemComponent();
+	if (::IsValid(DataManager) == false || ::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	for (const FName& SavedSkillKey : SavedSkillKeys)
+	{
+		if (HasPurchasedSkill(SavedSkillKey))
+		{
+			continue;
+		}
+
+		const FSkillDataTableRow* SkillDataTableRow = DataManager->GetSkillDataTableRow(SavedSkillKey);
+		if (SkillDataTableRow == nullptr || TryApplySkill(AbilitySystemComponent, SavedSkillKey, *SkillDataTableRow) == false)
+		{
+			continue;
+		}
+
+		PurchasedSkillKeySet.Add(SavedSkillKey);
+	}
+}
+
+TArray<FName> USkillComponent::GetPurchasedSkillKeys() const
+{
+	return PurchasedSkillKeySet.Array();
+}
+
+bool USkillComponent::TryApplySkill(UAbilitySystemComponent* AbilitySystemComponent, FName SkillKeyName, const FSkillDataTableRow& SkillDataTableRow) const
+{
+	if (SkillDataTableRow.GameplayEffectList.IsEmpty() && SkillDataTableRow.GameplayAbilityList.IsEmpty())
+	{
+		return false;
+	}
+
+	for (const FSkillGameplayEffectData& SkillGameplayEffectData : SkillDataTableRow.GameplayEffectList)
+	{
+		if (TryApplySkillGameplayEffect(AbilitySystemComponent, SkillGameplayEffectData) == false)
+		{
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to apply gameplay effect for skill %s"), *SkillKeyName.ToString());
+			return false;
+		}
+	}
+
+	for (const FSkillGameplayAbilityData& SkillGameplayAbilityData : SkillDataTableRow.GameplayAbilityList)
+	{
+		if (TryGrantSkillAbility(AbilitySystemComponent, SkillGameplayAbilityData) == false)
+		{
+			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Purchase] Failed to grant gameplay ability for skill %s"), *SkillKeyName.ToString());
+			return false;
+		}
+	}
+
 	return true;
 }
 
@@ -160,7 +204,7 @@ bool USkillComponent::TryGrantSkillAbility(UAbilitySystemComponent* AbilitySyste
 	return true;
 }
 
-bool USkillComponent::TryAddCoin(int32 CoinAmount)
+bool USkillComponent::TryAddCoin(int32 CoinAmount, bool bApplyCoinGainMultiplier)
 {
 	if (CoinAmount <= 0)
 	{
@@ -174,7 +218,7 @@ bool USkillComponent::TryAddCoin(int32 CoinAmount)
 		return false;
 	}
 
-	const int32 AdjustedCoinAmount = CalculateAdjustedCoinAmount(CoinAmount);
+	const int32 AdjustedCoinAmount = bApplyCoinGainMultiplier ? CalculateAdjustedCoinAmount(CoinAmount) : CoinAmount;
 	if (AdjustedCoinAmount <= 0)
 	{
 		return false;
@@ -182,6 +226,7 @@ bool USkillComponent::TryAddCoin(int32 CoinAmount)
 
 	const float NewCoin = CharacterAttributeSet->GetCoin() + static_cast<float>(AdjustedCoinAmount);
 	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
+	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Coin_Gain);
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Recycler] Coin reward applied Base=%d Adjusted=%d CurrentCoin=%.2f"), CoinAmount, AdjustedCoinAmount, NewCoin);
 	return true;
 }

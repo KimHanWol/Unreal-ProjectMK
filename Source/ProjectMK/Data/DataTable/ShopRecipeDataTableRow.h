@@ -35,6 +35,13 @@ struct FShopRecipeDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))
 	FName ResultItemKey;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "1"))
+	int32 ResultItemCount = 1;
+
+	/** 상점에서 레시피를 해금하는 가격. 0 이면 처음부터 해금되어 있다 */
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (ClampMin = "0"))
+	int32 UnlockPrice = 0;
+
 	FName GetResultItemKey() const
 	{
 		return ResultItemKey;

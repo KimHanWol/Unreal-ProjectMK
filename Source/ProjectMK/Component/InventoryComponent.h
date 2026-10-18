@@ -52,7 +52,9 @@ public:
 	bool IsItemCollectionActive() const;
 	void SetItemCount(FName ItemUID, int32 ItemCount);
 	bool AddItem(FName ItemUID, int32 ItemCount);
+	bool TryRemoveItem(FName ItemUID, int32 ItemCount);
 	void RemoveAllOreItems();
+	void ApplySavedInventorySlots(const TArray<FInventorySlotData>& SavedSlotDataList);
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	bool TryCollectWorldItem(AItemBase* ItemActor);
 	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex);
@@ -60,6 +62,9 @@ public:
 	void SetItemCollectionActive(bool bActive);
 	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
 	bool CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const;
+	bool TrySellItem(FName ItemUID, int32 ItemCount);
+	bool TrySellAllItems();
+	int32 CalculateSellPrice(FName ItemUID, int32 ItemCount) const;
 
 	TMap<FName, int32> GetInventoryItems() const { return InventoryItemMap; }
 	const TArray<FInventorySlotData>& GetInventorySlotDataList();
@@ -81,6 +86,7 @@ private:
 	bool CanCollectWorldItem(AItemBase* ItemActor) const;
 	bool CanGrantNonInventoryItem(FName ItemKey, int32 ItemCount) const;
 	bool TryGrantNonInventoryItem(FName ItemKey, int32 ItemCount);
+	void TryPlayInventoryFullSFX();
 
 	UFUNCTION()
 	void OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor,
@@ -112,4 +118,9 @@ private:
 
 	UPROPERTY(EditDefaultsOnly)
 	float LootableDistance = 0.f;
+
+	UPROPERTY(EditDefaultsOnly)
+	float InventoryFullSFXCooldown = 1.f;
+
+	float LastInventoryFullSFXTime = -1.f;
 };

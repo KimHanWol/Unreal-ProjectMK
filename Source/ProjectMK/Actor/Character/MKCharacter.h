@@ -13,6 +13,8 @@ class UGameplayAbility;
 class UGameplayEffect;
 class UInventoryComponent;
 class UAttributeSet_Character;
+class UConsumableComponent;
+class UCraftingComponent;
 class UMagnetRangeComponent;
 class UMKCharacterVisualComponent;
 class UPaperSprite;
@@ -45,21 +47,29 @@ protected:
 	virtual void OnDestroyed() override;
 
 public:
+	void RespawnAtSpawnLocation();
+	void ApplyKnockback(float HorizontalVelocity, float UpwardVelocity, float RecoveryTime);
+	bool TrySaveGame();
+	void SetMenuInputBlocked(bool bBlocked);
 	void SetDrillingVector(const FVector& InDrillingVector);
 
 	FVector GetCharacterDirection() const;
 	FVector GetDrillingVector() const;
+	bool IsKnockedBack() const;
+	bool IsOnGround() const;
 	USkillComponent* GetSkillComponent() const;
+	UConsumableComponent* GetConsumableComponent() const;
+	UCraftingComponent* GetCraftingComponent() const;
 
 private:
 	void GiveAbilities();
 	void InitializeCharacterAttributes();
 	void ApplyInitialEffects();
 	void ApplyDeathPenalty();
-	void RespawnAtSpawnLocation();
 	float CalculateCurrentMoveSpeed() const;
 
 	void TryDrill();
+	bool TryInteractNearby();
 
 	void UpdateHorizontalMovement();
 	void UpdateFlyingVerticalVelocity() const;
@@ -70,11 +80,14 @@ private:
 	void ApplySpriteRenderingOverrides(const UPaperSprite* PaperSprite) const;
 
 	void ApplyDamageInvincibility();
+	void ClearKnockback();
 
 	void ApplyOxygenDrainEffect(float OxygenDrainPerSecond);
 	void ClearOxygenDrainEffect();
 	void RestoreOxygenToMax();
 	void UpdateOxygen();
+
+	void ApplySaveGame();
 
 	TSubclassOf<UGameplayAbility> GetPrimaryDrillAbilityClass() const;
 
@@ -94,10 +107,14 @@ private:
 	void OnFinishFly();
 	void OnActivateMagnet();
 	void OnDeactivateMagnet();
+	void OnInteract();
+	void OnQuickSlot(int32 SlotIndex);
 	void OnMagnetRangeExpansionFinished();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnInventoryChanged();
+	void OnSkillPurchased(FName PurchasedSkillKeyName);
+	void OnRecipeChanged(FName RecipeKey);
 	void OnCurrentHealthChanged(const FOnAttributeChangeData& Data);
 	void OnCurrentOxygenChanged(const FOnAttributeChangeData& Data);
 
@@ -116,6 +133,12 @@ protected:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<USkillComponent> SkillComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UConsumableComponent> ConsumableComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UCraftingComponent> CraftingComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UMKCharacterVisualComponent> CharacterVisualComponent;
@@ -141,6 +164,10 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Invincible")
 	float InvincibleDarkenAmount = 1.f;
 
+	/** 상호작용 키 입력 시 주변 상호작용 대상을 찾는 반경 */
+	UPROPERTY(EditDefaultsOnly, Category = "Interaction", meta = (ClampMin = "0.0"))
+	float InteractSearchRadius = 40.f;
+
 	bool bIsFlying = false;
 
 private:
@@ -148,10 +175,18 @@ private:
 	FVector DrillingVector = FVector::ZeroVector;
 	FTransform SpawnTransform;
 
+	FTimerHandle KnockbackRecoveryTimerHandle;
+	double KnockbackEndTime = 0.0;
+	ECharacterAnimationType KnockbackAnimationType = ECharacterAnimationType::Idle_Down;
+	bool bPreserveKnockbackFacing = false;
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
 	bool bIsRespawning = false;
 	bool bIsMagnetInputHeld = false;
+	bool bIsOnSurface = true;
+	bool bHasAppliedSaveGame = false;
+	bool bIsApplyingInitialEffects = false;
+	bool bIsMenuInputBlocked = false;
 
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };

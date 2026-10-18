@@ -20,6 +20,8 @@ public:
 
 	bool ToggleInventoryWidget();
 	bool ToggleSkillTree();
+	bool ToggleCrafting();
+	bool TryOpenShop();
 	bool IsMenuVisible() const;
 	UMKTooltipBase* GetTooltipWidget() const;
 	void SetHoveredSlot(UMKSlotBase* HoveredSlot);

@@ -25,6 +25,9 @@ public:
 	void GetItem(FName ItemUID = NAME_None, int32 ItemCount = 1);
 
 	UFUNCTION(Exec)
+	void ResetMineableLevel(int32 GenerationSeed = -1);
+
+	UFUNCTION(Exec)
 	void EnableBlockDebugNumbers();
 
 	UFUNCTION(Exec)
@@ -35,6 +38,18 @@ public:
 
 	UFUNCTION(Exec)
 	void ToggleInventoryWidget();
+
+	UFUNCTION(Exec)
+	void OpenShop();
+
+	UFUNCTION(Exec)
+	void UseQuickSlot(int32 SlotNumber = 1);
+
+	UFUNCTION(Exec)
+	void UnlockRecipe(FName RecipeKey);
+
+	UFUNCTION(Exec)
+	void CraftRecipe(FName RecipeKey);
 
 private:
 	class AMKCharacter* GetLocalPlayerCharacter() const;

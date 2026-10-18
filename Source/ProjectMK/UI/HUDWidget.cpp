@@ -4,6 +4,7 @@
 
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/Widget.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
 #include "ProjectMK/UI/MKSlotBase.h"
@@ -55,13 +56,39 @@ bool UHUDWidget::ToggleSkillTree()
 		return false;
 	}
 
-	if (Menu->IsMenuOpen())
+	if (Menu->IsMenuOpen(EMenuContentsType::SkillTree))
 	{
 		Menu->CloseMenu();
 		return false;
 	}
 
 	return Menu->OpenMenu(EMenuContentsType::SkillTree);
+}
+
+bool UHUDWidget::ToggleCrafting()
+{
+	if (::IsValid(Menu) == false)
+	{
+		return false;
+	}
+
+	if (Menu->IsMenuOpen(EMenuContentsType::Crafting))
+	{
+		Menu->CloseMenu();
+		return false;
+	}
+
+	return Menu->OpenMenu(EMenuContentsType::Crafting);
+}
+
+bool UHUDWidget::TryOpenShop()
+{
+	if (::IsValid(Menu) == false)
+	{
+		return false;
+	}
+
+	return Menu->OpenMenu(EMenuContentsType::Shop);
 }
 
 bool UHUDWidget::IsMenuVisible() const
@@ -76,6 +103,11 @@ UMKTooltipBase* UHUDWidget::GetTooltipWidget() const
 
 void UHUDWidget::SetHoveredSlot(UMKSlotBase* InHoveredSlot)
 {
+	if (::IsValid(InHoveredSlot) && InHoveredSlot != HoveredSlot)
+	{
+		USoundManager::TryPlaySFX(this, ESFXType::UI_Hover);
+	}
+
 	HoveredSlot = InHoveredSlot;
 	UpdateTooltipWidget();
 	UpdateTooltipPosition();

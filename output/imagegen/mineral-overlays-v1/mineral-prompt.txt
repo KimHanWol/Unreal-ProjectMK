@@ -1,0 +1,11 @@
+Produce ONE atlas exactly FOUR columns by TWO rows, native target 128x64, eight 32x32 cells. Each cell holds a centered embedded mineral deposit occupying roughly central 18-22 pixels, with at least 5 transparent pixels at each cell edge. Each deposit consists of 3-5 close irregular mineral chunks/facets, a dominant chunk and smaller adjacent fragments; mineral surfaces only, absolutely NO surrounding host rock, soil, stone slab, container or pedestal. Designed as flat frontal mineral inclusions embedded in a terrain wall, not floating inventory loot with perspective or dramatic outlines. Sparse dark material-colored edge pixels help read against dirt, ice, charcoal basalt and gray stone. Transparent gaps between chunks. Leave enough surrounding block visible. No damage cracks; these will be a separate layer.
+Exact order:
+Top row col1 Ore_Coal: matte charcoal-black angular coal cluster with restrained slate blue-gray highlights, rough compact chunks.
+Top row col2 Ore_Copper: recognizable warm reddish copper orange metallic angular nuggets, darker burnt russet shadows, restrained peach highlights.
+Top row col3 Ore_Iron: neutral cool steel-gray chunky jagged metallic ore, broad simple gray facets, tiny subdued rusty brown inclusions, no blue glow.
+Top row col4 Ore_Gold: warm golden-yellow irregular metallic nuggets, ochre shadow and pale yellow selective highlights.
+Bottom row col1 Ore_Emerald: vivid but controlled deep green short prismatic crystal cluster with emerald/lime stepped facets.
+Bottom row col2 Ore_Diamond: icy near-white and pale cyan clear sharp diamond/rhombus facets, white glints and blue-gray edges, distinct from green emerald.
+Bottom row col3 Ore_Titanium: stylized cool bluish gunmetal-silver flattened angular plates, desaturated indigo shadows and lavender-silver highlights, clearly distinct from neutral iron.
+Bottom row col4 Ore_Lithium: stylized pale lilac-pink spodumene-like short elongated crystal blades with muted plum shadows and pale pink-white highlights, distinct from all other ores.
+Consistent pixel scale, light, texture density, centered placement and embedded-deposit composition across all 8. The background of the entire sheet and inside gaps MUST be truly transparent alpha, never black fill or painted checkerboard. No grid or padding between the 32x32 cells.

@@ -16,6 +16,8 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
+#include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
@@ -124,6 +126,18 @@ UAbilitySystemComponent* ABlockBase::GetOwnerASC()
 
 bool ABlockBase::CheckIsDestroyed()
 {
+	UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false)
+	{
+		return false;
+	}
+
+	const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+	if (BlockDataTableRow == nullptr || BlockDataTableRow->bIsMineable == false)
+	{
+		return false;
+	}
+
 	if (::IsValid(AbilitySystemComponent) == false)
 	{
 		return false;
@@ -146,6 +160,13 @@ void ABlockBase::OnDestroyed()
 	}
 
 	bIsDestroying = true;
+
+	UWorld* World = GetWorld();
+	if (ULevelManagerSubsystem* LevelManagerSubsystem = ::IsValid(World) ? World->GetSubsystem<ULevelManagerSubsystem>() : nullptr)
+	{
+		LevelManagerSubsystem->AddPendingBlockBreak(this);
+	}
+
 	OnPreDestroy();
 	PlayDestroyFlipbook();
 }
@@ -241,6 +262,10 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 			BoxCollision->SetBoxExtent(BoxExtent, false);
 			BoxCollision->SetRelativeScale3D(FVector(1.f, 1.f, 1.f));
 			BoxCollision->SetCollisionProfileName(TEXT("BlockAll"));
+			if (BlockDataTableRow->bIsPassableByCharacter)
+			{
+				BoxCollision->SetCollisionResponseToChannel(ECC_Pawn, ECR_Ignore);
+			}
 		}
 		else
 		{
@@ -307,6 +332,50 @@ bool ABlockBase::TryAddSpawnItem(FName ItemKey, int32 ItemCount)
 	return true;
 }
 
+void ABlockBase::SetItemDropEnabled(bool bEnabled)
+{
+	bIsItemDropEnabled = bEnabled;
+}
+
+bool ABlockBase::TryApplyStructureReward(FName ItemKey, int32 ItemCount)
+{
+	if (TryAddSpawnItem(ItemKey, ItemCount) == false)
+	{
+		return false;
+	}
+
+	// 구조물 보상은 플레이어가 미리 보고 노릴 수 있도록 광물 아이콘을 블록 위에 표시한다.
+	UDataManager* DataManager = UDataManager::Get(this);
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
+	UPaperSprite* OverlaySprite = ItemDataTableRow != nullptr ? ItemDataTableRow->ItemIcon.LoadSynchronous() : nullptr;
+	if (::IsValid(ItemSpriteComponent) == false || ::IsValid(OverlaySprite) == false)
+	{
+		return true;
+	}
+
+	float OverlaySpriteScale = 0.7f;
+	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
+	{
+		OverlaySpriteScale = GameSettings->BlockItemOverlaySpriteScale;
+	}
+
+	SelectedItemOverlaySprite = OverlaySprite;
+	ItemSpriteComponent->SetSprite(OverlaySprite);
+	ItemSpriteComponent->SetVisibility(true);
+	ApplySpriteToComponent(ItemSpriteComponent, OverlaySprite, BlockTileData.TileSize, OverlaySpriteScale);
+	return true;
+}
+
+int32 ABlockBase::GetTileIndex() const
+{
+	return BlockTileData.TileSetIndex;
+}
+
+bool ABlockBase::IsBreaking() const
+{
+	return bIsDestroying;
+}
+
 void ABlockBase::StartMineBlock(IMinable* Miner)
 {
 	if (bIsMining)
@@ -344,6 +413,11 @@ void ABlockBase::SetMineableState(bool bInIsMineableState)
 
 bool ABlockBase::IsMineable()
 {
+	if (bIsDestroying)
+	{
+		return false;
+	}
+
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
 	{
@@ -357,6 +431,55 @@ bool ABlockBase::IsMineable()
 	}
 
 	return BlockDataTableRow->bIsMineable && bIsMineableState;
+}
+
+bool ABlockBase::TryDestroyByExplosion()
+{
+	// 떨어지는 중인 블록은 낙하 그룹이 관리하므로 폭발 대상에서 뺀다.
+	if (bIsDestroying || bIsMineableState == false)
+	{
+		return false;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	const FBlockDataTableRow* BlockDataTableRow = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex) : nullptr;
+	if (BlockDataTableRow == nullptr || BlockDataTableRow->bIsExplosionProof)
+	{
+		return false;
+	}
+
+	// 폭발로 부서진 블록은 드롭이 없다. 채굴 보상 스킬이 반응하지 않도록 파괴자도 남기지 않는다.
+	// Rock 처럼 내구도로 부술 수 없는 블록도 바로 파괴하고, 주변 블록은 파괴 이벤트로 낙하 판정을 받는다.
+	SetItemDropEnabled(false);
+	SetLastDamageInstigatorASC(nullptr);
+	OnDestroyed();
+	return true;
+}
+
+void ABlockBase::ApplyCushion()
+{
+	bIsCushioned = true;
+	if (::IsValid(PaperSpriteComponent))
+	{
+		PaperSpriteComponent->SetSpriteColor(CushionTintColor);
+	}
+}
+
+bool ABlockBase::IsCushioned() const
+{
+	return bIsCushioned;
+}
+
+bool ABlockBase::IsSupportAnchor()
+{
+	if (bIsDestroying)
+	{
+		return false;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(this);
+	const FBlockDataTableRow* BlockDataTableRow = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex) : nullptr;
+	return BlockDataTableRow != nullptr && BlockDataTableRow->bIsSupportAnchor && bIsMineableState;
 }
 
 	void ABlockBase::OnPreDestroy()
@@ -379,7 +502,10 @@ bool ABlockBase::IsMineable()
 		MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Block] Sent BlockDestroyed event to %s"), *GetNameSafe(InstigatorAbilitySystemComponent->GetAvatarActor()));
 	}
 
-	SpawnItems();
+	if (bIsItemDropEnabled)
+	{
+		SpawnItems();
+	}
 }
 
 void ABlockBase::PlayDestroyFlipbook()
@@ -639,6 +765,11 @@ void ABlockBase::SpawnItems()
 			SpawnedItem->SetVisualLayer(static_cast<float>(VisualLayerIndex) * 0.1f);
 			++VisualLayerIndex;
 		}
+	}
+
+	if (VisualLayerIndex > 1)
+	{
+		USoundManager::TryPlaySFX(this, ESFXType::Item_Drop);
 	}
 }
 

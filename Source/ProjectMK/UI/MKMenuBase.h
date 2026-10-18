@@ -16,6 +16,8 @@ class PROJECTMK_API UMKMenuBase : public UMKUserWidget
 	GENERATED_BODY()
 
 public:
+	UMKMenuBase(const FObjectInitializer& ObjectInitializer);
+
 	UFUNCTION(BlueprintCallable)
 	bool OpenMenu(EMenuContentsType InMenuContentsType);
 
@@ -23,6 +25,7 @@ public:
 	void CloseMenu();
 
 	bool IsMenuOpen() const;
+	bool IsMenuOpen(EMenuContentsType InMenuContentsType) const;
 
 protected:
 	virtual void BindEvents() override;
@@ -42,6 +45,10 @@ protected:
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UCanvasPanel> MenuContentsCanvasPanel;
+
+	/** MenuContentsCanvasPanel 에 같은 타입의 컨텐츠가 없으면 런타임에 생성해 추가하는 클래스 목록 */
+	UPROPERTY(EditDefaultsOnly, Category = "Menu")
+	TArray<TSubclassOf<UMKMenuContentsBase>> RuntimeMenuContentsClasses;
 
 private:
 	UPROPERTY(Transient)

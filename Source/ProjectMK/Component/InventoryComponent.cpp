@@ -9,6 +9,7 @@
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 
@@ -163,6 +164,17 @@ bool UInventoryComponent::AddItem(FName ItemUID, int32 ItemCount)
 	return true;
 }
 
+bool UInventoryComponent::TryRemoveItem(FName ItemUID, int32 ItemCount)
+{
+	if (ItemUID.IsNone() || ItemCount <= 0 || GetItemCount(ItemUID) < ItemCount)
+	{
+		return false;
+	}
+
+	SpendItem(ItemUID, ItemCount);
+	return true;
+}
+
 void UInventoryComponent::RemoveAllOreItems()
 {
 	UDataManager* DataManager = UDataManager::Get(this);
@@ -194,6 +206,13 @@ void UInventoryComponent::RemoveAllOreItems()
 	{
 		OnInventoryUpdated();
 	}
+}
+
+void UInventoryComponent::ApplySavedInventorySlots(const TArray<FInventorySlotData>& SavedSlotDataList)
+{
+	InventorySlotDataList = SavedSlotDataList;
+	UpdateInventorySlotDataList();
+	OnInventoryUpdated();
 }
 
 bool UInventoryComponent::CanGainItem(FName ItemUID, int32 ItemCount)
@@ -232,6 +251,7 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	{
 		if (CanGainItem(ItemKey, ItemCount) == false)
 		{
+			TryPlayInventoryFullSFX();
 			return false;
 		}
 
@@ -247,6 +267,7 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	}
 
 	ItemActor->OnLootFinished();
+	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_Pickup);
 	return true;
 }
 
@@ -327,7 +348,7 @@ bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRec
 	{
 		SpendItem(RequiredItem.GetItemKey(), RequiredItem.ItemCount);
 	}
-	AddItem(ShopRecipeData.GetResultItemKey(), 1);
+	AddItem(ShopRecipeData.GetResultItemKey(), FMath::Max(1, ShopRecipeData.ResultItemCount));
 
 	return true;
 }
@@ -363,12 +384,68 @@ bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& Shop
 		}
 	}
 
-	if (CalculateAvailableItemCapacity(ShopRecipeData.GetResultItemKey()) <= 0 && SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false)
+	if (CalculateAvailableItemCapacity(ShopRecipeData.GetResultItemKey()) < FMath::Max(1, ShopRecipeData.ResultItemCount) && SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false)
 	{
 		return false;
 	}
 
 	return true;
+}
+
+bool UInventoryComponent::TrySellItem(FName ItemUID, int32 ItemCount)
+{
+	const int32 SellItemCount = FMath::Min(ItemCount, GetItemCount(ItemUID));
+	const int32 SellPrice = CalculateSellPrice(ItemUID, SellItemCount);
+	if (SellPrice <= 0)
+	{
+		return false;
+	}
+
+	AMKCharacter* OwnerCharacter = Cast<AMKCharacter>(GetOwner());
+	USkillComponent* SkillComponent = ::IsValid(OwnerCharacter) ? OwnerCharacter->GetSkillComponent() : nullptr;
+	if (::IsValid(SkillComponent) == false)
+	{
+		return false;
+	}
+
+	SpendItem(ItemUID, SellItemCount);
+	// 코인 획득 배율은 채굴 중 코인 드롭량에만 적용하고 판매 대금에는 적용하지 않는다.
+	SkillComponent->TryAddCoin(SellPrice, false);
+	return true;
+}
+
+bool UInventoryComponent::TrySellAllItems()
+{
+	bool bSoldAnyItem = false;
+	for (const TPair<FName, int32>& InventoryItemPair : GetInventoryItems())
+	{
+		bSoldAnyItem |= TrySellItem(InventoryItemPair.Key, InventoryItemPair.Value);
+	}
+
+	return bSoldAnyItem;
+}
+
+int32 UInventoryComponent::CalculateSellPrice(FName ItemUID, int32 ItemCount) const
+{
+	if (ItemUID.IsNone() || ItemCount <= 0)
+	{
+		return 0;
+	}
+
+	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	if (::IsValid(DataManager) == false)
+	{
+		return 0;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
+	// SellPrice 가 0 인 아이템(소모품 등)은 판매하지 않는다.
+	if (ItemDataTableRow == nullptr)
+	{
+		return 0;
+	}
+
+	return FMath::Max(0, ItemDataTableRow->SellPrice) * ItemCount;
 }
 
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
@@ -694,6 +771,25 @@ bool UInventoryComponent::TryGrantNonInventoryItem(FName ItemKey, int32 ItemCoun
 	}
 
 	return false;
+}
+
+void UInventoryComponent::TryPlayInventoryFullSFX()
+{
+	const UWorld* World = GetWorld();
+	if (::IsValid(World) == false)
+	{
+		return;
+	}
+
+	// 자석으로 끌려온 아이템이 매 프레임 수집에 실패할 수 있어 재생 간격을 제한한다.
+	const float CurrentTime = World->GetTimeSeconds();
+	if (LastInventoryFullSFXTime >= 0.f && CurrentTime - LastInventoryFullSFXTime < InventoryFullSFXCooldown)
+	{
+		return;
+	}
+
+	LastInventoryFullSFXTime = CurrentTime;
+	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Inventory_Full);
 }
 
 void UInventoryComponent::OnSphereOverlap(UPrimitiveComponent* OverlappedComponent, AActor* OtherActor, UPrimitiveComponent* OtherComp, int32 OtherBodyIndex, bool bFromSweep, const FHitResult& SweepResult)

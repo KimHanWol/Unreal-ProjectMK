@@ -7,6 +7,7 @@
 #include "GameplayTagContainer.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
@@ -69,5 +70,6 @@ void UGA_LuckyStrike::OnDrillHitBlockEvent(FGameplayEventData Payload)
 	}
 
 	FGameplayAbilityUtils::ApplyDamageToDurability(TargetAbilitySystemComponent, OwnerAbilitySystemComponent, BlockAttributeSet->GetDurability());
+	USoundManager::TryPlaySFX(GetAvatarActorFromActorInfo(), ESFXType::Skill_LuckyStrike);
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][LuckyStrike] Applied jackpot damage %.2f to %s"), BlockAttributeSet->GetDurability(), *GetNameSafe(TargetBlock));
 }

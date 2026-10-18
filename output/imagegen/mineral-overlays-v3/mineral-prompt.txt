@@ -1,0 +1,15 @@
+Create a transparent mineral-overlay sprite atlas for this game's terrain. Use the recent user-provided Minecraft iron-ore image ONLY as reference for DISTRIBUTION: many small flush mineral inclusions scattered over a broad area, not a central loot cluster. Do not reproduce Minecraft's coarse 16px graphics or the gray host rock. The other user image shows the FAILURE to avoid: a tiny lump grouped at center.
+EXACT output arrangement: four columns, two rows, 8 equally sized logical 32x32 cells, total native target 128x64. Top row coal, copper, iron, gold. Bottom row emerald, diamond, titanium, lithium.
+In EACH 32x32 cell, leave an entirely transparent outer margin of 4 pixels on all sides. Distribute 8-12 small irregular flat mineral surface patches throughout the central 24x24 region (coordinates 4..27), balanced across upper, lower, left, right and center, no single central clump, no empty large quadrant. Patches typically 2x2 to 4x3 logical pixels, with a few short connected 5x2 or 6x2 veins, uneven spacing and natural varied orientations. Some nearby patches join into short angular bands; others stay separate. Overall mineral surface coverage about 90-130 pixels per tile, remaining pixels transparent. Distribution should span nearly the whole inner region, not just its central 12 pixels.
+Minerals are FLAT exposed cross-sections embedded flush in terrain: shallow 2-3 tone facets, subdued highlights, no raised gems, no tall crystals, no pebbles, no spherical nuggets, no cast shadows, no thick outlining, no host-rock backing. More like naturally exposed flecks and thin veins in a rock face than dropped inventory items.
+Unified crisp 32x32 pixel art with deliberate clean clusters, controlled saturation, modest upper-left light, 3-4 stepped colors per mineral, no antialiasing/blur/glow/gradients.
+Recognizable palettes and subtle flat patch shapes:
+Coal charcoal black with muted slate edge highlights, irregular angular flat patches.
+Copper warm reddish copper with russet shadows and restrained peach.
+Iron neutral steel gray and muted rusty taupe, angular short seams.
+Gold ochre and warm golden yellow with sparse pale yellow pixels.
+Emerald medium/deep green with restrained lighter green small polygonal faces.
+Diamond pale cyan-white with blue-gray flat polygonal edges.
+Titanium desaturated blue-gray silver with lavender highlights, flat angular plate-like flecks.
+Lithium pale pink-lilac with muted plum shadow, short flat angular strips.
+No labels, text, numbers, grid lines, tile borders, surrounding terrain, stone, pedestal or scene. True TRANSPARENT ALPHA around and between every mineral patch. All eight cells follow the same broad distribution and scale but have natural varied placements. Deliver only the 4x2 overlay atlas.

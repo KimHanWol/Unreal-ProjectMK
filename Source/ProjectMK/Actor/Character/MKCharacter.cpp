@@ -6,24 +6,34 @@
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "DrawDebugHelpers.h"
+#include "Engine/OverlapResult.h"
 #include "Engine/Texture2D.h"
 #include "GameplayEffect.h"
 #include "GameFramework/CharacterMovementComponent.h"
+#include "GameFramework/PlayerController.h"
 #include "GameplayTagContainer.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperSprite.h"
+#include "TimerManager.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
+#include "ProjectMK/Component/ConsumableComponent.h"
+#include "ProjectMK/Component/CraftingComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/MagnetRangeComponent.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
+#include "ProjectMK/Core/MKSaveGame.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
+#include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
+#include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/Interface/Interactable.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
@@ -31,6 +41,9 @@ namespace
 	constexpr float DisabledPostProcessValue = 0.f;
 	constexpr float LockedExposureValue = 1.f;
 	constexpr TextureFilter StableSpriteTextureFilter = TF_Bilinear;
+	constexpr int32 QuickSlotInputCount = 8;
+
+	DECLARE_DELEGATE_OneParam(FQuickSlotInputDelegate, int32);
 
 	void ApplyCameraPostProcessOverrides(FPostProcessSettings& PostProcessSettings)
 	{
@@ -65,6 +78,8 @@ AMKCharacter::AMKCharacter()
 	MagnetRangeComponent->SetVisibility(false);
 
 	SkillComponent = CreateDefaultSubobject<USkillComponent>(TEXT("SkillComponent"));
+	ConsumableComponent = CreateDefaultSubobject<UConsumableComponent>(TEXT("ConsumableComponent"));
+	CraftingComponent = CreateDefaultSubobject<UCraftingComponent>(TEXT("CraftingComponent"));
 
 	CharacterVisualComponent = CreateDefaultSubobject<UMKCharacterVisualComponent>(TEXT("CharacterVisualComponent"));
 	CharacterVisualComponent->SetupAttachment(GetSprite());
@@ -103,6 +118,7 @@ void AMKCharacter::BeginPlay()
 	InitializeCharacterAttributes();
 	BindEvents();
 	ApplyInitialEffects();
+	ApplySaveGame();
 
 	if (::IsValid(MagnetRangeComponent) && ::IsValid(AttributeSet_Character))
 	{
@@ -117,6 +133,8 @@ void AMKCharacter::BeginPlay()
 
 void AMKCharacter::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
+	GetWorldTimerManager().ClearTimer(KnockbackRecoveryTimerHandle);
+	TrySaveGame();
 	ClearOxygenDrainEffect();
 	UnbindEvents();
 
@@ -136,6 +154,13 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
 	PlayerInputComponent->BindAction("Magnet", IE_Pressed, this, &AMKCharacter::OnActivateMagnet);
 	PlayerInputComponent->BindAction("Magnet", IE_Released, this, &AMKCharacter::OnDeactivateMagnet);
+	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMKCharacter::OnInteract);
+
+	for (int32 SlotIndex = 0; SlotIndex < QuickSlotInputCount; ++SlotIndex)
+	{
+		const FName QuickSlotActionName(*FString::Printf(TEXT("QuickSlot%d"), SlotIndex + 1));
+		PlayerInputComponent->BindAction<FQuickSlotInputDelegate>(QuickSlotActionName, IE_Pressed, this, &AMKCharacter::OnQuickSlot, SlotIndex);
+	}
 
 	PlayerInputComponent->BindAxis("MoveRight", this, &AMKCharacter::OnMoveRight);
 	PlayerInputComponent->BindAxis("LookRight", this, &AMKCharacter::OnLookRight);
@@ -180,6 +205,20 @@ void AMKCharacter::BindEvents()
 		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &AMKCharacter::OnInventoryChanged);
 	}
 
+	if (::IsValid(SkillComponent))
+	{
+		SkillComponent->OnSkillPurchasedDelegate.RemoveAll(this);
+		SkillComponent->OnSkillPurchasedDelegate.AddUObject(this, &AMKCharacter::OnSkillPurchased);
+	}
+
+	if (::IsValid(CraftingComponent))
+	{
+		CraftingComponent->OnRecipeUnlockedDelegate.RemoveAll(this);
+		CraftingComponent->OnRecipeUnlockedDelegate.AddUObject(this, &AMKCharacter::OnRecipeChanged);
+		CraftingComponent->OnRecipeCraftedDelegate.RemoveAll(this);
+		CraftingComponent->OnRecipeCraftedDelegate.AddUObject(this, &AMKCharacter::OnRecipeChanged);
+	}
+
 	if (::IsValid(MagnetRangeComponent))
 	{
 		MagnetRangeComponent->OnExpansionFinishedDelegate.RemoveAll(this);
@@ -199,6 +238,17 @@ void AMKCharacter::UnbindEvents()
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
+	}
+
+	if (::IsValid(SkillComponent))
+	{
+		SkillComponent->OnSkillPurchasedDelegate.RemoveAll(this);
+	}
+
+	if (::IsValid(CraftingComponent))
+	{
+		CraftingComponent->OnRecipeUnlockedDelegate.RemoveAll(this);
+		CraftingComponent->OnRecipeCraftedDelegate.RemoveAll(this);
 	}
 
 	if (::IsValid(MagnetRangeComponent))
@@ -230,14 +280,27 @@ void AMKCharacter::OnDestroyed()
 	}
 
 	bIsRespawning = true;
+	USoundManager::TryPlaySFX(this, ESFXType::Character_Death);
+	if (::IsValid(ConsumableComponent))
+	{
+		ConsumableComponent->ClearRecall();
+	}
+
 	ApplyDeathPenalty();
 	RespawnAtSpawnLocation();
+	TrySaveGame();
 	bIsRespawning = false;
 }
 
 void AMKCharacter::ApplyDeathPenalty()
 {
 	if (::IsValid(AttributeSet_Character) == false || ::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	// 보험 증서가 있으면 1개 소모하고 코인·광물 손실을 막는다.
+	if (::IsValid(ConsumableComponent) && ConsumableComponent->TryConsumeInsurance())
 	{
 		return;
 	}
@@ -256,7 +319,11 @@ void AMKCharacter::ApplyDeathPenalty()
 
 void AMKCharacter::RespawnAtSpawnLocation()
 {
+	GetWorldTimerManager().ClearTimer(KnockbackRecoveryTimerHandle);
+	KnockbackEndTime = 0.0;
+	bPreserveKnockbackFacing = false;
 	bIsFlying = false;
+	USoundManager::TryStopSFX(this, ESFXType::Floating);
 
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (::IsValid(MoveComp))
@@ -266,11 +333,29 @@ void AMKCharacter::RespawnAtSpawnLocation()
 	}
 
 	SetActorTransform(SpawnTransform, false, nullptr, ETeleportType::TeleportPhysics);
+	USoundManager::TryPlaySFX(this, ESFXType::Character_Respawn);
 
 	if (::IsValid(AttributeSet_Character) && ::IsValid(AbilitySystemComponent))
 	{
 		AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCurrentHealthAttribute(), AttributeSet_Character->GetMaxHealth());
 	}
+}
+
+void AMKCharacter::ApplyKnockback(float HorizontalVelocity, float UpwardVelocity, float RecoveryTime)
+{
+	if (::IsValid(GetCharacterMovement()) == false || RecoveryTime <= 0.f || FMath::IsNearlyZero(HorizontalVelocity) || bIsRespawning)
+	{
+		return;
+	}
+	KnockbackAnimationType = GetCurrentCharacterAnimationType();
+	if (KnockbackAnimationType == ECharacterAnimationType::Walk_Left) { KnockbackAnimationType = ECharacterAnimationType::Idle_Left; }
+	else if (KnockbackAnimationType == ECharacterAnimationType::Walk_Right) { KnockbackAnimationType = ECharacterAnimationType::Idle_Right; }
+	bPreserveKnockbackFacing = true;
+	KnockbackEndTime = GetWorld()->GetTimeSeconds() + RecoveryTime;
+	ConsumeMovementInputVector();
+	// 한 번의 충격 이후에는 중력과 충돌이 튕김 궤적을 결정한다.
+	LaunchCharacter(FVector(HorizontalVelocity, 0.f, FMath::Max(0.f, UpwardVelocity)), true, true);
+	GetWorldTimerManager().SetTimer(KnockbackRecoveryTimerHandle, this, &AMKCharacter::ClearKnockback, RecoveryTime, false);
 }
 
 float AMKCharacter::CalculateCurrentMoveSpeed() const
@@ -290,6 +375,29 @@ float AMKCharacter::CalculateCurrentMoveSpeed() const
 	const float InventoryBurdenMoveSpeedPenaltyRate = AttributeSet_Character->GetInventoryBurdenMoveSpeedPenaltyRate();
 	const float MoveSpeedMultiplier = 1.f - (InventoryOccupancyRatio * InventoryBurdenMoveSpeedPenaltyRate);
 	return FMath::Max(0.f, BaseMoveSpeed * FMath::Max(0.f, MoveSpeedMultiplier));
+}
+
+void AMKCharacter::SetMenuInputBlocked(bool bBlocked)
+{
+	if (bIsMenuInputBlocked == bBlocked)
+	{
+		return;
+	}
+	bIsMenuInputBlocked = bBlocked;
+	APlayerController* PlayerController = Cast<APlayerController>(GetController());
+	if (bBlocked)
+	{
+		CharacterDir = FVector::ZeroVector;
+		TryDrill();
+		OnFinishFly();
+		OnDeactivateMagnet();
+		GetCharacterMovement()->StopMovementImmediately();
+		DisableInput(PlayerController);
+	}
+	else
+	{
+		EnableInput(PlayerController);
+	}
 }
 
 void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
@@ -332,6 +440,8 @@ void AMKCharacter::ApplyInitialEffects()
 		return;
 	}
 
+	// Init 이펙트가 MaxHealth 를 먼저 올리는 동안 CurrentHealth 가 0 인 채로 변경 콜백이 호출되어 사망 처리되는 것을 막는다.
+	bIsApplyingInitialEffects = true;
 	for (const TSubclassOf<UGameplayEffect>& InitialGameplayEffect : InitialGameplayEffects)
 	{
 		if (::IsValid(InitialGameplayEffect) == false)
@@ -341,6 +451,7 @@ void AMKCharacter::ApplyInitialEffects()
 
 		FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, InitialGameplayEffect);
 	}
+	bIsApplyingInitialEffects = false;
 
 	RestoreOxygenToMax();
 }
@@ -373,8 +484,44 @@ void AMKCharacter::TryDrill()
 	}
 }
 
+bool AMKCharacter::TryInteractNearby()
+{
+	UWorld* World = GetWorld();
+	if (::IsValid(World) == false)
+	{
+		return false;
+	}
+
+	TArray<FOverlapResult> OverlapResults;
+	FCollisionQueryParams QueryParams;
+	QueryParams.AddIgnoredActor(this);
+	World->OverlapMultiByChannel(OverlapResults, GetActorLocation(), FQuat::Identity, ECC_Visibility, FCollisionShape::MakeSphere(InteractSearchRadius), QueryParams);
+
+	IInteractable* NearestInteractable = nullptr;
+	float NearestDistanceSquared = TNumericLimits<float>::Max();
+	for (const FOverlapResult& OverlapResult : OverlapResults)
+	{
+		AActor* OverlapActor = OverlapResult.GetActor();
+		IInteractable* Interactable = Cast<IInteractable>(OverlapActor);
+		if (Interactable == nullptr || Interactable->CanInteract(this) == false)
+		{
+			continue;
+		}
+
+		const float DistanceSquared = FVector::DistSquared(GetActorLocation(), OverlapActor->GetActorLocation());
+		if (DistanceSquared < NearestDistanceSquared)
+		{
+			NearestDistanceSquared = DistanceSquared;
+			NearestInteractable = Interactable;
+		}
+	}
+
+	return NearestInteractable != nullptr && NearestInteractable->TryInteract(this);
+}
+
 void AMKCharacter::UpdateHorizontalMovement()
 {
+	if (IsKnockedBack()) { return; }
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
 	{
@@ -398,6 +545,7 @@ void AMKCharacter::UpdateHorizontalMovement()
 
 void AMKCharacter::UpdateFlyingVerticalVelocity() const
 {
+	if (IsKnockedBack()) { return; }
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (::IsValid(MoveComp) == false || ::IsValid(AttributeSet_Character) == false)
 	{
@@ -486,6 +634,15 @@ void AMKCharacter::ApplyDamageInvincibility()
 	FGameplayAbilityUtils::ApplyGameplayEffectToSelf(AbilitySystemComponent, EffectClass);
 }
 
+void AMKCharacter::ClearKnockback()
+{
+	KnockbackEndTime = 0.0;
+	if (bIsFlying && bIsRespawning == false && ::IsValid(GetCharacterMovement()))
+	{
+		GetCharacterMovement()->SetMovementMode(MOVE_Flying);
+	}
+}
+
 void AMKCharacter::ApplyOxygenDrainEffect(float OxygenDrainPerSecond)
 {
 	if (::IsValid(AbilitySystemComponent) == false)
@@ -562,8 +719,16 @@ void AMKCharacter::UpdateOxygen()
 	{
 		ClearOxygenDrainEffect();
 		RestoreOxygenToMax();
+		if (bIsOnSurface == false)
+		{
+			bIsOnSurface = true;
+			USoundManager::TryPlaySFX(this, ESFXType::Oxygen_Refill);
+			TrySaveGame();
+		}
 		return;
 	}
+
+	bIsOnSurface = false;
 
 	const int32 DepthBelowSurface = CurrentBlockDepth - GameSettings->SurfaceBlockPositionY;
 	const int32 DepthPerOxygenLoss = FMath::Max(1, GameSettings->DepthPerOxygenLoss);
@@ -571,6 +736,81 @@ void AMKCharacter::UpdateOxygen()
 	const float OxygenDrainMultiplier = AttributeSet_Character->GetOxygenDrainMultiplier();
 	const float OxygenDrainPerSecond = BaseOxygenDrainPerSecond * FMath::Max(0.f, OxygenDrainMultiplier);
 	ApplyOxygenDrainEffect(OxygenDrainPerSecond);
+}
+
+void AMKCharacter::ApplySaveGame()
+{
+	const USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
+	const UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
+	if (::IsValid(SaveGame) == false)
+	{
+		return;
+	}
+
+	// 스킬 효과가 인벤토리 슬롯 수를 바꿀 수 있어 스킬을 먼저 복원한다.
+	if (::IsValid(SkillComponent))
+	{
+		SkillComponent->ApplySavedSkills(SaveGame->PurchasedSkillKeys);
+	}
+
+	if (::IsValid(AbilitySystemComponent))
+	{
+		AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), static_cast<float>(SaveGame->Coin));
+	}
+
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->ApplySavedInventorySlots(SaveGame->InventorySlotDataList);
+	}
+
+	if (::IsValid(CraftingComponent))
+	{
+		CraftingComponent->ApplySavedRecipes(SaveGame->UnlockedRecipeKeys);
+	}
+
+	bHasAppliedSaveGame = true;
+}
+
+bool AMKCharacter::TrySaveGame()
+{
+	USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
+	UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
+	// 세이브 데이터를 적용하기 전(BeginPlay 초기화 중)에 저장하면 기존 진행이 초기값으로 덮어써진다.
+	if (bHasAppliedSaveGame == false)
+	{
+		return false;
+	}
+
+	if (::IsValid(SaveGame) == false || ::IsValid(AttributeSet_Character) == false)
+	{
+		return false;
+	}
+
+	SaveGame->Coin = FMath::FloorToInt(AttributeSet_Character->GetCoin());
+
+	if (::IsValid(SkillComponent))
+	{
+		SaveGame->PurchasedSkillKeys = SkillComponent->GetPurchasedSkillKeys();
+	}
+
+	if (::IsValid(InventoryComponent))
+	{
+		SaveGame->InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
+	}
+
+	if (::IsValid(CraftingComponent))
+	{
+		SaveGame->UnlockedRecipeKeys = CraftingComponent->GetPurchasedRecipeKeys();
+	}
+
+	const UWorld* World = GetWorld();
+	const ULevelManagerSubsystem* LevelManagerSubsystem = ::IsValid(World) ? World->GetSubsystem<ULevelManagerSubsystem>() : nullptr;
+	if (::IsValid(LevelManagerSubsystem))
+	{
+		SaveGame->GenerationSeed = LevelManagerSubsystem->GetLastGenerationSeed();
+	}
+
+	return SaveGameSubsystem->TrySaveGameToSlot();
 }
 
 FVector AMKCharacter::GetCharacterDirection() const
@@ -583,9 +823,30 @@ FVector AMKCharacter::GetDrillingVector() const
 	return DrillingVector;
 }
 
+bool AMKCharacter::IsKnockedBack() const
+{
+	return GetWorld() != nullptr && GetWorld()->GetTimeSeconds() < KnockbackEndTime;
+}
+
+bool AMKCharacter::IsOnGround() const
+{
+	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	return ::IsValid(MoveComp) && MoveComp->IsMovingOnGround();
+}
+
 USkillComponent* AMKCharacter::GetSkillComponent() const
 {
 	return SkillComponent.Get();
+}
+
+UConsumableComponent* AMKCharacter::GetConsumableComponent() const
+{
+	return ConsumableComponent.Get();
+}
+
+UCraftingComponent* AMKCharacter::GetCraftingComponent() const
+{
+	return CraftingComponent.Get();
 }
 
 TSubclassOf<UGameplayAbility> AMKCharacter::GetPrimaryDrillAbilityClass() const
@@ -616,6 +877,7 @@ const UGameSettingDataAsset* AMKCharacter::GetGameSettings() const
 
 ECharacterAnimationType AMKCharacter::GetCurrentCharacterAnimationType() const
 {
+	if (bPreserveKnockbackFacing) { return KnockbackAnimationType; }
 	const auto GetLastIdleAnimationType = [this]() -> ECharacterAnimationType
 	{
 		switch (CurrentCharacterAnimationType)
@@ -741,18 +1003,24 @@ const FCharacterDataTableRow* AMKCharacter::GetCharacterData() const
 
 void AMKCharacter::OnLookRight(float Value)
 {
+	if (IsKnockedBack()) { return; }
+	if (FMath::IsNearlyZero(Value) == false) { bPreserveKnockbackFacing = false; }
 	CharacterDir.X = Value;
 	TryDrill();
 }
 
 void AMKCharacter::OnLookUp(float Value)
 {
+	if (IsKnockedBack()) { return; }
+	if (FMath::IsNearlyZero(Value) == false) { bPreserveKnockbackFacing = false; }
 	CharacterDir.Z = Value;
 	TryDrill();
 }
 
 void AMKCharacter::OnMoveRight(float Value)
 {
+	if (IsKnockedBack()) { return; }
+	if (FMath::IsNearlyZero(Value) == false) { bPreserveKnockbackFacing = false; }
 	CharacterDir.X = Value;
 	UpdateHorizontalMovement();
 }
@@ -760,6 +1028,8 @@ void AMKCharacter::OnMoveRight(float Value)
 void AMKCharacter::OnFly()
 {
 	bIsFlying = true;
+	USoundManager::TryPlaySFX(this, ESFXType::Floating);
+	if (IsKnockedBack()) { return; }
 
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (::IsValid(MoveComp) == false)
@@ -774,6 +1044,7 @@ void AMKCharacter::OnFly()
 void AMKCharacter::OnFinishFly()
 {
 	bIsFlying = false;
+	USoundManager::TryStopSFX(this, ESFXType::Floating);
 
 	UCharacterMovementComponent* MoveComp = GetCharacterMovement();
 	if (::IsValid(MoveComp) == false)
@@ -790,6 +1061,7 @@ void AMKCharacter::OnFinishFly()
 void AMKCharacter::OnActivateMagnet()
 {
 	bIsMagnetInputHeld = true;
+	USoundManager::TryPlaySFX(this, ESFXType::Magnet_Activate);
 
 	if (::IsValid(InventoryComponent))
 	{
@@ -814,6 +1086,19 @@ void AMKCharacter::OnDeactivateMagnet()
 	if (::IsValid(MagnetRangeComponent))
 	{
 		MagnetRangeComponent->StartCollapse();
+	}
+}
+
+void AMKCharacter::OnInteract()
+{
+	TryInteractNearby();
+}
+
+void AMKCharacter::OnQuickSlot(int32 SlotIndex)
+{
+	if (::IsValid(ConsumableComponent))
+	{
+		ConsumableComponent->TryUseInventorySlot(SlotIndex);
 	}
 }
 
@@ -856,14 +1141,34 @@ void AMKCharacter::OnInventoryChanged()
 	UpdateHorizontalMovement();
 }
 
+void AMKCharacter::OnSkillPurchased(FName PurchasedSkillKeyName)
+{
+	TrySaveGame();
+}
+
+void AMKCharacter::OnRecipeChanged(FName RecipeKey)
+{
+	TrySaveGame();
+}
+
 void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
 {
+	if (bIsApplyingInitialEffects)
+	{
+		return;
+	}
+
+	const bool bIsDestroyed = CheckIsDestroyed();
 	if (Data.NewValue < Data.OldValue)
 	{
 		ApplyDamageInvincibility();
+		if (bIsDestroyed == false)
+		{
+			USoundManager::TryPlaySFX(this, ESFXType::Character_Hit);
+		}
 	}
 
-	if (CheckIsDestroyed())
+	if (bIsDestroyed)
 	{
 		OnDestroyed();
 	}
@@ -871,4 +1176,15 @@ void AMKCharacter::OnCurrentHealthChanged(const FOnAttributeChangeData& Data)
 
 void AMKCharacter::OnCurrentOxygenChanged(const FOnAttributeChangeData& Data)
 {
+	const UGameSettingDataAsset* GameSettings = GetGameSettings();
+	if (::IsValid(GameSettings) == false || ::IsValid(AttributeSet_Character) == false || AttributeSet_Character->GetMaxOxygen() <= 0.f)
+	{
+		return;
+	}
+
+	const float LowOxygenThreshold = AttributeSet_Character->GetMaxOxygen() * GameSettings->LowOxygenWarningRatio;
+	if (Data.OldValue > LowOxygenThreshold && Data.NewValue <= LowOxygenThreshold)
+	{
+		USoundManager::TryPlaySFX(this, ESFXType::Oxygen_Low);
+	}
 }

@@ -1,0 +1,12 @@
+{
+  "tileSize": [32, 32],
+  "atlasSize": [128, 64],
+  "columns": 4,
+  "rows": 2,
+  "rowMajorKeys": ["Ore_Coal", "Ore_Copper", "Ore_Iron", "Ore_Gold", "Ore_Emerald", "Ore_Diamond", "Ore_Titanium", "Ore_Lithium"],
+  "source": "Content/Data/DataTable/ItemDataTable.uasset",
+  "excludedTestRow": "Ore_Test",
+  "layerOrder": ["block", "mineral", "damage"],
+  "previewColumns": "rowMajorKeys order",
+  "previewRows": ["dirt", "ice", "magma", "stone"]
+}

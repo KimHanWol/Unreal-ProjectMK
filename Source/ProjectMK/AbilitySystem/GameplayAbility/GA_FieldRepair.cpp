@@ -6,6 +6,7 @@
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
 #include "GameplayTagContainer.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
@@ -162,6 +163,11 @@ void UGA_FieldRepair::OnRepairIntervalFinished()
 					BuffDuration);
 			}
 		}
+	}
+
+	if (ActiveBuffEffectHandleList.IsEmpty() == false)
+	{
+		USoundManager::TryPlaySFX(GetAvatarActorFromActorInfo(), ESFXType::Skill_FieldRepair);
 	}
 
 	WaitForBuffEnd();

@@ -9,6 +9,8 @@
 #include "Kismet/GameplayStatics.h"
 #include "Modules/ModuleManager.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Component/ConsumableComponent.h"
+#include "ProjectMK/Component/CraftingComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Controller/MKPlayerController.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
@@ -166,6 +168,36 @@ void UMKCheatManager::GetItem(FName ItemUID, int32 ItemCount)
 	GiveItem(ItemUID, ItemCount);
 }
 
+void UMKCheatManager::ResetMineableLevel(int32 GenerationSeed)
+{
+	UWorld* World = GetWorld();
+	if (::IsValid(World) == false)
+	{
+		SendCheatMessage(this, TEXT("ResetMineableLevel failed: World is invalid."));
+		return;
+	}
+
+	ULevelManagerSubsystem* LevelManagerSubsystem = World->GetSubsystem<ULevelManagerSubsystem>();
+	if (::IsValid(LevelManagerSubsystem) == false)
+	{
+		SendCheatMessage(this, TEXT("ResetMineableLevel failed: LevelManagerSubsystem is invalid."));
+		return;
+	}
+
+	AMKCharacter* PlayerCharacter = GetLocalPlayerCharacter();
+	if (::IsValid(PlayerCharacter) == false)
+	{
+		SendCheatMessage(this, TEXT("ResetMineableLevel failed: PlayerCharacter is invalid."));
+		return;
+	}
+
+	LevelManagerSubsystem->ResetMineableLevel(GenerationSeed);
+	PlayerCharacter->RespawnAtSpawnLocation();
+	SendCheatMessage(
+		this,
+		FString::Printf(TEXT("Mineable level reset with seed %d."), LevelManagerSubsystem->GetLastGenerationSeed()));
+}
+
 void UMKCheatManager::EnableBlockDebugNumbers()
 {
 	UWorld* World = GetWorld();
@@ -204,5 +236,42 @@ void UMKCheatManager::ToggleInventoryWidget()
 	}
 
 	PlayerController->ToggleInventoryWidget();
+}
+
+void UMKCheatManager::OpenShop()
+{
+	AMKPlayerController* PlayerController = GetMKPlayerController();
+	if (::IsValid(PlayerController) == false || PlayerController->TryOpenShop() == false)
+	{
+		SendCheatMessage(this, TEXT("OpenShop failed: Menu is invalid."));
+	}
+}
+
+void UMKCheatManager::UseQuickSlot(int32 SlotNumber)
+{
+	AMKCharacter* LocalCharacter = GetLocalPlayerCharacter();
+	UConsumableComponent* ConsumableComponent = ::IsValid(LocalCharacter) ? LocalCharacter->GetConsumableComponent() : nullptr;
+	UInventoryComponent* InventoryComponent = ::IsValid(LocalCharacter) ? LocalCharacter->FindComponentByClass<UInventoryComponent>() : nullptr;
+	const TArray<FInventorySlotData> SlotDataList = ::IsValid(InventoryComponent) ? InventoryComponent->GetInventorySlotDataList() : TArray<FInventorySlotData>();
+	const FName SlotItemUID = SlotDataList.IsValidIndex(SlotNumber - 1) ? SlotDataList[SlotNumber - 1].ItemUID : NAME_None;
+	const bool bUsed = ::IsValid(ConsumableComponent) && ConsumableComponent->TryUseInventorySlot(SlotNumber - 1);
+	const int32 RemainingCount = ::IsValid(InventoryComponent) ? InventoryComponent->GetItemCount(SlotItemUID) : 0;
+	SendCheatMessage(this, FString::Printf(TEXT("UseQuickSlot %d (%s): %s, remaining %d"), SlotNumber, *SlotItemUID.ToString(), bUsed ? TEXT("used") : TEXT("failed"), RemainingCount));
+}
+
+void UMKCheatManager::UnlockRecipe(FName RecipeKey)
+{
+	AMKCharacter* LocalCharacter = GetLocalPlayerCharacter();
+	UCraftingComponent* CraftingComponent = ::IsValid(LocalCharacter) ? LocalCharacter->GetCraftingComponent() : nullptr;
+	const bool bUnlocked = ::IsValid(CraftingComponent) && CraftingComponent->TryUnlockRecipe(RecipeKey);
+	SendCheatMessage(this, FString::Printf(TEXT("UnlockRecipe %s: %s"), *RecipeKey.ToString(), bUnlocked ? TEXT("unlocked") : TEXT("failed")));
+}
+
+void UMKCheatManager::CraftRecipe(FName RecipeKey)
+{
+	AMKCharacter* LocalCharacter = GetLocalPlayerCharacter();
+	UCraftingComponent* CraftingComponent = ::IsValid(LocalCharacter) ? LocalCharacter->GetCraftingComponent() : nullptr;
+	const bool bCrafted = ::IsValid(CraftingComponent) && CraftingComponent->TryCraftRecipe(RecipeKey);
+	SendCheatMessage(this, FString::Printf(TEXT("CraftRecipe %s: %s"), *RecipeKey.ToString(), bCrafted ? TEXT("crafted") : TEXT("failed")));
 }
 

@@ -1,0 +1,12 @@
+COLOR-ONLY EDIT. Image 1 is the TARGET mineral atlas, image 2 is TERRAIN PALETTE REFERENCE ONLY. Retain EXACT original mineral positions, silhouettes, pixel cluster shapes, distribution, connection, sizes, transparent spaces and 4x2 ordering. Do not redraw or rearrange anything. Recolor the existing mineral pixels to integrate with terrain and remove the glossy black-outline sticker look.
+Top coal: charcoal slate with muted medium gray highlights, not white.
+Copper: dusty warm terracotta/copper-brown, restrained ochre-peach highlights, not vivid orange.
+Iron: medium neutral gray with subtly warm gray highlights, no pure white.
+Gold: muted old gold/ochre, pale sandy highlights, not lemon yellow.
+Bottom emerald: subdued moss/jade green, sage highlight, not neon green.
+Diamond: dusty pale blue-gray, modest cool light-gray highlights, not neon cyan.
+Titanium: desaturated steel blue-gray with faint lavender tint, NOT saturated cobalt blue.
+Lithium: muted dusty mauve/lilac-gray, not hot pink or magenta.
+Use only modest highlight-shadow contrast; flatten shiny rounded highlights. The minerals remain distinguishable but should sit naturally embedded in the reference blocks. Keep same 4-column x 2-row atlas, 32x32 cell target,128x64 native. Real alpha transparency. No added terrain.
+
+Final processing: extract five shade levels per mineral from generated color reference and transfer onto the approved v6 pixel mask. Preserve original alpha and placement exactly.

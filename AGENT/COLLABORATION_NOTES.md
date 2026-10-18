@@ -9,6 +9,9 @@
 
 ## Build Rule
 
-- 에이전트는 이 프로젝트의 빌드나 컴파일을 실행하지 않는다.
 - Unreal Editor가 열린 상태에서 외부 빌드를 실행하면 Live Coding 상태와 DLL이 충돌해 라이브 컴파일 환경을 망가뜨릴 수 있다.
-- 코드 변경 후 컴파일 여부와 결과 확인은 사용자에게 맡긴다.
+- 에이전트는 빌드와 에디터 재시작을 `AGENT/Scripts/` 스크립트로만 수행한다. 직접 UBT/MSBuild를 호출하지 않는다.
+  - `StopEditor.ps1` → `BuildEditor.ps1` → `StartEditor.ps1` 순서로 실행한다.
+  - `BuildEditor.ps1`은 에디터가 실행 중이면 빌드하지 않고 종료한다.
+  - `StartEditor.ps1`은 `-ModelContextProtocolStartServer`로 에디터를 띄우고 MCP 포트(8000)가 열릴 때까지 기다린다.
+- 사용자가 에디터에서 작업 중일 수 있으므로, 에디터를 끄기 전에 저장되지 않은 변경이 없는지 확인한다.

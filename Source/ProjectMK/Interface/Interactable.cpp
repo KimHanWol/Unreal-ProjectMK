@@ -23,7 +23,7 @@ bool IInteractable::CanInteract(AActor* Interactor)
 		return false;
 	}
 
-	return true;
+	return IsInInteractRange(Interactor);
 }
 
 bool IInteractable::TryInteract(AActor* Interactor)
@@ -33,17 +33,39 @@ bool IInteractable::TryInteract(AActor* Interactor)
 		return false;
 	}
 
+	const FGameplayTag& InteractEventTag = GetInteractEventTag();
+	if (InteractEventTag.IsValid() == false)
+	{
+		return OnInteract(Interactor);
+	}
+
 	UAbilitySystemComponent* InteractorASC = Interactor->GetComponentByClass<UAbilitySystemComponent>();
 	if (::IsValid(InteractorASC) == false)
 	{
 		return false;
 	}
 
-	const FGameplayTag& InteractEventTag = GetInteractEventTag();
 	FGameplayEventData EventData;
 	EventData.Instigator = Interactor;
 	EventData.Target = Cast<AActor>(this);
 	EventData.EventTag = InteractEventTag;
 
 	return InteractorASC->HandleGameplayEvent(EventData.EventTag, &EventData) > 0;
+}
+
+bool IInteractable::IsInInteractRange(const AActor* Interactor) const
+{
+	const float InteractRange = GetInteractRange();
+	if (InteractRange <= 0.f)
+	{
+		return true;
+	}
+
+	const AActor* InteractableActor = Cast<AActor>(const_cast<IInteractable*>(this));
+	if (::IsValid(InteractableActor) == false || ::IsValid(Interactor) == false)
+	{
+		return false;
+	}
+
+	return FVector::DistSquared(InteractableActor->GetActorLocation(), Interactor->GetActorLocation()) <= FMath::Square(InteractRange);
 }

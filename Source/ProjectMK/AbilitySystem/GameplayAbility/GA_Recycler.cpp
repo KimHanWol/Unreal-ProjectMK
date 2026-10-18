@@ -5,6 +5,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameplayTagContainer.h"
 #include "ProjectMK/Component/SkillComponent.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
@@ -50,6 +51,7 @@ void UGA_Recycler::OnBlockDestroyedEvent(FGameplayEventData Payload)
 		if (USkillComponent* SkillComponent = GetOwnerSkillComponent())
 		{
 			SkillComponent->TryAddCoin(RecyclerCoinReward);
+			USoundManager::TryPlaySFX(GetAvatarActorFromActorInfo(), ESFXType::Skill_Recycler);
 		}
 	}
 }

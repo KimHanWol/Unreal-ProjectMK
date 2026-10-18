@@ -3,10 +3,9 @@
 #pragma once
 
 #include "CoreMinimal.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 
 #include "SoundManager.generated.h"
-
-enum class ESFXType : uint8;
 
 USTRUCT(BlueprintType)
 struct FInstantSFXParamData
@@ -33,8 +32,11 @@ class PROJECTMK_API USoundManager : public UObject
 public:
 	void Init();
 	static USoundManager* Get(UObject* WorldContextObject);
+	static void TryPlaySFX(UObject* WorldContextObject, ESFXType SFXType);
+	static void TryStopSFX(UObject* WorldContextObject, ESFXType SFXType);
 
 	void PlaySFX(ESFXType SFXType);
+	void StopSFX(ESFXType SFXType);
 
 	void SetFloatSoundParam(ESFXType SFXType, ESFXInstanceParamType ParamType, float FloatParam);
 	void SetBoolSoundParam(ESFXType SFXType, ESFXInstanceParamType ParamType, bool BoolParam);

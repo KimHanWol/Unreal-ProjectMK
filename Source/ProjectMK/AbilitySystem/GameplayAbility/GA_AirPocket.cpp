@@ -5,6 +5,7 @@
 #include "Abilities/Tasks/AbilityTask_WaitGameplayEvent.h"
 #include "GameplayTagContainer.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
@@ -51,6 +52,7 @@ void UGA_AirPocket::OnBlockDestroyedEvent(FGameplayEventData Payload)
 		if (const ABlockBase* DestroyedBlock = Cast<ABlockBase>(Payload.Target.Get()))
 		{
 			const_cast<ABlockBase*>(DestroyedBlock)->TryAddSpawnItem(AirPocketOxygenItemKey, OxygenItemCount);
+			USoundManager::TryPlaySFX(GetAvatarActorFromActorInfo(), ESFXType::Skill_AirPocket);
 		}
 	}
 }

@@ -11,6 +11,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
@@ -144,6 +145,13 @@ void UGA_Drill::Tick_UpdateTarget()
 		return;
 	}
 
+	// 비행·낙하 중에는 드릴을 쓸 수 없다.
+	if (SourceCharacter->IsOnGround() == false)
+	{
+		EnableDrill(false);
+		return;
+	}
+
 	const FVector& SourceCharDir = SourceCharacter->GetCharacterDirection();
 	if (SourceCharDir == FVector::ZeroVector ||
 		SourceCharDir.Size() > 1.f)
@@ -172,6 +180,8 @@ void UGA_Drill::Tick_UpdateTarget()
 	Params.AddIgnoredActor(SourceCharacter.Get());
 
 	ABlockBase* FirstHitBlock = nullptr;
+	UAbilitySystemComponent* ContactTargetASC = nullptr;
+	bool bHitUnmineableBlock = false;
 	if (World->LineTraceMultiByChannel(Hits, Start, ContactTraceEnd, ECC_Visibility, Params))
 	{
 		for (const FHitResult& Hit : Hits)
@@ -179,6 +189,7 @@ void UGA_Drill::Tick_UpdateTarget()
 			ABlockBase* HitBlock = Cast<ABlockBase>(Hit.GetActor());
 			if (::IsValid(HitBlock) && HitBlock->IsMineable() == false)
 			{
+				bHitUnmineableBlock = true;
 				continue;
 			}
 
@@ -189,11 +200,22 @@ void UGA_Drill::Tick_UpdateTarget()
 			}
 
 			FirstHitBlock = HitBlock;
+			if (::IsValid(HitBlock) == false)
+			{
+				ContactTargetASC = DamageableActor->GetOwnerASC();
+			}
 			break;
 		}
 	}
 
-	if (::IsValid(FirstHitBlock) == false)
+	const bool bIsDrillBlocked = ::IsValid(FirstHitBlock) == false && ::IsValid(ContactTargetASC) == false && bHitUnmineableBlock;
+	if (bIsDrillBlocked && bWasDrillBlocked == false)
+	{
+		USoundManager::TryPlaySFX(SourceCharacter.Get(), ESFXType::Drill_Blocked);
+	}
+	bWasDrillBlocked = bIsDrillBlocked;
+
+	if (::IsValid(FirstHitBlock) == false && ::IsValid(ContactTargetASC) == false)
 	{
 		EnableDrill(false);
 		TargetASCList.Reset();
@@ -201,6 +223,18 @@ void UGA_Drill::Tick_UpdateTarget()
 	}
 
 	TArray<TWeakObjectPtr<UAbilitySystemComponent>> NewTargetASCList;
+	if (::IsValid(ContactTargetASC))
+	{
+		if (TargetASCList.IsEmpty() == false && TargetASCList[0] != ContactTargetASC)
+		{
+			EnableDrill(false);
+		}
+		NewTargetASCList.Add(ContactTargetASC);
+		TargetASCList = MoveTemp(NewTargetASCList);
+		SourceCharacter->SetDrillingVector(SourceCharDir);
+		EnableDrill(true);
+		return;
+	}
 	const FVector2D FirstBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(FirstHitBlock);
 	const FVector2D BlockDirection(SourceCharDir.X, -SourceCharDir.Z);
 	const int32 DrillStepCount = FMath::Max(1, FMath::CeilToInt(DrillingDistance / BLOCK_SIZE));
@@ -214,7 +248,9 @@ void UGA_Drill::Tick_UpdateTarget()
 	for (int32 StepIndex = 0; StepIndex < DrillStepCount; ++StepIndex)
 	{
 		const FVector2D BlockPosition = FirstBlockPosition + (BlockDirection * StepIndex);
-		ABlockBase* TargetBlock = LevelManagerSubsystem->GetBlockAtPosition(BlockPosition);
+		ABlockBase* TargetBlock = StepIndex == 0
+			? FirstHitBlock
+			: LevelManagerSubsystem->GetBlockAtPosition(BlockPosition);
 		if (::IsValid(TargetBlock) == false)
 		{
 			continue;
@@ -273,6 +309,11 @@ void UGA_Drill::Tick_UpdateSourcePosition(float DeltaTime)
 	}
 
 	if (TargetASCList[0].IsValid() == false)
+	{
+		InteractionDirTarget = nullptr;
+		return;
+	}
+	if (Cast<ABlockBase>(TargetASCList[0]->GetOwner()) == nullptr)
 	{
 		InteractionDirTarget = nullptr;
 		return;
@@ -413,8 +454,15 @@ void UGA_Drill::Drill_Instant()
 			MK_SKILL_DEBUG_LOG(Warning, TEXT("Drill Target Block Durability: %.2f"), BlockAttributeSet->GetDurability());
 		}
 
-		SendDrillHitBlockEvent(SourceASC.Get(), SourceCharacter.Get(), TargetBlock, DirectTargetActorList);
-		FGameplayAbilityUtils::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
+		if (::IsValid(TargetBlock))
+		{
+			SendDrillHitBlockEvent(SourceASC.Get(), SourceCharacter.Get(), TargetBlock, DirectTargetActorList);
+			FGameplayAbilityUtils::ApplyDamageToDurability(TargetASC.Get(), SourceASC.Get(), DrillingPower);
+		}
+		else
+		{
+			FGameplayAbilityUtils::ApplyDamage(TargetASC.Get(), SourceASC.Get(), DrillingPower);
+		}
 	}
 
 	if (DelayTask.IsValid())
@@ -452,6 +500,7 @@ void UGA_Drill::EnableDrill(bool bEnable)
 		}
 
 		DrillEffectHandle = FGameplayAbilityUtils::ApplyGameplayEffectToSelf(SourceASC.Get(), EffectClass);
+		USoundManager::TryPlaySFX(SourceCharacter.Get(), ESFXType::Drill);
 
 		WaitPeriodAndMine();
 	}
@@ -475,5 +524,6 @@ void UGA_Drill::EnableDrill(bool bEnable)
 
 		SourceASC->RemoveActiveGameplayEffect(DrillEffectHandle);
 		DrillEffectHandle.Invalidate();
+		USoundManager::TryStopSFX(SourceCharacter.Get(), ESFXType::Drill);
 	}
 }

@@ -69,14 +69,23 @@ protected:
 public:
 	void InitializeBlock(FBlockTileData InBlockData);
 	bool TryAddSpawnItem(FName ItemKey, int32 ItemCount);
+	void SetItemDropEnabled(bool bEnabled);
+	bool TryApplyStructureReward(FName ItemKey, int32 ItemCount);
 	void SetLastDamageInstigatorASC(UAbilitySystemComponent* InInstigatorASC);
 	UAbilitySystemComponent* GetLastDamageInstigatorASC() const;
+	int32 GetTileIndex() const;
+	bool IsBreaking() const;
 
 	void StartMineBlock(IMinable* Miner);
 	void EndMineBlock();
 	void SetMineableState(bool bInIsMineableState);
 
 	bool IsMineable();
+
+	bool TryDestroyByExplosion();
+	void ApplyCushion();
+	bool IsCushioned() const;
+	bool IsSupportAnchor();
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_EnableDebugState(int32 Count);
@@ -146,6 +155,15 @@ private:
 
 	UPROPERTY(Transient)
 	bool bBlockAttributesInitialized = false;
+
+	/** 붕괴 충격으로 부서질 때는 false 로 두어 아이템을 드롭하지 않는다 */
+	bool bIsItemDropEnabled = true;
+
+	/** 완충 젤이 발려 있으면 위로 떨어진 블록이 충격을 받지 않는다 */
+	bool bIsCushioned = false;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Consumable")
+	FLinearColor CushionTintColor = FLinearColor(0.7f, 1.f, 0.7f, 1.f);
 
 	UPROPERTY(Transient)
 	bool bIsDestroying = false;

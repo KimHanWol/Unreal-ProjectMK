@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "Math/Interval.h"
 #include "ProjectMK/Data/DataAsset/MKDataAssetBase.h"
+#include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 
 #include "GameSettingDataAsset.generated.h"
 
@@ -28,9 +29,13 @@ struct FMineableLevelGenerationSettings
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Empty Pocket")
 	FInt32Interval EmptyPocketHeightRange = FInt32Interval(1, 2);
 
-	/** 생성할 낙하 구조물 수 */
+	/** 채굴 칸 1000개당 생성할 낙하 구조물 수. 특수 구조물은 가끔 나오는 것이 목표라 낮게 둔다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure", meta = (ClampMin = "0.0"))
+	float FallingStructuresPerThousandTiles = 3.f;
+
+	/** 한 지형에 생성할 낙하 구조물 수의 상한 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure", meta = (ClampMin = "0"))
-	int32 FallingStructureCount = 5;
+	int32 FallingStructureCount = 12;
 
 	/** 낙하 구조물 너비의 최소·최대 타일 수 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
@@ -43,6 +48,18 @@ struct FMineableLevelGenerationSettings
 	/** 낙하 구조물과 충돌 지형 사이 거리의 최소·최대 타일 수 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
 	FInt32Interval FallingDistanceInTilesRange = FInt32Interval(5, 12);
+
+	/** 채굴 영역 맨 윗줄(지표면)에서 이 칸 수만큼은 낙하 구조물을 배치하지 않는다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure", meta = (ClampMin = "0"))
+	int32 FallingStructureSurfaceMargin = 4;
+
+	/** 낙하 구조물 한 종류가 배치에 실패했을 때 다른 위치로 다시 시도하는 횟수 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure", meta = (ClampMin = "1"))
+	int32 FallingStructurePlacementRetryCount = 40;
+
+	/** 보상 블록(미끼, 보물 매달기 등)에 심을 아이템. OreSpawnWeight 는 항목 간 상대 가중치로 쓴다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
+	TArray<FBlockSpawnableItemData> StructureRewardItemDataList;
 
 	/** 몬스터 방 생성 확률 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster Room", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -75,6 +92,10 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen", meta = (ClampMin = "0.01"))
 	float OxygenDrainTickInterval = 0.1f;
 
+	/** 최대 산소 대비 이 비율 아래로 내려가면 산소 부족 경고음을 재생한다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float LowOxygenWarningRatio = 0.25f;
+
 	/** 낙하 블록 하나가 1미터 낙하할 때 캐릭터에게 주는 대미지 계수 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block", meta = (ClampMin = "0", DisplayName = "Character Damage Per Falling Block Per Meter"))
 	int32 FallingBlockDamagePerBlock = 1;
@@ -90,6 +111,18 @@ public:
 	/** 낙하 블록이 한 번의 충돌로 받을 수 있는 최대 대미지 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block", meta = (ClampMin = "0.0"))
 	float MaximumFallingBlockImpactPower = 1200.f;
+
+	/** 낙하 블록이 멈춰 있는 블록에 부딪혔을 때 충격 대미지를 전달하는 비율. [0] 직접 맞은 블록, [1] 그 아래, [2] 그 아래 ... 채굴 불가 블록을 만나면 전달을 멈춘다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block")
+	TArray<float> FallingBlockImpactPropagationRatios = { 0.7f, 0.35f, 0.15f };
+
+	/** 한 프레임에 채굴·파괴·착지한 블록 수가 이 값 이상이면 Medium 사운드를 재생한다 (미만이면 Single) */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (ClampMin = "2"))
+	int32 MediumBlockSoundMinCount = 2;
+
+	/** 한 프레임에 채굴·파괴·착지한 블록 수가 이 값 이상이면 Large 사운드를 재생한다 */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Sound", meta = (ClampMin = "2"))
+	int32 LargeBlockSoundMinCount = 6;
 
 	/** 절차형 채굴 지형 생성 조정값 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Level Generation")

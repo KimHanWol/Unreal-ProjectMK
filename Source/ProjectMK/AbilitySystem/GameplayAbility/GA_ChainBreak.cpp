@@ -7,6 +7,7 @@
 #include "GameplayTagContainer.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/Utils/BlockUtils.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
@@ -93,6 +94,11 @@ void UGA_ChainBreak::OnDrillHitBlockEvent(FGameplayEventData Payload)
 			AppliedSurroundBlockCount++;
 			MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][ChainBreak] Applied %.2f damage to surround block %s"), SurroundDamage, *GetNameSafe(SurroundBlock));
 		}
+	}
+
+	if (AppliedSurroundBlockCount > 0)
+	{
+		USoundManager::TryPlaySFX(GetAvatarActorFromActorInfo(), ESFXType::Skill_ChainBreak);
 	}
 
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][ChainBreak] AppliedTo=%d SkippedDirectTargets=%d"),

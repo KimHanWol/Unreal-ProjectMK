@@ -10,6 +10,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Data/DataTable/MonsterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/System/GlobalConstants.h"
 
@@ -130,6 +131,13 @@ TArray<FString> UMKBlueprintFunctionLibrary::GetCharacterRowNames()
 	}
 
 	return CharacterRowNames;
+}
+
+TArray<FString> UMKBlueprintFunctionLibrary::GetMonsterRowNames()
+{
+	TSet<FName> UniqueRowNames;
+	CollectDataTableRowNames(GetDataTableAssets(), TEXT("MonsterDataTableRow"), FMonsterDataTableRow::StaticStruct(), UniqueRowNames);
+	return ConvertRowNamesToStrings(UniqueRowNames);
 }
 
 TArray<FString> UMKBlueprintFunctionLibrary::GetSkillRowNames()

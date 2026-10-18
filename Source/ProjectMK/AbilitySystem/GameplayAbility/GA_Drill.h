@@ -55,6 +55,7 @@ private:
 	TWeakObjectPtr<UAbilityTask_WaitDelay> DelayTask = nullptr;
 
 	bool bIsDrilling = false;
+	bool bWasDrillBlocked = false;
 
 	TWeakObjectPtr<AActor> InteractionDirTarget = nullptr;
 	FVector InteractionStartPoint = FVector::ZeroVector;

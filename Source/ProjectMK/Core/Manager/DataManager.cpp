@@ -104,6 +104,11 @@ bool UDataManager::GetCharacterDataTableRow(FName PreferredRowKey, FCharacterDat
 	return false;
 }
 
+const FMonsterDataTableRow* UDataManager::GetMonsterDataTableRow(FName RowName) const
+{
+	return GetDataTableRow<FMonsterDataTableRow>(EDataTableType::Monster, RowName);
+}
+
 const FSoundDataTableRow* UDataManager::GetSoundDataTableRow(ESFXType InSFXType) const
 {
 	if (::IsValid(DataTableDataAsset) == false)

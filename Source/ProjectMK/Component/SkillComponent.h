@@ -24,12 +24,15 @@ public:
 	bool HasPurchasedSkill(FName SkillKeyName) const;
 	bool CanPurchaseSkill(FName SkillKeyName) const;
 	bool TryPurchaseSkill(FName SkillKeyName);
-	bool TryAddCoin(int32 CoinAmount);
+	void ApplySavedSkills(const TArray<FName>& SavedSkillKeys);
+	bool TryAddCoin(int32 CoinAmount, bool bApplyCoinGainMultiplier = true);
 	bool TryAddOxygen(int32 OxygenAmount);
+	TArray<FName> GetPurchasedSkillKeys() const;
 
 	FOnSkillPurchased OnSkillPurchasedDelegate;
 
 private:
+	bool TryApplySkill(UAbilitySystemComponent* AbilitySystemComponent, FName SkillKeyName, const FSkillDataTableRow& SkillDataTableRow) const;
 	bool TryApplySkillGameplayEffect(UAbilitySystemComponent* AbilitySystemComponent, const FSkillGameplayEffectData& SkillGameplayEffectData) const;
 	bool TryGrantSkillAbility(UAbilitySystemComponent* AbilitySystemComponent, const FSkillGameplayAbilityData& SkillGameplayAbilityData) const;
 	int32 CalculateAdjustedCoinAmount(int32 CoinAmount) const;
