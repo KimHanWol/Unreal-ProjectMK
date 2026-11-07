@@ -1,11 +1,18 @@
 ﻿# Launches the editor with the MCP server enabled and waits until the MCP port is listening.
-param([int]$TimeoutSeconds = 600, [string]$Map = '/Game/Level/Main')
+param(
+    [int]$TimeoutSeconds = 600,
+    [string]$Map = '/Game/Level/Main',
+    [switch]$EnablePythonRemoteExecution
+)
 . "$PSScriptRoot\EditorCommon.ps1"
 
 if (Get-ProjectEditorProcess) {
     Write-Output 'EDITOR_ALREADY_RUNNING'
 } else {
     $EditorArgs = @("`"$ProjectFile`"", $Map, '-ModelContextProtocolStartServer', "-ModelContextProtocolPort=$McpPort", '-NoSplash')
+    if ($EnablePythonRemoteExecution) {
+        $EditorArgs += '-ini:Engine:[/Script/PythonScriptPlugin.PythonScriptPluginSettings]:bRemoteExecution=True'
+    }
     Start-Process -FilePath $EditorExe -ArgumentList $EditorArgs | Out-Null
     Write-Output 'EDITOR_LAUNCHED'
 }

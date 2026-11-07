@@ -7,6 +7,12 @@
 #include "Engine/DataTable.h"
 #include "Modules/ModuleManager.h"
 #include "PaperSprite.h"
+#include "PaperFlipbook.h"
+#include "PaperFlipbookActor.h"
+#include "PaperFlipbookComponent.h"
+#include "Engine/World.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
@@ -69,6 +75,38 @@ namespace
 		}
 
 		return RowNames;
+	}
+}
+
+void UMKBlueprintFunctionLibrary::PlayVisualEffect(UObject* WorldContextObject, FName EffectName, const FVector& Location, float Scale)
+{
+	UWorld* World = ::IsValid(WorldContextObject) ? WorldContextObject->GetWorld() : nullptr;
+	const UDataManager* DataManager = UDataManager::Get(WorldContextObject);
+	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
+	const TObjectPtr<UPaperFlipbook>* Effect = ::IsValid(Style) ? Style->Effects.Find(EffectName) : nullptr;
+	if (::IsValid(World) == false || Effect == nullptr || ::IsValid(*Effect) == false)
+	{
+		return;
+	}
+
+	APaperFlipbookActor* Actor = World->SpawnActor<APaperFlipbookActor>(Location + FVector(0.f, 3.f, 0.f), FRotator::ZeroRotator);
+	if (::IsValid(Actor))
+	{
+		UPaperFlipbookComponent* Component = Actor->GetRenderComponent();
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Component->SetFlipbook(*Effect);
+		Component->SetLooping(false);
+		Component->SetTranslucentSortPriority(4);
+		const UPaperSprite* FirstFrame = (*Effect)->GetSpriteAtFrame(0);
+		if (::IsValid(FirstFrame))
+		{
+			// Scale expresses the effect width in blocks, independent of texture resolution.
+			const float NativeWidth = FirstFrame->GetSourceSize().X / FMath::Max(FirstFrame->GetPixelsPerUnrealUnit(), KINDA_SMALL_NUMBER);
+			const float WorldScale = BLOCK_SIZE * Scale / FMath::Max(NativeWidth, KINDA_SMALL_NUMBER);
+			Actor->SetActorScale3D(FVector(WorldScale, 1.f, WorldScale));
+		}
+		Actor->SetLifeSpan((*Effect)->GetTotalDuration() + 0.05f);
+		Component->PlayFromStart();
 	}
 }
 

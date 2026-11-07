@@ -7,8 +7,11 @@
 #include "DrawDebugHelpers.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
+#include "Engine/Texture2D.h"
 #include "GameplayTagContainer.h"
 #include "Materials/MaterialInterface.h"
+#include "Materials/MaterialInstanceDynamic.h"
+#include "PaperSprite.h"
 #include "PaperFlipbook.h"
 #include "PaperFlipbookComponent.h"
 #include "PaperSpriteComponent.h"
@@ -19,9 +22,11 @@
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
+#include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Interface/Minable.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 #include "UObject/ConstructorHelpers.h"
@@ -43,6 +48,13 @@ ABlockBase::ABlockBase()
 	ItemSpriteComponent->SetRelativeLocation(FVector(0.f, 0.1f, 0.f));
 	ItemSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	ItemSpriteComponent->SetTranslucentSortPriority(1);
+
+	CushionSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("CushionSprite"));
+	CushionSpriteComponent->SetupAttachment(RootComponent);
+	CushionSpriteComponent->SetRelativeLocation(FVector(0.f, 0.3f, 0.f));
+	CushionSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	CushionSpriteComponent->SetTranslucentSortPriority(3);
+	CushionSpriteComponent->SetVisibility(false);
 
 	DestroyFlipbookComponent = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("DestroyFlipbook"));
 	DestroyFlipbookComponent->SetupAttachment(RootComponent);
@@ -198,6 +210,14 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	}
 
 	MaxDurability = BlockDataTableRow->BlockDurability;
+	bUseTerrainEdges = BlockDataTableRow->bUseTerrainEdges && BlockDataTableRow->bNeedTobeHide == false;
+	TerrainBlendPriority = BlockDataTableRow->TerrainBlendPriority;
+	const float EdgeSeed = FMath::FloorToFloat(BlockTileData.WorldLocation.X / FMath::Max(1, BlockTileData.TileSize.X)) * 78.233f +
+		FMath::FloorToFloat(BlockTileData.WorldLocation.Z / FMath::Max(1, BlockTileData.TileSize.Y)) * 39.425f;
+	PaperSpriteComponent->SetCustomPrimitiveDataFloat(0, EdgeSeed);
+	ItemSpriteComponent->SetCustomPrimitiveDataFloat(0, EdgeSeed);
+	DamageFlipbookComponent->SetCustomPrimitiveDataFloat(0, EdgeSeed);
+	CushionSpriteComponent->SetCustomPrimitiveDataFloat(0, EdgeSeed);
 
 	if (bDropSelectionInitialized == false)
 	{
@@ -241,6 +261,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 				OverlaySpriteScale = GameSettings->BlockItemOverlaySpriteScale;
 			}
 
+			OverlaySpriteScale = bUseFullTileOverlay ? 1.f : OverlaySpriteScale;
 			ItemSpriteComponent->SetSprite(OverlaySprite);
 			ItemSpriteComponent->SetVisibility(::IsValid(OverlaySprite));
 			if (::IsValid(OverlaySprite))
@@ -295,6 +316,89 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	}
 
 	UpdateDamageFlipbook();
+	ApplyTerrainEdges(TerrainExposedEdges);
+}
+
+void ABlockBase::ApplyTerrainEdges(uint8 ExposedEdges)
+{
+	TerrainExposedEdges = ExposedEdges & 15;
+	UDataManager* DataManager = UDataManager::Get(this);
+	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
+	if (bUseTerrainEdges == false || ::IsValid(Style) == false || Style->TerrainEdgeMaterials.IsValidIndex(TerrainExposedEdges) == false)
+	{
+		return;
+	}
+
+	const uint8 ShapeEdges = TerrainExposedEdges | TerrainTransitionEdges;
+	if (Style->TerrainEdgeMaterials.IsValidIndex(ShapeEdges) == false)
+	{
+		return;
+	}
+	UMaterialInterface* Material = Style->TerrainEdgeMaterials[ShapeEdges];
+	if (::IsValid(Material) == false)
+	{
+		return;
+	}
+
+	// All full-cell layers share the silhouette; free-flying break debris stays unmasked.
+	UMaterialInterface* BaseMaterial = Material;
+	if (TerrainTransitionEdges != 0)
+	{
+		if (::IsValid(TerrainBlendMaterial) == false)
+		{
+			TerrainBlendMaterial = UMaterialInstanceDynamic::Create(Style->TerrainEdgeMaterials[0], this);
+		}
+		const TCHAR* Sides[] = { TEXT("Left"), TEXT("Right"), TEXT("Top"), TEXT("Bottom") };
+		for (int32 Index = 0; Index < UE_ARRAY_COUNT(Sides); ++Index)
+		{
+			const FString Side = Sides[Index];
+			TerrainBlendMaterial->SetScalarParameterValue(FName(*Side), (ShapeEdges & (1 << Index)) != 0 ? 1.f : 0.f);
+			TerrainBlendMaterial->SetScalarParameterValue(FName(*(TEXT("Fill") + Side)), (TerrainTransitionEdges & (1 << Index)) != 0 ? 1.f : 0.f);
+			if (TerrainNeighborTextures.IsValidIndex(Index) && ::IsValid(TerrainNeighborTextures[Index]))
+			{
+				TerrainBlendMaterial->SetTextureParameterValue(FName(*(Side + TEXT("Texture"))), TerrainNeighborTextures[Index]);
+			}
+		}
+		BaseMaterial = TerrainBlendMaterial;
+	}
+	PaperSpriteComponent->SetMaterial(0, BaseMaterial);
+	if (bUseFullTileOverlay)
+	{
+		ItemSpriteComponent->SetMaterial(0, Material);
+	}
+	DamageFlipbookComponent->SetMaterial(0, Material);
+	CushionSpriteComponent->SetMaterial(0, Material);
+}
+
+void ABlockBase::UpdateTerrainNeighbors(const TArray<ABlockBase*>& Neighbors)
+{
+	uint8 ExposedEdges = 0;
+	TerrainTransitionEdges = 0;
+	TerrainNeighborTextures.SetNum(4);
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		ABlockBase* Neighbor = Neighbors.IsValidIndex(Index) ? Neighbors[Index] : nullptr;
+		TerrainNeighborTextures[Index] = nullptr;
+		if (::IsValid(Neighbor) == false || Neighbor->UsesTerrainEdges() == false)
+		{
+			ExposedEdges |= 1 << Index;
+		}
+		else if (Neighbor->TerrainBlendPriority > TerrainBlendPriority)
+		{
+			// Extend only the higher-priority material, so two sides never carve a gap or swap bands.
+			if (UPaperSprite* NeighborSprite = Neighbor->SelectedBaseTileSprite.LoadSynchronous())
+			{
+				TerrainNeighborTextures[Index] = NeighborSprite->GetSourceTexture();
+				TerrainTransitionEdges |= 1 << Index;
+			}
+		}
+	}
+	ApplyTerrainEdges(ExposedEdges);
+}
+
+bool ABlockBase::UsesTerrainEdges() const
+{
+	return bUseTerrainEdges && bIsDestroying == false;
 }
 
 bool ABlockBase::TryAddSpawnItem(FName ItemKey, int32 ItemCount)
@@ -347,7 +451,8 @@ bool ABlockBase::TryApplyStructureReward(FName ItemKey, int32 ItemCount)
 	// 구조물 보상은 플레이어가 미리 보고 노릴 수 있도록 광물 아이콘을 블록 위에 표시한다.
 	UDataManager* DataManager = UDataManager::Get(this);
 	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
-	UPaperSprite* OverlaySprite = ItemDataTableRow != nullptr ? ItemDataTableRow->ItemIcon.LoadSynchronous() : nullptr;
+	UPaperSprite* OverlaySprite = ItemDataTableRow != nullptr
+		? (ItemDataTableRow->BlockOverlaySprite.IsNull() ? ItemDataTableRow->ItemIcon : ItemDataTableRow->BlockOverlaySprite).LoadSynchronous() : nullptr;
 	if (::IsValid(ItemSpriteComponent) == false || ::IsValid(OverlaySprite) == false)
 	{
 		return true;
@@ -360,9 +465,12 @@ bool ABlockBase::TryApplyStructureReward(FName ItemKey, int32 ItemCount)
 	}
 
 	SelectedItemOverlaySprite = OverlaySprite;
+	bUseFullTileOverlay = ItemDataTableRow->BlockOverlaySprite.IsNull() == false;
+	OverlaySpriteScale = bUseFullTileOverlay ? 1.f : OverlaySpriteScale;
 	ItemSpriteComponent->SetSprite(OverlaySprite);
 	ItemSpriteComponent->SetVisibility(true);
 	ApplySpriteToComponent(ItemSpriteComponent, OverlaySprite, BlockTileData.TileSize, OverlaySpriteScale);
+	ApplyTerrainEdges(TerrainExposedEdges);
 	return true;
 }
 
@@ -459,6 +567,15 @@ bool ABlockBase::TryDestroyByExplosion()
 void ABlockBase::ApplyCushion()
 {
 	bIsCushioned = true;
+	const UDataManager* DataManager = UDataManager::Get(this);
+	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
+	if (::IsValid(Style) && ::IsValid(Style->CushionOverlay))
+	{
+		CushionSpriteComponent->SetSprite(Style->CushionOverlay);
+		ApplySpriteToComponent(CushionSpriteComponent, Style->CushionOverlay, BlockTileData.TileSize);
+		CushionSpriteComponent->SetVisibility(true);
+		return;
+	}
 	if (::IsValid(PaperSpriteComponent))
 	{
 		PaperSpriteComponent->SetSpriteColor(CushionTintColor);
@@ -526,6 +643,7 @@ void ABlockBase::PlayDestroyFlipbook()
 	{
 		ItemSpriteComponent->SetVisibility(false);
 	}
+	CushionSpriteComponent->SetVisibility(false);
 
 	if (::IsValid(DamageFlipbookComponent))
 	{
@@ -668,7 +786,9 @@ void ABlockBase::InitializeDropSelection(const FBlockDataTableRow& BlockDataTabl
 
 		if (ItemDataTableRow->bIsOre)
 		{
-			SelectedItemOverlaySprite = ItemDataTableRow->ItemIcon;
+			SelectedItemOverlaySprite = ItemDataTableRow->BlockOverlaySprite.IsNull()
+				? ItemDataTableRow->ItemIcon : ItemDataTableRow->BlockOverlaySprite;
+			bUseFullTileOverlay = ItemDataTableRow->BlockOverlaySprite.IsNull() == false;
 		}
 	}
 }
@@ -684,6 +804,7 @@ void ABlockBase::UpdateDamageFlipbook()
 	{
 		DamageFlipbookComponent->SetMaterial(0, DamageFlipbookMaterial);
 	}
+	ApplyTerrainEdges(TerrainExposedEdges);
 
 	UPaperFlipbook* DamageFlipbook = DamageFlipbookComponent->GetFlipbook();
 	if (::IsValid(DamageFlipbook) == false)
@@ -701,7 +822,7 @@ void ABlockBase::UpdateDamageFlipbook()
 
 	const float CurrentDurability = FMath::Clamp(BlockAttributeSet->GetDurability(), 0.f, MaxDurability);
 	const float RemainingDurabilityRatio = CurrentDurability / MaxDurability;
-	if (RemainingDurabilityRatio >= 1.f)
+	if (RemainingDurabilityRatio > 0.8f)
 	{
 		DamageFlipbookComponent->SetVisibility(false);
 		return;
@@ -716,11 +837,11 @@ void ABlockBase::UpdateDamageFlipbook()
 
 	const int32 DisplayFrameCount = FMath::Min(FlipbookFrameCount, 12);
 	const float DamageRatio = 1.f - RemainingDurabilityRatio;
-	const int32 FrameIndex = FMath::Clamp(FMath::FloorToInt(DamageRatio * (DisplayFrameCount - 1)), 0, DisplayFrameCount - 1);
+	const int32 FrameIndex = FMath::Clamp(FMath::FloorToInt(DamageRatio * (DisplayFrameCount + 1) + KINDA_SMALL_NUMBER) - 1, 0, DisplayFrameCount - 1);
 
 	DamageFlipbookComponent->SetLooping(false);
 	DamageFlipbookComponent->SetVisibility(true);
-	DamageFlipbookComponent->SetSpriteColor(FLinearColor(0.05f, 0.05f, 0.05f, 0.85f));
+	DamageFlipbookComponent->SetSpriteColor(FLinearColor::White);
 	DamageFlipbookComponent->Stop();
 	DamageFlipbookComponent->SetPlaybackPositionInFrames(FrameIndex, false);
 }
@@ -785,6 +906,10 @@ void ABlockBase::OnDestroyFlipbookFinished()
 
 void ABlockBase::OnDurationChanged(const FOnAttributeChangeData& Data)
 {
+	if (Data.NewValue < Data.OldValue && Data.NewValue > 0.f)
+	{
+		UMKBlueprintFunctionLibrary::PlayVisualEffect(this, TEXT("DrillContact"), GetActorLocation(), 1.15f);
+	}
 	if (CheckIsDestroyed())
 	{
 		OnDestroyed();

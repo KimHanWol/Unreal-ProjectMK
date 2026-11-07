@@ -6,6 +6,7 @@
 #include "PaperSprite.h"
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
+#include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "TimerManager.h"
 #include "UObject/ConstructorHelpers.h"
 
@@ -67,6 +68,7 @@ void ABlastChargeActor::ApplyExplosion()
 	if (::IsValid(LevelManagerSubsystem))
 	{
 		LevelManagerSubsystem->ApplyExplosion(GetActorLocation(), Radius, InstigatorASC.Get());
+		UMKBlueprintFunctionLibrary::PlayVisualEffect(this, TEXT("Explosion"), GetActorLocation(), Radius * 2.f + 1.f);
 	}
 
 	Destroy();

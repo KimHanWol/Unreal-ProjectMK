@@ -1,0 +1,32 @@
+{
+  "brushes": [
+    "BarFrame",
+    "Button",
+    "ButtonDisabled",
+    "ButtonHover",
+    "ButtonPressed",
+    "InsetPanel",
+    "Keycap",
+    "Minimap",
+    "OxygenFrame",
+    "Panel",
+    "Quickbar",
+    "RecipeCard",
+    "SelectedSlot",
+    "Slot",
+    "Tooltip",
+    "WindowTitle"
+  ],
+  "blueprintImages": [
+    "/Game/UI/BP/Menu/W_MenuBase:BG=Panel",
+    "/Game/UI/BP/Inventory/W_Inventory:Image_53=InsetPanel",
+    "/Game/UI/BP/Slot/W_ItemSlot:Slot_BG=Slot",
+    "/Game/UI/BP/Slot/W_ItemSlot:FocusImage=SelectedSlot",
+    "/Game/UI/BP/Slot/W_SkillSlot:BG=Slot",
+    "/Game/UI/BP/Slot/W_SkillSlot:FocusImage=SelectedSlot",
+    "/Game/UI/BP/Tooltip/W_Tooltip:BG=Tooltip",
+    "/Game/UI/BP/W_HealthBar:Image_102=BarFrame",
+    "/Game/UI/BP/W_OxygenBar:Image_102=OxygenFrame",
+    "/Game/UI/BP/Menu/SkillTree/W_SkillTreeMenuContents:BG=InsetPanel"
+  ]
+}

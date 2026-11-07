@@ -1,0 +1,17 @@
+{
+  "assets": 16,
+  "hardAlphaFailures": [],
+  "drillContactWidthInBlocks": 1.15,
+  "quickSlotNamesCollapsed": true,
+  "twoColumnCrafting": true,
+  "reusableLayoutSystem": true,
+  "actionButtonsDoNotAutoWrap": true,
+  "minimumAuthoredFontSize": 12,
+  "simplifiedRecipePurchase": true,
+  "inventoryBasedSelling": true,
+  "dataDrivenSkillTree": true,
+  "framedGlobalCurrency": true,
+  "visibleCoinLabels": 0,
+  "characterStatusGap": 9.429428000000001,
+  "failures": []
+}

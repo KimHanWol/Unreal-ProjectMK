@@ -1,0 +1,52 @@
+{
+  "blueprints": [
+    {
+      "asset": "/Game/UI/BP/Slot/W_ItemSlot",
+      "text": [
+        {
+          "name": "Text_Count",
+          "fontSize": 24.0,
+          "justification": "<TextJustify.LEFT: 0>",
+          "autoWrap": false
+        }
+      ],
+      "sizeBoxes": []
+    },
+    {
+      "asset": "/Game/UI/BP/Tooltip/W_Tooltip",
+      "text": [
+        {
+          "name": "Desc",
+          "fontSize": 15.0,
+          "justification": "<TextJustify.LEFT: 0>",
+          "autoWrap": false
+        },
+        {
+          "name": "Title",
+          "fontSize": 24.0,
+          "justification": "<TextJustify.LEFT: 0>",
+          "autoWrap": false
+        }
+      ],
+      "sizeBoxes": []
+    },
+    {
+      "asset": "/Game/UI/BP/W_Currency",
+      "text": [
+        {
+          "name": "Text_Coin",
+          "fontSize": 24.0,
+          "justification": "<TextJustify.LEFT: 0>",
+          "autoWrap": false
+        }
+      ],
+      "sizeBoxes": []
+    }
+  ],
+  "fontSizes": [
+    15.0,
+    24.0
+  ],
+  "fixedSizes": [],
+  "missing": []
+}

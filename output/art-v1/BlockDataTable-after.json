@@ -1,0 +1,132 @@
+[
+	{
+		"Name": "Border",
+		"TileIndex": 57,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/Texture/Tiles/world_tileset_Sprite_58.world_tileset_Sprite_58",
+		"BlockDurability": 0,
+		"bIsMineable": false,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": true,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": true,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Rock",
+		"TileIndex": 24,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_Rock.S_Rock",
+		"BlockDurability": 0,
+		"bIsMineable": false,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Shop",
+		"TileIndex": 56,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Symbols/S_Shop.S_Shop",
+		"BlockDurability": 0,
+		"bIsMineable": false,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": true,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Dirt_Grass",
+		"TileIndex": 0,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_Dirt_Grass.S_Dirt_Grass",
+		"BlockDurability": 100,
+		"bIsMineable": true,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Dirt",
+		"TileIndex": 16,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_Dirt.S_Dirt",
+		"BlockDurability": 100,
+		"bIsMineable": true,
+		"SpawnableItemDataList": [
+			{
+				"SpawnableItemKey": "Ore_Coal",
+				"OreSpawnWeight": 0.02,
+				"MinSpawnItemCount": 1,
+				"MaxSpawnItemCount": 1
+			},
+			{
+				"SpawnableItemKey": "Ore_Copper",
+				"OreSpawnWeight": 0.01,
+				"MinSpawnItemCount": 1,
+				"MaxSpawnItemCount": 1
+			},
+			{
+				"SpawnableItemKey": "Coin",
+				"OreSpawnWeight": 0.5,
+				"MinSpawnItemCount": 1,
+				"MaxSpawnItemCount": 5
+			}
+		],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Sand",
+		"TileIndex": 18,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_Sand.S_Sand",
+		"BlockDurability": 150,
+		"bIsMineable": true,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "Ice",
+		"TileIndex": 0,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_Ice.S_Ice",
+		"BlockDurability": 0,
+		"bIsMineable": false,
+		"SpawnableItemDataList": [],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": false,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": false
+	},
+	{
+		"Name": "SupportBeam",
+		"TileIndex": 900,
+		"bHasCollision": true,
+		"TileSprite": "/Game/Asset/ArtV1/Terrain/S_SupportBeam.S_SupportBeam",
+		"BlockDurability": 100,
+		"bIsMineable": true,
+		"SpawnableItemDataList": [
+			{
+				"SpawnableItemKey": "SupportBeam",
+				"OreSpawnWeight": 1,
+				"MinSpawnItemCount": 1,
+				"MaxSpawnItemCount": 1
+			}
+		],
+		"bNeedTobeHide": false,
+		"bIsSupportAnchor": true,
+		"bIsExplosionProof": false,
+		"bIsPassableByCharacter": true
+	}
+]

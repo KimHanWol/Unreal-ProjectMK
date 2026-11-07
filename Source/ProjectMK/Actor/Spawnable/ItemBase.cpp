@@ -10,6 +10,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
+#include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "UObject/ConstructorHelpers.h"
 
 AItemBase::AItemBase()
@@ -141,6 +142,7 @@ void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 
 void AItemBase::OnLootFinished()
 {
+	UMKBlueprintFunctionLibrary::PlayVisualEffect(this, TEXT("Pickup"), GetActorLocation(), 0.6f);
 	Destroy();
 }
 

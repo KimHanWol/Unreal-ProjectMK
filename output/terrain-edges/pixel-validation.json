@@ -1,0 +1,268 @@
+{
+  "renderedMasks": 16,
+  "protectedCenter": "24x24",
+  "changed": [
+    {
+      "mask": 0,
+      "centerDifferences": 0,
+      "edgeDifferences": 0
+    },
+    {
+      "mask": 1,
+      "centerDifferences": 0,
+      "edgeDifferences": 110
+    },
+    {
+      "mask": 2,
+      "centerDifferences": 0,
+      "edgeDifferences": 113
+    },
+    {
+      "mask": 3,
+      "centerDifferences": 0,
+      "edgeDifferences": 223
+    },
+    {
+      "mask": 4,
+      "centerDifferences": 0,
+      "edgeDifferences": 98
+    },
+    {
+      "mask": 5,
+      "centerDifferences": 0,
+      "edgeDifferences": 198
+    },
+    {
+      "mask": 6,
+      "centerDifferences": 0,
+      "edgeDifferences": 196
+    },
+    {
+      "mask": 7,
+      "centerDifferences": 0,
+      "edgeDifferences": 296
+    },
+    {
+      "mask": 8,
+      "centerDifferences": 0,
+      "edgeDifferences": 99
+    },
+    {
+      "mask": 9,
+      "centerDifferences": 0,
+      "edgeDifferences": 193
+    },
+    {
+      "mask": 10,
+      "centerDifferences": 0,
+      "edgeDifferences": 196
+    },
+    {
+      "mask": 11,
+      "centerDifferences": 0,
+      "edgeDifferences": 290
+    },
+    {
+      "mask": 12,
+      "centerDifferences": 0,
+      "edgeDifferences": 197
+    },
+    {
+      "mask": 13,
+      "centerDifferences": 0,
+      "edgeDifferences": 281
+    },
+    {
+      "mask": 14,
+      "centerDifferences": 0,
+      "edgeDifferences": 279
+    },
+    {
+      "mask": 15,
+      "centerDifferences": 0,
+      "edgeDifferences": 363
+    }
+  ],
+  "profiles": [
+    {
+      "mask": 1,
+      "depths": [
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        2,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        4,
+        4,
+        4,
+        4,
+        3,
+        3,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        2,
+        3,
+        4,
+        4,
+        4
+      ],
+      "maxStep": 1
+    },
+    {
+      "mask": 2,
+      "depths": [
+        4,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        4,
+        4,
+        4,
+        3,
+        2,
+        1,
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        4,
+        3,
+        3,
+        3,
+        3
+      ],
+      "maxStep": 1
+    },
+    {
+      "mask": 4,
+      "depths": [
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        2,
+        2,
+        1,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        3,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        3,
+        3
+      ],
+      "maxStep": 1
+    },
+    {
+      "mask": 8,
+      "depths": [
+        3,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        4,
+        3,
+        2,
+        1,
+        1,
+        2,
+        2,
+        2,
+        2,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        1,
+        2,
+        2,
+        3,
+        3,
+        4,
+        4,
+        4
+      ],
+      "maxStep": 1
+    }
+  ],
+  "transitions": [
+    {
+      "mask": 1,
+      "holes": 0,
+      "centerDifferences": 0
+    },
+    {
+      "mask": 2,
+      "holes": 0,
+      "centerDifferences": 0
+    },
+    {
+      "mask": 4,
+      "holes": 0,
+      "centerDifferences": 0
+    },
+    {
+      "mask": 8,
+      "holes": 0,
+      "centerDifferences": 0
+    },
+    {
+      "mask": 15,
+      "holes": 0,
+      "centerDifferences": 0
+    }
+  ],
+  "failures": []
+}

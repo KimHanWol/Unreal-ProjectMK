@@ -1,0 +1,499 @@
+{
+  "tooltip": {
+    "widget": "/Game/UI/BP/W_HUD.W_HUD:WidgetTree.Tooltip",
+    "slotClass": "CanvasPanelSlot",
+    "position": [
+      0.0,
+      0.0
+    ],
+    "anchors": null,
+    "alignment": [
+      0.0,
+      0.0
+    ]
+  },
+  "skillWidgets": [
+    {
+      "name": "SkillTreeCanvasPanel",
+      "class": "CanvasPanel",
+      "slotClass": "CanvasPanelSlot"
+    },
+    {
+      "name": "UniformGridPanel_101",
+      "class": "UniformGridPanel",
+      "slotClass": "CanvasPanelSlot"
+    },
+    {
+      "name": "CenterImage",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_11",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_25",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_26",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_12",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_29",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_18",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_22",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_23",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_24",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_6",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_8",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_15",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_20",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_16",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_27",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_17",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_7",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_10",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_9",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_19",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_3",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_13",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_14",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_21",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_28",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_4",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_5",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_1",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "W_SkillSlot_2",
+      "class": "W_SkillSlot_C",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_9",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_5",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_7",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_1",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_2",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_10",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_6",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_8",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_3",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "RightImage_4",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_7",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_6",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_4",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_1",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_2",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LeftImage_3",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_6",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_3",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_10",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_7",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_4",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_8",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_12",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_1",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_14",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_9",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_5",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_11",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_2",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "UpImage_13",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    },
+    {
+      "name": "LastImage",
+      "class": "Image",
+      "slotClass": "UniformGridSlot",
+      "row": null,
+      "column": null
+    }
+  ],
+  "characterInfo": {
+    "W_HealthBar": {
+      "class": "W_HealthBar_C",
+      "slotClass": "VerticalBoxSlot",
+      "padding": null
+    },
+    "W_OxygenBar": {
+      "class": "W_OxygenBar_C",
+      "slotClass": "VerticalBoxSlot",
+      "padding": null
+    },
+    "VerticalBox_133": {
+      "class": "VerticalBox",
+      "slotClass": "CanvasPanelSlot",
+      "padding": null
+    }
+  }
+}

@@ -21,6 +21,7 @@
 class UBlueprintDataAsset;
 class UGameplayEffectDataAsset;
 class UGameplayAbility;
+class UVisualStyleDataAsset;
 
 enum class EBlueprintClassType : uint8;
 enum class EGameplayEffectType : uint8;
@@ -57,15 +58,20 @@ public:
 	const FMonsterDataTableRow* GetMonsterDataTableRow(FName RowName) const;
 	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 	const FSkillDataTableRow* GetSkillDataTableRow(FName RowName) const;
+	TArray<FName> GetSkillRowNames() const;
 	TArray<FName> GetShopRecipeRowNames() const;
 	const FShopRecipeDataTableRow* GetShopRecipeDataTableRow(FName RowName) const;
 	const UGameSettingDataAsset* GetGameSettingDataAsset() const;
+	const UVisualStyleDataAsset* GetVisualStyleDataAsset() const;
 	UDataTable* GetDataTable(EDataTableType DataTableType) const;
 
 	TSubclassOf<UGameplayEffect> GetGameplayEffect(EGameplayEffectType EffectType) const;
 	TSubclassOf<AActor> GetBlueprintClass(EBlueprintClassType BlueprintClassType) const;
 
 protected:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	TObjectPtr<UVisualStyleDataAsset> VisualStyleDataAsset;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
 	UDataTableDataAsset* DataTableDataAsset;
 

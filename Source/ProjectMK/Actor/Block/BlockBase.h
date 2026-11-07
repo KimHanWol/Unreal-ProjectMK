@@ -14,6 +14,8 @@ class UAttributeSet_Block;
 class UBoxComponent;
 class UDataManager;
 class UMaterialInterface;
+class UMaterialInstanceDynamic;
+class UTexture;
 class UPaperFlipbook;
 class UPaperFlipbookComponent;
 class UPaperSprite;
@@ -68,6 +70,9 @@ protected:
 
 public:
 	void InitializeBlock(FBlockTileData InBlockData);
+	void ApplyTerrainEdges(uint8 ExposedEdges);
+	void UpdateTerrainNeighbors(const TArray<ABlockBase*>& Neighbors);
+	bool UsesTerrainEdges() const;
 	bool TryAddSpawnItem(FName ItemKey, int32 ItemCount);
 	void SetItemDropEnabled(bool bEnabled);
 	bool TryApplyStructureReward(FName ItemKey, int32 ItemCount);
@@ -119,6 +124,9 @@ protected:
 	TObjectPtr<UPaperSpriteComponent> ItemSpriteComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> CushionSpriteComponent;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPaperFlipbookComponent> DestroyFlipbookComponent;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
@@ -132,6 +140,22 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMaterialInterface> DamageFlipbookMaterial;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Visual")
+	uint8 TerrainExposedEdges = 0;
+
+	UPROPERTY(VisibleInstanceOnly, Category = "Visual")
+	uint8 TerrainTransitionEdges = 0;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UTexture>> TerrainNeighborTextures;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UMaterialInstanceDynamic> TerrainBlendMaterial;
+
+	int32 TerrainBlendPriority = 0;
+
+	bool bUseTerrainEdges = false;
 
 	UPROPERTY(Transient)
 	bool bIsMining = false;
@@ -152,6 +176,8 @@ private:
 
 	UPROPERTY(Transient)
 	bool bDropSelectionInitialized = false;
+
+	bool bUseFullTileOverlay = false;
 
 	UPROPERTY(Transient)
 	bool bBlockAttributesInitialized = false;

@@ -1,0 +1,997 @@
+[
+	{
+		"Name": "Skill_DrillPower_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"A849E38C40ACEAB19C11E4BAA37FCC5D\", \"그저그런 드릴날\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillPower.T_DrillPower",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"E67A4A5E4C370FAAAD0B61BF19B14A06\", \"드릴 대미지 + 10\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPower_Add.BGE_DrillingPower_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 10
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_DrillPower_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C70A7BF044680A36DAAB219EA226EAA3\", \"괜찮은 드릴날\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillPower.T_DrillPower",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"E67A4A5E4C370FAAAD0B61BF19B14A06\", \"드릴 대미지 + 10\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPower_Add.BGE_DrillingPower_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 10
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillPower_1"
+		]
+	},
+	{
+		"Name": "Skill_DrillPower_3",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"69CA2C0D4A985B1051401185DD07E495\", \"최고급 드릴날\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillPower.T_DrillPower",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"E67A4A5E4C370FAAAD0B61BF19B14A06\", \"드릴 대미지 + 10\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPower_Add.BGE_DrillingPower_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 10
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillPower_2"
+		]
+	},
+	{
+		"Name": "Skill_DrillSpeed_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"4C3F0A8C48EFBD3F1F3B2DA41ABDDE18\", \"그저그런 드릴 회전축\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillSpeed.T_DrillSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"5D14AC834D39387B4ABE74B0BE83CE7C\", \"드릴 주기 감소, 체감상 채굴 속도 +15%\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPeriod_Add.BGE_DrillingPeriod_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillPower_1"
+		]
+	},
+	{
+		"Name": "Skill_DrillSpeed_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"6AB7C4B941A0F22ED8503ABAE2C31E58\", \"괜찮은 드릴 회전축\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillSpeed.T_DrillSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"5D14AC834D39387B4ABE74B0BE83CE7C\", \"드릴 주기 감소, 체감상 채굴 속도 +15%\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPeriod_Add.BGE_DrillingPeriod_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillSpeed_1"
+		]
+	},
+	{
+		"Name": "Skill_DrillSpeed_3",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"1583A86C4AEC6DD404A59CB2813693ED\", \"최고급 드릴 회전축\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillSpeed.T_DrillSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"5D14AC834D39387B4ABE74B0BE83CE7C\", \"드릴 주기 감소, 체감상 채굴 속도 +15%\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPeriod_Add.BGE_DrillingPeriod_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillSpeed_2"
+		]
+	},
+	{
+		"Name": "Skill_DrillRange_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"CE23E9984EBD8EB4565744B51C6E54DF\", \"약간 긴 드릴 손잡이\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillRange.T_DrillRange",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"34CC8E674DE88E12EBDCB99F5522483D\", \"드릴 거리 +25\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingDistance_Add.BGE_DrillingDistance_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillPower_2"
+		]
+	},
+	{
+		"Name": "Skill_DrillRange_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"003E980E46598C21A2D9D9A11099BE75\", \"꽤 긴 드릴 손잡이\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_DrillRange.T_DrillRange",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"34CC8E674DE88E12EBDCB99F5522483D\", \"드릴 거리 +25\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingDistance_Add.BGE_DrillingDistance_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_DrillRange_1"
+		]
+	},
+	{
+		"Name": "Skill_HealthBoost_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"8E212A804A40EB3AE5620F864EAA5D43\", \"유산소 운동\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HealthBoost.T_HealthBoost",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"32DD414E4A2E70BD8342878914118F3C\", \"최대 체력 +20\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxHealth_Add.BGE_MaxHealth_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 20
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_OxygenTank_1"
+		]
+	},
+	{
+		"Name": "Skill_HealthBoost_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"FCB2572D4C34D6E2512A5D9F989E8B94\", \"근력 운동\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HealthBoost.T_HealthBoost",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"32DD414E4A2E70BD8342878914118F3C\", \"최대 체력 +20\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxHealth_Add.BGE_MaxHealth_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 20
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_HealthBoost_1"
+		]
+	},
+	{
+		"Name": "Skill_OxygenTank_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"47CD162F48D025C1EEB2E594F1A3277A\", \"미니 산소통\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_OxygenTank.T_OxygenTank",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"EBEB7EF64053CA3AFED23392BD4FAAB2\", \"최대 산소 +25\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxOxygen_Add.BGE_MaxOxygen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_OxygenTank_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"BE6955B8445794CE405842B9BDBD430A\", \"일반 산소통\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_OxygenTank.T_OxygenTank",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"EBEB7EF64053CA3AFED23392BD4FAAB2\", \"최대 산소 +25\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxOxygen_Add.BGE_MaxOxygen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_OxygenTank_1"
+		]
+	},
+	{
+		"Name": "Skill_OxygenTank_3",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"E203C6AC45499AC0F181CB8D74128AFA\", \"대형 산소통\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_OxygenTank.T_OxygenTank",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"EBEB7EF64053CA3AFED23392BD4FAAB2\", \"최대 산소 +25\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxOxygen_Add.BGE_MaxOxygen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_OxygenTank_2"
+		]
+	},
+	{
+		"Name": "Skill_Magnet_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"1F26419B4B17D6A02A9958803C72E578\", \"약한 자력장\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_Magnet.T_Magnet",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"6E95A6EA4CC63B97212B12AD37603117\", \"아이템 수집 범위 +40\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_ItemCollectRange_Add.BGE_ItemCollectRange_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 40
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_Magnet_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"63F3643B4744054D97219090F0EBF5F1\", \"강한 자력장\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_Magnet.T_Magnet",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"6E95A6EA4CC63B97212B12AD37603117\", \"아이템 수집 범위 +40\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_ItemCollectRange_Add.BGE_ItemCollectRange_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 40
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_Magnet_1"
+		]
+	},
+	{
+		"Name": "Skill_BagUpgrade_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"E3856366433B8EECE3E70C8AE1D80831\", \"작은 공구 가방\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_BagUpgrade.T_BagUpgrade",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"85C93C0B4D03847FD23CB1B0E5D9859E\", \"인벤토리 슬롯 +4\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_InventorySlotCount_Add.BGE_InventorySlotCount_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 4
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_Magnet_1"
+		]
+	},
+	{
+		"Name": "Skill_BagUpgrade_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"49B5B9DB4C652DECCBC6F2A1F8C0DEA0\", \"큰 군용 가방\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_BagUpgrade.T_BagUpgrade",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"85C93C0B4D03847FD23CB1B0E5D9859E\", \"인벤토리 슬롯 +4\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_InventorySlotCount_Add.BGE_InventorySlotCount_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 4
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_BagUpgrade_1"
+		]
+	},
+	{
+		"Name": "Skill_MoveSpeed_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"AB771A3F43F01A64A8F7099BB856E311\", \"가벼운 장화\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_MoveSpeed.T_MoveSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"183A5664455EA520654D7EA454AAB694\", \"이동속도 +30\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MoveSpeed_Add.BGE_MoveSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 30
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_MoveSpeed_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"FBF13C9D495C1D08FB28ECABAC35412F\", \"더 가벼운 안전화\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_MoveSpeed.T_MoveSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"183A5664455EA520654D7EA454AAB694\", \"이동속도 +30\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MoveSpeed_Add.BGE_MoveSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 30
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_MoveSpeed_1"
+		]
+	},
+	{
+		"Name": "Skill_FlyingSpeed_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"507C63614122F755F2041282B5CF0F2B\", \"라텍스 풍선\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_FlyingSpeed.T_FlyingSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"84CBB9AD45B6FDBDEDBEB7A677194E1A\", \"비행속도 +35\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_FlyingSpeed_Add.BGE_FlyingSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_FlyingSpeed_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"FE0B0D2D48FE0DF6D0EC13913D745E50\", \"신소재 풍선\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_FlyingSpeed.T_FlyingSpeed",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"84CBB9AD45B6FDBDEDBEB7A677194E1A\", \"비행속도 +35\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_FlyingSpeed_Add.BGE_FlyingSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_FlyingSpeed_1"
+		]
+	},
+	{
+		"Name": "Skill_HealthRegen_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"4A3FCAE743E9ADC22878CE905F2B8FAD\", \"침 바르기\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HealthRegen.T_HealthRegen",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"2EB77B4748FD348AF39D8D92134A9A5F\", \"체력 재생 +0.2\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_HealthRegen_Add.BGE_HealthRegen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.2
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_HealthBoost_1"
+		]
+	},
+	{
+		"Name": "Skill_HealthRegen_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"0CAE28AE444277825144B2865C4B0F75\", \"연고 바르기\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HealthRegen.T_HealthRegen",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"26F460524E2DF9803F6A0EA6E7674D88\", \"체력 재생 +0.5\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_HealthRegen_Add.BGE_HealthRegen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.3
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_HealthRegen_1"
+		]
+	},
+	{
+		"Name": "Skill_HealthRegen_3",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"567BACB34F974EBC2F304B92A51F65A6\", \"줄기세포 재생\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HealthRegen.T_HealthRegen",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"19C273EE4BA16CDA6A0273A257A8F6E1\", \"체력 재생 +1.0\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_HealthRegen_Add.BGE_HealthRegen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.5
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_HealthRegen_2"
+		]
+	},
+	{
+		"Name": "Skill_ChainBreak_1",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"EC63473D4ED68B2D029AB3856D95BB0F\", \"약한 연쇄 채광\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_ChainBreak.T_ChainBreak",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"B2FA6FD94C1442EE3E5D13931BA95CD2\", \"블록 파괴 시 낮은 확률로 인접 블록도 함께 약화\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_SurroundDamageRatio_Add.BGE_SurroundDamageRatio_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.4
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [
+			{
+				"GameplayAbility": "/Game/GAS/Ability/BGA_ChainBreak.BGA_ChainBreak_C"
+			}
+		],
+		"RequiredSkill": [
+			"Skill_DrillRange_2"
+		]
+	},
+	{
+		"Name": "Skill_ChainBreak_2",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"D221953E4F09B6EF2DE5758F9F54A820\", \"강한 연쇄 채광\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_ChainBreak.T_ChainBreak",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"B2FA6FD94C1442EE3E5D13931BA95CD2\", \"블록 파괴 시 낮은 확률로 인접 블록도 함께 약화\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_SurroundDamageRatio_Add.BGE_SurroundDamageRatio_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.3
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_ChainBreak_1",
+			"Skill_DrillPower_3"
+		]
+	},
+	{
+		"Name": "Skill_Recycler",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"13545C9D45D0AE48C8C771AC86D06536\", \"블록 재활용\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_Recycler.T_Recycler",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"0E6FA8A947289071B76358A14766EC37\", \"블록 파괴 시 낮은 확률로 코인 추가 획득\")",
+		"Price": 0,
+		"GameplayEffectList": [],
+		"GameplayAbilityList": [
+			{
+				"GameplayAbility": "/Game/GAS/Ability/BGA_Recycler.BGA_Recycler_C"
+			}
+		],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "Skill_AirPocket",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"86BCF28641A5601919B4329F1B0A222D\", \"에어 포켓\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_AirPocket.T_AirPocket",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C07161E347D53D7F13D75997D563D8C3\", \"일정 확률로 블록을 파괴하면 산소가 나옴\")",
+		"Price": 0,
+		"GameplayEffectList": [],
+		"GameplayAbilityList": [
+			{
+				"GameplayAbility": "/Game/GAS/Ability/BGA_AirPocket.BGA_AirPocket_C"
+			}
+		],
+		"RequiredSkill": [
+			"Skill_LastOxygen",
+			"Skill_DrillRange_1"
+		]
+	},
+	{
+		"Name": "Skill_FieldRepair",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"22F697DD4298584164DB4780261626FC\", \"필받은 광부\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_FieldRepair.T_FieldRepair",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"98A9D96246E08DED6D784A80F25A85D4\", \"일정 시간마다 드릴 관련 능력치가 잠깐 강화\")",
+		"Price": 0,
+		"GameplayEffectList": [],
+		"GameplayAbilityList": [
+			{
+				"GameplayAbility": "/Game/GAS/Ability/BGA_FieldRepair.BGA_FieldRepair_C"
+			}
+		],
+		"RequiredSkill": [
+			"Skill_BagUpgrade_1"
+		]
+	},
+	{
+		"Name": "Skill_Insurance",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"163124BB429BA1A61F9CA68854BE0AEB\", \"산재 보험\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_Insurance.T_Insurance",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"60FF82314E8707A3E9F89EAE631DC319\", \"사망 또는 큰 피해 시 코인 일부 보호\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DeathCoinLossRatio_Add.BGE_DeathCoinLossRatio_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.2
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DeathItemLossRatio_Add.BGE_DeathItemLossRatio_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_HealthRegen_1"
+		]
+	},
+	{
+		"Name": "Skill_LuckyStrike",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"7D070BF14D7AED2D5730DD8E9F5EEEB0\", \"약점 공략\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_LuckyStrike.T_LuckyStrike",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"59346DCB49C099F1F8D534A90FB2E6F6\", \"일정 확률로 블록 즉시 파괴\")",
+		"Price": 0,
+		"GameplayEffectList": [],
+		"GameplayAbilityList": [
+			{
+				"GameplayAbility": "/Game/GAS/Ability/BGA_LuckyStrike.BGA_LuckyStrike_C"
+			}
+		],
+		"RequiredSkill": [
+			"Skill_DrillPower_1",
+			"Skill_Recycler"
+		]
+	},
+	{
+		"Name": "Skill_LastOxygen",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"6F7184F14936F72DF05A1A90AA7B3832\", \"위험한 스릴러\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_LastOxygen.T_LastOxygen",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"FF58FA5F423F5C3EB75C03B351B41E15\", \"산소가 적을수록 드릴 속도 증가\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillPeriodPerOxygenIncreaseRate_Add.BGE_DrillPeriodPerOxygenIncreaseRate_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -0.7
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_OxygenTank_2"
+		]
+	},
+	{
+		"Name": "Skill_CoinMaster",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C700A1D84CE4BB34BB99149B669B9D4A\", \"부의 감각\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_CoinMaster.T_CoinMaster",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"3300519C49D1D6528EC79E84D307B988\", \"코인 획득량 +10~15%\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_CoinGainMultiplier_Add.BGE_CoinGainMultiplier_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.15
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_Scavenger"
+		]
+	},
+	{
+		"Name": "Skill_Scavenger",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C913CED043F4043A2E063AA1DBA2A522\", \"알뜰 살뜰\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_Scavenger.T_Scavenger",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C8E72E2E423C9F1B31DA02945297AB19\", \"일반 자원 드랍량 소폭 증가\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_OreBonusDropChance_Add.BGE_OreBonusDropChance_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.2
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": [
+			"Skill_Recycler"
+		]
+	},
+	{
+		"Name": "CharacterSkill_MinerDiscipline",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"BB602AA24C460B45C2C42DBDCCC3AE05\", \"광부 집안\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_MinerDiscipline.T_MinerDiscipline",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"DA64169D4A77368990AC5C8F497110E3\", \"체력, 산소, 드릴 파워를 조금씩 모두 증가\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxHealth_Add.BGE_MaxHealth_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 15
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MaxOxygen_Add.BGE_MaxOxygen_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 15
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPower_Add.BGE_DrillingPower_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 5
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "CharacterSkill_RecklessDig",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"072E444141B1CC79343B16BBEF2E41F8\", \"넘치는 열정\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_RecklessDig.T_RecklessDig",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"D973D6754B6352A842776F85973D0518\", \"드릴 파워 크게 증가, 대신 산소 소모 약간 증가\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_DrillingPower_Add.BGE_DrillingPower_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 10
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_OxygenDrainMultiplier_Add.BGE_OxygenDrainMultiplier_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.25
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "CharacterSkill_SpeedRunner",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"C22706724086C4986C853FBAF5D59EC6\", \"가벼운 발걸음\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_SpeedRunner.T_SpeedRunner",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"45071EE045CDBD2DD10A21A535106072\", \"이동속도와 비행속도 증가, 대신 인벤토리 슬롯 감소\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_MoveSpeed_Add.BGE_MoveSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 25
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_FlyingSpeed_Add.BGE_FlyingSpeed_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 30
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_InventorySlotCount_Add.BGE_InventorySlotCount_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": -2
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "CharacterSkill_HeavyCarrier",
+		"DisplayName": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"44F3A49946110900F36BB8A309892640\", \"큰 손\")",
+		"IconPath": "/Game/Asset/ArtV1/Skills/T_HeavyCarrier.T_HeavyCarrier",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"F30A23D24634CC2A2714E4B37EF4EFF8\", \"인벤토리 슬롯 크게 증가, 대신 인벤토리가 찰 수록 느려짐\")",
+		"Price": 0,
+		"GameplayEffectList": [
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_InventorySlotCount_Add.BGE_InventorySlotCount_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 6
+					}
+				]
+			},
+			{
+				"GameplayEffect": "/Game/GAS/Effect/AttributeEffect/BGE_InventorySlotCount_Add.BGE_InventorySlotCount_Add_C",
+				"SetByCallerDataList": [
+					{
+						"SetByCallerTag":
+						{
+							"TagName": "SetByCaller.Common.Value"
+						},
+						"SetByCallerValue": 0.3
+					}
+				]
+			}
+		],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	},
+	{
+		"Name": "NewRow",
+		"DisplayName": "",
+		"IconPath": "None",
+		"Description": "NSLOCTEXT(\"[A4BC0E23EEA1630495E1B469747CFDEF]\", \"653E042C4E32949D15ACF696E18EFA57\", \"주변에 지속적으로 대미지\")",
+		"Price": 0,
+		"GameplayEffectList": [],
+		"GameplayAbilityList": [],
+		"RequiredSkill": []
+	}
+]

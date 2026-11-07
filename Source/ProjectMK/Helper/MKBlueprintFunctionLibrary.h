@@ -15,6 +15,8 @@ class PROJECTMK_API UMKBlueprintFunctionLibrary : public UBlueprintFunctionLibra
 	GENERATED_BODY()
 
 public:
+	static void PlayVisualEffect(UObject* WorldContextObject, FName EffectName, const FVector& Location, float Scale = 1.f);
+
 	UFUNCTION()
 	static TArray<FString> GetItemRowNames();
 

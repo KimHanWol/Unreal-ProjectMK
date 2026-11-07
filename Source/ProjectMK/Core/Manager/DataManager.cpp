@@ -9,6 +9,7 @@
 #include "ProjectMK/Data/DataAsset/DataTableDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 
 UDataManager* UDataManager::Get(UObject* WorldContextObject)
 {
@@ -141,6 +142,12 @@ const FSkillDataTableRow* UDataManager::GetSkillDataTableRow(FName RowName) cons
 	return GetDataTableRow<FSkillDataTableRow>(EDataTableType::Skill, RowName);
 }
 
+TArray<FName> UDataManager::GetSkillRowNames() const
+{
+	UDataTable* SkillDataTable = GetDataTable(EDataTableType::Skill);
+	return ::IsValid(SkillDataTable) ? SkillDataTable->GetRowNames() : TArray<FName>();
+}
+
 TArray<FName> UDataManager::GetShopRecipeRowNames() const
 {
 	if (::IsValid(DataTableDataAsset) == false)
@@ -165,6 +172,11 @@ const FShopRecipeDataTableRow* UDataManager::GetShopRecipeDataTableRow(FName Row
 const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
 {
 	return GameSettingDataAsset;
+}
+
+const UVisualStyleDataAsset* UDataManager::GetVisualStyleDataAsset() const
+{
+	return VisualStyleDataAsset;
 }
 
 UDataTable* UDataManager::GetDataTable(EDataTableType DataTableType) const

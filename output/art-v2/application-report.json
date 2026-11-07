@@ -1,0 +1,31 @@
+{
+  "blocks": [
+    "Rock",
+    "Dirt_Grass",
+    "Dirt",
+    "Sand",
+    "Ice"
+  ],
+  "ores": [
+    "Ore_Coal",
+    "Ore_Copper",
+    "Ore_Iron",
+    "Ore_Gold",
+    "Ore_Emerald",
+    "Ore_Diamond",
+    "Ore_Titanium",
+    "Ore_Lithium"
+  ],
+  "background": {
+    "texture": "/Game/Asset/ArtV2/Backgrounds/T_Underground.T_Underground",
+    "tilePixels": 512,
+    "pixelsPerUnit": 2,
+    "worldTileSize": 256,
+    "mapSize": [
+      4,
+      7
+    ],
+    "mirroredX": true,
+    "mirroredY": true
+  }
+}

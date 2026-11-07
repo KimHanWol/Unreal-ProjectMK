@@ -1,0 +1,27 @@
+{
+  "materials": [
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_00.MI_TerrainEdges_00",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_01.MI_TerrainEdges_01",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_02.MI_TerrainEdges_02",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_03.MI_TerrainEdges_03",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_04.MI_TerrainEdges_04",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_05.MI_TerrainEdges_05",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_06.MI_TerrainEdges_06",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_07.MI_TerrainEdges_07",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_08.MI_TerrainEdges_08",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_09.MI_TerrainEdges_09",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_10.MI_TerrainEdges_10",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_11.MI_TerrainEdges_11",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_12.MI_TerrainEdges_12",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_13.MI_TerrainEdges_13",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_14.MI_TerrainEdges_14",
+    "/Game/Asset/ArtV2/Materials/MI_TerrainEdges_15.MI_TerrainEdges_15"
+  ],
+  "blocks": [
+    "Dirt",
+    "Dirt_Grass",
+    "Rock",
+    "Sand",
+    "Ice"
+  ]
+}

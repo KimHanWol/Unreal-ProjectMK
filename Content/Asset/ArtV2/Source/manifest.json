@@ -1,0 +1,227 @@
+[
+  {
+    "group": "Terrain",
+    "name": "Dirt",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Dirt.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Rock",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Rock.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 512,
+      "top": 0,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Sand",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Sand.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 1024,
+      "top": 0,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Ice",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Ice.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 0,
+      "top": 512,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Magma",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Magma.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 512,
+      "top": 512,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Dirt_Grass",
+    "file": "Content/Asset/ArtV2/Source/Terrain/Dirt_Grass.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 1024,
+      "top": 512,
+      "width": 512,
+      "height": 512
+    }
+  },
+  {
+    "group": "Backgrounds",
+    "name": "Underground",
+    "file": "Content/Asset/ArtV2/Source/Backgrounds/Underground.png",
+    "width": 512,
+    "height": 512,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Underground.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 1254,
+      "height": 1254
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Coal",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Coal.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 444,
+      "height": 444
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Copper",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Copper.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 444,
+      "top": 0,
+      "width": 443,
+      "height": 444
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Iron",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Iron.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 887,
+      "top": 0,
+      "width": 444,
+      "height": 444
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Gold",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Gold.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 1331,
+      "top": 0,
+      "width": 443,
+      "height": 444
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Emerald",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Emerald.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 0,
+      "top": 444,
+      "width": 444,
+      "height": 443
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Diamond",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Diamond.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 444,
+      "top": 444,
+      "width": 443,
+      "height": 443
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Titanium",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Titanium.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 887,
+      "top": 444,
+      "width": 444,
+      "height": 443
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Lithium",
+    "file": "Content/Asset/ArtV2/Source/Ores/Ore_Lithium.png",
+    "width": 32,
+    "height": 32,
+    "ppu": 2,
+    "source": "Content/Asset/ArtV2/Source/Atlases/Ores.png",
+    "rect": {
+      "left": 1331,
+      "top": 444,
+      "width": 443,
+      "height": 443
+    }
+  }
+]

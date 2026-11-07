@@ -1,0 +1,17 @@
+{
+  "characterStatus": {
+    "portraitRight": 194.570572,
+    "barsLeft": 204.0,
+    "gap": 9.429428000000001,
+    "barsSize": [
+      280.0,
+      68.0
+    ],
+    "healthBottomPadding": 4.0
+  },
+  "currencyTextLeftPadding": 6.0,
+  "savedAssets": [
+    "/Game/UI/BP/W_CharacterInfo",
+    "/Game/UI/BP/W_Currency"
+  ]
+}

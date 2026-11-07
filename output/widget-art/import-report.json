@@ -1,0 +1,66 @@
+[
+  {
+    "name": "Panel",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Panel.T_Panel"
+  },
+  {
+    "name": "InsetPanel",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_InsetPanel.T_InsetPanel"
+  },
+  {
+    "name": "WindowTitle",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_WindowTitle.T_WindowTitle"
+  },
+  {
+    "name": "RecipeCard",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_RecipeCard.T_RecipeCard"
+  },
+  {
+    "name": "Button",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Button.T_Button"
+  },
+  {
+    "name": "ButtonHover",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_ButtonHover.T_ButtonHover"
+  },
+  {
+    "name": "ButtonPressed",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_ButtonPressed.T_ButtonPressed"
+  },
+  {
+    "name": "ButtonDisabled",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_ButtonDisabled.T_ButtonDisabled"
+  },
+  {
+    "name": "Slot",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Slot.T_Slot"
+  },
+  {
+    "name": "SelectedSlot",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_SelectedSlot.T_SelectedSlot"
+  },
+  {
+    "name": "Quickbar",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Quickbar.T_Quickbar"
+  },
+  {
+    "name": "Tooltip",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Tooltip.T_Tooltip"
+  },
+  {
+    "name": "BarFrame",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_BarFrame.T_BarFrame"
+  },
+  {
+    "name": "OxygenFrame",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_OxygenFrame.T_OxygenFrame"
+  },
+  {
+    "name": "Minimap",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Minimap.T_Minimap"
+  },
+  {
+    "name": "Keycap",
+    "texture": "/Game/Asset/WidgetArtV1/UI/T_Keycap.T_Keycap"
+  }
+]

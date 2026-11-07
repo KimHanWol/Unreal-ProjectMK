@@ -37,6 +37,10 @@ struct FItemDataTableRow : public FItemDataTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UPaperSprite> ItemIcon;
 
+	/** 블록 표면에 박힌 광맥. 드롭 및 UI 아이콘과 별도로 지정한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+	TSoftObjectPtr<UPaperSprite> BlockOverlaySprite;
+
 	/** None 이 아니면 퀵슬롯 숫자 키로 사용할 수 있는 소모품이다 */
 	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "Consumable")
 	EConsumableEffectType ConsumableEffect = EConsumableEffectType::None;

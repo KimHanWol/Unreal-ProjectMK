@@ -1,0 +1,62 @@
+{
+  "backgrounds": [
+    {
+      "name": "ArtV1_Background_Surface",
+      "position": "<Struct 'Vector' (0x000001D56E18A5E0) {x: 634.000000, y: -100.000000, z: -108.000000}>",
+      "scale": "<Struct 'Vector' (0x000001D56E18A5E0) {x: 1.000000, y: 1.000000, z: 1.000000}>",
+      "ppu": 0.5,
+      "tileWidth": 128,
+      "tileHeight": 128,
+      "mapWidth": 4,
+      "mapHeight": 1,
+      "bounds": "(<Struct 'Vector' (0x000001D56E18A5E0) {x: 1018.000000, y: -100.000000, z: -108.000000}>, <Struct 'Vector' (0x000001D56E167350) {x: 512.000000, y: 2.000000, z: 128.000000}>)"
+    },
+    {
+      "name": "ArtV1_Background_Underground",
+      "position": "<Struct 'Vector' (0x000001D56E167350) {x: 634.000000, y: -100.000000, z: -364.000000}>",
+      "scale": "<Struct 'Vector' (0x000001D56E167350) {x: 1.000000, y: 1.000000, z: 1.000000}>",
+      "ppu": 0.5,
+      "tileWidth": 128,
+      "tileHeight": 128,
+      "mapWidth": 4,
+      "mapHeight": 8,
+      "bounds": "(<Struct 'Vector' (0x000001D56E167350) {x: 1018.000000, y: -100.000000, z: -1260.000000}>, <Struct 'Vector' (0x000001D56E166450) {x: 512.000000, y: 2.000000, z: 1024.000000}>)"
+    }
+  ],
+  "sprites": [
+    {
+      "name": "Dirt",
+      "size": "<Struct 'Vector2D' (0x000001D5B9B0E188) {x: 32.000000, y: 32.000000}>",
+      "ppu": 2.0
+    },
+    {
+      "name": "BlockBreak0",
+      "size": "<Struct 'Vector2D' (0x000001D593D9EB88) {x: 32.000000, y: 32.000000}>",
+      "ppu": 2.0
+    },
+    {
+      "name": "BlockBreak1",
+      "size": "<Struct 'Vector2D' (0x000001D593D9F808) {x: 32.000000, y: 32.000000}>",
+      "ppu": 2.0
+    },
+    {
+      "name": "BlockBreak2",
+      "size": "<Struct 'Vector2D' (0x000001D593D9F588) {x: 32.000000, y: 32.000000}>",
+      "ppu": 2.0
+    },
+    {
+      "name": "BlockBreak3",
+      "size": "<Struct 'Vector2D' (0x000001D593D9E688) {x: 32.000000, y: 32.000000}>",
+      "ppu": 2.0
+    }
+  ],
+  "dirty": [],
+  "DestroyFlipbook": {
+    "scale": "<Struct 'Vector' (0x000001D4E53B19B0) {x: 1.000000, y: 1.000000, z: 1.000000}>",
+    "flipbook": "/Game/Asset/ArtV1/Effects/FB_BlockBreak.FB_BlockBreak"
+  },
+  "DamageFlipbook": {
+    "scale": "<Struct 'Vector' (0x000001D5DA7D01B0) {x: 1.000000, y: 1.000000, z: 1.000000}>",
+    "flipbook": "/Game/Asset/ArtV1/Effects/FB_BlockDamage.FB_BlockDamage"
+  }
+}

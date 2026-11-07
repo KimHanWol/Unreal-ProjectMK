@@ -1,0 +1,15 @@
+{
+  "blastPlaced": true,
+  "effects": [
+    {
+      "name": "FB_Explosion",
+      "y": -17.0,
+      "collision": "<CollisionEnabled.NO_COLLISION: 0>",
+      "sourcePixels": 96.0,
+      "ppu": 2.0,
+      "actorScale": 1.0,
+      "worldWidth": 48.0,
+      "worldUnitsPerPixel": 0.5
+    }
+  ]
+}

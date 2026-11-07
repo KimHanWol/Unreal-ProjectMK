@@ -1,0 +1,146 @@
+[
+  {
+    "name": "Panel",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Panel.png",
+    "width": 160,
+    "height": 120,
+    "marginX": 16,
+    "marginY": 16
+  },
+  {
+    "name": "InsetPanel",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/InsetPanel.png",
+    "width": 128,
+    "height": 80,
+    "marginX": 8,
+    "marginY": 8
+  },
+  {
+    "name": "WindowTitle",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/WindowTitle.png",
+    "width": 160,
+    "height": 32,
+    "marginX": 24,
+    "marginY": 10
+  },
+  {
+    "name": "RecipeCard",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/RecipeCard.png",
+    "width": 160,
+    "height": 32,
+    "marginX": 24,
+    "marginY": 8
+  },
+  {
+    "name": "Button",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Button.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10
+  },
+  {
+    "name": "ButtonHover",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/ButtonHover.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10
+  },
+  {
+    "name": "ButtonPressed",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/ButtonPressed.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10
+  },
+  {
+    "name": "ButtonDisabled",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/ButtonDisabled.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10
+  },
+  {
+    "name": "Slot",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Slot.png",
+    "width": 48,
+    "height": 48,
+    "marginX": 8,
+    "marginY": 8
+  },
+  {
+    "name": "SelectedSlot",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/SelectedSlot.png",
+    "width": 48,
+    "height": 48,
+    "marginX": 8,
+    "marginY": 8
+  },
+  {
+    "name": "Quickbar",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Quickbar.png",
+    "width": 192,
+    "height": 48,
+    "marginX": 28,
+    "marginY": 12
+  },
+  {
+    "name": "Tooltip",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Tooltip.png",
+    "width": 128,
+    "height": 96,
+    "marginX": 14,
+    "marginY": 14
+  },
+  {
+    "name": "BarFrame",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/BarFrame.png",
+    "width": 160,
+    "height": 32,
+    "marginX": 36,
+    "marginY": 10
+  },
+  {
+    "name": "OxygenFrame",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/OxygenFrame.png",
+    "width": 160,
+    "height": 32,
+    "marginX": 36,
+    "marginY": 10
+  },
+  {
+    "name": "Minimap",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Minimap.png",
+    "width": 96,
+    "height": 96,
+    "marginX": 18,
+    "marginY": 18
+  },
+  {
+    "name": "Keycap",
+    "group": "UI",
+    "file": "Content/Asset/WidgetArtV1/Source/UI/Keycap.png",
+    "width": 24,
+    "height": 24,
+    "marginX": 5,
+    "marginY": 5
+  }
+]

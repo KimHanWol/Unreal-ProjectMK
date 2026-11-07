@@ -1,0 +1,10 @@
+{
+  "blastPlaced": true,
+  "effects": [
+    {
+      "name": "FB_Explosion",
+      "y": -17.0,
+      "collision": "<CollisionEnabled.NO_COLLISION: 0>"
+    }
+  ]
+}

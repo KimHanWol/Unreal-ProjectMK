@@ -1,0 +1,87 @@
+{
+  "assets": 130,
+  "originalPixelChecks": [
+    {
+      "name": "Dirt",
+      "equal": true
+    },
+    {
+      "name": "Ice",
+      "equal": true
+    },
+    {
+      "name": "Magma",
+      "equal": true
+    },
+    {
+      "name": "Rock",
+      "equal": true
+    },
+    {
+      "name": "Damage20",
+      "equal": true
+    },
+    {
+      "name": "Damage40",
+      "equal": true
+    },
+    {
+      "name": "Damage60",
+      "equal": true
+    },
+    {
+      "name": "Damage80",
+      "equal": true
+    },
+    {
+      "name": "Ore_Coal",
+      "equal": true
+    },
+    {
+      "name": "Ore_Copper",
+      "equal": true
+    },
+    {
+      "name": "Ore_Iron",
+      "equal": true
+    },
+    {
+      "name": "Ore_Gold",
+      "equal": true
+    },
+    {
+      "name": "Ore_Emerald",
+      "equal": true
+    },
+    {
+      "name": "Ore_Diamond",
+      "equal": true
+    },
+    {
+      "name": "Ore_Titanium",
+      "equal": true
+    },
+    {
+      "name": "Ore_Lithium",
+      "equal": true
+    }
+  ],
+  "tableChecks": [
+    {
+      "table": "BlockDataTable",
+      "nonVisualFieldsUnchanged": true,
+      "rows": 8
+    },
+    {
+      "table": "ItemDataTable",
+      "nonVisualFieldsUnchanged": true,
+      "rows": 20
+    },
+    {
+      "table": "SkillDataTable",
+      "nonVisualFieldsUnchanged": true,
+      "rows": 39
+    }
+  ],
+  "failures": []
+}

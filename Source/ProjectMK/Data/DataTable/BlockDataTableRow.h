@@ -41,6 +41,14 @@ struct FBlockDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TSoftObjectPtr<UPaperSprite> TileSprite;
 
+	/** 빈 공간과 다른 재질의 경계를 다듬는다. 중심 무늬와 충돌 크기는 유지한다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+	bool bUseTerrainEdges = false;
+
+	/** 더 높은 재질이 이웃 블록의 가장자리 안으로 이어진다. 같은 값은 경계를 만들지 않는다. */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Visual")
+	int32 TerrainBlendPriority = 0;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	float BlockDurability = 0.f;
 

@@ -1,0 +1,692 @@
+[
+  {
+    "name": "Coin",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Coin.T_Coin",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Coin.S_Coin"
+  },
+  {
+    "name": "Oxygen",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Oxygen.T_Oxygen",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Oxygen.S_Oxygen"
+  },
+  {
+    "name": "Ore_Coal",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Coal.T_Ore_Coal",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Coal.S_Ore_Coal"
+  },
+  {
+    "name": "Ore_Copper",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Copper.T_Ore_Copper",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Copper.S_Ore_Copper"
+  },
+  {
+    "name": "Ore_Iron",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Iron.T_Ore_Iron",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Iron.S_Ore_Iron"
+  },
+  {
+    "name": "Ore_Gold",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Gold.T_Ore_Gold",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Gold.S_Ore_Gold"
+  },
+  {
+    "name": "Ore_Emerald",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Emerald.T_Ore_Emerald",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Emerald.S_Ore_Emerald"
+  },
+  {
+    "name": "Ore_Diamond",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Diamond.T_Ore_Diamond",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Diamond.S_Ore_Diamond"
+  },
+  {
+    "name": "Ore_Titanium",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Titanium.T_Ore_Titanium",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Titanium.S_Ore_Titanium"
+  },
+  {
+    "name": "Ore_Lithium",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Lithium.T_Ore_Lithium",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Lithium.S_Ore_Lithium"
+  },
+  {
+    "name": "Slime",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Slime.T_Slime",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Slime.S_Slime"
+  },
+  {
+    "name": "Chain",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Chain.T_Chain",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Chain.S_Chain"
+  },
+  {
+    "name": "OxygenCapsule",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_OxygenCapsule.T_OxygenCapsule",
+    "sprite": "/Game/Asset/ArtV1/Items/S_OxygenCapsule.S_OxygenCapsule"
+  },
+  {
+    "name": "RepairKit",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_RepairKit.T_RepairKit",
+    "sprite": "/Game/Asset/ArtV1/Items/S_RepairKit.S_RepairKit"
+  },
+  {
+    "name": "RecallFlare",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_RecallFlare.T_RecallFlare",
+    "sprite": "/Game/Asset/ArtV1/Items/S_RecallFlare.S_RecallFlare"
+  },
+  {
+    "name": "SupportBeam",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_SupportBeam.T_SupportBeam",
+    "sprite": "/Game/Asset/ArtV1/Items/S_SupportBeam.S_SupportBeam"
+  },
+  {
+    "name": "CushionGel",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_CushionGel.T_CushionGel",
+    "sprite": "/Game/Asset/ArtV1/Items/S_CushionGel.S_CushionGel"
+  },
+  {
+    "name": "BlastCharge",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_BlastCharge.T_BlastCharge",
+    "sprite": "/Game/Asset/ArtV1/Items/S_BlastCharge.S_BlastCharge"
+  },
+  {
+    "name": "Insurance",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Insurance.T_Insurance",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Insurance.S_Insurance"
+  },
+  {
+    "name": "Ore_Test",
+    "group": "Items",
+    "texture": "/Game/Asset/ArtV1/Items/T_Ore_Test.T_Ore_Test",
+    "sprite": "/Game/Asset/ArtV1/Items/S_Ore_Test.S_Ore_Test"
+  },
+  {
+    "name": "DrillPower",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_DrillPower.T_DrillPower",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_DrillPower.S_DrillPower"
+  },
+  {
+    "name": "DrillSpeed",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_DrillSpeed.T_DrillSpeed",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_DrillSpeed.S_DrillSpeed"
+  },
+  {
+    "name": "DrillRange",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_DrillRange.T_DrillRange",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_DrillRange.S_DrillRange"
+  },
+  {
+    "name": "HealthBoost",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_HealthBoost.T_HealthBoost",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_HealthBoost.S_HealthBoost"
+  },
+  {
+    "name": "OxygenTank",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_OxygenTank.T_OxygenTank",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_OxygenTank.S_OxygenTank"
+  },
+  {
+    "name": "Magnet",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Magnet.T_Magnet",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Magnet.S_Magnet"
+  },
+  {
+    "name": "BagUpgrade",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_BagUpgrade.T_BagUpgrade",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_BagUpgrade.S_BagUpgrade"
+  },
+  {
+    "name": "MoveSpeed",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_MoveSpeed.T_MoveSpeed",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_MoveSpeed.S_MoveSpeed"
+  },
+  {
+    "name": "FlyingSpeed",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_FlyingSpeed.T_FlyingSpeed",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_FlyingSpeed.S_FlyingSpeed"
+  },
+  {
+    "name": "HealthRegen",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_HealthRegen.T_HealthRegen",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_HealthRegen.S_HealthRegen"
+  },
+  {
+    "name": "ChainBreak",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_ChainBreak.T_ChainBreak",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_ChainBreak.S_ChainBreak"
+  },
+  {
+    "name": "Recycler",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Recycler.T_Recycler",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Recycler.S_Recycler"
+  },
+  {
+    "name": "AirPocket",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_AirPocket.T_AirPocket",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_AirPocket.S_AirPocket"
+  },
+  {
+    "name": "FieldRepair",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_FieldRepair.T_FieldRepair",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_FieldRepair.S_FieldRepair"
+  },
+  {
+    "name": "Insurance",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Insurance.T_Insurance",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Insurance.S_Insurance"
+  },
+  {
+    "name": "LuckyStrike",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_LuckyStrike.T_LuckyStrike",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_LuckyStrike.S_LuckyStrike"
+  },
+  {
+    "name": "LastOxygen",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_LastOxygen.T_LastOxygen",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_LastOxygen.S_LastOxygen"
+  },
+  {
+    "name": "CoinMaster",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_CoinMaster.T_CoinMaster",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_CoinMaster.S_CoinMaster"
+  },
+  {
+    "name": "Scavenger",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Scavenger.T_Scavenger",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Scavenger.S_Scavenger"
+  },
+  {
+    "name": "MinerDiscipline",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_MinerDiscipline.T_MinerDiscipline",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_MinerDiscipline.S_MinerDiscipline"
+  },
+  {
+    "name": "RecklessDig",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_RecklessDig.T_RecklessDig",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_RecklessDig.S_RecklessDig"
+  },
+  {
+    "name": "SpeedRunner",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_SpeedRunner.T_SpeedRunner",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_SpeedRunner.S_SpeedRunner"
+  },
+  {
+    "name": "HeavyCarrier",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_HeavyCarrier.T_HeavyCarrier",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_HeavyCarrier.S_HeavyCarrier"
+  },
+  {
+    "name": "Upgrade",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Upgrade.T_Upgrade",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Upgrade.S_Upgrade"
+  },
+  {
+    "name": "Lantern",
+    "group": "Skills",
+    "texture": "/Game/Asset/ArtV1/Skills/T_Lantern.T_Lantern",
+    "sprite": "/Game/Asset/ArtV1/Skills/S_Lantern.S_Lantern"
+  },
+  {
+    "name": "Shop",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Shop.T_Shop",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Shop.S_Shop"
+  },
+  {
+    "name": "ShopSign",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_ShopSign.T_ShopSign",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_ShopSign.S_ShopSign"
+  },
+  {
+    "name": "PlayerMarker",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_PlayerMarker.T_PlayerMarker",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_PlayerMarker.S_PlayerMarker"
+  },
+  {
+    "name": "ShopMarker",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_ShopMarker.T_ShopMarker",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_ShopMarker.S_ShopMarker"
+  },
+  {
+    "name": "Lock",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Lock.T_Lock",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Lock.S_Lock"
+  },
+  {
+    "name": "Check",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Check.T_Check",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Check.S_Check"
+  },
+  {
+    "name": "Close",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Close.T_Close",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Close.S_Close"
+  },
+  {
+    "name": "Warning",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Warning.T_Warning",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Warning.S_Warning"
+  },
+  {
+    "name": "Heart",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Heart.T_Heart",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Heart.S_Heart"
+  },
+  {
+    "name": "Oxygen",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Oxygen.T_Oxygen",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Oxygen.S_Oxygen"
+  },
+  {
+    "name": "ArrowDown",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_ArrowDown.T_ArrowDown",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_ArrowDown.S_ArrowDown"
+  },
+  {
+    "name": "ArrowRight",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_ArrowRight.T_ArrowRight",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_ArrowRight.S_ArrowRight"
+  },
+  {
+    "name": "Sparkle",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Sparkle.T_Sparkle",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Sparkle.S_Sparkle"
+  },
+  {
+    "name": "Settings",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Settings.T_Settings",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Settings.S_Settings"
+  },
+  {
+    "name": "ScrollHandle",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_ScrollHandle.T_ScrollHandle",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_ScrollHandle.S_ScrollHandle"
+  },
+  {
+    "name": "Crafting",
+    "group": "Symbols",
+    "texture": "/Game/Asset/ArtV1/Symbols/T_Crafting.T_Crafting",
+    "sprite": "/Game/Asset/ArtV1/Symbols/S_Crafting.S_Crafting"
+  },
+  {
+    "name": "Panel",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Panel.T_Panel",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Panel.S_Panel"
+  },
+  {
+    "name": "Slot",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Slot.T_Slot",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Slot.S_Slot"
+  },
+  {
+    "name": "SelectedSlot",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_SelectedSlot.T_SelectedSlot",
+    "sprite": "/Game/Asset/ArtV1/UI/S_SelectedSlot.S_SelectedSlot"
+  },
+  {
+    "name": "Tooltip",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Tooltip.T_Tooltip",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Tooltip.S_Tooltip"
+  },
+  {
+    "name": "Button",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Button.T_Button",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Button.S_Button"
+  },
+  {
+    "name": "ButtonHover",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_ButtonHover.T_ButtonHover",
+    "sprite": "/Game/Asset/ArtV1/UI/S_ButtonHover.S_ButtonHover"
+  },
+  {
+    "name": "ButtonPressed",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_ButtonPressed.T_ButtonPressed",
+    "sprite": "/Game/Asset/ArtV1/UI/S_ButtonPressed.S_ButtonPressed"
+  },
+  {
+    "name": "ButtonDisabled",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_ButtonDisabled.T_ButtonDisabled",
+    "sprite": "/Game/Asset/ArtV1/UI/S_ButtonDisabled.S_ButtonDisabled"
+  },
+  {
+    "name": "Portrait",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Portrait.T_Portrait",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Portrait.S_Portrait"
+  },
+  {
+    "name": "Minimap",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Minimap.T_Minimap",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Minimap.S_Minimap"
+  },
+  {
+    "name": "BarFrame",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_BarFrame.T_BarFrame",
+    "sprite": "/Game/Asset/ArtV1/UI/S_BarFrame.S_BarFrame"
+  },
+  {
+    "name": "OxygenFrame",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_OxygenFrame.T_OxygenFrame",
+    "sprite": "/Game/Asset/ArtV1/UI/S_OxygenFrame.S_OxygenFrame"
+  },
+  {
+    "name": "HealthFill",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_HealthFill.T_HealthFill",
+    "sprite": "/Game/Asset/ArtV1/UI/S_HealthFill.S_HealthFill"
+  },
+  {
+    "name": "OxygenFill",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_OxygenFill.T_OxygenFill",
+    "sprite": "/Game/Asset/ArtV1/UI/S_OxygenFill.S_OxygenFill"
+  },
+  {
+    "name": "Keycap",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_Keycap.T_Keycap",
+    "sprite": "/Game/Asset/ArtV1/UI/S_Keycap.S_Keycap"
+  },
+  {
+    "name": "SkillNode",
+    "group": "UI",
+    "texture": "/Game/Asset/ArtV1/UI/T_SkillNode.T_SkillNode",
+    "sprite": "/Game/Asset/ArtV1/UI/S_SkillNode.S_SkillNode"
+  },
+  {
+    "name": "Dirt",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Dirt.T_Dirt",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Dirt.S_Dirt"
+  },
+  {
+    "name": "Ice",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Ice.T_Ice",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Ice.S_Ice"
+  },
+  {
+    "name": "Magma",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Magma.T_Magma",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Magma.S_Magma"
+  },
+  {
+    "name": "Rock",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Rock.T_Rock",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Rock.S_Rock"
+  },
+  {
+    "name": "Damage20",
+    "group": "Damage",
+    "texture": "/Game/Asset/ArtV1/Damage/T_Damage20.T_Damage20",
+    "sprite": "/Game/Asset/ArtV1/Damage/S_Damage20.S_Damage20"
+  },
+  {
+    "name": "Damage40",
+    "group": "Damage",
+    "texture": "/Game/Asset/ArtV1/Damage/T_Damage40.T_Damage40",
+    "sprite": "/Game/Asset/ArtV1/Damage/S_Damage40.S_Damage40"
+  },
+  {
+    "name": "Damage60",
+    "group": "Damage",
+    "texture": "/Game/Asset/ArtV1/Damage/T_Damage60.T_Damage60",
+    "sprite": "/Game/Asset/ArtV1/Damage/S_Damage60.S_Damage60"
+  },
+  {
+    "name": "Damage80",
+    "group": "Damage",
+    "texture": "/Game/Asset/ArtV1/Damage/T_Damage80.T_Damage80",
+    "sprite": "/Game/Asset/ArtV1/Damage/S_Damage80.S_Damage80"
+  },
+  {
+    "name": "Ore_Coal",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Coal.T_Ore_Coal",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Coal.S_Ore_Coal"
+  },
+  {
+    "name": "Ore_Copper",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Copper.T_Ore_Copper",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Copper.S_Ore_Copper"
+  },
+  {
+    "name": "Ore_Iron",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Iron.T_Ore_Iron",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Iron.S_Ore_Iron"
+  },
+  {
+    "name": "Ore_Gold",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Gold.T_Ore_Gold",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Gold.S_Ore_Gold"
+  },
+  {
+    "name": "Ore_Emerald",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Emerald.T_Ore_Emerald",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Emerald.S_Ore_Emerald"
+  },
+  {
+    "name": "Ore_Diamond",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Diamond.T_Ore_Diamond",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Diamond.S_Ore_Diamond"
+  },
+  {
+    "name": "Ore_Titanium",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Titanium.T_Ore_Titanium",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Titanium.S_Ore_Titanium"
+  },
+  {
+    "name": "Ore_Lithium",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV1/Ores/T_Ore_Lithium.T_Ore_Lithium",
+    "sprite": "/Game/Asset/ArtV1/Ores/S_Ore_Lithium.S_Ore_Lithium"
+  },
+  {
+    "name": "Sand",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Sand.T_Sand",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Sand.S_Sand"
+  },
+  {
+    "name": "SupportBeam",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_SupportBeam.T_SupportBeam",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_SupportBeam.S_SupportBeam"
+  },
+  {
+    "name": "Cushion",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Cushion.T_Cushion",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Cushion.S_Cushion"
+  },
+  {
+    "name": "Dirt_Grass",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV1/Terrain/T_Dirt_Grass.T_Dirt_Grass",
+    "sprite": "/Game/Asset/ArtV1/Terrain/S_Dirt_Grass.S_Dirt_Grass"
+  },
+  {
+    "name": "BlockBreak0",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_BlockBreak0.T_BlockBreak0",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_BlockBreak0.S_BlockBreak0"
+  },
+  {
+    "name": "BlockBreak1",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_BlockBreak1.T_BlockBreak1",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_BlockBreak1.S_BlockBreak1"
+  },
+  {
+    "name": "BlockBreak2",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_BlockBreak2.T_BlockBreak2",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_BlockBreak2.S_BlockBreak2"
+  },
+  {
+    "name": "BlockBreak3",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_BlockBreak3.T_BlockBreak3",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_BlockBreak3.S_BlockBreak3"
+  },
+  {
+    "name": "DrillContact0",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_DrillContact0.T_DrillContact0",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_DrillContact0.S_DrillContact0"
+  },
+  {
+    "name": "DrillContact1",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_DrillContact1.T_DrillContact1",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_DrillContact1.S_DrillContact1"
+  },
+  {
+    "name": "DrillContact2",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_DrillContact2.T_DrillContact2",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_DrillContact2.S_DrillContact2"
+  },
+  {
+    "name": "DrillContact3",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_DrillContact3.T_DrillContact3",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_DrillContact3.S_DrillContact3"
+  },
+  {
+    "name": "Explosion0",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Explosion0.T_Explosion0",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Explosion0.S_Explosion0"
+  },
+  {
+    "name": "Explosion1",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Explosion1.T_Explosion1",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Explosion1.S_Explosion1"
+  },
+  {
+    "name": "Explosion2",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Explosion2.T_Explosion2",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Explosion2.S_Explosion2"
+  },
+  {
+    "name": "Explosion3",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Explosion3.T_Explosion3",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Explosion3.S_Explosion3"
+  },
+  {
+    "name": "Pickup0",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Pickup0.T_Pickup0",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Pickup0.S_Pickup0"
+  },
+  {
+    "name": "Pickup1",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Pickup1.T_Pickup1",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Pickup1.S_Pickup1"
+  },
+  {
+    "name": "Pickup2",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Pickup2.T_Pickup2",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Pickup2.S_Pickup2"
+  },
+  {
+    "name": "Pickup3",
+    "group": "Effects",
+    "texture": "/Game/Asset/ArtV1/Effects/T_Pickup3.T_Pickup3",
+    "sprite": "/Game/Asset/ArtV1/Effects/S_Pickup3.S_Pickup3"
+  },
+  {
+    "name": "Surface",
+    "group": "Backgrounds",
+    "texture": "/Game/Asset/ArtV1/Backgrounds/T_Surface.T_Surface",
+    "sprite": "/Game/Asset/ArtV1/Backgrounds/S_Surface.S_Surface"
+  },
+  {
+    "name": "Underground",
+    "group": "Backgrounds",
+    "texture": "/Game/Asset/ArtV1/Backgrounds/T_Underground.T_Underground",
+    "sprite": "/Game/Asset/ArtV1/Backgrounds/S_Underground.S_Underground"
+  }
+]

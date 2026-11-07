@@ -1,0 +1,16 @@
+{
+  "target": "BP_Block_C_1172",
+  "start": [
+    978,
+    -276
+  ],
+  "initialExposedMask": 15,
+  "moved": true,
+  "observedMasks": [
+    15
+  ],
+  "lastPosition": [
+    978.0,
+    -292.0
+  ]
+}

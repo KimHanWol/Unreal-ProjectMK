@@ -1,0 +1,1500 @@
+[
+  {
+    "group": "Items",
+    "name": "Coin",
+    "file": "Content/Asset/ArtV1/Source/Items/Coin.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 315,
+      "height": 345
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Oxygen",
+    "file": "Content/Asset/ArtV1/Source/Items/Oxygen.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 315,
+      "top": 0,
+      "width": 260,
+      "height": 345
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Coal",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Coal.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 575,
+      "top": 0,
+      "width": 255,
+      "height": 345
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Copper",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Copper.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 830,
+      "top": 0,
+      "width": 260,
+      "height": 345
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Iron",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Iron.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 1090,
+      "top": 0,
+      "width": 312,
+      "height": 345
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Gold",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Gold.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 0,
+      "top": 345,
+      "width": 315,
+      "height": 250
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Emerald",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Emerald.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 315,
+      "top": 345,
+      "width": 260,
+      "height": 250
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Diamond",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Diamond.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 575,
+      "top": 345,
+      "width": 255,
+      "height": 250
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Titanium",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Titanium.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 830,
+      "top": 345,
+      "width": 260,
+      "height": 250
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Lithium",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Lithium.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 1090,
+      "top": 345,
+      "width": 312,
+      "height": 250
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Slime",
+    "file": "Content/Asset/ArtV1/Source/Items/Slime.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 0,
+      "top": 595,
+      "width": 315,
+      "height": 220
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Chain",
+    "file": "Content/Asset/ArtV1/Source/Items/Chain.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 315,
+      "top": 595,
+      "width": 260,
+      "height": 220
+    }
+  },
+  {
+    "group": "Items",
+    "name": "OxygenCapsule",
+    "file": "Content/Asset/ArtV1/Source/Items/OxygenCapsule.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 575,
+      "top": 595,
+      "width": 255,
+      "height": 220
+    }
+  },
+  {
+    "group": "Items",
+    "name": "RepairKit",
+    "file": "Content/Asset/ArtV1/Source/Items/RepairKit.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 830,
+      "top": 595,
+      "width": 260,
+      "height": 220
+    }
+  },
+  {
+    "group": "Items",
+    "name": "RecallFlare",
+    "file": "Content/Asset/ArtV1/Source/Items/RecallFlare.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 1090,
+      "top": 595,
+      "width": 312,
+      "height": 220
+    }
+  },
+  {
+    "group": "Items",
+    "name": "SupportBeam",
+    "file": "Content/Asset/ArtV1/Source/Items/SupportBeam.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 0,
+      "top": 815,
+      "width": 315,
+      "height": 307
+    }
+  },
+  {
+    "group": "Items",
+    "name": "CushionGel",
+    "file": "Content/Asset/ArtV1/Source/Items/CushionGel.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 315,
+      "top": 815,
+      "width": 260,
+      "height": 307
+    }
+  },
+  {
+    "group": "Items",
+    "name": "BlastCharge",
+    "file": "Content/Asset/ArtV1/Source/Items/BlastCharge.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 575,
+      "top": 815,
+      "width": 255,
+      "height": 307
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Insurance",
+    "file": "Content/Asset/ArtV1/Source/Items/Insurance.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 830,
+      "top": 815,
+      "width": 260,
+      "height": 307
+    }
+  },
+  {
+    "group": "Items",
+    "name": "Ore_Test",
+    "file": "Content/Asset/ArtV1/Source/Items/Ore_Test.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Items.png",
+    "rect": {
+      "left": 1090,
+      "top": 815,
+      "width": 312,
+      "height": 307
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "DrillPower",
+    "file": "Content/Asset/ArtV1/Source/Skills/DrillPower.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "DrillSpeed",
+    "file": "Content/Asset/ArtV1/Source/Skills/DrillSpeed.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 250,
+      "top": 0,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "DrillRange",
+    "file": "Content/Asset/ArtV1/Source/Skills/DrillRange.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 500,
+      "top": 0,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "HealthBoost",
+    "file": "Content/Asset/ArtV1/Source/Skills/HealthBoost.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 750,
+      "top": 0,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "OxygenTank",
+    "file": "Content/Asset/ArtV1/Source/Skills/OxygenTank.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 1000,
+      "top": 0,
+      "width": 254,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Magnet",
+    "file": "Content/Asset/ArtV1/Source/Skills/Magnet.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 0,
+      "top": 250,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "BagUpgrade",
+    "file": "Content/Asset/ArtV1/Source/Skills/BagUpgrade.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 250,
+      "top": 250,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "MoveSpeed",
+    "file": "Content/Asset/ArtV1/Source/Skills/MoveSpeed.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 500,
+      "top": 250,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "FlyingSpeed",
+    "file": "Content/Asset/ArtV1/Source/Skills/FlyingSpeed.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 750,
+      "top": 250,
+      "width": 250,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "HealthRegen",
+    "file": "Content/Asset/ArtV1/Source/Skills/HealthRegen.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 1000,
+      "top": 250,
+      "width": 254,
+      "height": 250
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "ChainBreak",
+    "file": "Content/Asset/ArtV1/Source/Skills/ChainBreak.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 0,
+      "top": 500,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Recycler",
+    "file": "Content/Asset/ArtV1/Source/Skills/Recycler.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 250,
+      "top": 500,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "AirPocket",
+    "file": "Content/Asset/ArtV1/Source/Skills/AirPocket.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 500,
+      "top": 500,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "FieldRepair",
+    "file": "Content/Asset/ArtV1/Source/Skills/FieldRepair.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 750,
+      "top": 500,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Insurance",
+    "file": "Content/Asset/ArtV1/Source/Skills/Insurance.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 1000,
+      "top": 500,
+      "width": 254,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "LuckyStrike",
+    "file": "Content/Asset/ArtV1/Source/Skills/LuckyStrike.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 0,
+      "top": 740,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "LastOxygen",
+    "file": "Content/Asset/ArtV1/Source/Skills/LastOxygen.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 250,
+      "top": 740,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "CoinMaster",
+    "file": "Content/Asset/ArtV1/Source/Skills/CoinMaster.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 500,
+      "top": 740,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Scavenger",
+    "file": "Content/Asset/ArtV1/Source/Skills/Scavenger.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 750,
+      "top": 740,
+      "width": 250,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "MinerDiscipline",
+    "file": "Content/Asset/ArtV1/Source/Skills/MinerDiscipline.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 1000,
+      "top": 740,
+      "width": 254,
+      "height": 240
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "RecklessDig",
+    "file": "Content/Asset/ArtV1/Source/Skills/RecklessDig.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 0,
+      "top": 980,
+      "width": 250,
+      "height": 274
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "SpeedRunner",
+    "file": "Content/Asset/ArtV1/Source/Skills/SpeedRunner.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 250,
+      "top": 980,
+      "width": 250,
+      "height": 274
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "HeavyCarrier",
+    "file": "Content/Asset/ArtV1/Source/Skills/HeavyCarrier.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 500,
+      "top": 980,
+      "width": 250,
+      "height": 274
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Upgrade",
+    "file": "Content/Asset/ArtV1/Source/Skills/Upgrade.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 750,
+      "top": 980,
+      "width": 250,
+      "height": 274
+    }
+  },
+  {
+    "group": "Skills",
+    "name": "Lantern",
+    "file": "Content/Asset/ArtV1/Source/Skills/Lantern.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Skills.png",
+    "rect": {
+      "left": 1000,
+      "top": 980,
+      "width": 254,
+      "height": 274
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Shop",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Shop.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 350,
+      "height": 350
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "ShopSign",
+    "file": "Content/Asset/ArtV1/Source/Symbols/ShopSign.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 350,
+      "top": 0,
+      "width": 300,
+      "height": 350
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "PlayerMarker",
+    "file": "Content/Asset/ArtV1/Source/Symbols/PlayerMarker.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 650,
+      "top": 0,
+      "width": 280,
+      "height": 350
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "ShopMarker",
+    "file": "Content/Asset/ArtV1/Source/Symbols/ShopMarker.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 930,
+      "top": 0,
+      "width": 324,
+      "height": 350
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Lock",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Lock.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 0,
+      "top": 350,
+      "width": 350,
+      "height": 280
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Check",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Check.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 350,
+      "top": 350,
+      "width": 300,
+      "height": 280
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Close",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Close.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 650,
+      "top": 350,
+      "width": 280,
+      "height": 280
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Warning",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Warning.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 930,
+      "top": 350,
+      "width": 324,
+      "height": 280
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Heart",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Heart.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 0,
+      "top": 630,
+      "width": 350,
+      "height": 295
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Oxygen",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Oxygen.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 350,
+      "top": 630,
+      "width": 300,
+      "height": 295
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "ArrowDown",
+    "file": "Content/Asset/ArtV1/Source/Symbols/ArrowDown.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 650,
+      "top": 630,
+      "width": 280,
+      "height": 295
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "ArrowRight",
+    "file": "Content/Asset/ArtV1/Source/Symbols/ArrowRight.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 930,
+      "top": 630,
+      "width": 324,
+      "height": 295
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Sparkle",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Sparkle.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 0,
+      "top": 925,
+      "width": 350,
+      "height": 329
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Settings",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Settings.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 350,
+      "top": 925,
+      "width": 300,
+      "height": 329
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "ScrollHandle",
+    "file": "Content/Asset/ArtV1/Source/Symbols/ScrollHandle.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 650,
+      "top": 925,
+      "width": 280,
+      "height": 329
+    }
+  },
+  {
+    "group": "Symbols",
+    "name": "Crafting",
+    "file": "Content/Asset/ArtV1/Source/Symbols/Crafting.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Symbols.png",
+    "rect": {
+      "left": 930,
+      "top": 925,
+      "width": 324,
+      "height": 329
+    }
+  },
+  {
+    "group": "UI",
+    "name": "Panel",
+    "file": "Content/Asset/ArtV1/Source/UI/Panel.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "Slot",
+    "file": "Content/Asset/ArtV1/Source/UI/Slot.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "SelectedSlot",
+    "file": "Content/Asset/ArtV1/Source/UI/SelectedSlot.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "Tooltip",
+    "file": "Content/Asset/ArtV1/Source/UI/Tooltip.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "Button",
+    "file": "Content/Asset/ArtV1/Source/UI/Button.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "ButtonHover",
+    "file": "Content/Asset/ArtV1/Source/UI/ButtonHover.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "ButtonPressed",
+    "file": "Content/Asset/ArtV1/Source/UI/ButtonPressed.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "ButtonDisabled",
+    "file": "Content/Asset/ArtV1/Source/UI/ButtonDisabled.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "Portrait",
+    "file": "Content/Asset/ArtV1/Source/UI/Portrait.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "Minimap",
+    "file": "Content/Asset/ArtV1/Source/UI/Minimap.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "BarFrame",
+    "file": "Content/Asset/ArtV1/Source/UI/BarFrame.png",
+    "width": 64,
+    "height": 20
+  },
+  {
+    "group": "UI",
+    "name": "OxygenFrame",
+    "file": "Content/Asset/ArtV1/Source/UI/OxygenFrame.png",
+    "width": 64,
+    "height": 20
+  },
+  {
+    "group": "UI",
+    "name": "HealthFill",
+    "file": "Content/Asset/ArtV1/Source/UI/HealthFill.png",
+    "width": 64,
+    "height": 20
+  },
+  {
+    "group": "UI",
+    "name": "OxygenFill",
+    "file": "Content/Asset/ArtV1/Source/UI/OxygenFill.png",
+    "width": 64,
+    "height": 20
+  },
+  {
+    "group": "UI",
+    "name": "Keycap",
+    "file": "Content/Asset/ArtV1/Source/UI/Keycap.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "UI",
+    "name": "SkillNode",
+    "file": "Content/Asset/ArtV1/Source/UI/SkillNode.png",
+    "width": 64,
+    "height": 64
+  },
+  {
+    "group": "Terrain",
+    "name": "Dirt",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Dirt.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/blocks.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Ice",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Ice.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/blocks.png",
+    "rect": {
+      "left": 32,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Magma",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Magma.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/blocks.png",
+    "rect": {
+      "left": 64,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Rock",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Rock.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/blocks.png",
+    "rect": {
+      "left": 96,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Damage",
+    "name": "Damage20",
+    "file": "Content/Asset/ArtV1/Source/Damage/Damage20.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/damage-overlays.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Damage",
+    "name": "Damage40",
+    "file": "Content/Asset/ArtV1/Source/Damage/Damage40.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/damage-overlays.png",
+    "rect": {
+      "left": 32,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Damage",
+    "name": "Damage60",
+    "file": "Content/Asset/ArtV1/Source/Damage/Damage60.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/damage-overlays.png",
+    "rect": {
+      "left": 64,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Damage",
+    "name": "Damage80",
+    "file": "Content/Asset/ArtV1/Source/Damage/Damage80.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/blocks-and-overlays-v9/damage-overlays.png",
+    "rect": {
+      "left": 96,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Coal",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Coal.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Coal.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Copper",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Copper.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Copper.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Iron",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Iron.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Iron.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Gold",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Gold.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Gold.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Emerald",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Emerald.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Emerald.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Diamond",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Diamond.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Diamond.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Titanium",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Titanium.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Titanium.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Ores",
+    "name": "Ore_Lithium",
+    "file": "Content/Asset/ArtV1/Source/Ores/Ore_Lithium.png",
+    "width": 32,
+    "height": 32,
+    "source": "output/imagegen/mineral-overlays-v8/Ore_Lithium.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 32,
+      "height": 32
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Sand",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Sand.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 630,
+      "top": 65,
+      "width": 565,
+      "height": 560
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "SupportBeam",
+    "file": "Content/Asset/ArtV1/Source/Terrain/SupportBeam.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 60,
+      "top": 630,
+      "width": 565,
+      "height": 565
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Cushion",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Cushion.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 630,
+      "top": 630,
+      "width": 565,
+      "height": 565
+    }
+  },
+  {
+    "group": "Terrain",
+    "name": "Dirt_Grass",
+    "file": "Content/Asset/ArtV1/Source/Terrain/Dirt_Grass.png",
+    "width": 32,
+    "height": 32,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Terrain.png",
+    "rect": {
+      "left": 60,
+      "top": 85,
+      "width": 565,
+      "height": 540
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "BlockBreak0",
+    "file": "Content/Asset/ArtV1/Source/Effects/BlockBreak0.png",
+    "width": 64,
+    "height": 64,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "BlockBreak1",
+    "file": "Content/Asset/ArtV1/Source/Effects/BlockBreak1.png",
+    "width": 64,
+    "height": 64,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 354,
+      "top": 0,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "BlockBreak2",
+    "file": "Content/Asset/ArtV1/Source/Effects/BlockBreak2.png",
+    "width": 64,
+    "height": 64,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 707,
+      "top": 0,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "BlockBreak3",
+    "file": "Content/Asset/ArtV1/Source/Effects/BlockBreak3.png",
+    "width": 64,
+    "height": 64,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 1061,
+      "top": 0,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "DrillContact0",
+    "file": "Content/Asset/ArtV1/Source/Effects/DrillContact0.png",
+    "width": 24,
+    "height": 24,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 0,
+      "top": 278,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "DrillContact1",
+    "file": "Content/Asset/ArtV1/Source/Effects/DrillContact1.png",
+    "width": 24,
+    "height": 24,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 354,
+      "top": 278,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "DrillContact2",
+    "file": "Content/Asset/ArtV1/Source/Effects/DrillContact2.png",
+    "width": 24,
+    "height": 24,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 707,
+      "top": 278,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "DrillContact3",
+    "file": "Content/Asset/ArtV1/Source/Effects/DrillContact3.png",
+    "width": 24,
+    "height": 24,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 1061,
+      "top": 278,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Explosion0",
+    "file": "Content/Asset/ArtV1/Source/Effects/Explosion0.png",
+    "width": 96,
+    "height": 96,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 0,
+      "top": 556,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Explosion1",
+    "file": "Content/Asset/ArtV1/Source/Effects/Explosion1.png",
+    "width": 96,
+    "height": 96,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 354,
+      "top": 556,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Explosion2",
+    "file": "Content/Asset/ArtV1/Source/Effects/Explosion2.png",
+    "width": 96,
+    "height": 96,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 707,
+      "top": 556,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Explosion3",
+    "file": "Content/Asset/ArtV1/Source/Effects/Explosion3.png",
+    "width": 96,
+    "height": 96,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 1061,
+      "top": 556,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Pickup0",
+    "file": "Content/Asset/ArtV1/Source/Effects/Pickup0.png",
+    "width": 20,
+    "height": 20,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 0,
+      "top": 834,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Pickup1",
+    "file": "Content/Asset/ArtV1/Source/Effects/Pickup1.png",
+    "width": 20,
+    "height": 20,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 354,
+      "top": 834,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Pickup2",
+    "file": "Content/Asset/ArtV1/Source/Effects/Pickup2.png",
+    "width": 20,
+    "height": 20,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 707,
+      "top": 834,
+      "width": 354,
+      "height": 278
+    }
+  },
+  {
+    "group": "Effects",
+    "name": "Pickup3",
+    "file": "Content/Asset/ArtV1/Source/Effects/Pickup3.png",
+    "width": 20,
+    "height": 20,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Effects.png",
+    "rect": {
+      "left": 1061,
+      "top": 834,
+      "width": 353,
+      "height": 278
+    }
+  },
+  {
+    "group": "Backgrounds",
+    "name": "Surface",
+    "file": "Content/Asset/ArtV1/Source/Backgrounds/Surface.png",
+    "width": 512,
+    "height": 512,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Backgrounds.png",
+    "rect": {
+      "left": 0,
+      "top": 0,
+      "width": 887,
+      "height": 887
+    }
+  },
+  {
+    "group": "Backgrounds",
+    "name": "Underground",
+    "file": "Content/Asset/ArtV1/Source/Backgrounds/Underground.png",
+    "width": 128,
+    "height": 128,
+    "source": "Content/Asset/ArtV1/Source/Atlases/Backgrounds.png",
+    "rect": {
+      "left": 887,
+      "top": 0,
+      "width": 887,
+      "height": 887
+    }
+  }
+]

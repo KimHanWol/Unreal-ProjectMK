@@ -129,6 +129,9 @@ private:
 
 	void OnGenerateFinished();
 	void OnBlockDestroyed(ABlockBase* DestroyedBlock);
+	void UpdateTerrainEdgesAroundPosition(const FVector2D& BlockPosition);
+	void UpdateTerrainEdges(ABlockBase* Block, const TMap<FIntPoint, ABlockBase*>& MovingBlocks);
+	void UpdateFallingTerrainEdges();
 
 	bool CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount);
 

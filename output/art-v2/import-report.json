@@ -1,0 +1,92 @@
+[
+  {
+    "name": "Dirt",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Dirt.T_Dirt",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Dirt.S_Dirt"
+  },
+  {
+    "name": "Rock",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Rock.T_Rock",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Rock.S_Rock"
+  },
+  {
+    "name": "Sand",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Sand.T_Sand",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Sand.S_Sand"
+  },
+  {
+    "name": "Ice",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Ice.T_Ice",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Ice.S_Ice"
+  },
+  {
+    "name": "Magma",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Magma.T_Magma",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Magma.S_Magma"
+  },
+  {
+    "name": "Dirt_Grass",
+    "group": "Terrain",
+    "texture": "/Game/Asset/ArtV2/Terrain/T_Dirt_Grass.T_Dirt_Grass",
+    "sprite": "/Game/Asset/ArtV2/Terrain/S_Dirt_Grass.S_Dirt_Grass"
+  },
+  {
+    "name": "Underground",
+    "group": "Backgrounds",
+    "texture": "/Game/Asset/ArtV2/Backgrounds/T_Underground.T_Underground",
+    "sprite": "/Game/Asset/ArtV2/Backgrounds/S_Underground.S_Underground"
+  },
+  {
+    "name": "Ore_Coal",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Coal.T_Ore_Coal",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Coal.S_Ore_Coal"
+  },
+  {
+    "name": "Ore_Copper",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Copper.T_Ore_Copper",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Copper.S_Ore_Copper"
+  },
+  {
+    "name": "Ore_Iron",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Iron.T_Ore_Iron",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Iron.S_Ore_Iron"
+  },
+  {
+    "name": "Ore_Gold",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Gold.T_Ore_Gold",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Gold.S_Ore_Gold"
+  },
+  {
+    "name": "Ore_Emerald",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Emerald.T_Ore_Emerald",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Emerald.S_Ore_Emerald"
+  },
+  {
+    "name": "Ore_Diamond",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Diamond.T_Ore_Diamond",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Diamond.S_Ore_Diamond"
+  },
+  {
+    "name": "Ore_Titanium",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Titanium.T_Ore_Titanium",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Titanium.S_Ore_Titanium"
+  },
+  {
+    "name": "Ore_Lithium",
+    "group": "Ores",
+    "texture": "/Game/Asset/ArtV2/Ores/T_Ore_Lithium.T_Ore_Lithium",
+    "sprite": "/Game/Asset/ArtV2/Ores/S_Ore_Lithium.S_Ore_Lithium"
+  }
+]

@@ -1,0 +1,12 @@
+{
+  "target": "BP_Block_C_1195",
+  "position": [
+    898,
+    -292
+  ],
+  "damageVisible": true,
+  "layerMaterialsMatch": true,
+  "beforeMask": 0,
+  "transitionMask": 4,
+  "afterLeftMinedMask": 1
+}

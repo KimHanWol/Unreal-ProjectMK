@@ -1750,6 +1750,7 @@ void ULevelManagerSubsystem::Tick(float DeltaTime)
 			FallingBlockGroupData.Tick_FallBlocks(DeltaTime);
 		}
 	}
+	UpdateFallingTerrainEdges();
 }
 
 TStatId ULevelManagerSubsystem::GetStatId() const
@@ -1764,6 +1765,10 @@ void ULevelManagerSubsystem::LoadTileMap()
 		for (TActorIterator<APaperTileMapActor> It(GetWorld()); It; ++It)
 		{
 			APaperTileMapActor* InTileMapActor = *It;
+			if (InTileMapActor->ActorHasTag(TEXT("ArtBackground")))
+			{
+				continue;
+			}
 			TileMapActor = InTileMapActor;
 			break;
 		}
@@ -2597,6 +2602,7 @@ ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
 
 	const FVector2D BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(WorldPosition);
 	BlockActorMap.Add(BlockPosition, SpawnedBlock);
+	UpdateTerrainEdgesAroundPosition(BlockPosition);
 
 	if (TileIndex == ShopTileIndex)
 	{
@@ -2639,6 +2645,7 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 	}
 
 	TArray<ABlockBase*> ProcessedBlocks;
+	UpdateTerrainEdgesAroundPosition(UMKBlueprintFunctionLibrary::GetBlockPosition(DestroyedBlock));
 	const TArray<ABlockBase*> SurroundBlocks = FBlockUtils::GetSurroundBlocks(this, DestroyedBlock);
 	for (const auto& SurroundBlock : SurroundBlocks)
 	{
@@ -2655,6 +2662,62 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 		}
 
 		ProcessedBlocks.Append(DisconnectedBlocks);
+	}
+}
+
+void ULevelManagerSubsystem::UpdateTerrainEdgesAroundPosition(const FVector2D& BlockPosition)
+{
+	const FVector2D Offsets[] = { FVector2D::ZeroVector, FVector2D(-1, 0), FVector2D(1, 0), FVector2D(0, -1), FVector2D(0, 1) };
+	const TMap<FIntPoint, ABlockBase*> MovingBlocks;
+	for (const FVector2D& Offset : Offsets)
+	{
+		UpdateTerrainEdges(GetBlockAtPosition(BlockPosition + Offset), MovingBlocks);
+	}
+}
+
+void ULevelManagerSubsystem::UpdateTerrainEdges(ABlockBase* Block, const TMap<FIntPoint, ABlockBase*>& MovingBlocks)
+{
+	if (::IsValid(Block) == false || Block->UsesTerrainEdges() == false)
+	{
+		return;
+	}
+
+	const FVector Offsets[] = { FVector(-BLOCK_SIZE, 0, 0), FVector(BLOCK_SIZE, 0, 0), FVector(0, 0, BLOCK_SIZE), FVector(0, 0, -BLOCK_SIZE) };
+	TArray<ABlockBase*> Neighbors;
+	for (int32 Index = 0; Index < UE_ARRAY_COUNT(Offsets); ++Index)
+	{
+		const FVector NeighborLocation = Block->GetActorLocation() + Offsets[Index];
+		const FIntPoint MovingKey(FMath::RoundToInt(NeighborLocation.X * 2.f), FMath::RoundToInt(NeighborLocation.Z * 2.f));
+		ABlockBase* Neighbor = MovingBlocks.FindRef(MovingKey);
+		if (::IsValid(Neighbor) == false)
+		{
+			Neighbor = GetBlockAtPosition(UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(NeighborLocation));
+		}
+		const bool bConnected = ::IsValid(Neighbor) && Neighbor->UsesTerrainEdges() &&
+			FMath::Abs(Neighbor->GetActorLocation().X - NeighborLocation.X) < 0.5f &&
+			FMath::Abs(Neighbor->GetActorLocation().Z - NeighborLocation.Z) < 0.5f;
+		Neighbors.Add(bConnected ? Neighbor : nullptr);
+	}
+	Block->UpdateTerrainNeighbors(Neighbors);
+}
+
+void ULevelManagerSubsystem::UpdateFallingTerrainEdges()
+{
+	TMap<FIntPoint, ABlockBase*> MovingBlocks;
+	for (FFallingBlockGroupData& Group : FallingBlockGroupList)
+	{
+		for (ABlockBase* Block : Group.GetFallingBlocks())
+		{
+			if (::IsValid(Block) && Block->UsesTerrainEdges())
+			{
+				const FVector Location = Block->GetActorLocation();
+				MovingBlocks.Add(FIntPoint(FMath::RoundToInt(Location.X * 2.f), FMath::RoundToInt(Location.Z * 2.f)), Block);
+			}
+		}
+	}
+	for (const auto& Pair : MovingBlocks)
+	{
+		UpdateTerrainEdges(Pair.Value, MovingBlocks);
 	}
 }
 
@@ -2806,6 +2869,13 @@ void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& Collapsin
 	FallingBlockGroupData.FallingBlockMap = VerticalBlocksMap;
 
 	FallingBlockGroupList.Add(FallingBlockGroupData);
+	for (ABlockBase* Block : CollapsingBlocks)
+	{
+		if (::IsValid(Block))
+		{
+			UpdateTerrainEdgesAroundPosition(UMKBlueprintFunctionLibrary::GetBlockPosition(Block));
+		}
+	}
 }
 
 void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList)
@@ -2928,6 +2998,7 @@ void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>
 		FallFinishedBlock->SetMineableState(true);
 
 		BlockActorMap.Add(BlockPosition, TWeakObjectPtr<ABlockBase>(FallFinishedBlock));
+		UpdateTerrainEdgesAroundPosition(BlockPosition);
 
 		const FVector2D ActualBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(FallFinishedBlock.Get());
 		if (bHasLoggedSnapDiagnostic == false &&

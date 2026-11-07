@@ -1,0 +1,18 @@
+{
+  "tables": {
+    "BlockDataTable": 7,
+    "ItemDataTable": 20,
+    "SkillDataTable": 38
+  },
+  "effects": [
+    "/Game/Asset/ArtV1/Effects/FB_BlockDamage.FB_BlockDamage",
+    "/Game/Asset/ArtV1/Effects/FB_BlockBreak.FB_BlockBreak",
+    "/Game/Asset/ArtV1/Effects/FB_DrillContact.FB_DrillContact",
+    "/Game/Asset/ArtV1/Effects/FB_Explosion.FB_Explosion",
+    "/Game/Asset/ArtV1/Effects/FB_Pickup.FB_Pickup"
+  ],
+  "backgrounds": [
+    "/Game/Level/Main.Main:PersistentLevel.PaperTileMapActor_0",
+    "/Game/Level/Main.Main:PersistentLevel.PaperTileMapActor_2"
+  ]
+}

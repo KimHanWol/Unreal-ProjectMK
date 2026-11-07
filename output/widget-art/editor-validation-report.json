@@ -1,0 +1,11 @@
+{
+  "textures": 16,
+  "brushes": 16,
+  "currencyBrush": true,
+  "characterStatusGap": 9.429428000000001,
+  "runtime": {
+    "quickSlots": 8,
+    "recipeCards": 8
+  },
+  "failures": []
+}

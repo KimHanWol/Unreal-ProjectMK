@@ -1,0 +1,2050 @@
+﻿[
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Down/BIRDSPRITESHEET_White_Sprite_0.BIRDSPRITESHEET_White_Sprite_0",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Down/BIRDSPRITESHEET_White_Sprite_1.BIRDSPRITESHEET_White_Sprite_1",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Down/BIRDSPRITESHEET_White_Sprite_2.BIRDSPRITESHEET_White_Sprite_2",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Down/BIRDSPRITESHEET_White_Sprite_3.BIRDSPRITESHEET_White_Sprite_3",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Up/BIRDSPRITESHEET_White_Sprite_12.BIRDSPRITESHEET_White_Sprite_12",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Up/BIRDSPRITESHEET_White_Sprite_13.BIRDSPRITESHEET_White_Sprite_13",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Up/BIRDSPRITESHEET_White_Sprite_14.BIRDSPRITESHEET_White_Sprite_14",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Up/BIRDSPRITESHEET_White_Sprite_15.BIRDSPRITESHEET_White_Sprite_15",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Left/BIRDSPRITESHEET_White_Sprite_8.BIRDSPRITESHEET_White_Sprite_8",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Left/BIRDSPRITESHEET_White_Sprite_9.BIRDSPRITESHEET_White_Sprite_9",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Left/BIRDSPRITESHEET_White_Sprite_10.BIRDSPRITESHEET_White_Sprite_10",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Left/BIRDSPRITESHEET_White_Sprite_11.BIRDSPRITESHEET_White_Sprite_11",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Right/BIRDSPRITESHEET_White_Sprite_4.BIRDSPRITESHEET_White_Sprite_4",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Right/BIRDSPRITESHEET_White_Sprite_5.BIRDSPRITESHEET_White_Sprite_5",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Right/BIRDSPRITESHEET_White_Sprite_6.BIRDSPRITESHEET_White_Sprite_6",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Idle_Right/BIRDSPRITESHEET_White_Sprite_7.BIRDSPRITESHEET_White_Sprite_7",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_28.BIRDSPRITESHEET_White_Sprite_28",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_29.BIRDSPRITESHEET_White_Sprite_29",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_30.BIRDSPRITESHEET_White_Sprite_30",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_31.BIRDSPRITESHEET_White_Sprite_31",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_32.BIRDSPRITESHEET_White_Sprite_32",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_33.BIRDSPRITESHEET_White_Sprite_33",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_34.BIRDSPRITESHEET_White_Sprite_34",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Left/BIRDSPRITESHEET_White_Sprite_35.BIRDSPRITESHEET_White_Sprite_35",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_36.BIRDSPRITESHEET_White_Sprite_36",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_37.BIRDSPRITESHEET_White_Sprite_37",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_38.BIRDSPRITESHEET_White_Sprite_38",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_39.BIRDSPRITESHEET_White_Sprite_39",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_40.BIRDSPRITESHEET_White_Sprite_40",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_41.BIRDSPRITESHEET_White_Sprite_41",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_42.BIRDSPRITESHEET_White_Sprite_42",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/Walk_Right/BIRDSPRITESHEET_White_Sprite_43.BIRDSPRITESHEET_White_Sprite_43",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Bird/BIRDSPRITESHEET_White.BIRDSPRITESHEET_White"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Down/CATSPRITESHEET_Orange_Sprite_0.CATSPRITESHEET_Orange_Sprite_0",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Down/CATSPRITESHEET_Orange_Sprite_1.CATSPRITESHEET_Orange_Sprite_1",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Down/CATSPRITESHEET_Orange_Sprite_2.CATSPRITESHEET_Orange_Sprite_2",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Down/CATSPRITESHEET_Orange_Sprite_3.CATSPRITESHEET_Orange_Sprite_3",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Up/CATSPRITESHEET_Orange_Sprite_12.CATSPRITESHEET_Orange_Sprite_12",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Up/CATSPRITESHEET_Orange_Sprite_13.CATSPRITESHEET_Orange_Sprite_13",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Up/CATSPRITESHEET_Orange_Sprite_14.CATSPRITESHEET_Orange_Sprite_14",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Up/CATSPRITESHEET_Orange_Sprite_15.CATSPRITESHEET_Orange_Sprite_15",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Left/CATSPRITESHEET_Orange_Sprite_8.CATSPRITESHEET_Orange_Sprite_8",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Left/CATSPRITESHEET_Orange_Sprite_9.CATSPRITESHEET_Orange_Sprite_9",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Left/CATSPRITESHEET_Orange_Sprite_10.CATSPRITESHEET_Orange_Sprite_10",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Left/CATSPRITESHEET_Orange_Sprite_11.CATSPRITESHEET_Orange_Sprite_11",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Right/CATSPRITESHEET_Orange_Sprite_4.CATSPRITESHEET_Orange_Sprite_4",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Right/CATSPRITESHEET_Orange_Sprite_5.CATSPRITESHEET_Orange_Sprite_5",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Right/CATSPRITESHEET_Orange_Sprite_6.CATSPRITESHEET_Orange_Sprite_6",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Idle_Right/CATSPRITESHEET_Orange_Sprite_7.CATSPRITESHEET_Orange_Sprite_7",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_28.CATSPRITESHEET_Orange_Sprite_28",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_29.CATSPRITESHEET_Orange_Sprite_29",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_30.CATSPRITESHEET_Orange_Sprite_30",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_31.CATSPRITESHEET_Orange_Sprite_31",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_32.CATSPRITESHEET_Orange_Sprite_32",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_33.CATSPRITESHEET_Orange_Sprite_33",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_34.CATSPRITESHEET_Orange_Sprite_34",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Left/CATSPRITESHEET_Orange_Sprite_35.CATSPRITESHEET_Orange_Sprite_35",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_36.CATSPRITESHEET_Orange_Sprite_36",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_37.CATSPRITESHEET_Orange_Sprite_37",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_38.CATSPRITESHEET_Orange_Sprite_38",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_39.CATSPRITESHEET_Orange_Sprite_39",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_40.CATSPRITESHEET_Orange_Sprite_40",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_41.CATSPRITESHEET_Orange_Sprite_41",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_42.CATSPRITESHEET_Orange_Sprite_42",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/Walk_Right/CATSPRITESHEET_Orange_Sprite_43.CATSPRITESHEET_Orange_Sprite_43",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Cat/CATSPRITESHEET_Orange.CATSPRITESHEET_Orange"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Down/FOXSPRITESHEET_Sprite_0.FOXSPRITESHEET_Sprite_0",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Down/FOXSPRITESHEET_Sprite_1.FOXSPRITESHEET_Sprite_1",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Down/FOXSPRITESHEET_Sprite_2.FOXSPRITESHEET_Sprite_2",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Down/FOXSPRITESHEET_Sprite_3.FOXSPRITESHEET_Sprite_3",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Up/FOXSPRITESHEET_Sprite_12.FOXSPRITESHEET_Sprite_12",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Up/FOXSPRITESHEET_Sprite_13.FOXSPRITESHEET_Sprite_13",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Up/FOXSPRITESHEET_Sprite_14.FOXSPRITESHEET_Sprite_14",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Up/FOXSPRITESHEET_Sprite_15.FOXSPRITESHEET_Sprite_15",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Left/FOXSPRITESHEET_Sprite_8.FOXSPRITESHEET_Sprite_8",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Left/FOXSPRITESHEET_Sprite_9.FOXSPRITESHEET_Sprite_9",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Left/FOXSPRITESHEET_Sprite_10.FOXSPRITESHEET_Sprite_10",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Left/FOXSPRITESHEET_Sprite_11.FOXSPRITESHEET_Sprite_11",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Right/FOXSPRITESHEET_Sprite_4.FOXSPRITESHEET_Sprite_4",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Right/FOXSPRITESHEET_Sprite_5.FOXSPRITESHEET_Sprite_5",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Right/FOXSPRITESHEET_Sprite_6.FOXSPRITESHEET_Sprite_6",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Idle_Right/FOXSPRITESHEET_Sprite_7.FOXSPRITESHEET_Sprite_7",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_28.FOXSPRITESHEET_Sprite_28",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_29.FOXSPRITESHEET_Sprite_29",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_30.FOXSPRITESHEET_Sprite_30",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_31.FOXSPRITESHEET_Sprite_31",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_32.FOXSPRITESHEET_Sprite_32",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_33.FOXSPRITESHEET_Sprite_33",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_34.FOXSPRITESHEET_Sprite_34",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Left/FOXSPRITESHEET_Sprite_35.FOXSPRITESHEET_Sprite_35",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_36.FOXSPRITESHEET_Sprite_36",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_37.FOXSPRITESHEET_Sprite_37",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_38.FOXSPRITESHEET_Sprite_38",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_39.FOXSPRITESHEET_Sprite_39",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_40.FOXSPRITESHEET_Sprite_40",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_41.FOXSPRITESHEET_Sprite_41",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_42.FOXSPRITESHEET_Sprite_42",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/Walk_Right/FOXSPRITESHEET_Sprite_43.FOXSPRITESHEET_Sprite_43",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Fox/FOXSPRITESHEET.FOXSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Down/RACCOONSPRITESHEET_Sprite_0.RACCOONSPRITESHEET_Sprite_0",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Down/RACCOONSPRITESHEET_Sprite_1.RACCOONSPRITESHEET_Sprite_1",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Down/RACCOONSPRITESHEET_Sprite_2.RACCOONSPRITESHEET_Sprite_2",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Down/RACCOONSPRITESHEET_Sprite_3.RACCOONSPRITESHEET_Sprite_3",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 0
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Up/RACCOONSPRITESHEET_Sprite_12.RACCOONSPRITESHEET_Sprite_12",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Up/RACCOONSPRITESHEET_Sprite_13.RACCOONSPRITESHEET_Sprite_13",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Up/RACCOONSPRITESHEET_Sprite_14.RACCOONSPRITESHEET_Sprite_14",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Up/RACCOONSPRITESHEET_Sprite_15.RACCOONSPRITESHEET_Sprite_15",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 576
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Left/RACCOONSPRITESHEET_Sprite_8.RACCOONSPRITESHEET_Sprite_8",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Left/RACCOONSPRITESHEET_Sprite_9.RACCOONSPRITESHEET_Sprite_9",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Left/RACCOONSPRITESHEET_Sprite_10.RACCOONSPRITESHEET_Sprite_10",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Left/RACCOONSPRITESHEET_Sprite_11.RACCOONSPRITESHEET_Sprite_11",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 384
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Right/RACCOONSPRITESHEET_Sprite_4.RACCOONSPRITESHEET_Sprite_4",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Right/RACCOONSPRITESHEET_Sprite_5.RACCOONSPRITESHEET_Sprite_5",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Right/RACCOONSPRITESHEET_Sprite_6.RACCOONSPRITESHEET_Sprite_6",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Idle_Right/RACCOONSPRITESHEET_Sprite_7.RACCOONSPRITESHEET_Sprite_7",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 192
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_28.RACCOONSPRITESHEET_Sprite_28",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_29.RACCOONSPRITESHEET_Sprite_29",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_30.RACCOONSPRITESHEET_Sprite_30",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_31.RACCOONSPRITESHEET_Sprite_31",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1344
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_32.RACCOONSPRITESHEET_Sprite_32",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_33.RACCOONSPRITESHEET_Sprite_33",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_34.RACCOONSPRITESHEET_Sprite_34",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Left/RACCOONSPRITESHEET_Sprite_35.RACCOONSPRITESHEET_Sprite_35",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1536
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_36.RACCOONSPRITESHEET_Sprite_36",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_37.RACCOONSPRITESHEET_Sprite_37",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_38.RACCOONSPRITESHEET_Sprite_38",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_39.RACCOONSPRITESHEET_Sprite_39",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1728
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_40.RACCOONSPRITESHEET_Sprite_40",
+    "data": {
+      "SourceUV": {
+        "x": 0,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_41.RACCOONSPRITESHEET_Sprite_41",
+    "data": {
+      "SourceUV": {
+        "x": 192,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_42.RACCOONSPRITESHEET_Sprite_42",
+    "data": {
+      "SourceUV": {
+        "x": 384,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  },
+  {
+    "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/Walk_Right/RACCOONSPRITESHEET_Sprite_43.RACCOONSPRITESHEET_Sprite_43",
+    "data": {
+      "SourceUV": {
+        "x": 576,
+        "y": 1920
+      },
+      "SourceDimension": {
+        "x": 192,
+        "y": 192
+      },
+      "SourceTexture": {
+        "refPath": "/Game/Asset/Texture/Character/Sprite/Raccoon/RACCOONSPRITESHEET.RACCOONSPRITESHEET"
+      }
+    }
+  }
+]

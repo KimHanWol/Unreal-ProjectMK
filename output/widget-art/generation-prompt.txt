@@ -1,0 +1,7 @@
+﻿Use case: stylized-concept.
+Asset type: production game UI skin atlas, second visual pass.
+Primary request: edit the existing 4-by-4 transparent UI atlas for an original cozy underground mining game while preserving the same 16 roles, order, approximate positions, gutters, canvas size, and proportions.
+Visual direction: keep ProjectMK's aged brass, dark blue-charcoal steel, muted teal enamel, compact hard-edged pixel clusters, asymmetric mechanical wear, and upper-left lighting.
+Hierarchy: strong ornament only on the outer window, title plaque, and selected states. Make ordinary list cards and slots quieter, flatter, thinner, and darker. Give buttons four clearly different states without oversized gold borders. Preserve large calm centers for Korean text and icons.
+Rows: main window / recessed panel / title plaque / quiet list card; normal / hover / pressed / disabled buttons; inventory slot / selected slot / compact quick-access tray / tooltip; health gauge / oxygen gauge / thin minimap frame / simple blank keycap.
+Constraints: original design only. No copying a specific game. No text, letters, numbers, item icons, characters, monsters, scenery, grid lines, logos, watermark, glow bloom, or anti-aliased vector look. Transparent background and crisp 3-5 shade pixel clusters.

@@ -1,0 +1,48 @@
+{
+  "backgrounds": [
+    {
+      "name": "ArtV1_Background_Surface",
+      "tilePixels": 512,
+      "ppu": 2.0,
+      "tileWorldWidth": 256.0,
+      "map": [
+        4,
+        1
+      ],
+      "badFlipFlags": []
+    },
+    {
+      "name": "ArtV1_Background_Underground",
+      "tilePixels": 512,
+      "ppu": 2.0,
+      "tileWorldWidth": 256.0,
+      "map": [
+        4,
+        7
+      ],
+      "badFlipFlags": []
+    }
+  ],
+  "effects": [
+    {
+      "name": "S_BlockBreak0",
+      "pixels": 64.0,
+      "ppu": 2.0
+    },
+    {
+      "name": "S_BlockBreak1",
+      "pixels": 64.0,
+      "ppu": 2.0
+    },
+    {
+      "name": "S_BlockBreak2",
+      "pixels": 64.0,
+      "ppu": 2.0
+    },
+    {
+      "name": "S_BlockBreak3",
+      "pixels": 64.0,
+      "ppu": 2.0
+    }
+  ]
+}
