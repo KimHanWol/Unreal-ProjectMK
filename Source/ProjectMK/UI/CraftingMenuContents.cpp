@@ -2,8 +2,12 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
+#include "Components/UniformGridPanel.h"
+#include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -11,6 +15,7 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/UI/CraftingRecipeSlotWidget.h"
+#include "ProjectMK/UI/PlaytestQuickSlotWidget.h"
 
 UCraftingMenuContents::UCraftingMenuContents(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -20,7 +25,7 @@ UCraftingMenuContents::UCraftingMenuContents(const FObjectInitializer& ObjectIni
 
 TSharedRef<SWidget> UCraftingMenuContents::RebuildWidget()
 {
-	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr)
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeCraftingRoot")) == nullptr)
 	{
 		BuildDefaultWidgetTree();
 	}
@@ -65,6 +70,13 @@ void UCraftingMenuContents::UnbindEvents()
 void UCraftingMenuContents::UpdateWidget()
 {
 	UpdateRecipeSlots();
+	for (UPlaytestQuickSlotWidget* InventorySlot : InventorySlots)
+	{
+		if (::IsValid(InventorySlot))
+		{
+			InventorySlot->RefreshSlot();
+		}
+	}
 	BP_OnCraftingRefreshed();
 }
 
@@ -84,39 +96,61 @@ bool UCraftingMenuContents::TryCraftRecipe(FName RecipeKey)
 {
 	UCraftingComponent* CraftingComponent = GetCraftingComponent();
 	const bool bCrafted = ::IsValid(CraftingComponent) && CraftingComponent->TryCraftRecipe(RecipeKey);
-	if (::IsValid(StatusText))
-	{
-		StatusText->SetText(bCrafted
-			? NSLOCTEXT("CraftingMenu", "Crafted", "제작 완료 · 숫자 키 또는 퀵슬롯 클릭으로 사용하세요.")
-			: NSLOCTEXT("CraftingMenu", "CraftFailed", "제작 실패 · 레시피 해금, 재료와 인벤토리 공간을 확인하세요."));
-	}
 	return bCrafted;
 }
 
 void UCraftingMenuContents::BuildDefaultWidgetTree()
 {
-	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("CraftingRoot"));
+	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeCraftingRoot"));
 	RootBorder->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.065f, 0.97f));
-	RootBorder->SetPadding(FMargin(20.f));
+	RootBorder->SetPadding(FMargin(FMKUILayout::SpaceXL));
 	WidgetTree->RootWidget = RootBorder;
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>();
 	RootBorder->SetContent(RootBox);
-	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>();
-	TitleText->SetText(NSLOCTEXT("CraftingMenu", "Title", "제작 / C"));
-	FSlateFontInfo TitleFont = TitleText->GetFont();
-	TitleFont.Size = 24;
-	TitleText->SetFont(TitleFont);
-	RootBox->AddChildToVerticalBox(TitleText)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("CraftingMenu", "Title", "제작 작업대"), TEXT("Crafting")))->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceL));
 
 	StatusText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("StatusText"));
-	StatusText->SetText(NSLOCTEXT("CraftingMenu", "Hint", "레시피는 상점에서 해금합니다. 재료의 보유 / 필요 수량을 확인하세요."));
-	StatusText->SetAutoWrapText(true);
-	StatusText->SetColorAndOpacity(FSlateColor(FLinearColor(0.55f, 0.8f, 0.9f)));
-	RootBox->AddChildToVerticalBox(StatusText)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	StatusText->SetVisibility(ESlateVisibility::Collapsed);
+
+	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>();
+	RootBox->AddChildToVerticalBox(Columns)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UVerticalBox* RecipeColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* RecipeColumnSlot = Columns->AddChildToHorizontalBox(RecipeColumn);
+	RecipeColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	RecipeColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
+	UBorder* WorkbenchCard = WidgetTree->ConstructWidget<UBorder>();
+	WorkbenchCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
+	WorkbenchCard->SetPadding(FMargin(FMKUILayout::SpaceL));
+	WorkbenchCard->SetContent(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Workbench", "작업대")));
+	RecipeColumn->AddChildToVerticalBox(WorkbenchCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
 	UScrollBox* RecipeScrollBox = WidgetTree->ConstructWidget<UScrollBox>();
-	RootBox->AddChildToVerticalBox(RecipeScrollBox)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	RecipeColumn->AddChildToVerticalBox(RecipeScrollBox)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RecipeSlotListPanel"));
 	RecipeScrollBox->AddChild(RecipeSlotListPanel);
+
+	UVerticalBox* InventoryColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	Columns->AddChildToHorizontalBox(InventoryColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UBorder* PlayerCard = WidgetTree->ConstructWidget<UBorder>();
+	PlayerCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
+	PlayerCard->SetPadding(FMargin(FMKUILayout::SpaceL));
+	PlayerCard->SetContent(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Player", "플레이어")));
+	InventoryColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
+	InventoryColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Inventory", "인벤토리")))
+		->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceS));
+	UUniformGridPanel* InventoryGrid = WidgetTree->ConstructWidget<UUniformGridPanel>();
+	InventoryGrid->SetSlotPadding(FMargin(FMKUILayout::SpaceXS));
+	InventoryColumn->AddChildToVerticalBox(InventoryGrid);
+	for (int32 SlotIndex = 0; SlotIndex < 8; ++SlotIndex)
+	{
+		UPlaytestQuickSlotWidget* InventorySlot = CreateWidget<UPlaytestQuickSlotWidget>(this, UPlaytestQuickSlotWidget::StaticClass());
+		if (::IsValid(InventorySlot))
+		{
+			InventoryGrid->AddChildToUniformGrid(InventorySlot, SlotIndex / 4, SlotIndex % 4);
+			InventorySlot->SetShowKeyGuide(false);
+			InventorySlot->SetSlotIndex(SlotIndex);
+			InventorySlots.Add(InventorySlot);
+		}
+	}
 }
 
 void UCraftingMenuContents::UpdateRecipeSlots()
@@ -126,19 +160,26 @@ void UCraftingMenuContents::UpdateRecipeSlots()
 	{
 		return;
 	}
-	if (RecipeSlots.IsEmpty())
+	RecipeSlotListPanel->ClearChildren();
+	RecipeSlots.Reset();
+	TArray<FName> RecipeKeys = DataManager->GetShopRecipeRowNames();
+	RecipeKeys.Sort([this](const FName A, const FName B)
 	{
-		TArray<FName> RecipeKeys = DataManager->GetShopRecipeRowNames();
-		RecipeKeys.Sort(FNameLexicalLess());
-		for (const FName& RecipeKey : RecipeKeys)
+		const bool bCanCraftA = CanCraftRecipe(A);
+		const bool bCanCraftB = CanCraftRecipe(B);
+		return bCanCraftA != bCanCraftB ? bCanCraftA : A.LexicalLess(B);
+	});
+	for (const FName RecipeKey : RecipeKeys)
+	{
+		UCraftingRecipeSlotWidget* RecipeSlot = CreateWidget<UCraftingRecipeSlotWidget>(this, UCraftingRecipeSlotWidget::StaticClass());
+		if (::IsValid(RecipeSlot))
 		{
-			UCraftingRecipeSlotWidget* RecipeSlot = CreateWidget<UCraftingRecipeSlotWidget>(this, UCraftingRecipeSlotWidget::StaticClass());
-			if (::IsValid(RecipeSlot))
+			if (UVerticalBoxSlot* RowSlot = Cast<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(RecipeSlot)))
 			{
-				RecipeSlotListPanel->AddChild(RecipeSlot);
-				RecipeSlot->InitializeRecipeSlot(this, RecipeKey);
-				RecipeSlots.Add(RecipeSlot);
+				RowSlot->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceS));
 			}
+			RecipeSlot->InitializeRecipeSlot(this, RecipeKey);
+			RecipeSlots.Add(RecipeSlot);
 		}
 	}
 	for (UCraftingRecipeSlotWidget* RecipeSlot : RecipeSlots)

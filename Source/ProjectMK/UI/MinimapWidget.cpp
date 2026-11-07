@@ -16,6 +16,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 
@@ -31,6 +32,19 @@ TSharedRef<SWidget> UMinimapWidget::RebuildWidget()
 void UMinimapWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	const UDataManager* DataManager = UDataManager::Get(this);
+	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
+	if (::IsValid(Style))
+	{
+		if (const FSlateBrush* Brush = Style->Brushes.Find(TEXT("PlayerMarker")))
+		{
+			PlayerMarkerBrush = *Brush;
+		}
+		if (const FSlateBrush* Brush = Style->Brushes.Find(TEXT("ShopMarker")))
+		{
+			ShopMarkerBrush = *Brush;
+		}
+	}
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 	GetWorld()->GetTimerManager().SetTimer(MinimapTimerHandle, this, &UMinimapWidget::UpdateMinimap, FMath::Max(0.05f, UpdateInterval), true);
 }
@@ -78,6 +92,13 @@ int32 UMinimapWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Allot
 			continue;
 		}
 		const FVector2D Position = Origin + (ShopPosition - MapBounds.Min) * Scale;
+		if (ShopMarkerBrush.GetResourceObject())
+		{
+			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
+				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
+				&ShopMarkerBrush, ESlateDrawEffect::None, Tint);
+			continue;
+		}
 		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
 			MapGeometry.ToPaintGeometry(FVector2D(6.f), FSlateLayoutTransform(Position - FVector2D(3.f))),
 			&PixelBrush, ESlateDrawEffect::None, FLinearColor(1.f, 0.7f, 0.16f) * Tint);
@@ -85,6 +106,14 @@ int32 UMinimapWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Allot
 	if (bHasPlayer && MapBounds.IsInside(PlayerPosition))
 	{
 		const FVector2D Position = Origin + (PlayerPosition - MapBounds.Min) * Scale;
+		if (PlayerMarkerBrush.GetResourceObject())
+		{
+			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 4,
+				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
+				&PlayerMarkerBrush, ESlateDrawEffect::None, Tint);
+			OutDrawElements.PopClip();
+			return BaseLayer + 4;
+		}
 		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 3,
 			MapGeometry.ToPaintGeometry(FVector2D(8.f), FSlateLayoutTransform(Position - FVector2D(4.f))),
 			&PixelBrush, ESlateDrawEffect::None, FLinearColor(0.01f, 0.04f, 0.06f) * Tint);
@@ -105,9 +134,9 @@ void UMinimapWidget::BuildDefaultWidgetTree()
 {
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>();
 	WidgetTree->RootWidget = Canvas;
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>();
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MinimapFrame"));
 	Frame->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.065f, 0.95f));
-	Frame->SetPadding(FMargin(10.f));
+	Frame->SetPadding(FMargin(FMKUILayout::SpaceM));
 	UCanvasPanelSlot* FrameSlot = Canvas->AddChildToCanvas(Frame);
 	FrameSlot->SetAnchors(FAnchors(1.f, 0.f));
 	FrameSlot->SetAlignment(FVector2D(1.f, 0.f));
@@ -115,28 +144,17 @@ void UMinimapWidget::BuildDefaultWidgetTree()
 	FrameSlot->SetAutoSize(true);
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 	Frame->SetContent(Column);
-	UTextBlock* Title = WidgetTree->ConstructWidget<UTextBlock>();
-	Title->SetText(NSLOCTEXT("Minimap", "Title", "미니맵 · 주변 지형"));
-	FSlateFontInfo Font = Title->GetFont();
-	Font.Size = 13;
-	Title->SetFont(Font);
-	Column->AddChildToVerticalBox(Title)->SetPadding(FMargin(0.f, 0.f, 0.f, 6.f));
 	MapArea = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("MapArea"));
 	MapArea->SetWidthOverride(MinimapSize.X);
 	MapArea->SetHeightOverride(MinimapSize.Y);
 	Column->AddChildToVerticalBox(MapArea);
-	UBorder* MapBackground = WidgetTree->ConstructWidget<UBorder>();
+	UBorder* MapBackground = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MapBackground"));
 	MapBackground->SetBrushColor(FLinearColor(0.008f, 0.015f, 0.025f, 1.f));
 	MapArea->SetContent(MapBackground);
-	UTextBlock* Legend = WidgetTree->ConstructWidget<UTextBlock>();
-	Legend->SetText(NSLOCTEXT("Minimap", "Legend", "청록: 나  ·  금색: 상점"));
-	Font.Size = 11;
-	Legend->SetFont(Font);
-	Legend->SetColorAndOpacity(FSlateColor(FLinearColor(0.6f, 0.85f, 0.9f)));
-	Column->AddChildToVerticalBox(Legend)->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
 	PositionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("PositionText"));
-	PositionText->SetFont(Font);
-	Column->AddChildToVerticalBox(PositionText);
+	ApplyTextRole(PositionText, EMKTextRole::Caption);
+	PositionText->SetJustification(ETextJustify::Center);
+	Column->AddChildToVerticalBox(PositionText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
 }
 
 void UMinimapWidget::UpdateMinimap()
@@ -212,7 +230,8 @@ void UMinimapWidget::UpdateMinimap()
 			const FVector2D BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Location);
 			const UGameSettingDataAsset* Settings = Data->GetGameSettingDataAsset();
 			const int32 Depth = FMath::Max(0, FMath::RoundToInt(BlockPosition.Y) - (::IsValid(Settings) ? Settings->SurfaceBlockPositionY : 0));
-			PositionText->SetText(FText::Format(NSLOCTEXT("Minimap", "Position", "X {0}  ·  깊이 {1}칸"), FMath::RoundToInt(BlockPosition.X), Depth));
+			const int32 DepthInMeters = FMath::RoundToInt(static_cast<float>(Depth) * MetersPerBlock);
+			PositionText->SetText(FText::Format(NSLOCTEXT("Minimap", "Position", "{0}m"), DepthInMeters));
 		}
 	}
 	InvalidateLayoutAndVolatility();

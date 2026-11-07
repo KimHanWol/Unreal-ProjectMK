@@ -38,6 +38,9 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap", meta = (ClampMin = "0.05"))
 	float UpdateInterval = 0.2f;
 
+	UPROPERTY(EditDefaultsOnly, Category = "Minimap", meta = (ClampMin = "0.01"))
+	float MetersPerBlock = 1.f;
+
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<USizeBox> MapArea;
 
@@ -45,6 +48,12 @@ protected:
 	TObjectPtr<UTextBlock> PositionText;
 
 private:
+	UPROPERTY(Transient)
+	FSlateBrush PlayerMarkerBrush;
+
+	UPROPERTY(Transient)
+	FSlateBrush ShopMarkerBrush;
+
 	struct FMinimapTile
 	{
 		FVector2D Position = FVector2D::ZeroVector;

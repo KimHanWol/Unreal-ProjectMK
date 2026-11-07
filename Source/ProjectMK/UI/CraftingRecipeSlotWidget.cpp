@@ -6,8 +6,10 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/CraftingComponent.h"
@@ -56,7 +58,7 @@ void UCraftingRecipeSlotWidget::UpdateWidget()
 
 	const bool bUnlocked = Crafting->IsRecipeUnlocked(RecipeKey);
 	const FText DisplayName = Recipe->DisplayName.IsEmpty() ? FText::FromName(Recipe->GetResultItemKey()) : Recipe->DisplayName;
-	RecipeText->SetText(FText::Format(NSLOCTEXT("CraftingMenu", "Result", "{0} ×{1}"), DisplayName, Recipe->ResultItemCount));
+	RecipeText->SetText(DisplayName);
 	TArray<FString> Materials;
 	bool bHasMaterials = true;
 	for (const FShopRecipeItem& RequiredItem : Recipe->RequiredItems)
@@ -66,13 +68,14 @@ void UCraftingRecipeSlotWidget::UpdateWidget()
 		Materials.Add(FString::Printf(TEXT("%s %d/%d"), *RequiredItem.GetItemKey().ToString(), Owned, RequiredItem.ItemCount));
 	}
 	RequiredItemsText->SetText(FText::FromString(FString::Join(Materials, TEXT(" · "))));
+	RequiredItemsText->SetVisibility(ESlateVisibility::Collapsed);
 	RequiredItemsText->SetColorAndOpacity(FSlateColor(bHasMaterials ? FLinearColor(0.55f, 0.85f, 0.65f) : FLinearColor(1.f, 0.65f, 0.4f)));
 
 	const bool bCanCraft = Crafting->CanCraftRecipe(RecipeKey);
 	CraftButton->SetIsEnabled(bCanCraft);
 	CraftButtonText->SetText(bUnlocked
 		? (bCanCraft ? NSLOCTEXT("CraftingMenu", "Craft", "제작") : NSLOCTEXT("CraftingMenu", "Unavailable", "재료 / 공간 부족"))
-		: FText::Format(NSLOCTEXT("CraftingMenu", "Locked", "상점 해금\n{0} 코인"), Recipe->UnlockPrice));
+		: NSLOCTEXT("CraftingMenu", "Locked", "상점 해금"));
 	const FItemDataTableRow* Item = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Recipe->GetResultItemKey());
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
 	ItemIcon->SetBrushResourceObject(Sprite);
@@ -93,38 +96,39 @@ void UCraftingRecipeSlotWidget::RefreshRecipe()
 
 void UCraftingRecipeSlotWidget::BuildDefaultWidgetTree()
 {
-	UBorder* Border = WidgetTree->ConstructWidget<UBorder>();
+	USizeBox* CardSize = WidgetTree->ConstructWidget<USizeBox>();
+	CardSize->SetMinDesiredWidth(284.f);
+	CardSize->SetMinDesiredHeight(112.f);
+	WidgetTree->RootWidget = CardSize;
+	UBorder* Border = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
 	Border->SetBrushColor(FLinearColor(0.06f, 0.09f, 0.13f, 1.f));
-	Border->SetPadding(FMargin(10.f, 8.f));
-	WidgetTree->RootWidget = Border;
+	Border->SetPadding(FMargin(FMKUILayout::SpaceM));
+	CardSize->SetContent(Border);
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
 	Border->SetContent(Row);
-	ItemIcon = WidgetTree->ConstructWidget<UImage>();
-	ItemIcon->SetDesiredSizeOverride(FVector2D(32.f));
-	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(ItemIcon);
+	UImage* RawItemIcon = nullptr;
+	UBorder* IconFrame = BuildItemIconFrame(RawItemIcon);
+	ItemIcon = RawItemIcon;
+	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
-	IconSlot->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+	IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
 	UVerticalBox* TextColumn = WidgetTree->ConstructWidget<UVerticalBox>();
 	UHorizontalBoxSlot* TextSlot = Row->AddChildToHorizontalBox(TextColumn);
 	TextSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	TextSlot->SetVerticalAlignment(VAlign_Center);
 	RecipeText = WidgetTree->ConstructWidget<UTextBlock>();
+	ApplyTextRole(RecipeText, EMKTextRole::Label, true);
 	TextColumn->AddChildToVerticalBox(RecipeText);
 	RequiredItemsText = WidgetTree->ConstructWidget<UTextBlock>();
-	RequiredItemsText->SetAutoWrapText(true);
-	FSlateFontInfo MaterialFont = RequiredItemsText->GetFont();
-	MaterialFont.Size = 12;
-	RequiredItemsText->SetFont(MaterialFont);
-	TextColumn->AddChildToVerticalBox(RequiredItemsText);
-	CraftButton = WidgetTree->ConstructWidget<UMKMockupButton>();
-	CraftButtonText = WidgetTree->ConstructWidget<UTextBlock>();
-	FSlateFontInfo ButtonFont = CraftButtonText->GetFont();
-	ButtonFont.Size = 12;
-	CraftButtonText->SetFont(ButtonFont);
-	CraftButtonText->SetJustification(ETextJustify::Center);
-	CraftButton->SetContent(CraftButtonText);
-	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(CraftButton);
-	ButtonSlot->SetPadding(FMargin(12.f, 0.f, 0.f, 0.f));
+	ApplyTextRole(RequiredItemsText, EMKTextRole::Caption, true);
+	TextColumn->AddChildToVerticalBox(RequiredItemsText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
+	UButton* RawCraftButton = nullptr;
+	UTextBlock* RawCraftButtonText = nullptr;
+	USizeBox* ButtonSize = BuildActionButton(RawCraftButton, RawCraftButtonText, FText::GetEmpty());
+	CraftButton = RawCraftButton;
+	CraftButtonText = RawCraftButtonText;
+	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(ButtonSize);
+	ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceM, 0.f, 0.f, 0.f));
 	ButtonSlot->SetVerticalAlignment(VAlign_Center);
 }
 

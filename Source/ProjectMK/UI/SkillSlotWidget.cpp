@@ -3,8 +3,16 @@
 #include "ProjectMK/UI/SkillSlotWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
+#include "Components/HorizontalBox.h"
 #include "Components/Image.h"
-#include "Components/PanelWidget.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "Components/SizeBox.h"
+#include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/SkillComponent.h"
@@ -12,6 +20,16 @@
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
 #include "ProjectMK/UI/SkillTreeMenuContents.h"
+
+TSharedRef<SWidget> USkillSlotWidget::RebuildWidget()
+{
+	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr)
+	{
+		BuildDefaultWidgetTree();
+	}
+
+	return Super::RebuildWidget();
+}
 
 FReply USkillSlotWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
@@ -126,6 +144,7 @@ void USkillSlotWidget::UpdateWidget()
 {
 	UpdateSkillImage();
 	UpdateCompleteImage();
+	UpdatePriceText();
 	UpdateEnabledState();
 }
 
@@ -161,28 +180,69 @@ void USkillSlotWidget::UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const
 	TooltipWidget->ShowSkillTooltip(SkillKeyName);
 }
 
+void USkillSlotWidget::InitializeSkill(const FName InSkillKeyName)
+{
+	SkillKeyName = InSkillKeyName;
+	UpdateWidget();
+}
+
+void USkillSlotWidget::BuildDefaultWidgetTree()
+{
+	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>();
+	RootSize->SetWidthOverride(96.f);
+	RootSize->SetHeightOverride(96.f);
+	WidgetTree->RootWidget = RootSize;
+
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
+	Frame->SetPadding(FMargin(FMKUILayout::SpaceS));
+	RootSize->SetContent(Frame);
+	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
+	Frame->SetContent(Overlay);
+
+	FocusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SelectedSlot"));
+	FocusImage->SetVisibility(ESlateVisibility::Collapsed);
+	Overlay->AddChildToOverlay(FocusImage);
+
+	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
+	UOverlaySlot* ColumnSlot = Overlay->AddChildToOverlay(Column);
+	ColumnSlot->SetHorizontalAlignment(HAlign_Center);
+	ColumnSlot->SetVerticalAlignment(VAlign_Center);
+
+	USizeBox* IconSize = WidgetTree->ConstructWidget<USizeBox>();
+	IconSize->SetWidthOverride(44.f);
+	IconSize->SetHeightOverride(44.f);
+	IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("IconImage"));
+	IconSize->SetContent(IconImage);
+	UVerticalBoxSlot* IconSlot = Column->AddChildToVerticalBox(IconSize);
+	IconSlot->SetHorizontalAlignment(HAlign_Center);
+
+	UTextBlock* RawPriceText = nullptr;
+	PriceRow = BuildCurrencyAmount(RawPriceText, FText::GetEmpty(), EMKTextRole::Caption);
+	PriceText = RawPriceText;
+	UVerticalBoxSlot* PriceSlot = Column->AddChildToVerticalBox(PriceRow);
+	PriceSlot->SetHorizontalAlignment(HAlign_Center);
+	PriceSlot->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
+
+	SelectionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SelectionText"));
+	SelectionText->SetText(FText::FromString(TEXT("✓")));
+	ApplyTextRole(SelectionText, EMKTextRole::Label);
+	SelectionText->SetColorAndOpacity(FSlateColor(FLinearColor(0.25f, 1.f, 0.72f)));
+	SelectionText->SetVisibility(ESlateVisibility::Collapsed);
+	UOverlaySlot* SelectionSlot = Overlay->AddChildToOverlay(SelectionText);
+	SelectionSlot->SetHorizontalAlignment(HAlign_Right);
+	SelectionSlot->SetVerticalAlignment(VAlign_Top);
+}
+
 USkillTreeMenuContents* USkillSlotWidget::GetOwningSkillTreeMenuContents() const
 {
-	UPanelWidget* ParentWidget = GetParent();
-	while (::IsValid(ParentWidget))
-	{
-		if (USkillTreeMenuContents* SkillTreeMenuContents = Cast<USkillTreeMenuContents>(ParentWidget))
-		{
-			return SkillTreeMenuContents;
-		}
-
-		ParentWidget = ParentWidget->GetParent();
-	}
-
-	return nullptr;
+	return GetTypedOuter<USkillTreeMenuContents>();
 }
 
 void USkillSlotWidget::UpdateEnabledState()
 {
 	USkillComponent* SkillComponent = GetLocalSkillComponent();
 	const bool bIsPurchased = ::IsValid(SkillComponent) && SkillComponent->HasPurchasedSkill(SkillKeyName);
-	const bool bCanPurchase = ::IsValid(SkillComponent) && SkillComponent->CanPurchaseSkill(SkillKeyName);
-	const bool bShouldEnable = bIsPurchased || bCanPurchase;
+	const bool bShouldEnable = bIsPurchased || AreRequiredSkillsPurchased();
 
 	SetIsEnabled(true);
 	SetRenderOpacity(bShouldEnable ? 1.f : 0.45f);
@@ -190,14 +250,13 @@ void USkillSlotWidget::UpdateEnabledState()
 
 void USkillSlotWidget::UpdateCompleteImage()
 {
-	if (::IsValid(CompleteImage) == false)
-	{
-		return;
-	}
-
 	USkillComponent* SkillComponent = GetLocalSkillComponent();
 	const bool bIsPurchased = ::IsValid(SkillComponent) && SkillComponent->HasPurchasedSkill(SkillKeyName);
-	CompleteImage->SetVisibility(bIsPurchased ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	SetSelected(bIsPurchased);
+	if (::IsValid(CompleteImage))
+	{
+		CompleteImage->SetVisibility(bIsPurchased ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	}
 }
 
 void USkillSlotWidget::UpdateSkillImage()
@@ -233,6 +292,45 @@ void USkillSlotWidget::UpdateSkillImage()
 	}
 
 	IconImage->SetBrushFromTexture(IconTexture, true);
+}
+
+void USkillSlotWidget::UpdatePriceText()
+{
+	if (::IsValid(PriceText) == false)
+	{
+		return;
+	}
+
+	const UDataManager* DataManager = UDataManager::Get(this);
+	const FSkillDataTableRow* SkillDataTableRow = ::IsValid(DataManager) ? DataManager->GetSkillDataTableRow(SkillKeyName) : nullptr;
+	PriceText->SetText(SkillDataTableRow != nullptr ? FText::AsNumber(SkillDataTableRow->Price) : FText::GetEmpty());
+
+	const USkillComponent* SkillComponent = GetLocalSkillComponent();
+	const bool bIsPurchased = ::IsValid(SkillComponent) && SkillComponent->HasPurchasedSkill(SkillKeyName);
+	if (::IsValid(PriceRow))
+	{
+		PriceRow->SetVisibility(bIsPurchased ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	}
+}
+
+bool USkillSlotWidget::AreRequiredSkillsPurchased() const
+{
+	const UDataManager* DataManager = UDataManager::Get(const_cast<USkillSlotWidget*>(this));
+	const USkillComponent* SkillComponent = GetLocalSkillComponent();
+	const FSkillDataTableRow* SkillDataTableRow = ::IsValid(DataManager) ? DataManager->GetSkillDataTableRow(SkillKeyName) : nullptr;
+	if (SkillDataTableRow == nullptr || ::IsValid(SkillComponent) == false)
+	{
+		return false;
+	}
+
+	for (const FName& RequiredSkillKey : SkillDataTableRow->RequiredSkill)
+	{
+		if (SkillComponent->HasPurchasedSkill(RequiredSkillKey) == false)
+		{
+			return false;
+		}
+	}
+	return true;
 }
 
 void USkillSlotWidget::OnCoinChanged(const FOnAttributeChangeData& Data)

@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "ProjectMK/UI/MKUserWidget.h"
@@ -16,6 +16,8 @@ class PROJECTMK_API UMKTooltipBase : public UMKUserWidget
 	GENERATED_BODY()
 
 public:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
+
 	UFUNCTION(BlueprintCallable)
 	void ShowItemTooltip(FName ItemDataKey);
 
@@ -29,6 +31,7 @@ protected:
 	virtual void UpdateWidget() override;
 
 private:
+	void BuildDefaultWidgetTree();
 	void ClearTooltip();
 	void UpdateTooltipFromItemData(FName ItemDataKey, const FItemDataTableRow& ItemDataTableRow);
 	void UpdateTooltipFromSkillData(const FSkillDataTableRow& SkillDataTableRow);
@@ -36,12 +39,12 @@ private:
 	void UpdateTooltipIcon(class UPaperSprite* IconSprite);
 
 protected:
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Title;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> Icon;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> Desc;
 };

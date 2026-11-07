@@ -1,16 +1,45 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/UI/HealthBarWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "Blueprint/WidgetTree.h"
+#include "Brushes/SlateColorBrush.h"
+#include "Components/Border.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Components/ProgressBar.h"
+#include "Components/SizeBox.h"
+#include "Components/TextBlock.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
+
+TSharedRef<SWidget> UHealthBarWidget::RebuildWidget()
+{
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeHealthBar")) == nullptr)
+	{
+		BuildDefaultWidgetTree();
+	}
+
+	return Super::RebuildWidget();
+}
 
 void UHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (::IsValid(ProgressBar_Health) == false || bIsInterpolatingHealth == false)
+	if (::IsValid(ProgressBar_Health) == false)
+	{
+		return;
+	}
+
+	const float LatestHealthPercent = FMath::Clamp(GetHealthRatio(), 0.f, 1.f);
+	if (FMath::IsNearlyEqual(TargetHealthPercent, LatestHealthPercent, KINDA_SMALL_NUMBER) == false)
+	{
+		TargetHealthPercent = LatestHealthPercent;
+		bIsInterpolatingHealth = true;
+	}
+
+	if (bIsInterpolatingHealth == false)
 	{
 		return;
 	}
@@ -28,6 +57,7 @@ void UHealthBarWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 void UHealthBarWidget::BindEvents()
 {
 	Super::BindEvents();
+	ApplyProgressBarStyle();
 
 	if (::IsValid(OwnerASC) == false)
 	{
@@ -53,6 +83,53 @@ void UHealthBarWidget::UnbindEvents()
 
 	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetMaxHealthAttribute()).RemoveAll(this);
 	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCurrentHealthAttribute()).RemoveAll(this);
+}
+
+void UHealthBarWidget::BuildDefaultWidgetTree()
+{
+	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("RuntimeHealthBar"));
+	RootSize->SetWidthOverride(260.f);
+	RootSize->SetHeightOverride(32.f);
+	WidgetTree->RootWidget = RootSize;
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("BarFrame"));
+	Frame->SetPadding(FMargin(14.f, 9.f));
+	RootSize->SetContent(Frame);
+	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
+	Frame->SetContent(Overlay);
+
+	ProgressBar_Health = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ProgressBar_Health"));
+	FProgressBarStyle ProgressStyle;
+	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
+	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
+	ProgressBar_Health->SetWidgetStyle(ProgressStyle);
+	ProgressBar_Health->SetFillColorAndOpacity(FLinearColor(0.8f, 0.12f, 0.1f, 1.f));
+	Overlay->AddChildToOverlay(ProgressBar_Health);
+	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
+	Label->SetText(NSLOCTEXT("HUD", "HealthLabel", "HP"));
+	ApplyTextRole(Label, EMKTextRole::Caption);
+	UOverlaySlot* LabelSlot = Overlay->AddChildToOverlay(Label);
+	LabelSlot->SetHorizontalAlignment(HAlign_Left);
+	LabelSlot->SetVerticalAlignment(VAlign_Center);
+}
+
+void UHealthBarWidget::ApplyProgressBarStyle()
+{
+	if (::IsValid(ProgressBar_Health) == false)
+	{
+		return;
+	}
+
+	ProgressBar_Health->PercentDelegate.Unbind();
+	ProgressBar_Health->FillColorAndOpacityDelegate.Unbind();
+	FProgressBarStyle ProgressStyle;
+	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
+	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
+	ProgressBar_Health->SetWidgetStyle(ProgressStyle);
+	ProgressBar_Health->SetBarFillType(EProgressBarFillType::LeftToRight);
+	ProgressBar_Health->SetBarFillStyle(EProgressBarFillStyle::Scale);
+	ProgressBar_Health->SetIsMarquee(false);
+	ProgressBar_Health->SetBorderPadding(FVector2D::ZeroVector);
+	ProgressBar_Health->SetFillColorAndOpacity(FLinearColor(0.8f, 0.12f, 0.1f, 1.f));
 }
 
 float UHealthBarWidget::GetHealthRatio() const

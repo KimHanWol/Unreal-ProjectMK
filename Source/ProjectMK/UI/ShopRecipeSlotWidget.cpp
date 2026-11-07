@@ -2,17 +2,17 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
+#include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
-#include "Components/VerticalBox.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ShopRecipeDataTableRow.h"
 #include "ProjectMK/UI/ShopMenuContents.h"
-#include "ProjectMK/UI/MKMockupButton.h"
 
 TSharedRef<SWidget> UShopRecipeSlotWidget::RebuildWidget()
 {
@@ -58,20 +58,9 @@ void UShopRecipeSlotWidget::UpdateWidget()
 			: RecipeName);
 	}
 
-	if (::IsValid(RequiredItemsText))
-	{
-		TArray<FString> RequiredItemStrings;
-		for (const FShopRecipeItem& RequiredItem : RecipeDataTableRow->RequiredItems)
-		{
-			RequiredItemStrings.Add(FString::Printf(TEXT("%s x%d"), *RequiredItem.GetItemKey().ToString(), RequiredItem.ItemCount));
-		}
-
-		RequiredItemsText->SetText(FText::Format(NSLOCTEXT("ShopMenu", "RequiredItemsFormat", "재료: {0}"), FText::FromString(FString::Join(RequiredItemStrings, TEXT(", ")))));
-	}
-
 	if (::IsValid(UnlockPriceText))
 	{
-		UnlockPriceText->SetText(FText::Format(NSLOCTEXT("ShopMenu", "UnlockPriceFormat", "{0} 코인"), RecipeDataTableRow->UnlockPrice));
+		UnlockPriceText->SetText(FText::AsNumber(RecipeDataTableRow->UnlockPrice));
 	}
 
 	if (::IsValid(UnlockButton))
@@ -108,42 +97,38 @@ void UShopRecipeSlotWidget::InitializeRecipeSlot(UShopMenuContents* InOwnerShopM
 void UShopRecipeSlotWidget::BuildDefaultWidgetTree()
 {
 	UHorizontalBox* RootBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("RootBox"));
-	WidgetTree->RootWidget = RootBox;
+	UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
+	Card->SetPadding(FMargin(FMKUILayout::SpaceM));
+	Card->SetContent(RootBox);
+	WidgetTree->RootWidget = Card;
 
-	ResultItemIconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ResultItemIconImage"));
-	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(ResultItemIconImage))
+	UImage* RawResultItemIcon = nullptr;
+	UBorder* IconFrame = BuildItemIconFrame(RawResultItemIcon);
+	ResultItemIconImage = RawResultItemIcon;
+	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(IconFrame))
 	{
 		IconSlot->SetVerticalAlignment(VAlign_Center);
-		IconSlot->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
 	}
 
-	UVerticalBox* TextBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("TextBox"));
-	if (UHorizontalBoxSlot* TextSlot = RootBox->AddChildToHorizontalBox(TextBox))
+	RecipeNameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeNameText"));
+	ApplyTextRole(RecipeNameText, EMKTextRole::Label, true);
+	if (UHorizontalBoxSlot* TextSlot = RootBox->AddChildToHorizontalBox(RecipeNameText))
 	{
 		TextSlot->SetVerticalAlignment(VAlign_Center);
 		TextSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
 
-	RecipeNameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeNameText"));
-	TextBox->AddChildToVerticalBox(RecipeNameText);
-
-	RequiredItemsText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RequiredItemsText"));
-	TextBox->AddChildToVerticalBox(RequiredItemsText);
-
-	UnlockPriceText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("UnlockPriceText"));
-	if (UHorizontalBoxSlot* PriceSlot = RootBox->AddChildToHorizontalBox(UnlockPriceText))
-	{
-		PriceSlot->SetVerticalAlignment(VAlign_Center);
-		PriceSlot->SetPadding(FMargin(8.f, 0.f));
-	}
-
-	UnlockButton = WidgetTree->ConstructWidget<UMKMockupButton>(UMKMockupButton::StaticClass(), TEXT("UnlockButton"));
-	UTextBlock* UnlockButtonText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("UnlockButtonText"));
-	UnlockButtonText->SetText(NSLOCTEXT("ShopMenu", "UnlockRecipe", "레시피 구매"));
-	UnlockButton->AddChild(UnlockButtonText);
-	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(UnlockButton))
+	UButton* RawUnlockButton = nullptr;
+	UTextBlock* RawUnlockPriceText = nullptr;
+	USizeBox* UnlockButtonSize = BuildCurrencyButton(RawUnlockButton, RawUnlockPriceText, FText::GetEmpty());
+	UnlockButton = RawUnlockButton;
+	UnlockPriceText = RawUnlockPriceText;
+	UnlockButton->SetToolTipText(NSLOCTEXT("ShopMenu", "UnlockRecipeHint", "표시된 재화를 사용해 이 설계도를 해금합니다."));
+	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(UnlockButtonSize))
 	{
 		ButtonSlot->SetVerticalAlignment(VAlign_Center);
+		ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceM, 0.f, 0.f, 0.f));
 	}
 }
 

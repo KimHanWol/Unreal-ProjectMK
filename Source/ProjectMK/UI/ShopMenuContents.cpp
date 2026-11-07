@@ -7,6 +7,7 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -17,7 +18,6 @@
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/ShopRecipeSlotWidget.h"
 #include "ProjectMK/UI/ShopSellSlotWidget.h"
-#include "ProjectMK/UI/MKMockupButton.h"
 
 namespace
 {
@@ -37,7 +37,7 @@ UShopMenuContents::UShopMenuContents(const FObjectInitializer& ObjectInitializer
 
 TSharedRef<SWidget> UShopMenuContents::RebuildWidget()
 {
-	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr)
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeShopRoot")) == nullptr)
 	{
 		BuildDefaultWidgetTree();
 	}
@@ -110,6 +110,25 @@ bool UShopMenuContents::TrySellItem(FName ItemUID)
 	return bSold;
 }
 
+void UShopMenuContents::ToggleSellSelection(FName ItemUID)
+{
+	if (SelectedItemUIDs.Contains(ItemUID))
+	{
+		SelectedItemUIDs.Remove(ItemUID);
+	}
+	else
+	{
+		SelectedItemUIDs.Add(ItemUID);
+	}
+
+	RefreshSellSlotList();
+}
+
+bool UShopMenuContents::IsItemSelectedForSale(FName ItemUID) const
+{
+	return SelectedItemUIDs.Contains(ItemUID);
+}
+
 bool UShopMenuContents::TryUnlockRecipe(FName RecipeKey)
 {
 	USoundManager::TryPlaySFX(this, ESFXType::UI_Click);
@@ -119,23 +138,31 @@ bool UShopMenuContents::TryUnlockRecipe(FName RecipeKey)
 
 void UShopMenuContents::BuildDefaultWidgetTree()
 {
-	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RootBorder"));
+	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeShopRoot"));
 	RootBorder->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.75f));
-	RootBorder->SetPadding(FMargin(24.f));
+	RootBorder->SetPadding(FMargin(FMKUILayout::SpaceXL));
 	WidgetTree->RootWidget = RootBorder;
 
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RootBox"));
 	RootBorder->SetContent(RootBox);
 
-	UTextBlock* TitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TitleText"));
-	TitleText->SetText(NSLOCTEXT("ShopMenu", "Title", "상점"));
-	if (UVerticalBoxSlot* TitleSlot = RootBox->AddChildToVerticalBox(TitleText))
-	{
-		TitleSlot->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
-	}
+	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("ShopMenu", "Title", "광산 보급소"), TEXT("ShopMarker")))->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceL));
+	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>();
+	RootBox->AddChildToVerticalBox(Columns)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UVerticalBox* SellColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* SellColumnSlot = Columns->AddChildToHorizontalBox(SellColumn);
+	SellColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	SellColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
+	UBorder* PlayerCard = WidgetTree->ConstructWidget<UBorder>();
+	PlayerCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
+	PlayerCard->SetPadding(FMargin(FMKUILayout::SpaceL));
+	PlayerCard->SetContent(BuildSectionLabel(NSLOCTEXT("ShopMenu", "Player", "플레이어")));
+	SellColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
+	UTextBlock* SellTitle = BuildSectionLabel(NSLOCTEXT("ShopMenu", "SellTitle", "보유 광물"));
+	SellColumn->AddChildToVerticalBox(SellTitle)->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceXS));
 
 	UScrollBox* SellSlotScrollBox = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("SellSlotScrollBox"));
-	if (UVerticalBoxSlot* ScrollSlot = RootBox->AddChildToVerticalBox(SellSlotScrollBox))
+	if (UVerticalBoxSlot* ScrollSlot = SellColumn->AddChildToVerticalBox(SellSlotScrollBox))
 	{
 		ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
@@ -144,33 +171,45 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	SellSlotScrollBox->AddChild(SellSlotListPanel);
 
 	UHorizontalBox* BottomBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("BottomBox"));
-	if (UVerticalBoxSlot* BottomSlot = RootBox->AddChildToVerticalBox(BottomBox))
+	if (UVerticalBoxSlot* BottomSlot = SellColumn->AddChildToVerticalBox(BottomBox))
 	{
-		BottomSlot->SetPadding(FMargin(0.f, 16.f, 0.f, 0.f));
+		BottomSlot->SetPadding(FMargin(0.f, FMKUILayout::SpaceL, 0.f, 0.f));
 	}
 
-	TotalPriceText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("TotalPriceText"));
-	if (UHorizontalBoxSlot* TotalSlot = BottomBox->AddChildToHorizontalBox(TotalPriceText))
+	UTextBlock* RawTotalPriceText = nullptr;
+	UHorizontalBox* TotalPriceRow = BuildCurrencyAmount(RawTotalPriceText, FText::AsNumber(0));
+	TotalPriceText = RawTotalPriceText;
+	if (UHorizontalBoxSlot* TotalSlot = BottomBox->AddChildToHorizontalBox(TotalPriceRow))
 	{
 		TotalSlot->SetVerticalAlignment(VAlign_Center);
 		TotalSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
 
-	SellAllButton = WidgetTree->ConstructWidget<UMKMockupButton>(UMKMockupButton::StaticClass(), TEXT("SellAllButton"));
-	UTextBlock* SellAllButtonText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SellAllButtonText"));
-	SellAllButtonText->SetText(NSLOCTEXT("ShopMenu", "SellAll", "전체 판매"));
-	SellAllButton->AddChild(SellAllButtonText);
-	BottomBox->AddChildToHorizontalBox(SellAllButton);
+	UButton* RawSellAllButton = nullptr;
+	UTextBlock* SellAllButtonText = nullptr;
+	USizeBox* SellAllButtonSize = BuildActionButton(RawSellAllButton, SellAllButtonText, NSLOCTEXT("ShopMenu", "SellSelected", "선택 판매"));
+	SellAllButton = RawSellAllButton;
+	BottomBox->AddChildToHorizontalBox(SellAllButtonSize);
 
-	UTextBlock* RecipeTitleText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeTitleText"));
-	RecipeTitleText->SetText(NSLOCTEXT("ShopMenu", "RecipeTitle", "레시피"));
-	if (UVerticalBoxSlot* RecipeTitleSlot = RootBox->AddChildToVerticalBox(RecipeTitleText))
+	UVerticalBox* RecipeColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* RecipeColumnSlot = Columns->AddChildToHorizontalBox(RecipeColumn);
+	RecipeColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	RecipeColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
+	Columns->ShiftChild(0, RecipeColumn);
+	SellColumnSlot->SetPadding(FMargin(0.f));
+	UBorder* MerchantCard = WidgetTree->ConstructWidget<UBorder>();
+	MerchantCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
+	MerchantCard->SetPadding(FMargin(FMKUILayout::SpaceL));
+	MerchantCard->SetContent(BuildSectionLabel(NSLOCTEXT("ShopMenu", "Merchant", "상점 주인")));
+	RecipeColumn->AddChildToVerticalBox(MerchantCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
+	UTextBlock* RecipeTitleText = BuildSectionLabel(NSLOCTEXT("ShopMenu", "RecipeTitle", "설계도"));
+	if (UVerticalBoxSlot* RecipeTitleSlot = RecipeColumn->AddChildToVerticalBox(RecipeTitleText))
 	{
-		RecipeTitleSlot->SetPadding(FMargin(0.f, 24.f, 0.f, 8.f));
+		RecipeTitleSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceXS));
 	}
 
 	UScrollBox* RecipeSlotScrollBox = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("RecipeSlotScrollBox"));
-	if (UVerticalBoxSlot* RecipeScrollSlot = RootBox->AddChildToVerticalBox(RecipeSlotScrollBox))
+	if (UVerticalBoxSlot* RecipeScrollSlot = RecipeColumn->AddChildToVerticalBox(RecipeSlotScrollBox))
 	{
 		RecipeScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
@@ -193,6 +232,13 @@ void UShopMenuContents::RefreshSellSlotList()
 	const TMap<FName, int32> InventoryItems = InventoryComponent->GetInventoryItems();
 	InventoryItems.GenerateKeyArray(ItemUIDs);
 	ItemUIDs.Sort(FNameLexicalLess());
+	for (auto SelectionIterator = SelectedItemUIDs.CreateIterator(); SelectionIterator; ++SelectionIterator)
+	{
+		if (InventoryItems.Contains(*SelectionIterator) == false)
+		{
+			SelectionIterator.RemoveCurrent();
+		}
+	}
 
 	int32 TotalPrice = 0;
 	for (const FName& ItemUID : ItemUIDs)
@@ -210,16 +256,27 @@ void UShopMenuContents::RefreshSellSlotList()
 			continue;
 		}
 
-		SellSlotListPanel->AddChild(SellSlotWidget);
+		if (UVerticalBoxSlot* RowSlot = Cast<UVerticalBoxSlot>(SellSlotListPanel->AddChild(SellSlotWidget)))
+		{
+			RowSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
+		}
 		SellSlotWidget->InitializeSellSlot(this, ItemUID, ItemCount, UnitPrice);
-		TotalPrice += UnitPrice * ItemCount;
+		if (SelectedItemUIDs.Contains(ItemUID))
+		{
+			TotalPrice += UnitPrice * ItemCount;
+		}
 	}
 
 	if (::IsValid(TotalPriceText))
 	{
-		TotalPriceText->SetText(TotalPrice > 0
-			? FText::Format(NSLOCTEXT("ShopMenu", "TotalPriceFormat", "합계 {0} 코인"), TotalPrice)
-			: NSLOCTEXT("ShopMenu", "NoSellableItem", "판매할 아이템이 없습니다."));
+		TotalPriceText->SetText(FText::AsNumber(TotalPrice));
+	}
+	if (TotalPrice <= 0)
+	{
+		UTextBlock* EmptyText = WidgetTree->ConstructWidget<UTextBlock>();
+		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoSellableItem", "판매할 광물이 없습니다."));
+		ApplyTextRole(EmptyText, EMKTextRole::Body);
+		SellSlotListPanel->AddChild(EmptyText);
 	}
 
 	if (::IsValid(SellAllButton))
@@ -247,14 +304,18 @@ void UShopMenuContents::RefreshRecipeSlotList()
 			continue;
 		}
 
-		RecipeSlotListPanel->AddChild(RecipeSlotWidget);
+		if (UVerticalBoxSlot* RowSlot = Cast<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(RecipeSlotWidget)))
+		{
+			RowSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
+		}
 		RecipeSlotWidget->InitializeRecipeSlot(this, RecipeKey, CraftingComponent->CanUnlockRecipe(RecipeKey));
 	}
 
 	if (LockedRecipeKeys.IsEmpty())
 	{
 		UTextBlock* EmptyText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoLockedRecipe", "구매할 레시피가 없습니다."));
+		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoLockedRecipe", "해금할 설계도가 없습니다."));
+		ApplyTextRole(EmptyText, EMKTextRole::Body);
 		RecipeSlotListPanel->AddChild(EmptyText);
 	}
 }
@@ -278,12 +339,20 @@ void UShopMenuContents::ApplySaleResult(bool bSold)
 void UShopMenuContents::OnSellAllButtonClicked()
 {
 	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
-	if (::IsValid(InventoryComponent) == false)
+	if (::IsValid(InventoryComponent) == false || SelectedItemUIDs.IsEmpty())
 	{
 		return;
 	}
 
-	ApplySaleResult(InventoryComponent->TrySellAllItems());
+	bool bSoldAnyItem = false;
+	const TArray<FName> SelectedItems = SelectedItemUIDs.Array();
+	for (const FName ItemUID : SelectedItems)
+	{
+		bSoldAnyItem |= InventoryComponent->TrySellItem(ItemUID, InventoryComponent->GetItemCount(ItemUID));
+	}
+	SelectedItemUIDs.Reset();
+	ApplySaleResult(bSoldAnyItem);
+	RefreshSellSlotList();
 }
 
 void UShopMenuContents::OnInventoryChanged()

@@ -6,6 +6,7 @@
 
 class UCraftingComponent;
 class UCraftingRecipeSlotWidget;
+class UPlaytestQuickSlotWidget;
 class UPanelWidget;
 class UTextBlock;
 
@@ -62,4 +63,7 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<UCraftingRecipeSlotWidget>> RecipeSlots;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UPlaytestQuickSlotWidget>> InventorySlots;
 };

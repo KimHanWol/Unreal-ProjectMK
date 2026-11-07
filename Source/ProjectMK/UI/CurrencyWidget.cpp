@@ -1,10 +1,23 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/UI/CurrencyWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
+#include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
+
+TSharedRef<SWidget> UCurrencyWidget::RebuildWidget()
+{
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("CurrencyPanel")) == nullptr)
+	{
+		BuildDefaultWidgetTree();
+	}
+
+	return Super::RebuildWidget();
+}
 
 void UCurrencyWidget::BindEvents()
 {
@@ -29,6 +42,17 @@ void UCurrencyWidget::UnbindEvents()
 	}
 
 	OwnerASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCoinAttribute()).RemoveAll(this);
+}
+
+void UCurrencyWidget::BuildDefaultWidgetTree()
+{
+	UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("CurrencyPanel"));
+	Panel->SetPadding(FMargin(FMKUILayout::SpaceS, FMKUILayout::SpaceXS));
+	WidgetTree->RootWidget = Panel;
+	UTextBlock* RawAmountText = nullptr;
+	UHorizontalBox* CurrencyRow = BuildCurrencyAmount(RawAmountText, FText::GetEmpty());
+	Text_Coin = RawAmountText;
+	Panel->SetContent(CurrencyRow);
 }
 
 void UCurrencyWidget::RefreshCoinText()

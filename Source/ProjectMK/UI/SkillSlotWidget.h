@@ -6,6 +6,8 @@
 #include "SkillSlotWidget.generated.h"
 
 struct FOnAttributeChangeData;
+class UHorizontalBox;
+class UTextBlock;
 
 UCLASS()
 class PROJECTMK_API USkillSlotWidget : public UMKSlotBase
@@ -13,6 +15,7 @@ class PROJECTMK_API USkillSlotWidget : public UMKSlotBase
 	GENERATED_BODY()
 
 protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -24,11 +27,17 @@ protected:
 	virtual void OnSlotClicked() override;
 	virtual void UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const override;
 
+public:
+	void InitializeSkill(FName InSkillKeyName);
+
 private:
+	void BuildDefaultWidgetTree();
 	class USkillTreeMenuContents* GetOwningSkillTreeMenuContents() const;
 	void UpdateEnabledState();
 	void UpdateCompleteImage();
 	void UpdateSkillImage();
+	void UpdatePriceText();
+	bool AreRequiredSkillsPurchased() const;
 
 	void OnCoinChanged(const FOnAttributeChangeData& Data);
 	void OnSkillPurchased(FName PurchasedSkillKeyName);
@@ -39,6 +48,12 @@ protected:
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> CompleteImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UHorizontalBox> PriceRow;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> PriceText;
 
 private:
 	UPROPERTY(Transient)

@@ -4,17 +4,22 @@
 #include "MKUserWidget.h"
 #include "HealthBarWidget.generated.h"
 
+struct FOnAttributeChangeData;
+
 UCLASS()
 class PROJECTMK_API UHealthBarWidget : public UMKUserWidget
 {
 	GENERATED_BODY()
 
 protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
 private:
+	void BuildDefaultWidgetTree();
+	void ApplyProgressBarStyle();
 	float GetHealthRatio() const;
 	void StartProgressInterpolation();
 	void UpdateHealthProgressBar();

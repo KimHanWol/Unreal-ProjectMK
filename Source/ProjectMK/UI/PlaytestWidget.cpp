@@ -103,15 +103,15 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	WidgetTree->RootWidget = Canvas;
 	Canvas->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	USizeBox* PanelSize = WidgetTree->ConstructWidget<USizeBox>();
-	PanelSize->SetWidthOverride(320.f);
+	PanelSize->SetWidthOverride(360.f);
 	UCanvasPanelSlot* PanelSlot = Canvas->AddChildToCanvas(PanelSize);
 	PanelSlot->SetAnchors(FAnchors(0.f, 0.f));
 	PanelSlot->SetAlignment(FVector2D(0.f, 0.f));
 	PanelSlot->SetPosition(FVector2D(12.f, 12.f));
 	PanelSlot->SetAutoSize(true);
-	UBorder* PanelBorder = WidgetTree->ConstructWidget<UBorder>();
+	UBorder* PanelBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("InsetPanel"));
 	PanelBorder->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.065f, 0.94f));
-	PanelBorder->SetPadding(FMargin(12.f));
+	PanelBorder->SetPadding(FMargin(FMKUILayout::SpaceM));
 	PanelSize->SetContent(PanelBorder);
 	UVerticalBox* Panel = WidgetTree->ConstructWidget<UVerticalBox>();
 	PanelBorder->SetContent(Panel);
@@ -119,18 +119,16 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	Panel->AddChildToVerticalBox(TitleRow);
 	TogglePanelButton = AddActionButton(TitleRow, NSLOCTEXT("Playtest", "Title", "PROJECT MK · 목업 테스트 / F1"), NSLOCTEXT("Playtest", "FoldHint", "테스트 패널 펼치기 / 접기"));
 	StatusText = WidgetTree->ConstructWidget<UTextBlock>();
-	FSlateFontInfo StatusFont = StatusText->GetFont();
-	StatusFont.Size = 12;
-	StatusText->SetFont(StatusFont);
-	Panel->AddChildToVerticalBox(StatusText)->SetPadding(FMargin(0.f, 8.f));
+	ApplyTextRole(StatusText, EMKTextRole::Body, true);
+	Panel->AddChildToVerticalBox(StatusText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceS));
 	DetailsPanel = WidgetTree->ConstructWidget<UVerticalBox>();
 	Panel->AddChildToVerticalBox(DetailsPanel);
 
 	UTextBlock* Controls = WidgetTree->ConstructWidget<UTextBlock>();
-	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · R 누르기 자석\nE / 클릭 상점 · C 제작 · K 스킬\n1~8 / 하단 클릭 아이템 사용"));
-	Controls->SetFont(StatusFont);
+	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · F 상호작용\nC 제작 · K 스킬 · 1~8 아이템 사용"));
+	ApplyTextRole(Controls, EMKTextRole::Body, true);
 	Controls->SetColorAndOpacity(FSlateColor(FLinearColor(0.6f, 0.8f, 0.9f)));
-	DetailsPanel->AddChildToVerticalBox(Controls)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+	DetailsPanel->AddChildToVerticalBox(Controls)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceS));
 	UHorizontalBox* MenuRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(MenuRow);
 	ShopButton = AddActionButton(MenuRow, NSLOCTEXT("Playtest", "Shop", "상점"), NSLOCTEXT("Playtest", "ShopHint", "거리 조건 없이 상점 열기"));
@@ -142,7 +140,7 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	ConsumablesButton = AddActionButton(KitRow, NSLOCTEXT("Playtest", "Consumables", "소모품 세트"), NSLOCTEXT("Playtest", "ConsumablesHint", "이번 플레이 저장 중단 · 인벤토리를 소모품으로 교체"));
 	UHorizontalBox* CoinRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(CoinRow);
-	CoinsButton = AddActionButton(CoinRow, NSLOCTEXT("Playtest", "Coins", "+1,000 코인"), NSLOCTEXT("Playtest", "CoinsHint", "이번 플레이 저장 중단 · 구매 테스트용 코인 지급"));
+	CoinsButton = AddActionButton(CoinRow, NSLOCTEXT("Playtest", "Coins", "+1,000 재화"), NSLOCTEXT("Playtest", "CoinsHint", "이번 플레이 저장 중단 · 구매 테스트용 재화 지급"));
 	ReturnButton = AddActionButton(CoinRow, NSLOCTEXT("Playtest", "Return", "지상 복귀"), NSLOCTEXT("Playtest", "ReturnHint", "이번 플레이 저장 중단 · 스폰 위치로 이동"));
 	UHorizontalBox* StatusRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(StatusRow);
@@ -154,26 +152,20 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	SpawnMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "SpawnMonster", "몬스터 소환"), NSLOCTEXT("Playtest", "SpawnMonsterHint", "이번 플레이 저장 중단 · 주변에 DataTable 몬스터 1마리 소환"));
 	HitMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "HitMonster", "몬스터 자극"), NSLOCTEXT("Playtest", "HitMonsterHint", "소환한 몬스터에게 10 피해 · 분노 드릴링 확인"));
 	FeedbackText = WidgetTree->ConstructWidget<UTextBlock>();
-	FeedbackText->SetFont(StatusFont);
-	FeedbackText->SetAutoWrapText(true);
-	FeedbackText->SetText(NSLOCTEXT("Playtest", "TestGuide", "추천: 재료 세트 → 코인 지급 → 상점에서 레시피 구매 → C 제작 → 지하에서 사용\n세트 버튼은 이번 플레이의 인벤토리를 교체합니다. 테스트 조작 후에는 종료까지 파일에 저장하지 않습니다."));
-	DetailsPanel->AddChildToVerticalBox(FeedbackText)->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+	ApplyTextRole(FeedbackText, EMKTextRole::Body, true);
+	FeedbackText->SetText(NSLOCTEXT("Playtest", "TestGuide", "추천: 재료 세트 → 재화 지급 → 상점에서 설계도 해금 → C 제작 → 지하에서 사용\n세트 버튼은 이번 플레이의 인벤토리를 교체합니다. 테스트 조작 후에는 종료까지 파일에 저장하지 않습니다."));
+	DetailsPanel->AddChildToVerticalBox(FeedbackText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceS, 0.f, 0.f));
 }
 
 UButton* UPlaytestWidget::AddActionButton(UHorizontalBox* Row, const FText& Label, const FText& Hint)
 {
-	UButton* Button = WidgetTree->ConstructWidget<UMKMockupButton>();
+	UButton* Button = nullptr;
+	UTextBlock* Text = nullptr;
+	USizeBox* ButtonSize = BuildActionButton(Button, Text, Label, 0.f, 36.f);
 	Button->SetBackgroundColor(FLinearColor(0.1f, 0.25f, 0.33f));
 	Button->SetToolTipText(Hint);
-	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>();
-	Text->SetText(Label);
-	FSlateFontInfo Font = Text->GetFont();
-	Font.Size = 12;
-	Text->SetFont(Font);
-	Text->SetJustification(ETextJustify::Center);
-	Button->SetContent(Text);
-	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(Button);
-	ButtonSlot->SetPadding(FMargin(2.f, 3.f));
+	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(ButtonSize);
+	ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceXS * 0.5f, FMKUILayout::SpaceXS));
 	ButtonSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	return Button;
 }
@@ -185,7 +177,7 @@ void UPlaytestWidget::UpdateStatus()
 	const ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
 	if (::IsValid(Attributes))
 	{
-		StatusText->SetText(FText::FromString(FString::Printf(TEXT("HP %.0f/%.0f   O2 %.0f/%.0f   코인 %.0f\n시드 %d · %s"),
+		StatusText->SetText(FText::FromString(FString::Printf(TEXT("HP %.0f/%.0f   O2 %.0f/%.0f   재화 %.0f\n시드 %d · %s"),
 			Attributes->GetCurrentHealth(), Attributes->GetMaxHealth(), Attributes->GetCurrentOxygen(), Attributes->GetMaxOxygen(), Attributes->GetCoin(),
 			::IsValid(Level) ? Level->GetLastGenerationSeed() : INDEX_NONE,
 			::IsValid(Saves) && Saves->IsPlaytestSession() ? TEXT("테스트 · 파일 저장 꺼짐") : TEXT("일반 플레이 · 자동 저장"))));
@@ -272,7 +264,7 @@ void UPlaytestWidget::OnCoinsClicked()
 		USkillComponent* Skills = GetLocalSkillComponent();
 		if (::IsValid(Skills) && Skills->TryAddCoin(1000, false))
 		{
-			FeedbackText->SetText(NSLOCTEXT("Playtest", "CoinsGranted", "1,000 코인 지급 · 상점 레시피와 스킬을 구매할 수 있습니다."));
+			FeedbackText->SetText(NSLOCTEXT("Playtest", "CoinsGranted", "1,000 재화 지급 · 상점 설계도와 기술을 해금할 수 있습니다."));
 		}
 		UpdateStatus();
 	}

@@ -1,9 +1,16 @@
-// LINK
+﻿// LINK
 
 #include "ProjectMK/UI/MKTooltipBase.h"
 
+#include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -41,6 +48,16 @@ namespace
 		TargetImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 		return true;
 	}
+}
+
+TSharedRef<SWidget> UMKTooltipBase::RebuildWidget()
+{
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeTooltipRoot")) == nullptr)
+	{
+		BuildDefaultWidgetTree();
+	}
+
+	return Super::RebuildWidget();
 }
 
 void UMKTooltipBase::ShowItemTooltip(FName ItemDataKey)
@@ -97,6 +114,42 @@ void UMKTooltipBase::UpdateWidget()
 {
 	ClearTooltip();
 	SetVisible(false);
+}
+
+void UMKTooltipBase::BuildDefaultWidgetTree()
+{
+	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("RuntimeTooltipRoot"));
+	RootSize->SetMinDesiredWidth(280.f);
+	RootSize->SetMaxDesiredWidth(360.f);
+	WidgetTree->RootWidget = RootSize;
+
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Tooltip"));
+	Frame->SetPadding(FMargin(FMKUILayout::SpaceM));
+	RootSize->SetContent(Frame);
+
+	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Frame->SetContent(Row);
+
+	UImage* IconImage = nullptr;
+	UBorder* IconFrame = BuildItemIconFrame(IconImage, 48.f);
+	Icon = IconImage;
+	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
+	IconSlot->SetVerticalAlignment(VAlign_Top);
+	IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
+
+	UVerticalBox* CopyColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* CopySlot = Row->AddChildToHorizontalBox(CopyColumn);
+	CopySlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
+	Title = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("Title"));
+	ApplyTextRole(Title, EMKTextRole::Label, true);
+	Title->SetColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.82f, 0.48f)));
+	CopyColumn->AddChildToVerticalBox(Title)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceXS));
+
+	Desc = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("Desc"));
+	ApplyTextRole(Desc, EMKTextRole::Body, true);
+	Desc->SetColorAndOpacity(FSlateColor(FLinearColor(0.8f, 0.84f, 0.86f)));
+	CopyColumn->AddChildToVerticalBox(Desc);
 }
 
 void UMKTooltipBase::ClearTooltip()

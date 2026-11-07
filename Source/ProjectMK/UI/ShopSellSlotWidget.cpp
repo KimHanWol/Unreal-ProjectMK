@@ -2,15 +2,18 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
+#include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/UI/ShopMenuContents.h"
-#include "ProjectMK/UI/MKMockupButton.h"
 
 TSharedRef<SWidget> UShopSellSlotWidget::RebuildWidget()
 {
@@ -53,7 +56,17 @@ void UShopSellSlotWidget::UpdateWidget()
 
 	if (::IsValid(ItemPriceText))
 	{
-		ItemPriceText->SetText(FText::Format(NSLOCTEXT("ShopMenu", "ItemPriceFormat", "{0} 코인 (개당 {1})"), UnitPrice * ItemCount, UnitPrice));
+		ItemPriceText->SetText(FText::Format(NSLOCTEXT("ShopMenu", "ItemPriceFormat", "{0} · 개당 {1}"), UnitPrice * ItemCount, UnitPrice));
+	}
+
+	const bool bSelected = OwnerShopMenu.IsValid() && OwnerShopMenu->IsItemSelectedForSale(ItemUID);
+	if (::IsValid(SelectionText))
+	{
+		SelectionText->SetVisibility(bSelected ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
+	}
+	if (::IsValid(SellButtonText))
+	{
+		SellButtonText->SetText(bSelected ? NSLOCTEXT("ShopMenu", "Selected", "선택됨") : NSLOCTEXT("ShopMenu", "Select", "선택"));
 	}
 
 	if (::IsValid(ItemIconImage) == false)
@@ -87,35 +100,51 @@ void UShopSellSlotWidget::InitializeSellSlot(UShopMenuContents* InOwnerShopMenu,
 void UShopSellSlotWidget::BuildDefaultWidgetTree()
 {
 	UHorizontalBox* RootBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("RootBox"));
-	WidgetTree->RootWidget = RootBox;
+	UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
+	Card->SetPadding(FMargin(FMKUILayout::SpaceM));
+	Card->SetContent(RootBox);
+	WidgetTree->RootWidget = Card;
 
-	ItemIconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("ItemIconImage"));
-	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(ItemIconImage))
+	SelectionText = WidgetTree->ConstructWidget<UTextBlock>();
+	SelectionText->SetText(FText::FromString(TEXT("✓")));
+	ApplyTextRole(SelectionText, EMKTextRole::Label);
+	SelectionText->SetColorAndOpacity(FSlateColor(FLinearColor(0.2f, 0.9f, 0.75f, 1.f)));
+	SelectionText->SetVisibility(ESlateVisibility::Hidden);
+	RootBox->AddChildToHorizontalBox(SelectionText)->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceS, 0.f));
+
+	UImage* RawItemIcon = nullptr;
+	UBorder* IconFrame = BuildItemIconFrame(RawItemIcon);
+	ItemIconImage = RawItemIcon;
+	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(IconFrame))
 	{
 		IconSlot->SetVerticalAlignment(VAlign_Center);
-		IconSlot->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
 	}
 
+	UVerticalBox* Details = WidgetTree->ConstructWidget<UVerticalBox>();
 	ItemNameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ItemNameText"));
-	if (UHorizontalBoxSlot* NameSlot = RootBox->AddChildToHorizontalBox(ItemNameText))
+	ApplyTextRole(ItemNameText, EMKTextRole::Label, true);
+	Details->AddChildToVerticalBox(ItemNameText);
+	if (UHorizontalBoxSlot* NameSlot = RootBox->AddChildToHorizontalBox(Details))
 	{
 		NameSlot->SetVerticalAlignment(VAlign_Center);
 		NameSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	}
 
-	ItemPriceText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("ItemPriceText"));
-	if (UHorizontalBoxSlot* PriceSlot = RootBox->AddChildToHorizontalBox(ItemPriceText))
-	{
-		PriceSlot->SetVerticalAlignment(VAlign_Center);
-		PriceSlot->SetPadding(FMargin(8.f, 0.f));
-	}
+	UTextBlock* RawItemPriceText = nullptr;
+	UHorizontalBox* PriceRow = BuildCurrencyAmount(RawItemPriceText, FText::GetEmpty(), EMKTextRole::Caption);
+	ItemPriceText = RawItemPriceText;
+	ItemPriceText->SetColorAndOpacity(FSlateColor(FLinearColor(0.9f, 0.75f, 0.4f)));
+	Details->AddChildToVerticalBox(PriceRow)->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
 
-	SellButton = WidgetTree->ConstructWidget<UMKMockupButton>(UMKMockupButton::StaticClass(), TEXT("SellButton"));
-	UTextBlock* SellButtonText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SellButtonText"));
-	SellButtonText->SetText(NSLOCTEXT("ShopMenu", "Sell", "판매"));
-	SellButton->AddChild(SellButtonText);
-	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(SellButton))
+	UButton* RawSellButton = nullptr;
+	UTextBlock* RawSellButtonText = nullptr;
+	USizeBox* SellButtonSize = BuildActionButton(RawSellButton, RawSellButtonText, NSLOCTEXT("ShopMenu", "Select", "선택"));
+	SellButton = RawSellButton;
+	SellButtonText = RawSellButtonText;
+	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(SellButtonSize))
 	{
+		ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceM, 0.f, 0.f, 0.f));
 		ButtonSlot->SetVerticalAlignment(VAlign_Center);
 	}
 }
@@ -124,6 +153,7 @@ void UShopSellSlotWidget::OnSellButtonClicked()
 {
 	if (OwnerShopMenu.IsValid())
 	{
-		OwnerShopMenu->TrySellItem(ItemUID);
+		OwnerShopMenu->ToggleSellSelection(ItemUID);
+		UpdateWidget();
 	}
 }

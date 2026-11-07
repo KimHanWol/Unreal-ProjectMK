@@ -29,6 +29,8 @@ protected:
 
 public:
 	bool TrySellItem(FName ItemUID);
+	void ToggleSellSelection(FName ItemUID);
+	bool IsItemSelectedForSale(FName ItemUID) const;
 	bool TryUnlockRecipe(FName RecipeKey);
 
 private:
@@ -62,4 +64,7 @@ protected:
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop")
 	TSubclassOf<UShopRecipeSlotWidget> RecipeSlotWidgetClass;
+
+private:
+	TSet<FName> SelectedItemUIDs;
 };

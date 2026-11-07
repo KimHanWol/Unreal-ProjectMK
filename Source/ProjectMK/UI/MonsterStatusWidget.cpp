@@ -12,21 +12,19 @@ TSharedRef<SWidget> UMonsterStatusWidget::RebuildWidget()
 	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr)
 	{
 		USizeBox* Frame = WidgetTree->ConstructWidget<USizeBox>();
-		Frame->SetWidthOverride(112.f);
+		Frame->SetWidthOverride(120.f);
 		WidgetTree->RootWidget = Frame;
 		UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 		Frame->SetContent(Column);
 		StatusText = WidgetTree->ConstructWidget<UTextBlock>();
-		FSlateFontInfo Font = StatusText->GetFont();
-		Font.Size = 10;
-		StatusText->SetFont(Font);
+		ApplyTextRole(StatusText, EMKTextRole::Caption);
 		StatusText->SetJustification(ETextJustify::Center);
 		StatusText->SetShadowOffset(FVector2D(1.f, 1.f));
 		StatusText->SetShadowColorAndOpacity(FLinearColor::Black);
 		Column->AddChildToVerticalBox(StatusText);
 		USizeBox* BarSize = WidgetTree->ConstructWidget<USizeBox>();
-		BarSize->SetHeightOverride(4.f);
-		Column->AddChildToVerticalBox(BarSize)->SetPadding(FMargin(18.f, 2.f, 18.f, 0.f));
+		BarSize->SetHeightOverride(6.f);
+		Column->AddChildToVerticalBox(BarSize)->SetPadding(FMargin(FMKUILayout::SpaceL, FMKUILayout::SpaceXS, FMKUILayout::SpaceL, 0.f));
 		HealthBar = WidgetTree->ConstructWidget<UProgressBar>();
 		BarSize->SetContent(HealthBar);
 	}

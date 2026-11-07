@@ -41,11 +41,17 @@ protected:
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> ItemPriceText;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> SelectionText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> SellButtonText;
+
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> SellButton;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop")
-	FVector2D ItemIconSize = FVector2D(32.f, 32.f);
+	FVector2D ItemIconSize = FVector2D(FMKUILayout::ItemIconSize, FMKUILayout::ItemIconSize);
 
 private:
 	UPROPERTY(Transient)

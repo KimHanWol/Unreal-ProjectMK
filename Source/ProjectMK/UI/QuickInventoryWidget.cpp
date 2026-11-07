@@ -79,9 +79,9 @@ void UQuickInventoryWidget::BuildDefaultWidgetTree()
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>();
 	Canvas->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	WidgetTree->RootWidget = Canvas;
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>();
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Quickbar"));
 	Frame->SetBrushColor(FLinearColor(0.02f, 0.035f, 0.055f, 0.95f));
-	Frame->SetPadding(FMargin(12.f, 8.f));
+	Frame->SetPadding(FMargin(FMKUILayout::SpaceS, FMKUILayout::SpaceXS));
 	UCanvasPanelSlot* FrameSlot = Canvas->AddChildToCanvas(Frame);
 	FrameSlot->SetAnchors(FAnchors(ViewportAnchor.X, ViewportAnchor.Y));
 	FrameSlot->SetAlignment(ViewportAnchor);
@@ -89,19 +89,13 @@ void UQuickInventoryWidget::BuildDefaultWidgetTree()
 	FrameSlot->SetAutoSize(true);
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 	Frame->SetContent(Column);
-	UTextBlock* Title = WidgetTree->ConstructWidget<UTextBlock>();
-	Title->SetText(NSLOCTEXT("QuickInventory", "Title", "빠른 사용   1 — 8"));
-	Title->SetColorAndOpacity(FSlateColor(FLinearColor(0.45f, 0.8f, 0.9f)));
-	FSlateFontInfo Font = Title->GetFont();
-	Font.Size = 12;
-	Title->SetFont(Font);
-	Column->AddChildToVerticalBox(Title)->SetPadding(FMargin(4.f, 0.f, 0.f, 6.f));
 	HBox_Slot = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("HBox_Slot"));
 	Column->AddChildToVerticalBox(HBox_Slot);
 	RecallText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecallText"));
-	RecallText->SetFont(Font);
+	ApplyTextRole(RecallText, EMKTextRole::Caption, true);
 	RecallText->SetJustification(ETextJustify::Center);
-	Column->AddChildToVerticalBox(RecallText)->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
+	RecallText->SetVisibility(ESlateVisibility::Collapsed);
+	Column->AddChildToVerticalBox(RecallText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceS, 0.f, 0.f));
 }
 
 void UQuickInventoryWidget::UpdateQuickInventorySlots()
@@ -117,7 +111,7 @@ void UQuickInventoryWidget::UpdateQuickInventorySlots()
 			UPlaytestQuickSlotWidget* QuickSlot = CreateWidget<UPlaytestQuickSlotWidget>(this, QuickSlotClass);
 			if (::IsValid(QuickSlot))
 			{
-				HBox_Slot->AddChildToHorizontalBox(QuickSlot)->SetPadding(FMargin(3.f, 0.f));
+				HBox_Slot->AddChildToHorizontalBox(QuickSlot)->SetPadding(FMargin(FMKUILayout::SpaceXS, 0.f));
 				QuickSlot->SetSlotIndex(SlotIndex);
 				ItemSlotList.Add(QuickSlot);
 			}
@@ -137,9 +131,11 @@ void UQuickInventoryWidget::UpdateRecall()
 	}
 	const AMKCharacter* Character = GetLocalPlayerCharacter();
 	const UConsumableComponent* Consumables = ::IsValid(Character) ? Character->GetConsumableComponent() : nullptr;
-	RecallText->SetText(::IsValid(Consumables) && Consumables->IsRecalling()
-		? FText::Format(NSLOCTEXT("QuickInventory", "Recall", "귀환까지 {0}초 · 움직이면 취소"), FMath::CeilToInt(Consumables->GetRecallRemainingTime()))
-		: NSLOCTEXT("QuickInventory", "Hint", "인벤토리 첫 8칸 · 숫자 키 / 클릭 사용 · 보험은 소지 시 자동 적용"));
+	const bool bIsRecalling = ::IsValid(Consumables) && Consumables->IsRecalling();
+	RecallText->SetText(bIsRecalling
+		? FText::Format(NSLOCTEXT("QuickInventory", "Recall", "귀환까지 {0}초"), FMath::CeilToInt(Consumables->GetRecallRemainingTime()))
+		: FText::GetEmpty());
+	RecallText->SetVisibility(bIsRecalling ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }
 
 void UQuickInventoryWidget::OnInventoryChanged()

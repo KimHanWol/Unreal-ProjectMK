@@ -2,46 +2,97 @@
 
 #include "ProjectMK/UI/SkillTreeMenuContents.h"
 
+#include "Blueprint/WidgetTree.h"
+#include "Components/Border.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/SizeBox.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "Input/Reply.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
+#include "ProjectMK/UI/SkillSlotWidget.h"
 
-bool USkillTreeMenuContents::BeginSkillTreeDrag(const FVector2D& ScreenSpacePosition)
+namespace
 {
-	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
-	if (::IsValid(CanvasPanelSlot) == false)
+	constexpr float SkillNodeSize = 96.f;
+	constexpr float SkillTreePadding = 40.f;
+	constexpr float SkillConnectionThickness = 4.f;
+	constexpr float SkillGridStepX = 64.f;
+	constexpr float SkillGridStepY = 58.f;
+
+	TMap<FName, FIntPoint> CreateSkillGridPositions()
 	{
-		return false;
+		TMap<FName, FIntPoint> Positions;
+		Positions.Emplace(TEXT("Skill_DrillPower_1"), FIntPoint(12, 10));
+		Positions.Emplace(TEXT("Skill_DrillPower_2"), FIntPoint(14, 10));
+		Positions.Emplace(TEXT("Skill_DrillPower_3"), FIntPoint(16, 10));
+		Positions.Emplace(TEXT("Skill_DrillSpeed_1"), FIntPoint(14, 12));
+		Positions.Emplace(TEXT("Skill_DrillSpeed_2"), FIntPoint(16, 12));
+		Positions.Emplace(TEXT("Skill_DrillSpeed_3"), FIntPoint(18, 12));
+		Positions.Emplace(TEXT("Skill_DrillRange_1"), FIntPoint(14, 8));
+		Positions.Emplace(TEXT("Skill_DrillRange_2"), FIntPoint(16, 8));
+		Positions.Emplace(TEXT("Skill_ChainBreak_1"), FIntPoint(18, 8));
+		Positions.Emplace(TEXT("Skill_ChainBreak_2"), FIntPoint(18, 10));
+		Positions.Emplace(TEXT("Skill_Recycler"), FIntPoint(10, 12));
+		Positions.Emplace(TEXT("Skill_LuckyStrike"), FIntPoint(12, 12));
+		Positions.Emplace(TEXT("Skill_Scavenger"), FIntPoint(10, 14));
+		Positions.Emplace(TEXT("Skill_CoinMaster"), FIntPoint(10, 16));
+
+		Positions.Emplace(TEXT("Skill_OxygenTank_1"), FIntPoint(10, 8));
+		Positions.Emplace(TEXT("Skill_OxygenTank_2"), FIntPoint(10, 6));
+		Positions.Emplace(TEXT("Skill_OxygenTank_3"), FIntPoint(10, 4));
+		Positions.Emplace(TEXT("Skill_LastOxygen"), FIntPoint(12, 6));
+		Positions.Emplace(TEXT("Skill_AirPocket"), FIntPoint(14, 6));
+		Positions.Emplace(TEXT("Skill_HealthBoost_1"), FIntPoint(8, 8));
+		Positions.Emplace(TEXT("Skill_HealthBoost_2"), FIntPoint(6, 4));
+		Positions.Emplace(TEXT("Skill_HealthRegen_1"), FIntPoint(6, 8));
+		Positions.Emplace(TEXT("Skill_HealthRegen_2"), FIntPoint(6, 6));
+		Positions.Emplace(TEXT("Skill_HealthRegen_3"), FIntPoint(6, 2));
+		Positions.Emplace(TEXT("Skill_Insurance"), FIntPoint(4, 8));
+
+		Positions.Emplace(TEXT("Skill_Magnet_1"), FIntPoint(8, 10));
+		Positions.Emplace(TEXT("Skill_Magnet_2"), FIntPoint(4, 10));
+		Positions.Emplace(TEXT("Skill_BagUpgrade_1"), FIntPoint(6, 10));
+		Positions.Emplace(TEXT("Skill_BagUpgrade_2"), FIntPoint(2, 10));
+		Positions.Emplace(TEXT("Skill_FieldRepair"), FIntPoint(6, 12));
+
+		Positions.Emplace(TEXT("Skill_MoveSpeed_1"), FIntPoint(4, 14));
+		Positions.Emplace(TEXT("Skill_MoveSpeed_2"), FIntPoint(4, 16));
+		Positions.Emplace(TEXT("Skill_FlyingSpeed_1"), FIntPoint(6, 14));
+		Positions.Emplace(TEXT("Skill_FlyingSpeed_2"), FIntPoint(6, 16));
+		Positions.Emplace(TEXT("CharacterSkill_MinerDiscipline"), FIntPoint(10, 2));
+		Positions.Emplace(TEXT("CharacterSkill_RecklessDig"), FIntPoint(12, 2));
+		Positions.Emplace(TEXT("CharacterSkill_SpeedRunner"), FIntPoint(14, 2));
+		Positions.Emplace(TEXT("CharacterSkill_HeavyCarrier"), FIntPoint(16, 2));
+		return Positions;
 	}
 
-	DragStartScreenPosition = ScreenSpacePosition;
-	DragStartCanvasPosition = CanvasPanelSlot->GetPosition();
-	bIsDraggingSkillTree = true;
-	return true;
+	const TMap<FName, FIntPoint> SkillGridPositions = CreateSkillGridPositions();
 }
 
-bool USkillTreeMenuContents::HasActiveSkillTreeDrag() const
+USkillTreeMenuContents::USkillTreeMenuContents(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer)
 {
-	return bIsDraggingSkillTree;
+	MenuContentsType = EMenuContentsType::SkillTree;
+	SkillSlotWidgetClass = USkillSlotWidget::StaticClass();
 }
 
-bool USkillTreeMenuContents::UpdateSkillTreeDrag(const FVector2D& ScreenSpacePosition)
+TSharedRef<SWidget> USkillTreeMenuContents::RebuildWidget()
 {
-	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
-	if (bIsDraggingSkillTree == false || ::IsValid(CanvasPanelSlot) == false)
+	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeSkillTreeViewport")) == nullptr)
 	{
-		return false;
+		BuildDefaultWidgetTree();
 	}
 
-	const FVector2D DragDelta = ScreenSpacePosition - DragStartScreenPosition;
-	const FVector2D TargetPosition = DragStartCanvasPosition + DragDelta;
-	CanvasPanelSlot->SetPosition(CalculateClampedCanvasPosition(TargetPosition, CurrentZoomScale));
-	return true;
+	return Super::RebuildWidget();
 }
 
-void USkillTreeMenuContents::EndSkillTreeDrag()
+void USkillTreeMenuContents::NativeConstruct()
 {
-	bIsDraggingSkillTree = false;
+	Super::NativeConstruct();
+	RefreshSkillTree();
 }
 
 FReply USkillTreeMenuContents::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -85,6 +136,188 @@ FReply USkillTreeMenuContents::NativeOnMouseWheel(const FGeometry& InGeometry, c
 	return Super::NativeOnMouseWheel(InGeometry, InMouseEvent);
 }
 
+bool USkillTreeMenuContents::BeginSkillTreeDrag(const FVector2D& ScreenSpacePosition)
+{
+	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
+	if (::IsValid(CanvasPanelSlot) == false)
+	{
+		return false;
+	}
+
+	DragStartScreenPosition = ScreenSpacePosition;
+	DragStartCanvasPosition = CanvasPanelSlot->GetPosition();
+	bIsDraggingSkillTree = true;
+	return true;
+}
+
+bool USkillTreeMenuContents::HasActiveSkillTreeDrag() const
+{
+	return bIsDraggingSkillTree;
+}
+
+bool USkillTreeMenuContents::UpdateSkillTreeDrag(const FVector2D& ScreenSpacePosition)
+{
+	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
+	if (bIsDraggingSkillTree == false || ::IsValid(CanvasPanelSlot) == false)
+	{
+		return false;
+	}
+
+	const FVector2D DragDelta = ScreenSpacePosition - DragStartScreenPosition;
+	const FVector2D TargetPosition = DragStartCanvasPosition + DragDelta;
+	CanvasPanelSlot->SetPosition(CalculateClampedCanvasPosition(TargetPosition, CurrentZoomScale));
+	return true;
+}
+
+void USkillTreeMenuContents::EndSkillTreeDrag()
+{
+	bIsDraggingSkillTree = false;
+}
+
+void USkillTreeMenuContents::BuildDefaultWidgetTree()
+{
+	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("InsetPanel"));
+	RootBorder->SetPadding(FMargin(FMKUILayout::SpaceXL));
+	WidgetTree->RootWidget = RootBorder;
+
+	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>();
+	RootBorder->SetContent(RootBox);
+	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("SkillTreeMenu", "Title", "기술 설계도"), NAME_None))
+		->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
+
+	SkillTreeViewportPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RuntimeSkillTreeViewport"));
+	SkillTreeViewportPanel->SetClipping(EWidgetClipping::ClipToBounds);
+	UVerticalBoxSlot* ViewportSlot = RootBox->AddChildToVerticalBox(SkillTreeViewportPanel);
+	ViewportSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+
+	SkillTreeCanvasPanel = WidgetTree->ConstructWidget<UCanvasPanel>();
+	UCanvasPanelSlot* TreeSlot = SkillTreeViewportPanel->AddChildToCanvas(SkillTreeCanvasPanel);
+	TreeSlot->SetPosition(FVector2D::ZeroVector);
+	TreeSlot->SetSize(FVector2D(1024.f, 640.f));
+}
+
+void USkillTreeMenuContents::RefreshSkillTree()
+{
+	const UDataManager* DataManager = UDataManager::Get(this);
+	if (::IsValid(DataManager) == false || ::IsValid(SkillTreeCanvasPanel) == false || ::IsValid(SkillSlotWidgetClass) == false)
+	{
+		return;
+	}
+
+	SkillTreeCanvasPanel->ClearChildren();
+	TArray<FName> SkillKeys = DataManager->GetSkillRowNames();
+	SkillKeys.RemoveAll([DataManager](const FName SkillKey)
+	{
+		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
+		return SkillData == nullptr || SkillData->DisplayName.IsEmpty() || SkillGridPositions.Contains(SkillKey) == false;
+	});
+	SkillKeys.Sort(FNameLexicalLess());
+
+	FIntPoint MinimumGrid(MAX_int32, MAX_int32);
+	FIntPoint MaximumGrid(MIN_int32, MIN_int32);
+	for (const FName SkillKey : SkillKeys)
+	{
+		const FIntPoint GridPosition = SkillGridPositions.FindChecked(SkillKey);
+		MinimumGrid.X = FMath::Min(MinimumGrid.X, GridPosition.X);
+		MinimumGrid.Y = FMath::Min(MinimumGrid.Y, GridPosition.Y);
+		MaximumGrid.X = FMath::Max(MaximumGrid.X, GridPosition.X);
+		MaximumGrid.Y = FMath::Max(MaximumGrid.Y, GridPosition.Y);
+	}
+
+	const float ContentWidth = ((MaximumGrid.X - MinimumGrid.X) * SkillGridStepX) + SkillNodeSize + (SkillTreePadding * 2.f);
+	const float ContentHeight = ((MaximumGrid.Y - MinimumGrid.Y) * SkillGridStepY) + SkillNodeSize + (SkillTreePadding * 2.f);
+	if (UCanvasPanelSlot* TreeSlot = Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot))
+	{
+		TreeSlot->SetPosition(FVector2D::ZeroVector);
+		TreeSlot->SetSize(FVector2D(ContentWidth, ContentHeight));
+	}
+
+	TMap<FName, FVector2D> NodePositions;
+	for (const FName SkillKey : SkillKeys)
+	{
+		const FIntPoint GridPosition = SkillGridPositions.FindChecked(SkillKey);
+		NodePositions.Add(SkillKey, FVector2D(
+			SkillTreePadding + ((GridPosition.X - MinimumGrid.X) * SkillGridStepX),
+			SkillTreePadding + ((GridPosition.Y - MinimumGrid.Y) * SkillGridStepY)));
+	}
+
+	for (const FName& SkillKey : SkillKeys)
+	{
+		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
+		const FVector2D* TargetPosition = NodePositions.Find(SkillKey);
+		if (SkillData == nullptr || TargetPosition == nullptr)
+		{
+			continue;
+		}
+		for (const FName& RequiredSkillKey : SkillData->RequiredSkill)
+		{
+			if (const FVector2D* RequiredPosition = NodePositions.Find(RequiredSkillKey))
+			{
+				AddSkillConnection(*RequiredPosition, *TargetPosition);
+			}
+		}
+	}
+
+	for (const FName& SkillKey : SkillKeys)
+	{
+		const FVector2D* NodePosition = NodePositions.Find(SkillKey);
+		USkillSlotWidget* SkillNode = CreateWidget<USkillSlotWidget>(this, SkillSlotWidgetClass);
+		if (NodePosition == nullptr || ::IsValid(SkillNode) == false)
+		{
+			continue;
+		}
+		UCanvasPanelSlot* NodeSlot = SkillTreeCanvasPanel->AddChildToCanvas(SkillNode);
+		NodeSlot->SetPosition(*NodePosition);
+		NodeSlot->SetSize(FVector2D(SkillNodeSize, SkillNodeSize));
+		SkillNode->InitializeSkill(SkillKey);
+	}
+
+	CurrentZoomScale = 1.f;
+	SkillTreeCanvasPanel->SetRenderScale(FVector2D(1.f));
+}
+
+void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition)
+{
+	const FVector2D FromCenter = FromPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D ToCenter = ToPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D Delta = ToCenter - FromCenter;
+	if (FMath::Abs(Delta.X) >= FMath::Abs(Delta.Y))
+	{
+		const float Direction = FMath::Sign(Delta.X);
+		const FVector2D Start(FromCenter.X + (Direction * SkillNodeSize * 0.5f), FromCenter.Y);
+		const FVector2D End(ToCenter.X - (Direction * SkillNodeSize * 0.5f), ToCenter.Y);
+		const float MiddleX = (Start.X + End.X) * 0.5f;
+		AddConnectionSegment(FVector2D(FMath::Min(Start.X, MiddleX), Start.Y - (SkillConnectionThickness * 0.5f)),
+			FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(MiddleX - Start.X)), SkillConnectionThickness));
+		AddConnectionSegment(FVector2D(MiddleX - (SkillConnectionThickness * 0.5f), FMath::Min(Start.Y, End.Y)),
+			FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(End.Y - Start.Y))));
+		AddConnectionSegment(FVector2D(FMath::Min(MiddleX, End.X), End.Y - (SkillConnectionThickness * 0.5f)),
+			FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(End.X - MiddleX)), SkillConnectionThickness));
+		return;
+	}
+
+	const float Direction = FMath::Sign(Delta.Y);
+	const FVector2D Start(FromCenter.X, FromCenter.Y + (Direction * SkillNodeSize * 0.5f));
+	const FVector2D End(ToCenter.X, ToCenter.Y - (Direction * SkillNodeSize * 0.5f));
+	const float MiddleY = (Start.Y + End.Y) * 0.5f;
+	AddConnectionSegment(FVector2D(Start.X - (SkillConnectionThickness * 0.5f), FMath::Min(Start.Y, MiddleY)),
+		FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(MiddleY - Start.Y))));
+	AddConnectionSegment(FVector2D(FMath::Min(Start.X, End.X), MiddleY - (SkillConnectionThickness * 0.5f)),
+		FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(End.X - Start.X)), SkillConnectionThickness));
+	AddConnectionSegment(FVector2D(End.X - (SkillConnectionThickness * 0.5f), FMath::Min(MiddleY, End.Y)),
+		FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(End.Y - MiddleY))));
+}
+
+void USkillTreeMenuContents::AddConnectionSegment(const FVector2D& Position, const FVector2D& Size)
+{
+	UBorder* Segment = WidgetTree->ConstructWidget<UBorder>();
+	Segment->SetPadding(FMargin(0.f));
+	Segment->SetBrushColor(FLinearColor(0.75f, 0.48f, 0.18f, 0.9f));
+	UCanvasPanelSlot* SegmentSlot = SkillTreeCanvasPanel->AddChildToCanvas(Segment);
+	SegmentSlot->SetPosition(Position);
+	SegmentSlot->SetSize(Size);
+}
+
 bool USkillTreeMenuContents::UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, const float WheelDelta)
 {
 	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
@@ -100,8 +333,9 @@ bool USkillTreeMenuContents::UpdateSkillTreeZoom(const FGeometry& InGeometry, co
 		return true;
 	}
 
-	const FVector2D CursorPosition = InGeometry.AbsoluteToLocal(ScreenSpacePosition);
-	const FVector2D CurrentContentPosition = InGeometry.AbsoluteToLocal(SkillTreeCanvasPanel->GetCachedGeometry().GetAbsolutePosition());
+	const FGeometry& ViewGeometry = ::IsValid(SkillTreeViewportPanel) ? SkillTreeViewportPanel->GetCachedGeometry() : InGeometry;
+	const FVector2D CursorPosition = ViewGeometry.AbsoluteToLocal(ScreenSpacePosition);
+	const FVector2D CurrentContentPosition = ViewGeometry.AbsoluteToLocal(SkillTreeCanvasPanel->GetCachedGeometry().GetAbsolutePosition());
 	const FVector2D ContentPositionUnderCursor = (CursorPosition - CurrentContentPosition) / CurrentZoomScale;
 	const FVector2D TargetContentPosition = CursorPosition - (ContentPositionUnderCursor * NewZoomScale);
 	const FVector2D TargetCanvasPosition = CanvasPanelSlot->GetPosition() + (TargetContentPosition - CurrentContentPosition);
@@ -127,7 +361,8 @@ float USkillTreeMenuContents::CalculateMinimumZoomScale() const
 		return 1.f;
 	}
 
-	const FVector2D ViewSize = GetCachedGeometry().GetLocalSize();
+	const FVector2D ViewSize = ::IsValid(SkillTreeViewportPanel)
+		? SkillTreeViewportPanel->GetCachedGeometry().GetLocalSize() : GetCachedGeometry().GetLocalSize();
 	FVector2D ContentSize = SkillTreeCanvasPanel->GetCachedGeometry().GetLocalSize();
 	if (ContentSize.IsNearlyZero())
 	{
@@ -157,7 +392,8 @@ FVector2D USkillTreeMenuContents::CalculateClampedCanvasPosition(const FVector2D
 		return TargetPosition;
 	}
 
-	const FVector2D ViewSize = GetCachedGeometry().GetLocalSize();
+	const FVector2D ViewSize = ::IsValid(SkillTreeViewportPanel)
+		? SkillTreeViewportPanel->GetCachedGeometry().GetLocalSize() : GetCachedGeometry().GetLocalSize();
 	FVector2D ContentSize = SkillTreeCanvasPanel->GetCachedGeometry().GetLocalSize();
 	if (ContentSize.IsNearlyZero())
 	{
@@ -172,7 +408,8 @@ FVector2D USkillTreeMenuContents::CalculateClampedCanvasPosition(const FVector2D
 
 	const FVector2D CurrentPosition = CanvasPanelSlot->GetPosition();
 	const FVector2D PositionDelta = TargetPosition - CurrentPosition;
-	const FVector2D CurrentContentPosition = GetCachedGeometry().AbsoluteToLocal(SkillTreeCanvasPanel->GetCachedGeometry().GetAbsolutePosition());
+	const FGeometry& ViewGeometry = ::IsValid(SkillTreeViewportPanel) ? SkillTreeViewportPanel->GetCachedGeometry() : GetCachedGeometry();
+	const FVector2D CurrentContentPosition = ViewGeometry.AbsoluteToLocal(SkillTreeCanvasPanel->GetCachedGeometry().GetAbsolutePosition());
 	const FVector2D TargetContentPosition = CurrentContentPosition + PositionDelta;
 
 	FVector2D MinContentPosition = CurrentContentPosition;

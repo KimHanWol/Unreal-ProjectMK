@@ -3,6 +3,7 @@
 #include "ProjectMK/UI/HUDWidget.h"
 
 #include "Blueprint/WidgetLayoutLibrary.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/Widget.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
@@ -187,6 +188,13 @@ void UHUDWidget::UpdateTooltipPosition()
 
 	TooltipPosition.X = FMath::Clamp(TooltipPosition.X, 0.f, FMath::Max(0.f, ViewportSize.X - TooltipSize.X));
 	TooltipPosition.Y = FMath::Clamp(TooltipPosition.Y, 0.f, FMath::Max(0.f, ViewportSize.Y - TooltipSize.Y));
+
+	if (UCanvasPanelSlot* TooltipSlot = Cast<UCanvasPanelSlot>(Tooltip->Slot))
+	{
+		Tooltip->SetRenderTranslation(FVector2D::ZeroVector);
+		TooltipSlot->SetPosition(TooltipPosition);
+		return;
+	}
 
 	Tooltip->SetRenderTranslation(TooltipPosition);
 }

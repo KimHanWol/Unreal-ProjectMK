@@ -39,16 +39,13 @@ protected:
 	TObjectPtr<UTextBlock> RecipeNameText;
 
 	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> RequiredItemsText;
-
-	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UTextBlock> UnlockPriceText;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UButton> UnlockButton;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Shop")
-	FVector2D ItemIconSize = FVector2D(32.f, 32.f);
+	FVector2D ItemIconSize = FVector2D(FMKUILayout::ItemIconSize, FMKUILayout::ItemIconSize);
 
 private:
 	UPROPERTY(Transient)

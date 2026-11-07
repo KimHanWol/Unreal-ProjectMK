@@ -4,17 +4,22 @@
 #include "MKUserWidget.h"
 #include "OxygenBarWidget.generated.h"
 
+struct FOnAttributeChangeData;
+
 UCLASS()
 class PROJECTMK_API UOxygenBarWidget : public UMKUserWidget
 {
 	GENERATED_BODY()
 
 protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
 private:
+	void BuildDefaultWidgetTree();
+	void ApplyProgressBarStyle();
 	float GetOxygenRatio() const;
 	void StartProgressInterpolation();
 	void UpdateOxygenProgressBar();
