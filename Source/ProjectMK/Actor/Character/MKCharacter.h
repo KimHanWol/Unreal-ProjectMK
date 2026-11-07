@@ -17,11 +17,13 @@ class UConsumableComponent;
 class UCraftingComponent;
 class UMagnetRangeComponent;
 class UMKCharacterVisualComponent;
+class UWidgetComponent;
 class UPaperSprite;
 class USkillComponent;
 class UTexture2D;
 class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
+class IInteractable;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperCharacter, public IAbilitySystemInterface, public IDamageable
@@ -69,7 +71,9 @@ private:
 	float CalculateCurrentMoveSpeed() const;
 
 	void TryDrill();
+	IInteractable* FindNearestInteractable();
 	bool TryInteractNearby();
+	void UpdateInteractionPrompt();
 
 	void UpdateHorizontalMovement();
 	void UpdateFlyingVerticalVelocity() const;
@@ -105,11 +109,8 @@ private:
 	void OnMoveRight(float Value);
 	void OnFly();
 	void OnFinishFly();
-	void OnActivateMagnet();
-	void OnDeactivateMagnet();
 	void OnInteract();
 	void OnQuickSlot(int32 SlotIndex);
-	void OnMagnetRangeExpansionFinished();
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnInventoryChanged();
@@ -143,6 +144,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UMKCharacterVisualComponent> CharacterVisualComponent;
 
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
+	TObjectPtr<UWidgetComponent> InteractionPromptComponent;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Character", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetCharacterRowNames"))
 	FName CharacterDataRowKey = NAME_None;
 
@@ -166,7 +170,7 @@ protected:
 
 	/** 상호작용 키 입력 시 주변 상호작용 대상을 찾는 반경 */
 	UPROPERTY(EditDefaultsOnly, Category = "Interaction", meta = (ClampMin = "0.0"))
-	float InteractSearchRadius = 40.f;
+	float InteractSearchRadius = 200.f;
 
 	bool bIsFlying = false;
 
@@ -182,7 +186,6 @@ private:
 	FActiveGameplayEffectHandle OxygenDrainEffectHandle;
 	float AppliedOxygenDrainPerSecond = 0.f;
 	bool bIsRespawning = false;
-	bool bIsMagnetInputHeld = false;
 	bool bIsOnSurface = true;
 	bool bHasAppliedSaveGame = false;
 	bool bIsApplyingInitialEffects = false;

@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/WidgetComponent.h"
 #include "DrawDebugHelpers.h"
 #include "Engine/OverlapResult.h"
 #include "Engine/Texture2D.h"
@@ -34,6 +35,7 @@
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/Interface/Interactable.h"
+#include "ProjectMK/UI/InteractionPromptWidget.h"
 #include "ProjectMK/System/SkillDebugUtils.h"
 
 namespace
@@ -92,6 +94,16 @@ AMKCharacter::AMKCharacter()
 	CharacterVisualComponent->SetVisibility(true);
 	CharacterVisualComponent->SetHiddenInGame(true);
 
+	InteractionPromptComponent = CreateDefaultSubobject<UWidgetComponent>(TEXT("InteractionPromptComponent"));
+	InteractionPromptComponent->SetupAttachment(GetRootComponent());
+	InteractionPromptComponent->SetWidgetClass(UInteractionPromptWidget::StaticClass());
+	InteractionPromptComponent->SetWidgetSpace(EWidgetSpace::Screen);
+	InteractionPromptComponent->SetDrawSize(FIntPoint(36, 36));
+	InteractionPromptComponent->SetPivot(FVector2D(0.5f, 1.f));
+	InteractionPromptComponent->SetRelativeLocation(FVector(0.f, 0.f, 28.f));
+	InteractionPromptComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	InteractionPromptComponent->SetVisibility(false);
+
 	AbilitySystemComponent = CreateDefaultSubobject<UAbilitySystemComponent>(TEXT("AbilitySystem"));
 	AttributeSet_Character = CreateDefaultSubobject<UAttributeSet_Character>(TEXT("AttributeSet_Character"));
 }
@@ -124,6 +136,11 @@ void AMKCharacter::BeginPlay()
 	{
 		MagnetRangeComponent->SetExpandedRadius(AttributeSet_Character->GetItemCollectRange());
 	}
+	if (::IsValid(InventoryComponent) && ::IsValid(AttributeSet_Character))
+	{
+		InventoryComponent->SetGainRadius(AttributeSet_Character->GetItemCollectRange());
+		InventoryComponent->SetItemCollectionActive(AttributeSet_Character->GetItemCollectRange() > 0.f);
+	}
 
 	if (::IsValid(CharacterVisualComponent))
 	{
@@ -152,8 +169,6 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 
 	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
 	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
-	PlayerInputComponent->BindAction("Magnet", IE_Pressed, this, &AMKCharacter::OnActivateMagnet);
-	PlayerInputComponent->BindAction("Magnet", IE_Released, this, &AMKCharacter::OnDeactivateMagnet);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMKCharacter::OnInteract);
 
 	for (int32 SlotIndex = 0; SlotIndex < QuickSlotInputCount; ++SlotIndex)
@@ -172,6 +187,7 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
+	UpdateInteractionPrompt();
 
 	if (::IsValid(CharacterVisualComponent))
 	{
@@ -219,11 +235,6 @@ void AMKCharacter::BindEvents()
 		CraftingComponent->OnRecipeCraftedDelegate.AddUObject(this, &AMKCharacter::OnRecipeChanged);
 	}
 
-	if (::IsValid(MagnetRangeComponent))
-	{
-		MagnetRangeComponent->OnExpansionFinishedDelegate.RemoveAll(this);
-		MagnetRangeComponent->OnExpansionFinishedDelegate.AddUObject(this, &AMKCharacter::OnMagnetRangeExpansionFinished);
-	}
 }
 
 void AMKCharacter::UnbindEvents()
@@ -251,10 +262,6 @@ void AMKCharacter::UnbindEvents()
 		CraftingComponent->OnRecipeCraftedDelegate.RemoveAll(this);
 	}
 
-	if (::IsValid(MagnetRangeComponent))
-	{
-		MagnetRangeComponent->OnExpansionFinishedDelegate.RemoveAll(this);
-	}
 }
 
 UAbilitySystemComponent* AMKCharacter::GetOwnerASC()
@@ -390,7 +397,6 @@ void AMKCharacter::SetMenuInputBlocked(bool bBlocked)
 		CharacterDir = FVector::ZeroVector;
 		TryDrill();
 		OnFinishFly();
-		OnDeactivateMagnet();
 		GetCharacterMovement()->StopMovementImmediately();
 		DisableInput(PlayerController);
 	}
@@ -484,12 +490,12 @@ void AMKCharacter::TryDrill()
 	}
 }
 
-bool AMKCharacter::TryInteractNearby()
+IInteractable* AMKCharacter::FindNearestInteractable()
 {
 	UWorld* World = GetWorld();
 	if (::IsValid(World) == false)
 	{
-		return false;
+		return nullptr;
 	}
 
 	TArray<FOverlapResult> OverlapResults;
@@ -516,7 +522,21 @@ bool AMKCharacter::TryInteractNearby()
 		}
 	}
 
+	return NearestInteractable;
+}
+
+bool AMKCharacter::TryInteractNearby()
+{
+	IInteractable* NearestInteractable = FindNearestInteractable();
 	return NearestInteractable != nullptr && NearestInteractable->TryInteract(this);
+}
+
+void AMKCharacter::UpdateInteractionPrompt()
+{
+	if (::IsValid(InteractionPromptComponent))
+	{
+		InteractionPromptComponent->SetVisibility(FindNearestInteractable() != nullptr);
+	}
 }
 
 void AMKCharacter::UpdateHorizontalMovement()
@@ -1058,37 +1078,6 @@ void AMKCharacter::OnFinishFly()
 	}
 }
 
-void AMKCharacter::OnActivateMagnet()
-{
-	bIsMagnetInputHeld = true;
-	USoundManager::TryPlaySFX(this, ESFXType::Magnet_Activate);
-
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->SetItemCollectionActive(false);
-	}
-
-	if (::IsValid(MagnetRangeComponent) && ::IsValid(AttributeSet_Character))
-	{
-		MagnetRangeComponent->StartExpansion(AttributeSet_Character->GetItemCollectRange());
-	}
-}
-
-void AMKCharacter::OnDeactivateMagnet()
-{
-	bIsMagnetInputHeld = false;
-
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->SetItemCollectionActive(false);
-	}
-
-	if (::IsValid(MagnetRangeComponent))
-	{
-		MagnetRangeComponent->StartCollapse();
-	}
-}
-
 void AMKCharacter::OnInteract()
 {
 	TryInteractNearby();
@@ -1102,35 +1091,18 @@ void AMKCharacter::OnQuickSlot(int32 SlotIndex)
 	}
 }
 
-void AMKCharacter::OnMagnetRangeExpansionFinished()
-{
-	if (bIsMagnetInputHeld && ::IsValid(InventoryComponent) && ::IsValid(AttributeSet_Character)
-		&& AttributeSet_Character->GetItemCollectRange() > 0.f)
-	{
-		InventoryComponent->SetItemCollectionActive(true);
-	}
-}
-
 void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)
 {
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->SetGainRadius(Data.NewValue);
+		InventoryComponent->SetItemCollectionActive(Data.NewValue > 0.f);
 	}
 
 	if (::IsValid(MagnetRangeComponent))
 	{
 		MagnetRangeComponent->SetExpandedRadius(Data.NewValue);
 
-		if (bIsMagnetInputHeld && Data.NewValue > 0.f)
-		{
-			MagnetRangeComponent->StartExpansion(Data.NewValue);
-		}
-	}
-
-	if (Data.NewValue <= 0.f && ::IsValid(InventoryComponent))
-	{
-		InventoryComponent->SetItemCollectionActive(false);
 	}
 
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Magnet] ItemCollectRange changed: %.2f -> %.2f"), Data.OldValue, Data.NewValue);

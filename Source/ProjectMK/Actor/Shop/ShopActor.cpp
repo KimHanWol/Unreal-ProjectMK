@@ -8,7 +8,9 @@
 
 namespace
 {
-	// Shop 블록 콜리전(Y 반경 10)보다 두껍게 잡아 클릭 트레이스가 블록보다 먼저 닿게 한다.
+	constexpr float ShopHalfWidthInTiles = 6.f;
+	constexpr float ShopHalfHeightInTiles = 2.f;
+	// 월드 상점은 플레이어를 막지 않고 클릭과 근접 검색에만 사용한다.
 	constexpr float InteractionBoxDepth = 20.f;
 }
 
@@ -85,7 +87,7 @@ void AShopActor::InitializeShop(const FIntPoint& TileSize)
 		return;
 	}
 
-	InteractionBox->SetBoxExtent(FVector(TileSize.X * 0.5f, InteractionBoxDepth, TileSize.Y * 0.5f));
+	InteractionBox->SetBoxExtent(FVector(TileSize.X * ShopHalfWidthInTiles, InteractionBoxDepth, TileSize.Y * ShopHalfHeightInTiles));
 }
 
 void AShopActor::OnOwnerDestroyed(AActor* DestroyedActor)

@@ -40,5 +40,5 @@ protected:
 
 	/** 캐릭터와 상점 중심 사이의 최대 상호작용 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = "Shop", meta = (ClampMin = "0.0"))
-	float InteractRange = 40.f;
+	float InteractRange = 200.f;
 };
