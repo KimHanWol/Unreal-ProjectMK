@@ -240,6 +240,7 @@ void UShopMenuContents::RefreshSellSlotList()
 		}
 	}
 
+	int32 SellableItemCount = 0;
 	int32 TotalPrice = 0;
 	for (const FName& ItemUID : ItemUIDs)
 	{
@@ -261,6 +262,7 @@ void UShopMenuContents::RefreshSellSlotList()
 			RowSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
 		}
 		SellSlotWidget->InitializeSellSlot(this, ItemUID, ItemCount, UnitPrice);
+		++SellableItemCount;
 		if (SelectedItemUIDs.Contains(ItemUID))
 		{
 			TotalPrice += UnitPrice * ItemCount;
@@ -271,7 +273,7 @@ void UShopMenuContents::RefreshSellSlotList()
 	{
 		TotalPriceText->SetText(FText::AsNumber(TotalPrice));
 	}
-	if (TotalPrice <= 0)
+	if (SellableItemCount <= 0)
 	{
 		UTextBlock* EmptyText = WidgetTree->ConstructWidget<UTextBlock>();
 		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoSellableItem", "판매할 광물이 없습니다."));

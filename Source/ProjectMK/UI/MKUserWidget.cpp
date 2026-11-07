@@ -75,7 +75,8 @@ void UMKUserWidget::ApplyVisualStyle()
 		}
 		if (UImage* Image = Cast<UImage>(Widget))
 		{
-			if (const FSlateBrush* Brush = Style->Brushes.Find(Image->GetFName()))
+			const FName BrushName = Image->GetFName() == TEXT("BG") ? TEXT("InsetPanel") : Image->GetFName();
+			if (const FSlateBrush* Brush = Style->Brushes.Find(BrushName))
 			{
 				Image->SetBrush(*Brush);
 			}
@@ -133,6 +134,11 @@ void UMKUserWidget::ApplyVisualStyle()
 
 void UMKUserWidget::ApplyBorderStyle(UBorder* Border, FName BrushName) const
 {
+	if (BrushName == TEXT("RecipeCard"))
+	{
+		BrushName = TEXT("InsetPanel");
+	}
+
 	const UDataManager* DataManager = UDataManager::Get(const_cast<UMKUserWidget*>(this));
 	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
 	const FSlateBrush* Brush = ::IsValid(Style) ? Style->Brushes.Find(BrushName) : nullptr;

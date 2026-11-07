@@ -98,7 +98,7 @@ void UCraftingRecipeSlotWidget::BuildDefaultWidgetTree()
 {
 	USizeBox* CardSize = WidgetTree->ConstructWidget<USizeBox>();
 	CardSize->SetMinDesiredWidth(284.f);
-	CardSize->SetMinDesiredHeight(112.f);
+	CardSize->SetMinDesiredHeight(80.f);
 	WidgetTree->RootWidget = CardSize;
 	UBorder* Border = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
 	Border->SetBrushColor(FLinearColor(0.06f, 0.09f, 0.13f, 1.f));

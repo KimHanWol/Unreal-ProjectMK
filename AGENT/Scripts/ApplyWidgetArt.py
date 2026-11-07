@@ -32,7 +32,7 @@ style.set_editor_property('brushes', brushes)
 unreal.EditorAssetLibrary.save_loaded_asset(style)
 
 blueprint_images = {
-    '/Game/UI/BP/Menu/W_MenuBase': {'BG':'Panel'},
+    '/Game/UI/BP/Menu/W_MenuBase': {'BG':'InsetPanel'},
     '/Game/UI/BP/Inventory/W_Inventory': {'Image_53':'InsetPanel'},
     '/Game/UI/BP/Slot/W_ItemSlot': {'Slot_BG':'Slot','FocusImage':'SelectedSlot'},
     '/Game/UI/BP/Slot/W_SkillSlot': {'BG':'Slot','FocusImage':'SelectedSlot'},
