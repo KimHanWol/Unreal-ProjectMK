@@ -5,9 +5,11 @@
 #include "Blueprint/WidgetTree.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Button.h"
+#include "Components/GridPanel.h"
 #include "Components/Image.h"
 #include "Components/SpinBox.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
 #include "Engine/World.h"
 #include "Slate/UMGDragDropOp.h"
 #include "Tests/AutomationEditorCommon.h"
@@ -23,6 +25,7 @@
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
 #include "ProjectMK/UI/ShopMenuContents.h"
+#include "ProjectMK/UI/ShopRecipeSlotWidget.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 
@@ -69,26 +72,42 @@ namespace
 				TArray<UWidget*> ShopWidgets;
 				Shop->WidgetTree->GetAllWidgets(ShopWidgets);
 				UInventoryWidget* InventoryWidget = nullptr;
+				UShopRecipeSlotWidget* RecipeEntry = nullptr;
 				for (UWidget* Widget : ShopWidgets)
 				{
 					if (UInventoryWidget* Candidate = Cast<UInventoryWidget>(Widget)) { InventoryWidget = Candidate; }
 					if (UItemQuantityDialog* Candidate = Cast<UItemQuantityDialog>(Widget)) { Dialog = Candidate; }
+					if (UShopRecipeSlotWidget* Candidate = Cast<UShopRecipeSlotWidget>(Widget)) { RecipeEntry = Candidate; }
 				}
 				UItemSlotWidget* Source = nullptr;
 				if (::IsValid(InventoryWidget))
 				{
-					TArray<UWidget*> Items;
-					InventoryWidget->WidgetTree->GetAllWidgets(Items);
-					for (UWidget* Widget : Items) { if (UItemSlotWidget* Candidate = Cast<UItemSlotWidget>(Widget)) { Source = Candidate; break; } }
+					UGridPanel* Grid = Cast<UGridPanel>(InventoryWidget->WidgetTree->FindWidget(TEXT("ItemSlotPanel")));
+					Source = ::IsValid(Grid) ? Cast<UItemSlotWidget>(Grid->GetChildAt(0)) : nullptr;
 				}
 				if (Test->TestNotNull(TEXT("Shop reuses the inventory slot grid"), Source) == false) { return Finish(); }
 				CheckHover(Source);
 				const FGeometry Geometry = Source->GetCachedGeometry();
 				const FVector2D Position = Geometry.GetAbsolutePosition();
 				const FPointerEvent Pointer(0, Position, Position, TSet<FKey>{ EKeys::LeftMouseButton }, EKeys::LeftMouseButton, 0.f, FModifierKeysState());
+				if (::IsValid(RecipeEntry))
+				{
+					RecipeEntry->TakeWidget()->OnMouseEnter(RecipeEntry->GetCachedGeometry(), Pointer);
+					TArray<UUserWidget*> FoundHUDs;
+					UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), FoundHUDs, UHUDWidget::StaticClass(), false);
+					UMKTooltipBase* RecipeTooltip = CastChecked<UHUDWidget>(FoundHUDs[0])->GetTooltipWidget();
+					UVerticalBox* Materials = Cast<UVerticalBox>(RecipeTooltip->WidgetTree->FindWidget(TEXT("TooltipMaterials")));
+					Test->TestTrue(TEXT("Recipe hover shows the common materials tooltip"), RecipeTooltip->IsVisible() && ::IsValid(Materials) && Materials->GetChildrenCount() > 0);
+					RecipeEntry->TakeWidget()->OnMouseLeave(Pointer);
+				}
 				FReply DragReply = Source->TakeWidget()->OnDragDetected(Geometry, Pointer);
 				const TSharedPtr<FDragDropOperation> Operation = DragReply.GetDragDropContent();
 				if (Test->TestTrue(TEXT("Inventory begins a real UMG drag"), Operation.IsValid()) == false) { return Finish(); }
+				TSharedPtr<FUMGDragDropOp> UMGOperation = StaticCastSharedPtr<FUMGDragDropOp>(Operation);
+				UDragDropOperation* ItemOperation = UMGOperation->GetOperation();
+				ItemOperation->DefaultDragVisual->TakeWidget()->SlatePrepass();
+				Test->TestTrue(TEXT("Drag ghost uses the same 40px icon size"), ItemOperation->DefaultDragVisual->GetDesiredSize().Equals(FVector2D(40.f), 0.1f));
+				Test->TestEqual(TEXT("Drag ghost is centered on the mouse"), ItemOperation->Pivot, EDragPivot::CenterCenter);
 				const FVector2D DropPosition = Shop->GetCachedGeometry().LocalToAbsolute(FVector2D(100.f, 280.f));
 				const FPointerEvent DropPointer(0, DropPosition, Position, TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
 				const FReply DropReply = Shop->TakeWidget()->OnDrop(Shop->GetCachedGeometry(), FDragDropEvent(DropPointer, Operation.ToSharedRef()));
@@ -109,6 +128,26 @@ namespace
 				Test->TestEqual(TEXT("Sale adds the correct currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), InitialCoin + SalePrice);
 				Test->TestFalse(TEXT("Confirmation closes the modal"), Dialog->IsVisible());
 				Shop->RemoveFromParent();
+				TArray<UUserWidget*> HUDs;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), HUDs, UHUDWidget::StaticClass(), false);
+				UHUDWidget* HUD = HUDs.IsEmpty() ? nullptr : Cast<UHUDWidget>(HUDs[0]);
+				if (Test->TestNotNull(TEXT("HUD provides the world drop target"), HUD) == false) { return Finish(); }
+				const FVector2D WorldPoint = HUD->GetCachedGeometry().LocalToAbsolute(HUD->GetCachedGeometry().GetLocalSize() * FVector2D(0.7f, 0.6f));
+				const FPointerEvent WorldPointer(0, WorldPoint, Position, TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
+				Test->TestTrue(TEXT("Dropping outside UI opens the world quantity flow"), HUD->TakeWidget()->OnDrop(HUD->GetCachedGeometry(), FDragDropEvent(WorldPointer, Operation.ToSharedRef())).IsEventHandled());
+				TArray<UUserWidget*> Dialogs;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), Dialogs, UItemQuantityDialog::StaticClass(), false);
+				UItemQuantityDialog* DropDialog = nullptr;
+				for (UUserWidget* Candidate : Dialogs) { if (Candidate->IsVisible()) { DropDialog = Cast<UItemQuantityDialog>(Candidate); break; } }
+				if (Test->TestNotNull(TEXT("World drop quantity dialog is visible"), DropDialog) == false) { return Finish(); }
+				UButton* DropConfirm = nullptr;
+				DropDialog->WidgetTree->ForEachWidget([&DropConfirm](UWidget* Widget)
+				{
+					if (USpinBox* Input = Cast<USpinBox>(Widget)) { Input->SetValue(1.f); }
+					if (DropConfirm == nullptr) { DropConfirm = Cast<UButton>(Widget); }
+				});
+				if (DropConfirm != nullptr) { DropConfirm->OnClicked.Broadcast(); }
+				Test->TestEqual(TEXT("World quantity confirmation removes only one item"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 2);
 				for (const FName Key : UDataManager::Get(Player.Get())->GetSkillRowNames())
 				{
 					if (Player->GetSkillComponent()->CanPurchaseSkill(Key)) { SkillKey = Key; break; }
@@ -124,6 +163,17 @@ namespace
 			if (Step == 2 && Elapsed() > 0.4)
 			{
 				CheckHover(Skill.Get());
+				TArray<UUserWidget*> FoundHUDs;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), FoundHUDs, UHUDWidget::StaticClass(), false);
+				UMKTooltipBase* SkillTooltip = CastChecked<UHUDWidget>(FoundHUDs[0])->GetTooltipWidget();
+				FSkillDataTableRow* SkillData = const_cast<FSkillDataTableRow*>(UDataManager::Get(Player.Get())->GetSkillDataTableRow(SkillKey));
+				const int32 SavedPrice = SkillData->Price;
+				SkillData->Price = MAX_int32;
+				SkillTooltip->ShowSkillTooltip(SkillKey);
+				UTextBlock* State = Cast<UTextBlock>(SkillTooltip->WidgetTree->FindWidget(TEXT("TooltipStatus")));
+				Test->TestEqual(TEXT("Unaffordable skill replaces the hold prompt"), State->GetText().ToString(), FString(TEXT("코인 부족")));
+				SkillData->Price = SavedPrice;
+				SkillTooltip->HideTooltip();
 				SendSkillPointer(true);
 				Advance();
 				return false;
