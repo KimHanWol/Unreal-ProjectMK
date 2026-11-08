@@ -44,6 +44,9 @@ public:
 	void SetSlotCount(int32 Count, bool bShowCount = true);
 	void SetKeyGuide(const FText& KeyGuide);
 	void SetSelected(bool bSelected);
+	void SetSlotLocked(bool bLocked);
+	void SetRankBadge(const FText& Rank);
+	void SetAcquired(bool bAcquired);
 	void ClearSlotIcon();
 
 protected:
@@ -53,6 +56,23 @@ private:
 	void UpdateFocusImageVisibility();
 
 protected:
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> LockImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> RankBorder;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> RankText;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> AcquiredImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> AcquiredSeal;
+
+	bool bIsSlotLocked = false;
+
 	UPROPERTY(meta = (BindWidgetOptional))
 	TObjectPtr<UImage> IconImage;
 

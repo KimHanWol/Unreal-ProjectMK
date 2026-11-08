@@ -62,6 +62,7 @@ TSharedRef<SWidget> UMKTooltipBase::RebuildWidget()
 
 void UMKTooltipBase::ShowItemTooltip(FName ItemDataKey)
 {
+	TakeWidget();
 	ClearTooltip();
 
 	UDataManager* DataManager = UDataManager::Get(this);
@@ -79,11 +80,12 @@ void UMKTooltipBase::ShowItemTooltip(FName ItemDataKey)
 	}
 
 	UpdateTooltipFromItemData(ItemDataKey, *ItemDataTableRow);
-	SetVisible(true);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UMKTooltipBase::ShowSkillTooltip(FName SkillDataKey)
 {
+	TakeWidget();
 	ClearTooltip();
 
 	UDataManager* DataManager = UDataManager::Get(this);
@@ -101,7 +103,7 @@ void UMKTooltipBase::ShowSkillTooltip(FName SkillDataKey)
 	}
 
 	UpdateTooltipFromSkillData(*SkillDataTableRow);
-	SetVisible(true);
+	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
 void UMKTooltipBase::HideTooltip()
@@ -140,13 +142,15 @@ void UMKTooltipBase::BuildDefaultWidgetTree()
 	UHorizontalBoxSlot* CopySlot = Row->AddChildToHorizontalBox(CopyColumn);
 	CopySlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 
-	Title = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("Title"));
-	ApplyTextRole(Title, EMKTextRole::Label, true);
+	Title = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RuntimeTooltipTitle"));
+	ApplyTextRole(Title, EMKTextRole::Label);
+	Title->SetWrapTextAt(224.f);
 	Title->SetColorAndOpacity(FSlateColor(FLinearColor(0.96f, 0.82f, 0.48f)));
 	CopyColumn->AddChildToVerticalBox(Title)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceXS));
 
-	Desc = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("Desc"));
-	ApplyTextRole(Desc, EMKTextRole::Body, true);
+	Desc = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RuntimeTooltipDescription"));
+	ApplyTextRole(Desc, EMKTextRole::Body);
+	Desc->SetWrapTextAt(224.f);
 	Desc->SetColorAndOpacity(FSlateColor(FLinearColor(0.8f, 0.84f, 0.86f)));
 	CopyColumn->AddChildToVerticalBox(Desc);
 }

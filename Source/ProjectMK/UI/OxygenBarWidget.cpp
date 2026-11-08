@@ -92,7 +92,7 @@ void UOxygenBarWidget::BuildDefaultWidgetTree()
 	RootSize->SetHeightOverride(32.f);
 	WidgetTree->RootWidget = RootSize;
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("OxygenFrame"));
-	Frame->SetPadding(FMargin(14.f, 9.f));
+	Frame->SetPadding(FMargin(40.f, 9.f, 10.f, 9.f));
 	RootSize->SetContent(Frame);
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
 	Frame->SetContent(Overlay);
@@ -103,13 +103,16 @@ void UOxygenBarWidget::BuildDefaultWidgetTree()
 	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
 	ProgressBar_Oxygen->SetWidgetStyle(ProgressStyle);
 	ProgressBar_Oxygen->SetFillColorAndOpacity(FLinearColor(0.08f, 0.65f, 0.82f, 1.f));
-	Overlay->AddChildToOverlay(ProgressBar_Oxygen);
+	UOverlaySlot* FillSlot = Overlay->AddChildToOverlay(ProgressBar_Oxygen);
+	FillSlot->SetHorizontalAlignment(HAlign_Fill);
+	FillSlot->SetVerticalAlignment(VAlign_Fill);
 	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
 	Label->SetText(NSLOCTEXT("HUD", "OxygenLabel", "O₂"));
 	ApplyTextRole(Label, EMKTextRole::Caption);
 	UOverlaySlot* LabelSlot = Overlay->AddChildToOverlay(Label);
 	LabelSlot->SetHorizontalAlignment(HAlign_Left);
 	LabelSlot->SetVerticalAlignment(VAlign_Center);
+	LabelSlot->SetPadding(FMargin(0.f));
 }
 
 void UOxygenBarWidget::ApplyProgressBarStyle()

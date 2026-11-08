@@ -154,6 +154,29 @@ void UMKSlotBase::SetSelected(const bool bSelected)
 	}
 }
 
+void UMKSlotBase::SetSlotLocked(const bool bLocked)
+{
+	bIsSlotLocked = bLocked;
+	if (::IsValid(LockImage))
+	{
+		LockImage->SetVisibility(bLocked ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+	SetRenderOpacity(bLocked ? 0.45f : 1.f);
+}
+
+void UMKSlotBase::SetRankBadge(const FText& Rank)
+{
+	if (::IsValid(RankText)) { RankText->SetText(Rank); }
+	if (::IsValid(RankBorder)) { RankBorder->SetVisibility(Rank.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible); }
+}
+
+void UMKSlotBase::SetAcquired(bool bAcquired)
+{
+	const ESlateVisibility State = bAcquired ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed;
+	if (::IsValid(AcquiredImage)) { AcquiredImage->SetVisibility(State); }
+	if (::IsValid(AcquiredSeal)) { AcquiredSeal->SetVisibility(State); }
+}
+
 void UMKSlotBase::ClearSlotIcon()
 {
 	if (::IsValid(IconImage))
@@ -172,23 +195,39 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
 	RootSize->SetContent(Overlay);
+	SetVisibility(ESlateVisibility::Visible);
 	Overlay->SetClipping(EWidgetClipping::Inherit);
 	UBorder* Backing = WidgetTree->ConstructWidget<UBorder>();
 	Backing->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.055f, 1.f));
 	Backing->SetVisibility(ESlateVisibility::HitTestInvisible);
-	Overlay->AddChildToOverlay(Backing);
+	UOverlaySlot* BackingSlot = Overlay->AddChildToOverlay(Backing);
+	BackingSlot->SetHorizontalAlignment(HAlign_Fill);
+	BackingSlot->SetVerticalAlignment(VAlign_Fill);
 	UBorder* FrameBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
 	FrameBorder->SetPadding(FMargin(0.f));
-	Overlay->AddChildToOverlay(FrameBorder);
+	UOverlaySlot* FrameSlot = Overlay->AddChildToOverlay(FrameBorder);
+	FrameSlot->SetHorizontalAlignment(HAlign_Fill);
+	FrameSlot->SetVerticalAlignment(VAlign_Fill);
+	FrameBorder->SetVisibility(ESlateVisibility::HitTestInvisible);
 
 	FocusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SelectedSlot"));
 	FocusImage->SetVisibility(ESlateVisibility::Collapsed);
-	Overlay->AddChildToOverlay(FocusImage);
+	UOverlaySlot* FocusSlot = Overlay->AddChildToOverlay(FocusImage);
+	FocusSlot->SetHorizontalAlignment(HAlign_Fill);
+	FocusSlot->SetVerticalAlignment(VAlign_Fill);
+	AcquiredImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("AcquiredSlot"));
+	AcquiredImage->SetVisibility(ESlateVisibility::Collapsed);
+	UOverlaySlot* AcquiredSlot = Overlay->AddChildToOverlay(AcquiredImage);
+	AcquiredSlot->SetHorizontalAlignment(HAlign_Fill);
+	AcquiredSlot->SetVerticalAlignment(VAlign_Fill);
 
 	IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("IconImage"));
-	IconImage->SetDesiredSizeOverride(FVector2D(40.f));
+	USizeBox* IconSize = WidgetTree->ConstructWidget<USizeBox>();
+	IconSize->SetWidthOverride(DefaultSlotSize.X * 0.625f);
+	IconSize->SetHeightOverride(DefaultSlotSize.Y * 0.625f);
+	IconSize->SetContent(IconImage);
 	IconImage->SetVisibility(ESlateVisibility::Collapsed);
-	UOverlaySlot* IconSlot = Overlay->AddChildToOverlay(IconImage);
+	UOverlaySlot* IconSlot = Overlay->AddChildToOverlay(IconSize);
 	IconSlot->SetHorizontalAlignment(HAlign_Center);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 
@@ -202,16 +241,16 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	CountSlot->SetPadding(FMargin(0.f, 0.f, 7.f, 7.f));
 
 	KeyGuideText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("KeyGuideText"));
-	ApplyTextRole(KeyGuideText, EMKTextRole::Numeric);
+	ApplyTextRole(KeyGuideText, EMKTextRole::Caption);
 	KeyGuideText->SetJustification(ETextJustify::Center);
 	KeyGuideBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Keycap"));
-	KeyGuideBorder->SetPadding(FMargin(9.f, 4.f));
+	KeyGuideBorder->SetPadding(FMargin(6.f, 2.f));
 	KeyGuideBorder->SetContent(KeyGuideText);
 	KeyGuideBorder->SetVisibility(ESlateVisibility::Collapsed);
 	UOverlaySlot* KeySlot = Overlay->AddChildToOverlay(KeyGuideBorder);
 	KeySlot->SetHorizontalAlignment(HAlign_Center);
 	KeySlot->SetVerticalAlignment(VAlign_Bottom);
-	KeyGuideBorder->SetRenderTranslation(FVector2D(0.f, 14.f));
+	KeyGuideBorder->SetRenderTranslation(FVector2D(0.f, 10.f));
 
 	SelectionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SelectionText"));
 	SelectionText->SetText(FText::FromString(TEXT("✓")));
@@ -221,6 +260,36 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	UOverlaySlot* SelectionSlot = Overlay->AddChildToOverlay(SelectionText);
 	SelectionSlot->SetHorizontalAlignment(HAlign_Right);
 	SelectionSlot->SetVerticalAlignment(VAlign_Top);
+
+	LockImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Lock"));
+	LockImage->SetDesiredSizeOverride(FVector2D(24.f));
+	LockImage->SetVisibility(ESlateVisibility::Collapsed);
+	UOverlaySlot* LockSlot = Overlay->AddChildToOverlay(LockImage);
+	LockSlot->SetHorizontalAlignment(HAlign_Center);
+	LockSlot->SetVerticalAlignment(VAlign_Center);
+
+	RankBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RankBadge"));
+	RankBorder->SetPadding(FMargin(5.f, 2.f));
+	RankBorder->SetVisibility(ESlateVisibility::Collapsed);
+	RankText = WidgetTree->ConstructWidget<UTextBlock>();
+	ApplyTextRole(RankText, EMKTextRole::Numeric);
+	RankText->SetColorAndOpacity(FSlateColor(FLinearColor(1.f, 0.83f, 0.45f)));
+	RankBorder->SetContent(RankText);
+	RankText->SetJustification(ETextJustify::Center);
+	USizeBox* RankSize = WidgetTree->ConstructWidget<USizeBox>();
+	RankSize->SetMinDesiredWidth(28.f);
+	RankSize->SetMinDesiredHeight(28.f);
+	RankSize->SetContent(RankBorder);
+	UOverlaySlot* RankSlot = Overlay->AddChildToOverlay(RankSize);
+	RankSlot->SetHorizontalAlignment(HAlign_Right);
+	RankSlot->SetVerticalAlignment(VAlign_Bottom);
+	RankSlot->SetPadding(FMargin(0.f, 0.f, 5.f, 5.f));
+
+	AcquiredSeal = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("Sparkle"));
+	AcquiredSeal->SetDesiredSizeOverride(FVector2D(20.f));
+	AcquiredSeal->SetVisibility(ESlateVisibility::Collapsed);
+	UOverlaySlot* SealSlot = Overlay->AddChildToOverlay(AcquiredSeal);
+	SealSlot->SetPadding(FMargin(4.f));
 }
 
 void UMKSlotBase::UpdateFocusImageVisibility()

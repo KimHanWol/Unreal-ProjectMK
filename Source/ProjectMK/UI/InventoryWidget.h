@@ -14,12 +14,14 @@ class PROJECTMK_API UInventoryWidget : public UMKUserWidget
 	GENERATED_BODY()
 
 protected:
+	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
 private:
+	void BuildDefaultWidgetTree();
 	void UpdateItemSlotPanel();
 	void RefreshInventory();
 
@@ -27,6 +29,7 @@ private:
 
 	void OnInventoryChanged();
 	void OnInventorySlotCountChanged(const FOnAttributeChangeData& Data);
+	void OnSkillPurchased(FName SkillKey);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")
@@ -35,7 +38,7 @@ protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory", meta = (ClampMin = "1"))
 	int32 InventoryColumnCount = 4;
 
-	UPROPERTY(meta = (BindWidget))
+	UPROPERTY(meta = (BindWidgetOptional))
 	UGridPanel* ItemSlotPanel;
 
 private:

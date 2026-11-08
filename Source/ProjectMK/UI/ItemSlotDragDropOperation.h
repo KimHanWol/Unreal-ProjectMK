@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "Blueprint/DragDropOperation.h"
 
@@ -12,4 +12,10 @@ class PROJECTMK_API UItemSlotDragDropOperation : public UDragDropOperation
 public:
 	UPROPERTY(Transient)
 	int32 SourceSlotIndex = INDEX_NONE;
+
+	UPROPERTY(Transient)
+	FName ItemKey = NAME_None;
+
+	UPROPERTY(Transient)
+	int32 ItemCount = 0;
 };

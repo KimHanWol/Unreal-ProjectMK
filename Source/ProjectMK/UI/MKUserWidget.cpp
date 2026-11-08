@@ -11,6 +11,8 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
+#include "Components/ScrollBox.h"
+#include "Components/SpinBox.h"
 #include "Components/TextBlock.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
@@ -55,6 +57,38 @@ void UMKUserWidget::ApplyVisualStyle()
 
 	WidgetTree->ForEachWidget([this, Style](UWidget* Widget)
 	{
+		if (USpinBox* Input = Cast<USpinBox>(Widget))
+		{
+			const FSlateBrush* Background = Style->Brushes.Find(TEXT("Button"));
+			const FSlateBrush* Hover = Style->Brushes.Find(TEXT("ButtonHover"));
+			if (Background && Hover)
+			{
+				FSpinBoxStyle InputStyle = Input->GetWidgetStyle();
+				InputStyle.SetBackgroundBrush(*Background).SetHoveredBackgroundBrush(*Hover);
+				InputStyle.SetActiveFillBrush(FSlateBrush()).SetInactiveFillBrush(FSlateBrush());
+				Input->SetWidgetStyle(InputStyle);
+				Input->SetForegroundColor(FSlateColor(FLinearColor(0.96f, 0.9f, 0.73f)));
+				FSlateFontInfo Font = Input->GetFont();
+				Font.Size = 16;
+				Input->SetFont(Font);
+			}
+		}
+		if (UScrollBox* Scroll = Cast<UScrollBox>(Widget))
+		{
+			if (const FSlateBrush* Thumb = Style->Brushes.Find(TEXT("ScrollHandle")))
+			{
+				FSlateBrush CroppedThumb = *Thumb;
+				// The 32px symbol sheet has transparent side gutters; keep the visible handle at full rail width.
+				CroppedThumb.SetUVRegion(FBox2D(FVector2D(12.f / 32.f, 2.f / 32.f), FVector2D(20.f / 32.f, 30.f / 32.f)));
+				FScrollBarStyle Bar = Scroll->GetWidgetBarStyle();
+				Bar.SetNormalThumbImage(CroppedThumb).SetHoveredThumbImage(CroppedThumb).SetDraggedThumbImage(CroppedThumb);
+				Scroll->SetWidgetBarStyle(Bar);
+				Scroll->SetAlwaysShowScrollbar(true);
+				Scroll->SetScrollBarVisibility(ESlateVisibility::Visible);
+				Scroll->SetScrollbarThickness(FVector2D(12.f, 12.f));
+				Scroll->SetScrollbarPadding(FMargin(8.f, 2.f, 0.f, 2.f));
+			}
+		}
 		if (UBorder* Border = Cast<UBorder>(Widget))
 		{
 			// Named surfaces opt into a role; decorative or transparent borders keep their authored style.
@@ -75,7 +109,7 @@ void UMKUserWidget::ApplyVisualStyle()
 		}
 		if (UImage* Image = Cast<UImage>(Widget))
 		{
-			const FName BrushName = Image->GetFName() == TEXT("BG") ? TEXT("InsetPanel") : Image->GetFName();
+			const FName BrushName = Image->GetFName() == TEXT("BG") ? TEXT("Panel") : Image->GetFName();
 			if (const FSlateBrush* Brush = Style->Brushes.Find(BrushName))
 			{
 				Image->SetBrush(*Brush);

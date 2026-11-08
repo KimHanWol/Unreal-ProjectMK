@@ -7,56 +7,12 @@
 #include "Components/Image.h"
 #include "Components/TextBlock.h"
 #include "InputCoreTypes.h"
-#include "Engine/Texture2D.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
-
-namespace
-{
-	const FVector2D InventoryIconBrushSize(64.f, 64.f);
-
-	bool TrySetInventoryBrushFromTextureRegion(UImage* TargetImage, UTexture2D* Texture, const FVector2D& SourceUV, const FVector2D& SourceSize)
-	{
-		if (::IsValid(TargetImage) == false || ::IsValid(Texture) == false)
-		{
-			return false;
-		}
-
-		const float TextureWidth = static_cast<float>(Texture->GetSizeX());
-		const float TextureHeight = static_cast<float>(Texture->GetSizeY());
-		if (TextureWidth <= 0.f || TextureHeight <= 0.f)
-		{
-			return false;
-		}
-
-		const FVector2D MinUV(SourceUV.X / TextureWidth, SourceUV.Y / TextureHeight);
-		const FVector2D MaxUV((SourceUV.X + SourceSize.X) / TextureWidth, (SourceUV.Y + SourceSize.Y) / TextureHeight);
-
-		FSlateBrush Brush;
-		Brush.DrawAs = ESlateBrushDrawType::Image;
-		Brush.SetResourceObject(Texture);
-		Brush.ImageSize = InventoryIconBrushSize;
-		Brush.SetUVRegion(FBox2D(MinUV, MaxUV));
-
-		TargetImage->SetBrush(Brush);
-		TargetImage->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
-		return true;
-	}
-
-	bool TrySetBrushFromSprite(UImage* TargetImage, UPaperSprite* Sprite)
-	{
-		if (::IsValid(Sprite) == false)
-		{
-			return false;
-		}
-
-		return TrySetInventoryBrushFromTextureRegion(TargetImage, Sprite->GetSourceTexture(), Sprite->GetSourceUV(), Sprite->GetSourceSize());
-	}
-}
 
 void UItemSlotWidget::ClearItem()
 {
@@ -99,7 +55,7 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 
 	if (::IsValid(IconImage) && ItemDataTableRow->ItemIcon.IsNull() == false)
 	{
-		TrySetBrushFromSprite(IconImage, ItemDataTableRow->ItemIcon.LoadSynchronous());
+		SetSlotIcon(ItemDataTableRow->ItemIcon.LoadSynchronous());
 	}
 }
 
@@ -122,7 +78,7 @@ void UItemSlotWidget::UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const
 
 FReply UItemSlotWidget::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
-	if (HasItem())
+	if (bIsSlotLocked == false && HasItem())
 	{
 		return UWidgetBlueprintLibrary::DetectDragIfPressed(InMouseEvent, this, EKeys::LeftMouseButton).NativeReply;
 	}
@@ -146,6 +102,8 @@ void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FP
 	}
 
 	DragDropOperation->SourceSlotIndex = SlotIndex;
+	DragDropOperation->ItemKey = CurrentItemKey;
+	DragDropOperation->ItemCount = CurrentItemCount;
 	DragDropOperation->Payload = this;
 	DragDropOperation->Pivot = EDragPivot::MouseDown;
 	DragDropOperation->DefaultDragVisual = CreateDragVisualWidget();
@@ -155,7 +113,7 @@ void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FP
 bool UItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation)
 {
 	const UItemSlotDragDropOperation* DragDropOperation = Cast<UItemSlotDragDropOperation>(InOperation);
-	if (::IsValid(DragDropOperation) == false || SlotIndex == INDEX_NONE)
+	if (::IsValid(DragDropOperation) == false || SlotIndex == INDEX_NONE || bIsSlotLocked)
 	{
 		return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 	}
