@@ -65,10 +65,6 @@ namespace
 		Positions.Emplace(TEXT("Skill_MoveSpeed_2"), FIntPoint(4, 16));
 		Positions.Emplace(TEXT("Skill_FlyingSpeed_1"), FIntPoint(6, 14));
 		Positions.Emplace(TEXT("Skill_FlyingSpeed_2"), FIntPoint(6, 16));
-		Positions.Emplace(TEXT("CharacterSkill_MinerDiscipline"), FIntPoint(10, 2));
-		Positions.Emplace(TEXT("CharacterSkill_RecklessDig"), FIntPoint(12, 2));
-		Positions.Emplace(TEXT("CharacterSkill_SpeedRunner"), FIntPoint(14, 2));
-		Positions.Emplace(TEXT("CharacterSkill_HeavyCarrier"), FIntPoint(16, 2));
 		return Positions;
 	}
 
@@ -228,7 +224,8 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	SkillKeys.RemoveAll([DataManager](const FName SkillKey)
 	{
 		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
-		return SkillData == nullptr || SkillData->DisplayName.IsEmpty() || SkillGridPositions.Contains(SkillKey) == false;
+		return SkillData == nullptr || SkillData->AcquisitionType != ESkillAcquisitionType::SkillTree
+			|| SkillData->DisplayName.IsEmpty() || SkillGridPositions.Contains(SkillKey) == false;
 	});
 	SkillKeys.Sort(FNameLexicalLess());
 

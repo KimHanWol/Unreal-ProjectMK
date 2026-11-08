@@ -99,7 +99,8 @@ void USkillComponent::ApplySavedSkills(const TArray<FName>& SavedSkillKeys)
 		}
 
 		const FSkillDataTableRow* SkillDataTableRow = DataManager->GetSkillDataTableRow(SavedSkillKey);
-		if (SkillDataTableRow == nullptr || TryApplySkill(AbilitySystemComponent, SavedSkillKey, *SkillDataTableRow) == false)
+		if (SkillDataTableRow == nullptr || SkillDataTableRow->AcquisitionType != ESkillAcquisitionType::SkillTree
+			|| TryApplySkill(AbilitySystemComponent, SavedSkillKey, *SkillDataTableRow) == false)
 		{
 			continue;
 		}
@@ -288,7 +289,8 @@ bool USkillComponent::AreRequiredSkillsPurchased(const TArray<FName>& RequiredSk
 bool USkillComponent::CanPurchaseSkill(FName SkillKeyName, const FSkillDataTableRow& SkillDataTableRow) const
 {
 	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
-	if (SkillKeyName.IsNone() || HasPurchasedSkill(SkillKeyName) || ::IsValid(CharacterAttributeSet) == false)
+	if (SkillDataTableRow.AcquisitionType != ESkillAcquisitionType::SkillTree
+		|| SkillKeyName.IsNone() || HasPurchasedSkill(SkillKeyName) || ::IsValid(CharacterAttributeSet) == false)
 	{
 		return false;
 	}

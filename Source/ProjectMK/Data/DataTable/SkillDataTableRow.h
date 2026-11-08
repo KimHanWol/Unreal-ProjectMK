@@ -1,4 +1,4 @@
-#pragma once
+﻿#pragma once
 
 #include "CoreMinimal.h"
 #include "Engine/DataTable.h"
@@ -43,10 +43,20 @@ struct FSkillGameplayAbilityData
 	TSoftClassPtr<UGameplayAbility> GameplayAbility;
 };
 
+UENUM(BlueprintType)
+enum class ESkillAcquisitionType : uint8
+{
+	SkillTree UMETA(DisplayName = "구매 기술"),
+	CharacterPassive UMETA(DisplayName = "캐릭터 고유 패시브"),
+};
+
 USTRUCT(BlueprintType)
 struct FSkillDataTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Skill")
+	ESkillAcquisitionType AcquisitionType = ESkillAcquisitionType::SkillTree;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText DisplayName;
