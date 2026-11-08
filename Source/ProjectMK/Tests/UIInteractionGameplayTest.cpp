@@ -27,6 +27,7 @@
 #include "ProjectMK/UI/ShopMenuContents.h"
 #include "ProjectMK/UI/ShopRecipeSlotWidget.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
+#include "ProjectMK/UI/MKMenuBase.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 
 namespace
@@ -76,7 +77,6 @@ namespace
 				for (UWidget* Widget : ShopWidgets)
 				{
 					if (UInventoryWidget* Candidate = Cast<UInventoryWidget>(Widget)) { InventoryWidget = Candidate; }
-					if (UItemQuantityDialog* Candidate = Cast<UItemQuantityDialog>(Widget)) { Dialog = Candidate; }
 					if (UShopRecipeSlotWidget* Candidate = Cast<UShopRecipeSlotWidget>(Widget)) { RecipeEntry = Candidate; }
 				}
 				UItemSlotWidget* Source = nullptr;
@@ -112,42 +112,61 @@ namespace
 				const FPointerEvent DropPointer(0, DropPosition, Position, TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
 				const FReply DropReply = Shop->TakeWidget()->OnDrop(Shop->GetCachedGeometry(), FDragDropEvent(DropPointer, Operation.ToSharedRef()));
 				Test->TestTrue(TEXT("Merchant accepts the inventory drop"), DropReply.IsEventHandled());
+				TArray<UUserWidget*> SaleDialogs;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), SaleDialogs, UItemQuantityDialog::StaticClass(), false);
+				for (UUserWidget* Candidate : SaleDialogs) { if (Candidate->IsVisible()) { Dialog = Cast<UItemQuantityDialog>(Candidate); break; } }
 				Test->TestTrue(TEXT("Drop opens the quantity dialog"), Dialog.IsValid() && Dialog->IsVisible());
 				if (Dialog.IsValid() == false || Dialog->IsVisible() == false) { return Finish(); }
+				Test->TestTrue(TEXT("Sale quantity modal covers the full viewport"), Dialog->IsInViewport());
+				USpinBox* Quantity = nullptr;
+				Dialog->WidgetTree->ForEachWidget([&Quantity](UWidget* Widget) { if (USpinBox* Input = Cast<USpinBox>(Widget)) { Quantity = Input; } });
+				CastChecked<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityHalf")))->OnClicked.Broadcast();
+				Test->TestEqual(TEXT("Half preset selects two from a stack of five"), Quantity->GetValue(), 2.f);
+				CastChecked<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityAll")))->OnClicked.Broadcast();
+				Test->TestEqual(TEXT("All preset restores the selected stack quantity"), Quantity->GetValue(), 5.f);
 				InitialCoin = Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute());
 				SalePrice = Player->FindComponentByClass<UInventoryComponent>()->CalculateSellPrice(ItemKey, 2);
-				UButton* Confirm = nullptr;
-				Dialog->WidgetTree->ForEachWidget([&Confirm](UWidget* Widget)
+				UButton* Confirm = Cast<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityConfirm")));
+				Dialog->WidgetTree->ForEachWidget([](UWidget* Widget)
 				{
 					if (USpinBox* Input = Cast<USpinBox>(Widget)) { Input->SetValue(2.f); }
-					if (Confirm == nullptr) { Confirm = Cast<UButton>(Widget); }
 				});
 				if (Test->TestNotNull(TEXT("Sale confirmation button exists"), Confirm) == false) { return Finish(); }
 				Confirm->OnClicked.Broadcast();
 				Test->TestEqual(TEXT("Only the selected quantity is sold"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 3);
 				Test->TestEqual(TEXT("Sale adds the correct currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), InitialCoin + SalePrice);
 				Test->TestFalse(TEXT("Confirmation closes the modal"), Dialog->IsVisible());
+				const FPointerEvent SecondaryPointer(0, Position, Position, TSet<FKey>{ EKeys::RightMouseButton }, EKeys::RightMouseButton, 0.f, FModifierKeysState());
+				Test->TestTrue(TEXT("Right click opens the same sale flow"), Source->TakeWidget()->OnPreviewMouseButtonDown(Geometry, SecondaryPointer).IsEventHandled());
+				Test->TestTrue(TEXT("Right click shows the sale quantity modal"), Dialog->IsVisible());
+				CastChecked<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityCancel")))->OnClicked.Broadcast();
+				Test->TestEqual(TEXT("Cancelling secondary sale preserves the items"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 3);
 				Shop->RemoveFromParent();
 				TArray<UUserWidget*> HUDs;
 				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), HUDs, UHUDWidget::StaticClass(), false);
 				UHUDWidget* HUD = HUDs.IsEmpty() ? nullptr : Cast<UHUDWidget>(HUDs[0]);
 				if (Test->TestNotNull(TEXT("HUD provides the world drop target"), HUD) == false) { return Finish(); }
-				const FVector2D WorldPoint = HUD->GetCachedGeometry().LocalToAbsolute(HUD->GetCachedGeometry().GetLocalSize() * FVector2D(0.7f, 0.6f));
+				TArray<UUserWidget*> FoundMenus;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), FoundMenus, UMKMenuBase::StaticClass(), false);
+				UMKMenuBase* Popup = CastChecked<UMKMenuBase>(FoundMenus[0]);
+				Popup->OpenMenu(EMenuContentsType::Crafting);
+				const FVector2D WorldPoint = HUD->GetCachedGeometry().LocalToAbsolute(HUD->GetCachedGeometry().GetLocalSize() * FVector2D(0.97f, 0.3f));
 				const FPointerEvent WorldPointer(0, WorldPoint, Position, TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
-				Test->TestTrue(TEXT("Dropping outside UI opens the world quantity flow"), HUD->TakeWidget()->OnDrop(HUD->GetCachedGeometry(), FDragDropEvent(WorldPointer, Operation.ToSharedRef())).IsEventHandled());
+				Test->TestTrue(TEXT("Dropping outside the viewport popup opens the world quantity flow"), Popup->TakeWidget()->OnDrop(Popup->GetCachedGeometry(), FDragDropEvent(WorldPointer, Operation.ToSharedRef())).IsEventHandled());
 				TArray<UUserWidget*> Dialogs;
 				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), Dialogs, UItemQuantityDialog::StaticClass(), false);
 				UItemQuantityDialog* DropDialog = nullptr;
 				for (UUserWidget* Candidate : Dialogs) { if (Candidate->IsVisible()) { DropDialog = Cast<UItemQuantityDialog>(Candidate); break; } }
 				if (Test->TestNotNull(TEXT("World drop quantity dialog is visible"), DropDialog) == false) { return Finish(); }
-				UButton* DropConfirm = nullptr;
-				DropDialog->WidgetTree->ForEachWidget([&DropConfirm](UWidget* Widget)
+				UButton* DropConfirm = Cast<UButton>(DropDialog->WidgetTree->FindWidget(TEXT("QuantityConfirm")));
+				Test->TestFalse(TEXT("Drop quantity does not show a money amount"), DropDialog->WidgetTree->FindWidget(TEXT("QuantityPriceRow"))->IsVisible());
+				DropDialog->WidgetTree->ForEachWidget([](UWidget* Widget)
 				{
 					if (USpinBox* Input = Cast<USpinBox>(Widget)) { Input->SetValue(1.f); }
-					if (DropConfirm == nullptr) { DropConfirm = Cast<UButton>(Widget); }
 				});
 				if (DropConfirm != nullptr) { DropConfirm->OnClicked.Broadcast(); }
 				Test->TestEqual(TEXT("World quantity confirmation removes only one item"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 2);
+				Popup->CloseMenu();
 				for (const FName Key : UDataManager::Get(Player.Get())->GetSkillRowNames())
 				{
 					if (Player->GetSkillComponent()->CanPurchaseSkill(Key)) { SkillKey = Key; break; }

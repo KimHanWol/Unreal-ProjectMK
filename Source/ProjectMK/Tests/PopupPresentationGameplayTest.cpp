@@ -17,6 +17,7 @@
 #include "ProjectMK/UI/HUDWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
+#include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 #include "Widgets/SWidget.h"
 
@@ -54,8 +55,16 @@ namespace
 				if (Test->TestFalse(TEXT("HUD exists"), HUDs.IsEmpty()) == false) { return true; }
 				UHUDWidget* HUD = CastChecked<UHUDWidget>(HUDs[0]);
 				Test->TestTrue(TEXT("Tooltip has its own viewport layer above the quickbar"), HUD->GetTooltipWidget()->IsInViewport());
-				Menu = Cast<UMKMenuBase>(HUD->WidgetTree->FindWidget(TEXT("Menu")));
+				TArray<UUserWidget*> Menus;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, Menus, UMKMenuBase::StaticClass(), false);
+				Menu = Menus.IsEmpty() ? nullptr : Cast<UMKMenuBase>(Menus[0]);
 				if (Test->TestNotNull(TEXT("Common popup shell exists"), Menu.Get()) == false) { return true; }
+				Test->TestTrue(TEXT("Popup dimming uses its own viewport layer above HUD elements"), Menu->IsInViewport());
+				Menu->OpenMenu(EMenuContentsType::Shop);
+				TArray<UUserWidget*> QuantityDialogs;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, QuantityDialogs, UItemQuantityDialog::StaticClass(), false);
+				Test->TestTrue(TEXT("Shop and world quantity dialogs exist"), QuantityDialogs.Num() >= 2);
+				for (UUserWidget* Dialog : QuantityDialogs) { Test->TestTrue(TEXT("Quantity dialog remains attached when popup moves to viewport"), Dialog->IsInViewport()); }
 				Menu->OpenMenu(EMenuContentsType::Crafting);
 				TArray<UUserWidget*> Contents;
 				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, Contents, UCraftingMenuContents::StaticClass(), false);
@@ -75,6 +84,13 @@ namespace
 			}
 			if (Step == 1 && FPlatformTime::Seconds() - Started > 0.6)
 			{
+				UWidget* Header = Menu->WidgetTree->FindWidget(TEXT("WindowTitle"));
+				UWidget* Close = Menu->WidgetTree->FindWidget(TEXT("ExitButton"));
+				const FGeometry& HeaderGeometry = Header->GetCachedGeometry();
+				const FGeometry& CloseGeometry = Close->GetCachedGeometry();
+				const float HeaderCenter = HeaderGeometry.LocalToAbsolute(HeaderGeometry.GetLocalSize() * 0.5f).Y;
+				const float CloseCenter = CloseGeometry.LocalToAbsolute(CloseGeometry.GetLocalSize() * 0.5f).Y;
+				Test->TestTrue(TEXT("Title and close button share the same vertical center"), FMath::IsNearlyEqual(HeaderCenter, CloseCenter, 1.f));
 				if (Test->TestNotNull(TEXT("Recipe scroll area exists"), Scroll.Get()) == false) { return true; }
 				const FScrollBarStyle& Bar = Scroll->GetWidgetBarStyle();
 				Test->TestTrue(TEXT("Wheel scrolling uses interpolation"), Scroll->IsAnimateWheelScrolling());
