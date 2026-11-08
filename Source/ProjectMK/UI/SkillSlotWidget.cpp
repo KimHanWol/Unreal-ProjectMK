@@ -14,6 +14,7 @@
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
+#include "Rendering/DrawElementTypes.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -31,8 +32,60 @@ TSharedRef<SWidget> USkillSlotWidget::RebuildWidget()
 	return Super::RebuildWidget();
 }
 
+void USkillSlotWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	if (bPendingClickPurchase)
+	{
+		HoldProgress = FMath::Min(1.f, HoldProgress + InDeltaTime / PurchaseHoldDuration);
+		if (HoldProgress >= 1.f)
+		{
+			bPendingClickPurchase = false;
+			OnSlotClicked();
+		}
+		InvalidateLayoutAndVolatility();
+	}
+}
+
+int32 USkillSlotWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
+	FSlateWindowElementList& DrawElements, int32 LayerId, const FWidgetStyle& Style, bool bEnabled) const
+{
+	const int32 Layer = Super::NativePaint(Args, Geometry, CullingRect, DrawElements, LayerId, Style, bEnabled);
+	if (bPendingClickPurchase && HoldProgress > 0.f)
+	{
+		TArray<FVector2D> Points;
+		const FVector2D Center = Geometry.GetLocalSize() * 0.5f;
+		const float Radius = FMath::Min(Center.X, Center.Y) - 3.f;
+		const int32 Steps = FMath::Max(1, FMath::CeilToInt(HoldProgress * 64.f));
+		for (int32 Index = 0; Index <= Steps; ++Index)
+		{
+			const float Angle = -HALF_PI + 2.f * PI * HoldProgress * Index / Steps;
+			Points.Add(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius);
+		}
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Points,
+			ESlateDrawEffect::None, FLinearColor(1.f, 0.75f, 0.2f), true, 4.f);
+	}
+	return Layer + 1;
+}
+
+void USkillSlotWidget::NativeOnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent)
+{
+	Super::NativeOnMouseCaptureLost(CaptureLostEvent);
+	bPendingClickPurchase = false;
+	HoldProgress = 0.f;
+}
+
 FReply USkillSlotWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (bPendingClickPurchase)
+	{
+		if (FVector2D::Distance(PendingClickScreenPosition, InMouseEvent.GetScreenSpacePosition()) > 6.f)
+		{
+			bPendingClickPurchase = false;
+			HoldProgress = 0.f;
+		}
+		return FReply::Handled();
+	}
 	if (InMouseEvent.IsMouseButtonDown(EKeys::LeftMouseButton))
 	{
 		if (USkillTreeMenuContents* SkillTreeMenuContents = GetOwningSkillTreeMenuContents())
@@ -63,6 +116,11 @@ FReply USkillSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, co
 	{
 		bPendingClickPurchase = CanClickSlot();
 		PendingClickScreenPosition = InMouseEvent.GetScreenSpacePosition();
+		HoldProgress = 0.f;
+		if (bPendingClickPurchase)
+		{
+			return FReply::Handled().CaptureMouse(TakeWidget());
+		}
 
 		if (USkillTreeMenuContents* SkillTreeMenuContents = GetOwningSkillTreeMenuContents())
 		{
@@ -81,10 +139,11 @@ FReply USkillSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, co
 FReply USkillSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	const bool bIsLeftMouseButton = InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
-	const bool bCanHandleClick = bIsLeftMouseButton && bPendingClickPurchase;
+	const bool bCanHandleClick = bIsLeftMouseButton && bPendingClickPurchase && HoldProgress >= 1.f;
 	bool bEndedSkillTreeDrag = false;
 
 	bPendingClickPurchase = false;
+	HoldProgress = 0.f;
 
 	if (USkillTreeMenuContents* SkillTreeMenuContents = GetOwningSkillTreeMenuContents())
 	{
@@ -188,49 +247,8 @@ void USkillSlotWidget::InitializeSkill(const FName InSkillKeyName)
 
 void USkillSlotWidget::BuildDefaultWidgetTree()
 {
-	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>();
-	RootSize->SetWidthOverride(96.f);
-	RootSize->SetHeightOverride(96.f);
-	WidgetTree->RootWidget = RootSize;
-
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
-	Frame->SetPadding(FMargin(FMKUILayout::SpaceS));
-	RootSize->SetContent(Frame);
-	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
-	Frame->SetContent(Overlay);
-
-	FocusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SelectedSlot"));
-	FocusImage->SetVisibility(ESlateVisibility::Collapsed);
-	Overlay->AddChildToOverlay(FocusImage);
-
-	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
-	UOverlaySlot* ColumnSlot = Overlay->AddChildToOverlay(Column);
-	ColumnSlot->SetHorizontalAlignment(HAlign_Center);
-	ColumnSlot->SetVerticalAlignment(VAlign_Center);
-
-	USizeBox* IconSize = WidgetTree->ConstructWidget<USizeBox>();
-	IconSize->SetWidthOverride(44.f);
-	IconSize->SetHeightOverride(44.f);
-	IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("IconImage"));
-	IconSize->SetContent(IconImage);
-	UVerticalBoxSlot* IconSlot = Column->AddChildToVerticalBox(IconSize);
-	IconSlot->SetHorizontalAlignment(HAlign_Center);
-
-	UTextBlock* RawPriceText = nullptr;
-	PriceRow = BuildCurrencyAmount(RawPriceText, FText::GetEmpty(), EMKTextRole::Caption);
-	PriceText = RawPriceText;
-	UVerticalBoxSlot* PriceSlot = Column->AddChildToVerticalBox(PriceRow);
-	PriceSlot->SetHorizontalAlignment(HAlign_Center);
-	PriceSlot->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
-
-	SelectionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SelectionText"));
-	SelectionText->SetText(FText::FromString(TEXT("✓")));
-	ApplyTextRole(SelectionText, EMKTextRole::Label);
-	SelectionText->SetColorAndOpacity(FSlateColor(FLinearColor(0.25f, 1.f, 0.72f)));
-	SelectionText->SetVisibility(ESlateVisibility::Collapsed);
-	UOverlaySlot* SelectionSlot = Overlay->AddChildToOverlay(SelectionText);
-	SelectionSlot->SetHorizontalAlignment(HAlign_Right);
-	SelectionSlot->SetVerticalAlignment(VAlign_Top);
+	DefaultSlotSize = FVector2D(96.f);
+	Super::BuildDefaultWidgetTree();
 }
 
 USkillTreeMenuContents* USkillSlotWidget::GetOwningSkillTreeMenuContents() const
@@ -246,13 +264,29 @@ void USkillSlotWidget::UpdateEnabledState()
 
 	SetIsEnabled(true);
 	SetRenderOpacity(bShouldEnable ? 1.f : 0.45f);
+	if (::IsValid(IconImage))
+	{
+		IconImage->SetColorAndOpacity(bIsPurchased ? FLinearColor(0.5f, 1.f, 0.8f) : (bShouldEnable ? FLinearColor::White : FLinearColor(0.4f, 0.4f, 0.4f)));
+	}
 }
 
 void USkillSlotWidget::UpdateCompleteImage()
 {
 	USkillComponent* SkillComponent = GetLocalSkillComponent();
 	const bool bIsPurchased = ::IsValid(SkillComponent) && SkillComponent->HasPurchasedSkill(SkillKeyName);
-	SetSelected(bIsPurchased);
+	SetSelected(false);
+	if (::IsValid(SelectionText))
+	{
+		const FString Key = SkillKeyName.ToString();
+		const FString Rank = Key.EndsWith(TEXT("_1")) ? TEXT("I") : (Key.EndsWith(TEXT("_2")) ? TEXT("II") : (Key.EndsWith(TEXT("_3")) ? TEXT("III") : TEXT("")));
+		SelectionText->SetText(FText::FromString(Rank));
+		SelectionText->SetVisibility(Rank.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	}
+	if (::IsValid(CountText))
+	{
+		CountText->SetText(bIsPurchased ? NSLOCTEXT("Skill", "Owned", "습득") : FText::GetEmpty());
+		CountText->SetVisibility(bIsPurchased ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
 	if (::IsValid(CompleteImage))
 	{
 		CompleteImage->SetVisibility(bIsPurchased ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
@@ -291,7 +325,7 @@ void USkillSlotWidget::UpdateSkillImage()
 		return;
 	}
 
-	IconImage->SetBrushFromTexture(IconTexture, true);
+	SetSlotIcon(IconTexture);
 }
 
 void USkillSlotWidget::UpdatePriceText()

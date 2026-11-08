@@ -173,6 +173,10 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
 	RootSize->SetContent(Overlay);
 	Overlay->SetClipping(EWidgetClipping::Inherit);
+	UBorder* Backing = WidgetTree->ConstructWidget<UBorder>();
+	Backing->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.055f, 1.f));
+	Backing->SetVisibility(ESlateVisibility::HitTestInvisible);
+	Overlay->AddChildToOverlay(Backing);
 	UBorder* FrameBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
 	FrameBorder->SetPadding(FMargin(0.f));
 	Overlay->AddChildToOverlay(FrameBorder);

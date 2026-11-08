@@ -16,6 +16,10 @@ class PROJECTMK_API USkillSlotWidget : public UMKSlotBase
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
+		FSlateWindowElementList& DrawElements, int32 LayerId, const FWidgetStyle& Style, bool bEnabled) const override;
+	virtual void NativeOnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -56,6 +60,11 @@ protected:
 	TObjectPtr<UTextBlock> PriceText;
 
 private:
+	UPROPERTY(EditDefaultsOnly, Category = "Skill", meta = (ClampMin = "0.1"))
+	float PurchaseHoldDuration = 0.8f;
+
+	float HoldProgress = 0.f;
+
 	UPROPERTY(Transient)
 	bool bPendingClickPurchase = false;
 

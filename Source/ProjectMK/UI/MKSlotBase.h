@@ -46,8 +46,10 @@ public:
 	void SetSelected(bool bSelected);
 	void ClearSlotIcon();
 
-private:
+protected:
 	void BuildDefaultWidgetTree();
+
+private:
 	void UpdateFocusImageVisibility();
 
 protected:

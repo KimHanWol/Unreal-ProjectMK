@@ -19,8 +19,8 @@ namespace
 	constexpr float SkillNodeSize = 96.f;
 	constexpr float SkillTreePadding = 40.f;
 	constexpr float SkillConnectionThickness = 4.f;
-	constexpr float SkillGridStepX = 64.f;
-	constexpr float SkillGridStepY = 58.f;
+	constexpr float SkillGridStepX = 84.f;
+	constexpr float SkillGridStepY = 84.f;
 
 	TMap<FName, FIntPoint> CreateSkillGridPositions()
 	{
@@ -310,6 +310,10 @@ void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, c
 
 void USkillTreeMenuContents::AddConnectionSegment(const FVector2D& Position, const FVector2D& Size)
 {
+	if (Size.X <= SkillConnectionThickness && Size.Y <= SkillConnectionThickness)
+	{
+		return;
+	}
 	UBorder* Segment = WidgetTree->ConstructWidget<UBorder>();
 	Segment->SetPadding(FMargin(0.f));
 	Segment->SetBrushColor(FLinearColor(0.75f, 0.48f, 0.18f, 0.9f));
