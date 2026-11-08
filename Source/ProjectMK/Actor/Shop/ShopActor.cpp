@@ -8,14 +8,6 @@
 #include "ProjectMK/Controller/MKPlayerController.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 
-namespace
-{
-	constexpr float ShopHalfWidthInTiles = 6.f;
-	constexpr float ShopHalfHeightInTiles = 2.f;
-	// 월드 상점은 플레이어를 막지 않고 클릭과 근접 검색에만 사용한다.
-	constexpr float InteractionBoxDepth = 20.f;
-}
-
 AShopActor::AShopActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
@@ -28,6 +20,15 @@ AShopActor::AShopActor()
 	ShopSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("ShopSprite"));
 	ShopSprite->SetupAttachment(RootComponent);
 	ShopSprite->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	ShopSprite->SetTranslucentSortPriority(-5);
+}
+
+bool AShopActor::CanInteract(AActor* Interactor)
+{
+	if (::IsValid(Interactor) == false || ::IsValid(InteractionBox) == false) { return false; }
+	const FVector Local = InteractionBox->GetComponentTransform().InverseTransformPosition(Interactor->GetActorLocation());
+	const FVector Extent = InteractionBox->GetUnscaledBoxExtent();
+	return FMath::Abs(Local.X) <= Extent.X && FMath::Abs(Local.Z) <= Extent.Z && FMath::Abs(Local.Y) <= Extent.Y;
 }
 
 void AShopActor::BeginPlay()
@@ -85,7 +86,6 @@ void AShopActor::InitializeShop(const FIntPoint& TileSize)
 		return;
 	}
 
-	InteractionBox->SetBoxExtent(FVector(TileSize.X * ShopHalfWidthInTiles, InteractionBoxDepth, TileSize.Y * ShopHalfHeightInTiles));
 	const UDataManager* DataManager = UDataManager::Get(this);
 	const FBlockDataTableRow* ShopData = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Shop"))) : nullptr;
 	UPaperSprite* Sprite = ShopData != nullptr ? ShopData->TileSprite.LoadSynchronous() : nullptr;
@@ -94,8 +94,19 @@ void AShopActor::InitializeShop(const FIntPoint& TileSize)
 		ShopSprite->SetSprite(Sprite);
 		const FVector2D SourceSize = Sprite->GetSourceSize() / Sprite->GetPixelsPerUnrealUnit();
 		const float Scale = FMath::Min(TileSize.X / FMath::Max(1.f, SourceSize.X), TileSize.Y / FMath::Max(1.f, SourceSize.Y)) * VisualSizeInTiles;
+		const float VisualHeight = SourceSize.Y * Scale;
+		const float BaseZ = GetActorLocation().Z - TileSize.Y * 0.5f;
+		FHitResult GroundHit;
+		FCollisionQueryParams Params;
+		Params.AddIgnoredActor(this);
+		Params.AddIgnoredActor(GetOwner());
+		const FVector Start = GetActorLocation() + FVector(0.f, 0.f, TileSize.Y);
+		const FVector End = Start - FVector(0.f, 0.f, TileSize.Y * 12.f);
+		const float GroundZ = GetWorld()->LineTraceSingleByChannel(GroundHit, Start, End, ECC_Visibility, Params) ? GroundHit.ImpactPoint.Z : BaseZ;
+		SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, GroundZ + VisualHeight * 0.5f));
+		InteractionBox->SetBoxExtent(FVector(SourceSize.X * Scale * 0.5f, 32.f, VisualHeight * 0.5f));
 		ShopSprite->SetRelativeScale3D(FVector(Scale, 1.f, Scale));
-		ShopSprite->SetRelativeLocation(FVector(0.f, 0.f, (VisualSizeInTiles - 1.f) * TileSize.Y * 0.5f));
+		ShopSprite->SetRelativeLocation(FVector(0.f, -12.f, 0.f));
 		if (AActor* OwnerBlock = GetOwner())
 		{
 			OwnerBlock->SetActorHiddenInGame(true);

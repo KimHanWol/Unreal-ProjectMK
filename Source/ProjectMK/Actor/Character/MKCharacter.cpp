@@ -100,7 +100,7 @@ AMKCharacter::AMKCharacter()
 	InteractionPromptComponent->SetWidgetSpace(EWidgetSpace::Screen);
 	InteractionPromptComponent->SetDrawSize(FIntPoint(36, 36));
 	InteractionPromptComponent->SetPivot(FVector2D(0.5f, 1.f));
-	InteractionPromptComponent->SetRelativeLocation(FVector(0.f, 0.f, 28.f));
+	InteractionPromptComponent->SetRelativeLocation(FVector(0.f, 0.f, 16.f));
 	InteractionPromptComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	InteractionPromptComponent->SetVisibility(false);
 

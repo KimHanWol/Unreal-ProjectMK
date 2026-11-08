@@ -323,6 +323,11 @@ void ABlockBase::ApplyTerrainEdges(uint8 ExposedEdges)
 {
 	TerrainExposedEdges = ExposedEdges & 15;
 	UDataManager* DataManager = UDataManager::Get(this);
+	const FBlockDataTableRow* Grass = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Dirt_Grass"))) : nullptr;
+	if (Grass != nullptr && BlockTileData.TileSetIndex == Grass->TileIndex)
+	{
+		TerrainExposedEdges &= ~uint8(4);
+	}
 	const UVisualStyleDataAsset* Style = ::IsValid(DataManager) ? DataManager->GetVisualStyleDataAsset() : nullptr;
 	if (bUseTerrainEdges == false || ::IsValid(Style) == false || Style->TerrainEdgeMaterials.IsValidIndex(TerrainExposedEdges) == false)
 	{

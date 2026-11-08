@@ -16,6 +16,7 @@ class PROJECTMK_API AShopActor : public AActor, public IInteractable
 
 public:
 	AShopActor();
+	virtual bool CanInteract(AActor* Interactor) override;
 
 protected:
 	virtual void BeginPlay() override;
