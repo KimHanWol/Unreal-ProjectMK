@@ -1,0 +1,146 @@
+[
+  {
+    "name": "ActionPrimary",
+    "width": 128,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "ActionSecondary",
+    "width": 128,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "ActionDanger",
+    "width": 128,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "QuantityPreset",
+    "width": 96,
+    "height": 32,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "Stepper",
+    "width": 32,
+    "height": 32,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "QuantityPresetSelected",
+    "width": 96,
+    "height": 32,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "InputWell",
+    "width": 128,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "SaleTotal",
+    "width": 128,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "MerchantMat",
+    "width": 160,
+    "height": 88,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "RecipeRow",
+    "width": 192,
+    "height": 64,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "InventoryDrawer",
+    "width": 160,
+    "height": 88,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "SectionDivider",
+    "width": 192,
+    "height": 16,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "IconSatchel",
+    "width": 48,
+    "height": 48,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "IconWorkbench",
+    "width": 64,
+    "height": 64,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "IconTrade",
+    "width": 48,
+    "height": 48,
+    "alpha": [
+      0,
+      255
+    ]
+  },
+  {
+    "name": "IconStorage",
+    "width": 48,
+    "height": 40,
+    "alpha": [
+      0,
+      255
+    ]
+  }
+]

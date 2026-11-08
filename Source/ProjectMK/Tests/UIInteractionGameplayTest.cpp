@@ -118,6 +118,11 @@ namespace
 				Test->TestTrue(TEXT("Drop opens the quantity dialog"), Dialog.IsValid() && Dialog->IsVisible());
 				if (Dialog.IsValid() == false || Dialog->IsVisible() == false) { return Finish(); }
 				Test->TestTrue(TEXT("Sale quantity modal covers the full viewport"), Dialog->IsInViewport());
+				UButton* CancelStyleButton = Cast<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityCancel")));
+				UButton* PrimaryStyleButton = Cast<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityConfirm")));
+				UButton* StepperStyleButton = Cast<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityDecrease")));
+				Test->TestTrue(TEXT("Primary, secondary and stepper use distinct artwork"), CancelStyleButton->GetStyle().Normal.GetResourceObject() != PrimaryStyleButton->GetStyle().Normal.GetResourceObject()
+					&& StepperStyleButton->GetStyle().Normal.GetResourceObject() != PrimaryStyleButton->GetStyle().Normal.GetResourceObject());
 				USpinBox* Quantity = nullptr;
 				Dialog->WidgetTree->ForEachWidget([&Quantity](UWidget* Widget) { if (USpinBox* Input = Cast<USpinBox>(Widget)) { Quantity = Input; } });
 				CastChecked<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityHalf")))->OnClicked.Broadcast();
