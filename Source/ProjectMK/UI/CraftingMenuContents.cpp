@@ -6,8 +6,6 @@
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
 #include "Components/TextBlock.h"
-#include "Components/UniformGridPanel.h"
-#include "Components/UniformGridSlot.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -15,7 +13,8 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/UI/CraftingRecipeSlotWidget.h"
-#include "ProjectMK/UI/PlaytestQuickSlotWidget.h"
+#include "ProjectMK/UI/InventoryWidget.h"
+#include "ProjectMK/UI/MenuDisplayCardWidget.h"
 
 UCraftingMenuContents::UCraftingMenuContents(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -70,13 +69,6 @@ void UCraftingMenuContents::UnbindEvents()
 void UCraftingMenuContents::UpdateWidget()
 {
 	UpdateRecipeSlots();
-	for (UPlaytestQuickSlotWidget* InventorySlot : InventorySlots)
-	{
-		if (::IsValid(InventorySlot))
-		{
-			InventorySlot->RefreshSlot();
-		}
-	}
 	BP_OnCraftingRefreshed();
 }
 
@@ -103,6 +95,7 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 {
 	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeCraftingRoot"));
 	RootBorder->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.065f, 0.97f));
+	ApplyBorderStyle(RootBorder, TEXT("InsetPanel"));
 	RootBorder->SetPadding(FMargin(FMKUILayout::SpaceXL));
 	WidgetTree->RootWidget = RootBorder;
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>();
@@ -118,11 +111,9 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 	UHorizontalBoxSlot* RecipeColumnSlot = Columns->AddChildToHorizontalBox(RecipeColumn);
 	RecipeColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
-	UBorder* WorkbenchCard = WidgetTree->ConstructWidget<UBorder>();
-	WorkbenchCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
-	WorkbenchCard->SetPadding(FMargin(FMKUILayout::SpaceL));
-	WorkbenchCard->SetContent(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Workbench", "작업대")));
-	RecipeColumn->AddChildToVerticalBox(WorkbenchCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
+	UMenuDisplayCardWidget* WorkbenchCard = CreateWidget<UMenuDisplayCardWidget>(this);
+	WorkbenchCard->SetDisplayRole(TEXT("Crafting"));
+	RecipeColumn->AddChildToVerticalBox(WorkbenchCard)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
 	UScrollBox* RecipeScrollBox = WidgetTree->ConstructWidget<UScrollBox>();
 	RecipeColumn->AddChildToVerticalBox(RecipeScrollBox)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RecipeSlotListPanel"));
@@ -130,27 +121,12 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 
 	UVerticalBox* InventoryColumn = WidgetTree->ConstructWidget<UVerticalBox>();
 	Columns->AddChildToHorizontalBox(InventoryColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	UBorder* PlayerCard = WidgetTree->ConstructWidget<UBorder>();
-	PlayerCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
-	PlayerCard->SetPadding(FMargin(FMKUILayout::SpaceL));
-	PlayerCard->SetContent(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Player", "플레이어")));
-	InventoryColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
-	InventoryColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("CraftingMenu", "Inventory", "인벤토리")))
-		->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceS));
-	UUniformGridPanel* InventoryGrid = WidgetTree->ConstructWidget<UUniformGridPanel>();
-	InventoryGrid->SetSlotPadding(FMargin(FMKUILayout::SpaceXS));
-	InventoryColumn->AddChildToVerticalBox(InventoryGrid);
-	for (int32 SlotIndex = 0; SlotIndex < 8; ++SlotIndex)
-	{
-		UPlaytestQuickSlotWidget* InventorySlot = CreateWidget<UPlaytestQuickSlotWidget>(this, UPlaytestQuickSlotWidget::StaticClass());
-		if (::IsValid(InventorySlot))
-		{
-			InventoryGrid->AddChildToUniformGrid(InventorySlot, SlotIndex / 4, SlotIndex % 4);
-			InventorySlot->SetShowKeyGuide(false);
-			InventorySlot->SetSlotIndex(SlotIndex);
-			InventorySlots.Add(InventorySlot);
-		}
-	}
+	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);
+	PlayerCard->SetDisplayRole(TEXT("Player"));
+	InventoryColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	UScrollBox* InventoryScroll = WidgetTree->ConstructWidget<UScrollBox>();
+	InventoryColumn->AddChildToVerticalBox(InventoryScroll)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	InventoryScroll->AddChild(CreateWidget<UInventoryWidget>(this));
 }
 
 void UCraftingMenuContents::UpdateRecipeSlots()

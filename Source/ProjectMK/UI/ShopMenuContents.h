@@ -4,14 +4,11 @@
 #include "ProjectMK/UI/MKMenuContentsBase.h"
 #include "ShopMenuContents.generated.h"
 
-class UButton;
 class UPanelWidget;
-class UShopRecipeSlotWidget;
-class UShopSellSlotWidget;
-class UTextBlock;
+class UVerticalBox;
+class UItemQuantityDialog;
 struct FOnAttributeChangeData;
 
-/** 광물·아이템 판매와 레시피 구매 메뉴. 위젯 블루프린트가 없으면 기본 레이아웃을 직접 만든다. */
 UCLASS()
 class PROJECTMK_API UShopMenuContents : public UMKMenuContentsBase
 {
@@ -22,49 +19,27 @@ public:
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
-
+	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& Event, UDragDropOperation* Operation) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 	virtual void UpdateWidget() override;
 
 public:
-	bool TrySellItem(FName ItemUID);
-	void ToggleSellSelection(FName ItemUID);
-	bool IsItemSelectedForSale(FName ItemUID) const;
 	bool TryUnlockRecipe(FName RecipeKey);
 
 private:
 	void BuildDefaultWidgetTree();
-	void RefreshSellSlotList();
 	void RefreshRecipeSlotList();
-	void ApplySaleResult(bool bSold);
-
-	UFUNCTION()
-	void OnSellAllButtonClicked();
-
-	void OnInventoryChanged();
+	void OnSaleConfirmed(FName ItemKey, int32 Count);
 	void OnCoinChanged(const FOnAttributeChangeData& Data);
 	void OnRecipeUnlocked(FName RecipeKey);
+	UFUNCTION()
+	void OnMenuVisibilityChanged(ESlateVisibility InVisibility);
 
-protected:
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UPanelWidget> SellSlotListPanel;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UTextBlock> TotalPriceText;
-
-	UPROPERTY(meta = (BindWidgetOptional))
-	TObjectPtr<UButton> SellAllButton;
-
-	UPROPERTY(meta = (BindWidgetOptional))
+	UPROPERTY(Transient)
 	TObjectPtr<UPanelWidget> RecipeSlotListPanel;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Shop")
-	TSubclassOf<UShopSellSlotWidget> SellSlotWidgetClass;
-
-	UPROPERTY(EditDefaultsOnly, Category = "Shop")
-	TSubclassOf<UShopRecipeSlotWidget> RecipeSlotWidgetClass;
-
-private:
-	TSet<FName> SelectedItemUIDs;
+	UPROPERTY(Transient)
+	TObjectPtr<UVerticalBox> MerchantColumn;
+	UPROPERTY(Transient)
+	TObjectPtr<UItemQuantityDialog> QuantityDialog;
 };

@@ -74,7 +74,7 @@ void UCraftingRecipeSlotWidget::UpdateWidget()
 	const bool bCanCraft = Crafting->CanCraftRecipe(RecipeKey);
 	CraftButton->SetIsEnabled(bCanCraft);
 	CraftButtonText->SetText(bUnlocked
-		? (bCanCraft ? NSLOCTEXT("CraftingMenu", "Craft", "제작") : NSLOCTEXT("CraftingMenu", "Unavailable", "재료 / 공간 부족"))
+		? (bCanCraft ? NSLOCTEXT("CraftingMenu", "Craft", "제작") : (bHasMaterials ? NSLOCTEXT("CraftingMenu", "NoSpace", "공간 부족") : NSLOCTEXT("CraftingMenu", "NoMaterials", "재료 부족")))
 		: NSLOCTEXT("CraftingMenu", "Locked", "해금 필요"));
 	const FItemDataTableRow* Item = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Recipe->GetResultItemKey());
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;

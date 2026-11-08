@@ -1,13 +1,13 @@
 ﻿#include "ProjectMK/UI/ShopMenuContents.h"
 
-#include "Blueprint/WidgetTree.h"
 #include "AbilitySystemComponent.h"
+#include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
-#include "Components/Button.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Components/ScrollBox.h"
-#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -16,358 +16,150 @@
 #include "ProjectMK/Component/CraftingComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
+#include "ProjectMK/UI/InventoryWidget.h"
+#include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/UI/ItemQuantityDialog.h"
+#include "ProjectMK/UI/MenuDisplayCardWidget.h"
 #include "ProjectMK/UI/ShopRecipeSlotWidget.h"
-#include "ProjectMK/UI/ShopSellSlotWidget.h"
 
-namespace
-{
-	UCraftingComponent* GetCharacterCraftingComponent(const AMKCharacter* Character)
-	{
-		return ::IsValid(Character) ? Character->GetCraftingComponent() : nullptr;
-	}
-}
-
-UShopMenuContents::UShopMenuContents(const FObjectInitializer& ObjectInitializer)
-	: Super(ObjectInitializer)
+UShopMenuContents::UShopMenuContents(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
 	MenuContentsType = EMenuContentsType::Shop;
-	SellSlotWidgetClass = UShopSellSlotWidget::StaticClass();
-	RecipeSlotWidgetClass = UShopRecipeSlotWidget::StaticClass();
 }
 
 TSharedRef<SWidget> UShopMenuContents::RebuildWidget()
 {
-	if (::IsValid(WidgetTree) && WidgetTree->FindWidget(TEXT("RuntimeShopRoot")) == nullptr)
-	{
-		BuildDefaultWidgetTree();
-	}
-
+	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr) { BuildDefaultWidgetTree(); }
 	return Super::RebuildWidget();
+}
+
+bool UShopMenuContents::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
+{
+	const UItemSlotDragDropOperation* Item = Cast<UItemSlotDragDropOperation>(Operation);
+	UInventoryComponent* Inventory = GetLocalInventoryComponent();
+	if (::IsValid(Item) && ::IsValid(Inventory) && MerchantColumn->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition()))
+	{
+		const int32 Count = FMath::Min(Item->ItemCount, Inventory->GetItemCount(Item->ItemKey));
+		if (Count > 0 && Inventory->CalculateSellPrice(Item->ItemKey, 1) > 0)
+		{
+			QuantityDialog->ShowQuantity(Item->ItemKey, Count);
+			return true;
+		}
+	}
+	return Super::NativeOnDrop(InGeometry, Event, Operation);
 }
 
 void UShopMenuContents::BindEvents()
 {
-	if (UAbilitySystemComponent* AbilitySystem = GetOwnerAbilitySystemComponent())
+	Super::BindEvents();
+	OnVisibilityChanged.AddUniqueDynamic(this, &UShopMenuContents::OnMenuVisibilityChanged);
+	QuantityDialog->OnQuantityConfirmed.AddUObject(this, &UShopMenuContents::OnSaleConfirmed);
+	if (UAbilitySystemComponent* ASC = GetOwnerAbilitySystemComponent())
 	{
-		AbilitySystem->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCoinAttribute()).AddUObject(this, &UShopMenuContents::OnCoinChanged);
+		ASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCoinAttribute()).AddUObject(this, &UShopMenuContents::OnCoinChanged);
 	}
-	if (::IsValid(SellAllButton))
+	if (AMKCharacter* Character = GetLocalPlayerCharacter())
 	{
-		SellAllButton->OnClicked.AddUniqueDynamic(this, &UShopMenuContents::OnSellAllButtonClicked);
-	}
-
-	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
-	{
-		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-		InventoryComponent->OnInventoryChangedDelegate.AddUObject(this, &UShopMenuContents::OnInventoryChanged);
-	}
-
-	if (UCraftingComponent* CraftingComponent = GetCharacterCraftingComponent(GetLocalPlayerCharacter()))
-	{
-		CraftingComponent->OnRecipeUnlockedDelegate.RemoveAll(this);
-		CraftingComponent->OnRecipeUnlockedDelegate.AddUObject(this, &UShopMenuContents::OnRecipeUnlocked);
+		Character->GetCraftingComponent()->OnRecipeUnlockedDelegate.AddUObject(this, &UShopMenuContents::OnRecipeUnlocked);
 	}
 }
 
 void UShopMenuContents::UnbindEvents()
 {
-	if (UAbilitySystemComponent* AbilitySystem = GetOwnerAbilitySystemComponent())
+	Super::UnbindEvents();
+	OnVisibilityChanged.RemoveDynamic(this, &UShopMenuContents::OnMenuVisibilityChanged);
+	QuantityDialog->OnQuantityConfirmed.RemoveAll(this);
+	if (UAbilitySystemComponent* ASC = GetOwnerAbilitySystemComponent())
 	{
-		AbilitySystem->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCoinAttribute()).RemoveAll(this);
+		ASC->GetGameplayAttributeValueChangeDelegate(UAttributeSet_Character::GetCoinAttribute()).RemoveAll(this);
 	}
-	if (::IsValid(SellAllButton))
+	if (AMKCharacter* Character = GetLocalPlayerCharacter())
 	{
-		SellAllButton->OnClicked.RemoveDynamic(this, &UShopMenuContents::OnSellAllButtonClicked);
-	}
-
-	if (UInventoryComponent* InventoryComponent = GetLocalInventoryComponent())
-	{
-		InventoryComponent->OnInventoryChangedDelegate.RemoveAll(this);
-	}
-
-	if (UCraftingComponent* CraftingComponent = GetCharacterCraftingComponent(GetLocalPlayerCharacter()))
-	{
-		CraftingComponent->OnRecipeUnlockedDelegate.RemoveAll(this);
+		Character->GetCraftingComponent()->OnRecipeUnlockedDelegate.RemoveAll(this);
 	}
 }
 
-void UShopMenuContents::UpdateWidget()
-{
-	RefreshSellSlotList();
-	RefreshRecipeSlotList();
-}
-
-bool UShopMenuContents::TrySellItem(FName ItemUID)
-{
-	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
-	if (::IsValid(InventoryComponent) == false)
-	{
-		return false;
-	}
-
-	const bool bSold = InventoryComponent->TrySellItem(ItemUID, InventoryComponent->GetItemCount(ItemUID));
-	ApplySaleResult(bSold);
-	return bSold;
-}
-
-void UShopMenuContents::ToggleSellSelection(FName ItemUID)
-{
-	if (SelectedItemUIDs.Contains(ItemUID))
-	{
-		SelectedItemUIDs.Remove(ItemUID);
-	}
-	else
-	{
-		SelectedItemUIDs.Add(ItemUID);
-	}
-
-	RefreshSellSlotList();
-}
-
-bool UShopMenuContents::IsItemSelectedForSale(FName ItemUID) const
-{
-	return SelectedItemUIDs.Contains(ItemUID);
-}
+void UShopMenuContents::UpdateWidget() { RefreshRecipeSlotList(); }
 
 bool UShopMenuContents::TryUnlockRecipe(FName RecipeKey)
 {
-	USoundManager::TryPlaySFX(this, ESFXType::UI_Click);
-	UCraftingComponent* CraftingComponent = GetCharacterCraftingComponent(GetLocalPlayerCharacter());
-	return ::IsValid(CraftingComponent) && CraftingComponent->TryUnlockRecipe(RecipeKey);
+	AMKCharacter* Character = GetLocalPlayerCharacter();
+	return ::IsValid(Character) && Character->GetCraftingComponent()->TryUnlockRecipe(RecipeKey);
 }
 
 void UShopMenuContents::BuildDefaultWidgetTree()
 {
-	UBorder* RootBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeShopRoot"));
-	RootBorder->SetBrushColor(FLinearColor(0.f, 0.f, 0.f, 0.75f));
-	RootBorder->SetPadding(FMargin(FMKUILayout::SpaceXL));
-	WidgetTree->RootWidget = RootBorder;
-
-	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RootBox"));
-	RootBorder->SetContent(RootBox);
-
-	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("ShopMenu", "Title", "광산 보급소"), TEXT("ShopMarker")))->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceL));
+	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
+	WidgetTree->RootWidget = Overlay;
+	UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("InsetPanel"));
+	Panel->SetPadding(FMargin(24.f));
+	UOverlaySlot* PanelSlot = Overlay->AddChildToOverlay(Panel);
+	PanelSlot->SetHorizontalAlignment(HAlign_Fill);
+	PanelSlot->SetVerticalAlignment(VAlign_Fill);
+	UVerticalBox* Root = WidgetTree->ConstructWidget<UVerticalBox>();
+	Panel->SetContent(Root);
+	Root->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("Shop", "Title", "광산 보급소"), TEXT("ShopMarker")))->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
 	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>();
-	RootBox->AddChildToVerticalBox(Columns)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	UVerticalBox* SellColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	UHorizontalBoxSlot* SellColumnSlot = Columns->AddChildToHorizontalBox(SellColumn);
-	SellColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	SellColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
-	UBorder* PlayerCard = WidgetTree->ConstructWidget<UBorder>();
-	PlayerCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
-	PlayerCard->SetPadding(FMargin(FMKUILayout::SpaceL));
-	PlayerCard->SetContent(BuildSectionLabel(NSLOCTEXT("ShopMenu", "Player", "플레이어")));
-	SellColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
-	UTextBlock* SellTitle = BuildSectionLabel(NSLOCTEXT("ShopMenu", "SellTitle", "보유 광물"));
-	SellColumn->AddChildToVerticalBox(SellTitle)->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceXS));
-
-	UScrollBox* SellSlotScrollBox = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("SellSlotScrollBox"));
-	if (UVerticalBoxSlot* ScrollSlot = SellColumn->AddChildToVerticalBox(SellSlotScrollBox))
-	{
-		ScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	}
-
-	SellSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("SellSlotListPanel"));
-	SellSlotScrollBox->AddChild(SellSlotListPanel);
-
-	UHorizontalBox* BottomBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("BottomBox"));
-	if (UVerticalBoxSlot* BottomSlot = SellColumn->AddChildToVerticalBox(BottomBox))
-	{
-		BottomSlot->SetPadding(FMargin(0.f, FMKUILayout::SpaceL, 0.f, 0.f));
-	}
-
-	UTextBlock* RawTotalPriceText = nullptr;
-	UHorizontalBox* TotalPriceRow = BuildCurrencyAmount(RawTotalPriceText, FText::AsNumber(0));
-	TotalPriceText = RawTotalPriceText;
-	if (UHorizontalBoxSlot* TotalSlot = BottomBox->AddChildToHorizontalBox(TotalPriceRow))
-	{
-		TotalSlot->SetVerticalAlignment(VAlign_Center);
-		TotalSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	}
-
-	UButton* RawSellAllButton = nullptr;
-	UTextBlock* SellAllButtonText = nullptr;
-	USizeBox* SellAllButtonSize = BuildActionButton(RawSellAllButton, SellAllButtonText, NSLOCTEXT("ShopMenu", "SellSelected", "선택 판매"));
-	SellAllButton = RawSellAllButton;
-	BottomBox->AddChildToHorizontalBox(SellAllButtonSize);
-
-	UVerticalBox* RecipeColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	UHorizontalBoxSlot* RecipeColumnSlot = Columns->AddChildToHorizontalBox(RecipeColumn);
-	RecipeColumnSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	RecipeColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
-	Columns->ShiftChild(0, RecipeColumn);
-	SellColumnSlot->SetPadding(FMargin(0.f));
-	UBorder* MerchantCard = WidgetTree->ConstructWidget<UBorder>();
-	MerchantCard->SetBrushColor(FLinearColor(0.055f, 0.075f, 0.1f, 1.f));
-	MerchantCard->SetPadding(FMargin(FMKUILayout::SpaceL));
-	MerchantCard->SetContent(BuildSectionLabel(NSLOCTEXT("ShopMenu", "Merchant", "상점 주인")));
-	RecipeColumn->AddChildToVerticalBox(MerchantCard)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceM));
-	UTextBlock* RecipeTitleText = BuildSectionLabel(NSLOCTEXT("ShopMenu", "RecipeTitle", "설계도"));
-	if (UVerticalBoxSlot* RecipeTitleSlot = RecipeColumn->AddChildToVerticalBox(RecipeTitleText))
-	{
-		RecipeTitleSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, 0.f, FMKUILayout::SpaceXS));
-	}
-
-	UScrollBox* RecipeSlotScrollBox = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("RecipeSlotScrollBox"));
-	if (UVerticalBoxSlot* RecipeScrollSlot = RecipeColumn->AddChildToVerticalBox(RecipeSlotScrollBox))
-	{
-		RecipeScrollSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	}
-
-	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RecipeSlotListPanel"));
-	RecipeSlotScrollBox->AddChild(RecipeSlotListPanel);
-}
-
-void UShopMenuContents::RefreshSellSlotList()
-{
-	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
-	if (::IsValid(SellSlotListPanel) == false || ::IsValid(InventoryComponent) == false)
-	{
-		return;
-	}
-
-	SellSlotListPanel->ClearChildren();
-
-	TArray<FName> ItemUIDs;
-	const TMap<FName, int32> InventoryItems = InventoryComponent->GetInventoryItems();
-	InventoryItems.GenerateKeyArray(ItemUIDs);
-	ItemUIDs.Sort(FNameLexicalLess());
-	for (auto SelectionIterator = SelectedItemUIDs.CreateIterator(); SelectionIterator; ++SelectionIterator)
-	{
-		if (InventoryItems.Contains(*SelectionIterator) == false)
-		{
-			SelectionIterator.RemoveCurrent();
-		}
-	}
-
-	int32 SellableItemCount = 0;
-	int32 TotalPrice = 0;
-	for (const FName& ItemUID : ItemUIDs)
-	{
-		const int32 ItemCount = InventoryItems[ItemUID];
-		const int32 UnitPrice = InventoryComponent->CalculateSellPrice(ItemUID, 1);
-		if (UnitPrice <= 0 || ItemCount <= 0)
-		{
-			continue;
-		}
-
-		UShopSellSlotWidget* SellSlotWidget = CreateWidget<UShopSellSlotWidget>(this, SellSlotWidgetClass);
-		if (::IsValid(SellSlotWidget) == false)
-		{
-			continue;
-		}
-
-		if (UVerticalBoxSlot* RowSlot = Cast<UVerticalBoxSlot>(SellSlotListPanel->AddChild(SellSlotWidget)))
-		{
-			RowSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
-		}
-		SellSlotWidget->InitializeSellSlot(this, ItemUID, ItemCount, UnitPrice);
-		++SellableItemCount;
-		if (SelectedItemUIDs.Contains(ItemUID))
-		{
-			TotalPrice += UnitPrice * ItemCount;
-		}
-	}
-
-	if (::IsValid(TotalPriceText))
-	{
-		TotalPriceText->SetText(FText::AsNumber(TotalPrice));
-	}
-	if (SellableItemCount <= 0)
-	{
-		UTextBlock* EmptyText = WidgetTree->ConstructWidget<UTextBlock>();
-		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoSellableItem", "판매할 광물이 없습니다."));
-		ApplyTextRole(EmptyText, EMKTextRole::Body);
-		SellSlotListPanel->AddChild(EmptyText);
-	}
-
-	if (::IsValid(SellAllButton))
-	{
-		SellAllButton->SetIsEnabled(TotalPrice > 0);
-	}
+	Root->AddChildToVerticalBox(Columns)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	MerchantColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* MerchantSlot = Columns->AddChildToHorizontalBox(MerchantColumn);
+	MerchantSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	MerchantSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
+	UMenuDisplayCardWidget* Merchant = CreateWidget<UMenuDisplayCardWidget>(this);
+	Merchant->SetDisplayRole(TEXT("Shop"));
+	MerchantColumn->AddChildToVerticalBox(Merchant)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Blueprints", "설계도")))->SetPadding(FMargin(8.f));
+	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
+	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>();
+	Recipes->AddChild(RecipeSlotListPanel);
+	UVerticalBox* PlayerColumn = WidgetTree->ConstructWidget<UVerticalBox>();
+	Columns->AddChildToHorizontalBox(PlayerColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UMenuDisplayCardWidget* Player = CreateWidget<UMenuDisplayCardWidget>(this);
+	Player->SetDisplayRole(TEXT("Player"));
+	PlayerColumn->AddChildToVerticalBox(Player)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	UScrollBox* Items = WidgetTree->ConstructWidget<UScrollBox>();
+	PlayerColumn->AddChildToVerticalBox(Items)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	Items->AddChild(CreateWidget<UInventoryWidget>(this));
+	QuantityDialog = CreateWidget<UItemQuantityDialog>(this);
+	UOverlaySlot* DialogSlot = Overlay->AddChildToOverlay(QuantityDialog);
+	DialogSlot->SetHorizontalAlignment(HAlign_Fill);
+	DialogSlot->SetVerticalAlignment(VAlign_Fill);
+	QuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
 }
 
 void UShopMenuContents::RefreshRecipeSlotList()
 {
-	UCraftingComponent* CraftingComponent = GetCharacterCraftingComponent(GetLocalPlayerCharacter());
-	if (::IsValid(RecipeSlotListPanel) == false || ::IsValid(CraftingComponent) == false)
-	{
-		return;
-	}
-
+	AMKCharacter* Character = GetLocalPlayerCharacter();
+	if (::IsValid(RecipeSlotListPanel) == false || ::IsValid(Character) == false) { return; }
 	RecipeSlotListPanel->ClearChildren();
-
-	const TArray<FName> LockedRecipeKeys = CraftingComponent->GetLockedRecipeKeys();
-	for (const FName& RecipeKey : LockedRecipeKeys)
+	UCraftingComponent* Crafting = Character->GetCraftingComponent();
+	for (const FName Key : Crafting->GetLockedRecipeKeys())
 	{
-		UShopRecipeSlotWidget* RecipeSlotWidget = CreateWidget<UShopRecipeSlotWidget>(this, RecipeSlotWidgetClass);
-		if (::IsValid(RecipeSlotWidget) == false)
-		{
-			continue;
-		}
-
-		if (UVerticalBoxSlot* RowSlot = Cast<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(RecipeSlotWidget)))
-		{
-			RowSlot->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
-		}
-		RecipeSlotWidget->InitializeRecipeSlot(this, RecipeKey, CraftingComponent->CanUnlockRecipe(RecipeKey));
-	}
-
-	if (LockedRecipeKeys.IsEmpty())
-	{
-		UTextBlock* EmptyText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass());
-		EmptyText->SetText(NSLOCTEXT("ShopMenu", "NoLockedRecipe", "해금할 설계도가 없습니다."));
-		ApplyTextRole(EmptyText, EMKTextRole::Body);
-		RecipeSlotListPanel->AddChild(EmptyText);
+		UShopRecipeSlotWidget* Entry = CreateWidget<UShopRecipeSlotWidget>(this);
+		CastChecked<UVerticalBox>(RecipeSlotListPanel)->AddChildToVerticalBox(Entry)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+		Entry->InitializeRecipeSlot(this, Key, Crafting->CanUnlockRecipe(Key));
 	}
 }
 
-void UShopMenuContents::ApplySaleResult(bool bSold)
+void UShopMenuContents::OnSaleConfirmed(FName ItemKey, int32 Count)
 {
-	USoundManager::TryPlaySFX(this, ESFXType::UI_Click);
-	if (bSold == false)
+	UInventoryComponent* Inventory = GetLocalInventoryComponent();
+	if (::IsValid(Inventory) && Inventory->TrySellItem(ItemKey, Count))
 	{
-		return;
-	}
-
-	USoundManager::TryPlaySFX(this, ESFXType::Shop_Sell);
-	RefreshRecipeSlotList();
-	if (AMKCharacter* LocalCharacter = GetLocalPlayerCharacter())
-	{
-		LocalCharacter->TrySaveGame();
+		USoundManager::TryPlaySFX(this, ESFXType::Shop_Sell);
+		if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->TrySaveGame(); }
 	}
 }
 
-void UShopMenuContents::OnSellAllButtonClicked()
+void UShopMenuContents::OnCoinChanged(const FOnAttributeChangeData& Data) { RefreshRecipeSlotList(); }
+void UShopMenuContents::OnRecipeUnlocked(FName RecipeKey) { RefreshRecipeSlotList(); }
+
+void UShopMenuContents::OnMenuVisibilityChanged(ESlateVisibility InVisibility)
 {
-	UInventoryComponent* InventoryComponent = GetLocalInventoryComponent();
-	if (::IsValid(InventoryComponent) == false || SelectedItemUIDs.IsEmpty())
+	QuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
+	if (InVisibility != ESlateVisibility::Collapsed && InVisibility != ESlateVisibility::Hidden)
 	{
-		return;
+		RefreshRecipeSlotList();
 	}
-
-	bool bSoldAnyItem = false;
-	const TArray<FName> SelectedItems = SelectedItemUIDs.Array();
-	for (const FName ItemUID : SelectedItems)
-	{
-		bSoldAnyItem |= InventoryComponent->TrySellItem(ItemUID, InventoryComponent->GetItemCount(ItemUID));
-	}
-	SelectedItemUIDs.Reset();
-	ApplySaleResult(bSoldAnyItem);
-	RefreshSellSlotList();
-}
-
-void UShopMenuContents::OnInventoryChanged()
-{
-	RefreshSellSlotList();
-}
-
-void UShopMenuContents::OnCoinChanged(const FOnAttributeChangeData& Data)
-{
-	RefreshRecipeSlotList();
-}
-
-void UShopMenuContents::OnRecipeUnlocked(FName RecipeKey)
-{
-	RefreshRecipeSlotList();
 }

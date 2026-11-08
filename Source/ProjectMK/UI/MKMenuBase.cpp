@@ -8,6 +8,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/MKMenuContentsBase.h"
+#include "ProjectMK/UI/HUDWidget.h"
 #include "ProjectMK/UI/CraftingMenuContents.h"
 #include "ProjectMK/UI/ShopMenuContents.h"
 
@@ -61,6 +62,10 @@ bool UMKMenuBase::OpenMenu(EMenuContentsType InMenuContentsType)
 	}
 
 	CurrentMenuContentsType = InMenuContentsType;
+	if (UHUDWidget* HUD = GetHUDWidget())
+	{
+		HUD->SetHoveredSlot(nullptr);
+	}
 	if (AMKCharacter* Character = GetLocalPlayerCharacter())
 	{
 		Character->SetMenuInputBlocked(true);
@@ -78,6 +83,14 @@ void UMKMenuBase::CloseMenu()
 	}
 
 	CurrentMenuContentsType = EMenuContentsType::None;
+	if (::IsValid(CurrentMenuContents))
+	{
+		CurrentMenuContents->SetVisibility(ESlateVisibility::Collapsed);
+	}
+	if (UHUDWidget* HUD = GetHUDWidget())
+	{
+		HUD->SetHoveredSlot(nullptr);
+	}
 	if (AMKCharacter* Character = GetLocalPlayerCharacter())
 	{
 		Character->SetMenuInputBlocked(false);
