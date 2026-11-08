@@ -25,7 +25,7 @@ public:
 
 	UFUNCTION(BlueprintCallable)
 	void ShowSkillTooltip(FName SkillDataKey);
-	void ShowRecipeTooltip(FName RecipeKey);
+	void ShowRecipeTooltip(FName RecipeKey, bool bBlueprint = false);
 
 	UFUNCTION(BlueprintCallable)
 	void HideTooltip();

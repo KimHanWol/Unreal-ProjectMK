@@ -24,6 +24,8 @@
 #include "Misc/Paths.h"
 #include "Fonts/CompositeFont.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/UI/MKMockupButton.h"
@@ -182,7 +184,7 @@ void UMKUserWidget::ApplyBorderStyle(UBorder* Border, FName BrushName) const
 {
 	if (BrushName == TEXT("RecipeCard"))
 	{
-		BrushName = TEXT("RecipeRow");
+		BrushName = TEXT("InsetPanel");
 	}
 
 	const UDataManager* DataManager = UDataManager::Get(const_cast<UMKUserWidget*>(this));
@@ -332,6 +334,42 @@ UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSiz
 	Size->SetContent(OutIcon);
 	Frame->SetContent(Size);
 	return Frame;
+}
+
+USizeBox* UMKUserWidget::BuildRecipeEntry(UImage*& OutIcon, UTextBlock*& OutName, UTextBlock*& OutSummary,
+	UButton*& OutButton, UTextBlock*& OutButtonText, bool bCurrencyButton)
+{
+	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
+	Size->SetMinDesiredHeight(100.f);
+	UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
+	ApplyBorderStyle(Card, TEXT("RecipeCard"));
+	Card->SetPadding(FMargin(16.f));
+	Size->SetContent(Card);
+	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Card->SetContent(Row);
+	UBorder* IconFrame = BuildItemIconFrame(OutIcon, 32.f);
+	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
+	IconSlot->SetVerticalAlignment(VAlign_Center);
+	IconSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
+	UVerticalBox* Copy = WidgetTree->ConstructWidget<UVerticalBox>();
+	UHorizontalBoxSlot* CopySlot = Row->AddChildToHorizontalBox(Copy);
+	CopySlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	CopySlot->SetVerticalAlignment(VAlign_Center);
+	OutName = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeNameText"));
+	ApplyTextRole(OutName, EMKTextRole::Label, true);
+	Copy->AddChildToVerticalBox(OutName);
+	OutSummary = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeSummary"));
+	ApplyTextRole(OutSummary, EMKTextRole::Caption, true);
+	OutSummary->SetColorAndOpacity(FSlateColor(FLinearColor(0.65f, 0.73f, 0.73f)));
+	Copy->AddChildToVerticalBox(OutSummary)->SetPadding(FMargin(0.f, 6.f, 0.f, 0.f));
+	USizeBox* ButtonSize = bCurrencyButton
+		? BuildCurrencyButton(OutButton, OutButtonText, FText::GetEmpty(), 116.f)
+		: BuildActionButton(OutButton, OutButtonText, FText::GetEmpty(), 116.f);
+	ButtonSize->SetWidthOverride(116.f);
+	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(ButtonSize);
+	ButtonSlot->SetVerticalAlignment(VAlign_Center);
+	ButtonSlot->SetPadding(FMargin(16.f, 0.f, 0.f, 0.f));
+	return Size;
 }
 
 USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName, FName FrameName, const FText& Label, const FLinearColor& FillColor)

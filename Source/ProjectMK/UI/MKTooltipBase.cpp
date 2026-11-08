@@ -111,17 +111,17 @@ void UMKTooltipBase::ShowSkillTooltip(FName SkillDataKey)
 	SetVisibility(ESlateVisibility::HitTestInvisible);
 }
 
-void UMKTooltipBase::ShowRecipeTooltip(FName RecipeKey)
+void UMKTooltipBase::ShowRecipeTooltip(FName RecipeKey, bool bBlueprint)
 {
 	TakeWidget();
 	ClearTooltip();
 	const UDataManager* Data = UDataManager::Get(this);
 	const FShopRecipeDataTableRow* Recipe = ::IsValid(Data) ? Data->GetShopRecipeDataTableRow(RecipeKey) : nullptr;
 	if (Recipe == nullptr) { SetVisible(false); return; }
-	Title->SetText(Recipe->DisplayName.IsEmpty() ? Data->GetItemDisplayName(Recipe->GetResultItemKey()) : Recipe->DisplayName);
-	CategoryText->SetText(NSLOCTEXT("Tooltip", "Recipe", "제작 설계도"));
-	const FItemDataTableRow* Result = Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Recipe->GetResultItemKey());
-	const FText Description = Recipe->Description.IsEmpty() && Result != nullptr ? Result->Description : Recipe->Description;
+	Title->SetText(Data->GetRecipeDisplayName(RecipeKey, bBlueprint));
+	CategoryText->SetText(bBlueprint ? NSLOCTEXT("Tooltip", "Blueprint", "설계도") : NSLOCTEXT("Tooltip", "CraftingRecipe", "제작"));
+	const FItemDataTableRow* Result = Data->GetRecipeItemData(RecipeKey, bBlueprint);
+	const FText Description = Data->GetRecipeDescription(RecipeKey, bBlueprint);
 	Desc->SetText(Description);
 	Desc->SetVisibility(Description.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	if (Result != nullptr && Result->ItemIcon.IsNull() == false) { UpdateTooltipIcon(Result->ItemIcon.LoadSynchronous()); }
@@ -153,9 +153,16 @@ void UMKTooltipBase::ShowRecipeTooltip(FName RecipeKey)
 	AMKCharacter* Character = GetLocalPlayerCharacter();
 	UCraftingComponent* Crafting = ::IsValid(Character) ? Character->GetCraftingComponent() : nullptr;
 	const bool bUnlocked = ::IsValid(Crafting) && Crafting->IsRecipeUnlocked(RecipeKey);
-	SetCost(Recipe->UnlockPrice, bUnlocked == false);
+	SetCost(Recipe->UnlockPrice, bBlueprint && bUnlocked == false);
 	FText State;
-	if (bUnlocked)
+	if (bBlueprint)
+	{
+		const UAttributeSet_Character* Attributes = GetCharacterAttributeSet();
+		State = bUnlocked ? NSLOCTEXT("Tooltip", "AlreadyPurchased", "구매 완료")
+			: (::IsValid(Attributes) && Attributes->GetCoin() < Recipe->UnlockPrice
+				? NSLOCTEXT("Tooltip", "NoCoin", "코인 부족") : NSLOCTEXT("Tooltip", "Purchasable", "구매 가능"));
+	}
+	else if (bUnlocked)
 	{
 		State = Crafting->CanCraftRecipe(RecipeKey) ? NSLOCTEXT("Tooltip", "Craftable", "제작 가능")
 			: (bEnoughMaterials ? NSLOCTEXT("Tooltip", "NoRoom", "공간 부족") : NSLOCTEXT("Tooltip", "NoMaterial", "재료 부족"));

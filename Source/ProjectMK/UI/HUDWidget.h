@@ -30,7 +30,7 @@ public:
 	UMKTooltipBase* GetTooltipWidget() const;
 	void SetHoveredSlot(UMKSlotBase* HoveredSlot);
 	void ClearHoveredSlot(UMKSlotBase* HoveredSlot);
-	void ShowRecipeTooltip(UWidget* Source, FName RecipeKey);
+	void ShowRecipeTooltip(UWidget* Source, FName RecipeKey, bool bBlueprint = false);
 	void ClearTooltipSource(UWidget* Source);
 
 private:

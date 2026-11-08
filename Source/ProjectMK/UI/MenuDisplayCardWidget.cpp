@@ -8,8 +8,6 @@
 #include "Brushes/SlateNoResource.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
-#include "ProjectMK/Core/Manager/DataManager.h"
-#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 
 TSharedRef<SWidget> UMenuDisplayCardWidget::RebuildWidget()
 {
@@ -58,14 +56,5 @@ void UMenuDisplayCardWidget::UpdateWidget()
 			Portrait->SetBrush(Brush);
 		}
 	}
-	else
-	{
-		const UDataManager* Data = UDataManager::Get(this);
-		const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
-		if (::IsValid(Style))
-		{
-			const FName IconRole = DisplayRole == TEXT("Crafting") ? TEXT("IconWorkbench") : (DisplayRole == TEXT("Shop") ? TEXT("IconTrade") : DisplayRole);
-			if (const FSlateBrush* Brush = Style->Brushes.Find(IconRole)) { Portrait->SetBrush(*Brush); }
-		}
-	}
+	Portrait->SetVisibility(DisplayRole == TEXT("Player") ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }

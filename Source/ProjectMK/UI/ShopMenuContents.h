@@ -8,6 +8,7 @@
 class UPanelWidget;
 class UVerticalBox;
 class UItemQuantityDialog;
+class UTextBlock;
 struct FOnAttributeChangeData;
 
 UCLASS()
@@ -28,6 +29,7 @@ protected:
 
 public:
 	bool TryUnlockRecipe(FName RecipeKey);
+	void SetMerchantDialogue(const FText& Dialogue);
 
 private:
 	void BuildDefaultWidgetTree();
@@ -45,6 +47,8 @@ private:
 	TObjectPtr<UVerticalBox> MerchantColumn;
 	UPROPERTY(Transient)
 	TObjectPtr<UItemQuantityDialog> QuantityDialog;
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> MerchantDialogue;
 	EItemContainer PendingSaleContainer = EItemContainer::Inventory;
 	int32 PendingSaleIndex = INDEX_NONE;
 };

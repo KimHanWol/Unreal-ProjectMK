@@ -100,6 +100,11 @@ bool UShopMenuContents::TryUnlockRecipe(FName RecipeKey)
 	return ::IsValid(Character) && Character->GetCraftingComponent()->TryUnlockRecipe(RecipeKey);
 }
 
+void UShopMenuContents::SetMerchantDialogue(const FText& Dialogue)
+{
+	if (::IsValid(MerchantDialogue)) { MerchantDialogue->SetText(Dialogue); }
+}
+
 void UShopMenuContents::BuildDefaultWidgetTree()
 {
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
@@ -121,13 +126,17 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	Merchant->SetDisplayRole(TEXT("Shop"));
 	MerchantColumn->AddChildToVerticalBox(Merchant);
 	MerchantColumn->AddChildToVerticalBox(BuildSectionDivider());
-	UTextBlock* SaleHint = BuildSectionLabel(NSLOCTEXT("Shop", "SellHint", "광물을 놓아 판매 · 우클릭으로 수량 선택"));
-	ApplyTextRole(SaleHint, EMKTextRole::Caption);
+	MerchantDialogue = BuildSectionLabel(NSLOCTEXT("Shop", "SellDialogue", "광물을 이곳에 놓으면 매입해 드립니다.\n판매할 광물을 우클릭해 수량을 골라도 됩니다."));
+	ApplyTextRole(MerchantDialogue, EMKTextRole::Body, true);
 	UBorder* SaleMat = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MerchantMat"));
-	SaleMat->SetPadding(FMargin(24.f, 16.f));
-	SaleMat->SetContent(SaleHint);
-	MerchantColumn->AddChildToVerticalBox(SaleMat)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
-	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Blueprints", "설계도")))->SetPadding(FMargin(8.f));
+	SaleMat->SetPadding(FMargin(24.f, 20.f));
+	SaleMat->SetVerticalAlignment(VAlign_Center);
+	SaleMat->SetContent(MerchantDialogue);
+	USizeBox* DialogueSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("MerchantDialogueArea"));
+	DialogueSize->SetMinDesiredHeight(112.f);
+	DialogueSize->SetContent(SaleMat);
+	MerchantColumn->AddChildToVerticalBox(DialogueSize)->SetPadding(FMargin(0.f, 8.f, 0.f, 12.f));
+	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Purchase", "구매")))->SetPadding(FMargin(8.f, 8.f, 8.f, 16.f));
 	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
 	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>();
@@ -141,6 +150,7 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	Player->SetDisplayRole(TEXT("Player"));
 	PlayerColumn->AddChildToVerticalBox(Player);
 	PlayerColumn->AddChildToVerticalBox(BuildSectionDivider());
+	PlayerColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Sale", "판매")))->SetPadding(FMargin(8.f, 8.f, 8.f, 16.f));
 	UScrollBox* Items = WidgetTree->ConstructWidget<UScrollBox>();
 	PlayerColumn->AddChildToVerticalBox(Items)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	UInventoryWidget* PlayerInventory = CreateWidget<UInventoryWidget>(this);

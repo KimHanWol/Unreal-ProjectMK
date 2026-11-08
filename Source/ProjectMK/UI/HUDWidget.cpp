@@ -180,11 +180,11 @@ void UHUDWidget::ClearHoveredSlot(UMKSlotBase* InHoveredSlot)
 	}
 }
 
-void UHUDWidget::ShowRecipeTooltip(UWidget* Source, FName RecipeKey)
+void UHUDWidget::ShowRecipeTooltip(UWidget* Source, FName RecipeKey, bool bBlueprint)
 {
 	HoveredSlot = nullptr;
 	HoveredTooltipSource = Source;
-	if (::IsValid(Tooltip)) { Tooltip->ShowRecipeTooltip(RecipeKey); UpdateTooltipPosition(); }
+	if (::IsValid(Tooltip)) { Tooltip->ShowRecipeTooltip(RecipeKey, bBlueprint); UpdateTooltipPosition(); }
 }
 
 void UHUDWidget::ClearTooltipSource(UWidget* Source)

@@ -39,7 +39,7 @@ private:
 	TObjectPtr<UTextBlock> RecipeText;
 
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> RequiredItemsText;
+	TObjectPtr<UTextBlock> SummaryText;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> CraftButtonText;

@@ -3,9 +3,6 @@
 #include "Blueprint/WidgetTree.h"
 #include "ProjectMK/UI/HUDWidget.h"
 #include "Components/Button.h"
-#include "Components/Border.h"
-#include "Components/HorizontalBox.h"
-#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
@@ -28,7 +25,7 @@ TSharedRef<SWidget> UShopRecipeSlotWidget::RebuildWidget()
 void UShopRecipeSlotWidget::NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event)
 {
 	Super::NativeOnMouseEnter(Geometry, Event);
-	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey); }
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey, true); }
 }
 
 void UShopRecipeSlotWidget::NativeOnMouseLeave(const FPointerEvent& Event)
@@ -65,11 +62,9 @@ void UShopRecipeSlotWidget::UpdateWidget()
 
 	if (::IsValid(RecipeNameText))
 	{
-		const FText RecipeName = RecipeDataTableRow->DisplayName.IsEmpty() ? FText::FromName(RecipeDataTableRow->GetResultItemKey()) : RecipeDataTableRow->DisplayName;
-		RecipeNameText->SetText(RecipeDataTableRow->ResultItemCount > 1
-			? FText::Format(NSLOCTEXT("ShopMenu", "RecipeNameCountFormat", "{0} x{1}"), RecipeName, RecipeDataTableRow->ResultItemCount)
-			: RecipeName);
+		RecipeNameText->SetText(DataManager->GetRecipeDisplayName(RecipeKey, true));
 	}
+	if (::IsValid(SummaryText)) { SummaryText->SetText(RecipeDataTableRow->ShortDescription); }
 
 	if (::IsValid(UnlockPriceText))
 	{
@@ -86,7 +81,7 @@ void UShopRecipeSlotWidget::UpdateWidget()
 		return;
 	}
 
-	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, RecipeDataTableRow->GetResultItemKey());
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetRecipeItemData(RecipeKey, true);
 	UPaperSprite* ItemIconSprite = ItemDataTableRow != nullptr ? ItemDataTableRow->ItemIcon.LoadSynchronous() : nullptr;
 	if (::IsValid(ItemIconSprite) == false)
 	{
@@ -95,7 +90,6 @@ void UShopRecipeSlotWidget::UpdateWidget()
 	}
 
 	ResultItemIconImage->SetBrushResourceObject(ItemIconSprite);
-	ResultItemIconImage->SetDesiredSizeOverride(ItemIconSize);
 	ResultItemIconImage->SetVisibility(ESlateVisibility::Visible);
 }
 
@@ -109,39 +103,17 @@ void UShopRecipeSlotWidget::InitializeRecipeSlot(UShopMenuContents* InOwnerShopM
 
 void UShopRecipeSlotWidget::BuildDefaultWidgetTree()
 {
-	UHorizontalBox* RootBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("RootBox"));
-	UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
-	Card->SetPadding(FMargin(4.f, 8.f, 12.f, 8.f));
-	Card->SetContent(RootBox);
-	WidgetTree->RootWidget = Card;
-
-	UImage* RawResultItemIcon = nullptr;
-	UBorder* IconFrame = BuildItemIconFrame(RawResultItemIcon, 32.f, NAME_None);
-	ResultItemIconImage = RawResultItemIcon;
-	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(IconFrame))
-	{
-		IconSlot->SetVerticalAlignment(VAlign_Center);
-		IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
-	}
-
-	RecipeNameText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeNameText"));
-	ApplyTextRole(RecipeNameText, EMKTextRole::Label, true);
-	if (UHorizontalBoxSlot* TextSlot = RootBox->AddChildToHorizontalBox(RecipeNameText))
-	{
-		TextSlot->SetVerticalAlignment(VAlign_Center);
-		TextSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	}
-
-	UButton* RawUnlockButton = nullptr;
-	UTextBlock* RawUnlockPriceText = nullptr;
-	USizeBox* UnlockButtonSize = BuildCurrencyButton(RawUnlockButton, RawUnlockPriceText, FText::GetEmpty());
-	UnlockButton = RawUnlockButton;
-	UnlockPriceText = RawUnlockPriceText;
-	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(UnlockButtonSize))
-	{
-		ButtonSlot->SetVerticalAlignment(VAlign_Center);
-		ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceM, 0.f, 0.f, 0.f));
-	}
+	UImage* Icon = nullptr;
+	UTextBlock* Name = nullptr;
+	UTextBlock* Summary = nullptr;
+	UButton* Button = nullptr;
+	UTextBlock* Price = nullptr;
+	WidgetTree->RootWidget = BuildRecipeEntry(Icon, Name, Summary, Button, Price, true);
+	ResultItemIconImage = Icon;
+	RecipeNameText = Name;
+	SummaryText = Summary;
+	UnlockButton = Button;
+	UnlockPriceText = Price;
 }
 
 void UShopRecipeSlotWidget::OnUnlockButtonClicked()

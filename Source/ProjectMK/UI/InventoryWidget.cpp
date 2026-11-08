@@ -10,7 +10,6 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Components/GridPanel.h"
 #include "Components/GridSlot.h"
-#include "Components/SizeBox.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -19,9 +18,6 @@
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "Brushes/SlateNoResource.h"
-#include "Components/Overlay.h"
-#include "Components/OverlaySlot.h"
-#include "Components/Image.h"
 
 void UInventoryWidget::SetShowQuickSlots(bool bShow)
 {
@@ -96,34 +92,21 @@ void UInventoryWidget::BuildDefaultWidgetTree()
 	WidgetTree->RootWidget = Frame;
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 	Frame->SetContent(Column);
-	auto BuildSection = [this](UGridPanel* Grid, FName Badge, const FMargin& SectionPadding)
+	auto BuildSection = [this](UGridPanel* Grid, const FMargin& SectionPadding)
 	{
-		UOverlay* Layers = WidgetTree->ConstructWidget<UOverlay>();
 		UBorder* Drawer = WidgetTree->ConstructWidget<UBorder>();
 		ApplyBorderStyle(Drawer, TEXT("InventoryDrawer"));
 		Drawer->SetPadding(SectionPadding);
 		Drawer->SetContent(Grid);
-		UOverlaySlot* DrawerLayout = Layers->AddChildToOverlay(Drawer);
-		DrawerLayout->SetHorizontalAlignment(HAlign_Fill);
-		DrawerLayout->SetVerticalAlignment(VAlign_Fill);
-		UImage* Emblem = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), Badge);
-		USizeBox* BadgeSize = WidgetTree->ConstructWidget<USizeBox>();
-		BadgeSize->SetWidthOverride(20.f);
-		BadgeSize->SetHeightOverride(20.f);
-		BadgeSize->SetContent(Emblem);
-		BadgeSize->SetRenderTranslation(FVector2D(0.f, -6.f));
-		UOverlaySlot* BadgeLayout = Layers->AddChildToOverlay(BadgeSize);
-		BadgeLayout->SetHorizontalAlignment(HAlign_Center);
-		BadgeLayout->SetVerticalAlignment(VAlign_Top);
-		return Layers;
+		return Drawer;
 	};
 	if (bShowQuickSlots)
 	{
 		QuickSlotPanel = WidgetTree->ConstructWidget<UGridPanel>();
-		Column->AddChildToVerticalBox(BuildSection(QuickSlotPanel, TEXT("IconStorage"), FMargin(12.f, 12.f, 12.f, 8.f)))->SetPadding(FMargin(0.f, 8.f, 0.f, 16.f));
+		Column->AddChildToVerticalBox(BuildSection(QuickSlotPanel, FMargin(12.f, 24.f, 12.f, 20.f)))->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
 	}
 	ItemSlotPanel = WidgetTree->ConstructWidget<UGridPanel>(UGridPanel::StaticClass(), TEXT("ItemSlotPanel"));
-	Column->AddChildToVerticalBox(BuildSection(ItemSlotPanel, TEXT("IconSatchel"), FMargin(12.f)))->SetPadding(FMargin(0.f, bShowQuickSlots ? 0.f : 8.f, 0.f, 0.f));
+	Column->AddChildToVerticalBox(BuildSection(ItemSlotPanel, FMargin(12.f, 24.f, 12.f, 20.f)));
 }
 
 void UInventoryWidget::UpdateItemSlotPanel()

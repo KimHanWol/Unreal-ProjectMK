@@ -87,7 +87,7 @@ void UQuickInventoryWidget::BuildDefaultWidgetTree()
 	WidgetTree->RootWidget = Canvas;
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Quickbar"));
 	Frame->SetBrushColor(FLinearColor(0.02f, 0.035f, 0.055f, 0.95f));
-	Frame->SetPadding(FMargin(FMKUILayout::SpaceS, FMKUILayout::SpaceXS));
+	Frame->SetPadding(FMargin(FMKUILayout::SpaceM, FMKUILayout::SpaceM, FMKUILayout::SpaceM, 20.f));
 	UCanvasPanelSlot* FrameSlot = Canvas->AddChildToCanvas(Frame);
 	FrameSlot->SetAnchors(FAnchors(ViewportAnchor.X, ViewportAnchor.Y));
 	FrameSlot->SetAlignment(ViewportAnchor);

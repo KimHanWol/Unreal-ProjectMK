@@ -62,6 +62,9 @@ public:
 	TArray<FName> GetSkillRowNames() const;
 	TArray<FName> GetShopRecipeRowNames() const;
 	const FShopRecipeDataTableRow* GetShopRecipeDataTableRow(FName RowName) const;
+	FText GetRecipeDisplayName(FName RecipeKey, bool bBlueprint = false) const;
+	FText GetRecipeDescription(FName RecipeKey, bool bBlueprint = false) const;
+	const FItemDataTableRow* GetRecipeItemData(FName RecipeKey, bool bBlueprint = false) const;
 	const UGameSettingDataAsset* GetGameSettingDataAsset() const;
 	const UVisualStyleDataAsset* GetVisualStyleDataAsset() const;
 	UDataTable* GetDataTable(EDataTableType DataTableType) const;

@@ -185,6 +185,34 @@ const FShopRecipeDataTableRow* UDataManager::GetShopRecipeDataTableRow(FName Row
 	return GetDataTableRow<FShopRecipeDataTableRow>(EDataTableType::ShopRecipe, RowName);
 }
 
+FText UDataManager::GetRecipeDisplayName(FName RecipeKey, bool bBlueprint) const
+{
+	const FShopRecipeDataTableRow* Recipe = GetShopRecipeDataTableRow(RecipeKey);
+	if (Recipe == nullptr) { return FText::GetEmpty(); }
+	const FText Name = Recipe->DisplayName.IsEmpty() ? GetItemDisplayName(Recipe->GetResultItemKey()) : Recipe->DisplayName;
+	return bBlueprint ? FText::Format(NSLOCTEXT("Recipe", "BlueprintName", "{0} 설계도"), Name) : Name;
+}
+
+FText UDataManager::GetRecipeDescription(FName RecipeKey, bool bBlueprint) const
+{
+	const FShopRecipeDataTableRow* Recipe = GetShopRecipeDataTableRow(RecipeKey);
+	if (Recipe == nullptr) { return FText::GetEmpty(); }
+	if (bBlueprint)
+	{
+		return FText::Format(NSLOCTEXT("Recipe", "BlueprintDescription", "{0} 제작 레시피를 해금합니다."), GetRecipeDisplayName(RecipeKey));
+	}
+	const FItemDataTableRow* Item = GetRecipeItemData(RecipeKey);
+	return Recipe->Description.IsEmpty() && Item != nullptr ? Item->Description : Recipe->Description;
+}
+
+const FItemDataTableRow* UDataManager::GetRecipeItemData(FName RecipeKey, bool bBlueprint) const
+{
+	const FShopRecipeDataTableRow* Recipe = GetShopRecipeDataTableRow(RecipeKey);
+	if (Recipe == nullptr) { return nullptr; }
+	const FName ItemKey = bBlueprint ? Recipe->BlueprintItemKey : Recipe->GetResultItemKey();
+	return ItemKey.IsNone() ? nullptr : GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
+}
+
 const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
 {
 	return GameSettingDataAsset;

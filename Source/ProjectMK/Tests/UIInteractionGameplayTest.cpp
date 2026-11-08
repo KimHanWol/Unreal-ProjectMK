@@ -98,6 +98,10 @@ namespace
 					UMKTooltipBase* RecipeTooltip = CastChecked<UHUDWidget>(FoundHUDs[0])->GetTooltipWidget();
 					UVerticalBox* Materials = Cast<UVerticalBox>(RecipeTooltip->WidgetTree->FindWidget(TEXT("TooltipMaterials")));
 					Test->TestTrue(TEXT("Recipe hover shows the common materials tooltip"), RecipeTooltip->IsVisible() && ::IsValid(Materials) && Materials->GetChildrenCount() > 0);
+					UTextBlock* RecipeTitle = Cast<UTextBlock>(RecipeTooltip->WidgetTree->FindWidget(TEXT("RuntimeTooltipTitle")));
+					UTextBlock* RecipeDescription = Cast<UTextBlock>(RecipeTooltip->WidgetTree->FindWidget(TEXT("RuntimeTooltipDescription")));
+					Test->TestTrue(TEXT("Shop tooltip names the blueprint instead of its crafted result"), RecipeTitle->GetText().ToString().EndsWith(TEXT(" 설계도")));
+					Test->TestTrue(TEXT("Shop tooltip explains recipe unlocking"), RecipeDescription->GetText().ToString().Contains(TEXT("레시피를 해금")));
 					RecipeEntry->TakeWidget()->OnMouseLeave(Pointer);
 				}
 				FReply DragReply = Source->TakeWidget()->OnDragDetected(Geometry, Pointer);

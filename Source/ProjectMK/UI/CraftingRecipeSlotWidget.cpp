@@ -2,22 +2,16 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "ProjectMK/UI/HUDWidget.h"
-#include "Components/Border.h"
 #include "Components/Button.h"
-#include "Components/HorizontalBox.h"
-#include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
-#include "Components/VerticalBox.h"
-#include "Components/VerticalBoxSlot.h"
 #include "PaperSprite.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/CraftingComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/UI/CraftingMenuContents.h"
-#include "ProjectMK/UI/MKMockupButton.h"
 
 TSharedRef<SWidget> UCraftingRecipeSlotWidget::RebuildWidget()
 {
@@ -70,19 +64,14 @@ void UCraftingRecipeSlotWidget::UpdateWidget()
 	}
 
 	const bool bUnlocked = Crafting->IsRecipeUnlocked(RecipeKey);
-	const FText DisplayName = Recipe->DisplayName.IsEmpty() ? FText::FromName(Recipe->GetResultItemKey()) : Recipe->DisplayName;
-	RecipeText->SetText(DisplayName);
-	TArray<FString> Materials;
+	RecipeText->SetText(DataManager->GetRecipeDisplayName(RecipeKey));
+	SummaryText->SetText(Recipe->ShortDescription);
 	bool bHasMaterials = true;
 	for (const FShopRecipeItem& RequiredItem : Recipe->RequiredItems)
 	{
 		const int32 Owned = Inventory->GetItemCount(RequiredItem.GetItemKey());
 		bHasMaterials &= Owned >= RequiredItem.ItemCount;
-		Materials.Add(FString::Printf(TEXT("%s %d/%d"), *RequiredItem.GetItemKey().ToString(), Owned, RequiredItem.ItemCount));
 	}
-	RequiredItemsText->SetText(FText::FromString(FString::Join(Materials, TEXT(" · "))));
-	RequiredItemsText->SetVisibility(ESlateVisibility::Collapsed);
-	RequiredItemsText->SetColorAndOpacity(FSlateColor(bHasMaterials ? FLinearColor(0.55f, 0.85f, 0.65f) : FLinearColor(1.f, 0.65f, 0.4f)));
 
 	const bool bCanCraft = Crafting->CanCraftRecipe(RecipeKey);
 	CraftButton->SetIsEnabled(bCanCraft);
@@ -109,41 +98,17 @@ void UCraftingRecipeSlotWidget::RefreshRecipe()
 
 void UCraftingRecipeSlotWidget::BuildDefaultWidgetTree()
 {
-	USizeBox* CardSize = WidgetTree->ConstructWidget<USizeBox>();
-	CardSize->SetMinDesiredWidth(284.f);
-	CardSize->SetMinDesiredHeight(64.f);
-	WidgetTree->RootWidget = CardSize;
-	UBorder* Border = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
-	Border->SetBrushColor(FLinearColor(0.06f, 0.09f, 0.13f, 1.f));
-	Border->SetPadding(FMargin(4.f, 8.f, 12.f, 8.f));
-	CardSize->SetContent(Border);
-	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
-	Border->SetContent(Row);
-	UImage* RawItemIcon = nullptr;
-	UBorder* IconFrame = BuildItemIconFrame(RawItemIcon, 32.f, NAME_None);
-	ItemIcon = RawItemIcon;
-	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
-	IconSlot->SetVerticalAlignment(VAlign_Center);
-	IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceM, 0.f));
-	UVerticalBox* TextColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	UHorizontalBoxSlot* TextSlot = Row->AddChildToHorizontalBox(TextColumn);
-	TextSlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	TextSlot->SetVerticalAlignment(VAlign_Center);
-	RecipeText = WidgetTree->ConstructWidget<UTextBlock>();
-	ApplyTextRole(RecipeText, EMKTextRole::Label, true);
-	TextColumn->AddChildToVerticalBox(RecipeText);
-	RequiredItemsText = WidgetTree->ConstructWidget<UTextBlock>();
-	ApplyTextRole(RequiredItemsText, EMKTextRole::Caption, true);
-	TextColumn->AddChildToVerticalBox(RequiredItemsText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
-	UButton* RawCraftButton = nullptr;
-	UTextBlock* RawCraftButtonText = nullptr;
-	USizeBox* ButtonSize = BuildActionButton(RawCraftButton, RawCraftButtonText, FText::GetEmpty());
-	ButtonSize->SetWidthOverride(156.f);
-	CraftButton = RawCraftButton;
-	CraftButtonText = RawCraftButtonText;
-	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(ButtonSize);
-	ButtonSlot->SetPadding(FMargin(FMKUILayout::SpaceM, 0.f, 0.f, 0.f));
-	ButtonSlot->SetVerticalAlignment(VAlign_Center);
+	UImage* Icon = nullptr;
+	UTextBlock* Name = nullptr;
+	UTextBlock* Summary = nullptr;
+	UButton* Button = nullptr;
+	UTextBlock* Label = nullptr;
+	WidgetTree->RootWidget = BuildRecipeEntry(Icon, Name, Summary, Button, Label, false);
+	ItemIcon = Icon;
+	RecipeText = Name;
+	SummaryText = Summary;
+	CraftButton = Button;
+	CraftButtonText = Label;
 }
 
 void UCraftingRecipeSlotWidget::OnCraftButtonClicked()
