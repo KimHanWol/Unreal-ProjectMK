@@ -132,9 +132,11 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Block", meta = (ClampMin = "0.01"))
 	float BlockItemOverlaySpriteScale = 0.7f;
 
-	/** 월드에 드롭된 아이템 스프라이트 배율 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.01"))
-	float WorldItemSpriteScale = 0.7f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
+	float WorldItemDisplaySize = 10.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
+	float WorldCoinSizeMultiplier = 1.5f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
 	float WorldItemLifetime = 300.f;

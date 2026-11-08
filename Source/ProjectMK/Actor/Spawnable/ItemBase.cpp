@@ -5,6 +5,7 @@
 #include "Components/SphereComponent.h"
 #include "Materials/MaterialInterface.h"
 #include "PaperSpriteComponent.h"
+#include "PaperSprite.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -30,7 +31,8 @@ AItemBase::AItemBase()
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
-	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -1.f, 0.f));
+	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -30.f, 0.f));
+	PaperSpriteComponent->SetTranslucentSortPriority(10);
 	PaperSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BaseSpriteRelativeLocation = PaperSpriteComponent->GetRelativeLocation();
 
@@ -84,15 +86,18 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 	UPaperSprite* LoadedItemSprite = ItemDataTableRow->ItemIcon.LoadSynchronous();
 	PaperSpriteComponent->SetSprite(LoadedItemSprite);
 
-	float ItemSpriteScale = 0.7f;
+	float DisplaySize = 10.f;
 	float Lifetime = 300.f;
 	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
 	{
-		ItemSpriteScale = GameSettings->WorldItemSpriteScale;
+		DisplaySize = GameSettings->WorldItemDisplaySize * (InItemKey == TEXT("Coin") ? GameSettings->WorldCoinSizeMultiplier : 1.f);
 		Lifetime = GameSettings->WorldItemLifetime;
 		BlinkDuration = GameSettings->WorldItemBlinkDuration;
 	}
 
+	const FVector2D SourceSize = ::IsValid(LoadedItemSprite) ? LoadedItemSprite->GetSourceSize() : FVector2D(32.f);
+	const float PixelsPerUnit = ::IsValid(LoadedItemSprite) ? LoadedItemSprite->GetPixelsPerUnrealUnit() : 2.f;
+	const float ItemSpriteScale = DisplaySize * PixelsPerUnit / FMath::Max(1.f, static_cast<float>(FMath::Max(SourceSize.X, SourceSize.Y)));
 	PaperSpriteComponent->SetRelativeScale3D(FVector(ItemSpriteScale, 1.f, ItemSpriteScale));
 	bIsInitialized = true;
 	SetLifeSpan(FMath::Max(1.f, Lifetime));
@@ -162,12 +167,12 @@ void AItemBase::OnLootFinished()
 
 void AItemBase::SetVisualLayer(float InVisualYOffset)
 {
-	VisualYOffset = InVisualYOffset;
+	VisualYOffset = FMath::Clamp(InVisualYOffset, 0.f, 4.f);
 
 	if (::IsValid(PaperSpriteComponent))
 	{
 		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f));
-		PaperSpriteComponent->SetTranslucentSortPriority(static_cast<int32>(GetUniqueID()));
+		PaperSpriteComponent->SetTranslucentSortPriority(10);
 	}
 }
 

@@ -78,6 +78,9 @@ namespace
 					if (It->GetItemKey() == UsableKey && It->CanBeCollectedBy(Player.Get()) == false) { DroppedItem = *It; break; }
 				}
 				if (Test->TestTrue(TEXT("Field stack records its drop owner"), DroppedItem.IsValid()) == false) { return Finish(); }
+				const UPaperSpriteComponent* FieldSprite = DroppedItem->FindComponentByClass<UPaperSpriteComponent>();
+				Test->TestTrue(TEXT("Field item image is in front of the player plane"), FieldSprite->GetComponentLocation().Y < Player->GetActorLocation().Y);
+				Test->TestTrue(TEXT("Field item sorts above character sprite accessories"), FieldSprite->TranslucencySortPriority > 1);
 				Inventory->SetItemCollectionActive(true);
 				Test->TestFalse(TEXT("Dropped items cannot be collected immediately"), Inventory->TryCollectWorldItem(DroppedItem.Get()));
 				DroppedItem->TryLoot(Player);
