@@ -5,6 +5,8 @@
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/ScrollBoxSlot.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -113,7 +115,8 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 	RecipeColumnSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceL, 0.f));
 	UMenuDisplayCardWidget* WorkbenchCard = CreateWidget<UMenuDisplayCardWidget>(this);
 	WorkbenchCard->SetDisplayRole(TEXT("Crafting"));
-	RecipeColumn->AddChildToVerticalBox(WorkbenchCard)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	RecipeColumn->AddChildToVerticalBox(WorkbenchCard);
+	RecipeColumn->AddChildToVerticalBox(BuildSectionDivider());
 	UScrollBox* RecipeScrollBox = WidgetTree->ConstructWidget<UScrollBox>();
 	RecipeColumn->AddChildToVerticalBox(RecipeScrollBox)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("RecipeSlotListPanel"));
@@ -123,10 +126,13 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 	Columns->AddChildToHorizontalBox(InventoryColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);
 	PlayerCard->SetDisplayRole(TEXT("Player"));
-	InventoryColumn->AddChildToVerticalBox(PlayerCard)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	InventoryColumn->AddChildToVerticalBox(PlayerCard);
+	InventoryColumn->AddChildToVerticalBox(BuildSectionDivider());
 	UScrollBox* InventoryScroll = WidgetTree->ConstructWidget<UScrollBox>();
 	InventoryColumn->AddChildToVerticalBox(InventoryScroll)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	InventoryScroll->AddChild(CreateWidget<UInventoryWidget>(this));
+	UInventoryWidget* PlayerInventory = CreateWidget<UInventoryWidget>(this);
+	PlayerInventory->SetShowQuickSlots(true);
+	CastChecked<UScrollBoxSlot>(InventoryScroll->AddChild(PlayerInventory))->SetHorizontalAlignment(HAlign_Center);
 }
 
 void UCraftingMenuContents::UpdateRecipeSlots()

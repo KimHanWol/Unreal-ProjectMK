@@ -5,6 +5,7 @@
 #include "MenuDisplayCardWidget.generated.h"
 
 class UImage;
+class UBorder;
 
 UCLASS()
 class PROJECTMK_API UMenuDisplayCardWidget : public UMKUserWidget
@@ -23,4 +24,6 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> Portrait;
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> Stage;
 };

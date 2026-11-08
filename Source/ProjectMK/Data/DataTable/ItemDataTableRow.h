@@ -25,6 +25,12 @@ struct FItemDataTableRow : public FItemDataTableRowBase
 {
 	GENERATED_BODY()
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI")
+	FText DisplayName;
+
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, Category = "UI", meta = (MultiLine = "true"))
+	FText Description;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsInventoryItem = true;
 

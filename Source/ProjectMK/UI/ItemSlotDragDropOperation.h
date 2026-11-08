@@ -1,6 +1,7 @@
 ﻿#pragma once
 
 #include "Blueprint/DragDropOperation.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 
 #include "ItemSlotDragDropOperation.generated.h"
 
@@ -12,6 +13,9 @@ class PROJECTMK_API UItemSlotDragDropOperation : public UDragDropOperation
 public:
 	UPROPERTY(Transient)
 	int32 SourceSlotIndex = INDEX_NONE;
+
+	UPROPERTY(Transient)
+	EItemContainer SourceContainer = EItemContainer::Inventory;
 
 	UPROPERTY(Transient)
 	FName ItemKey = NAME_None;

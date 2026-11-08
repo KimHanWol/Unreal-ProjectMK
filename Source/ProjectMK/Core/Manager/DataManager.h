@@ -58,6 +58,7 @@ public:
 	const FMonsterDataTableRow* GetMonsterDataTableRow(FName RowName) const;
 	const FSoundDataTableRow* GetSoundDataTableRow(ESFXType InSFXType) const;
 	const FSkillDataTableRow* GetSkillDataTableRow(FName RowName) const;
+	FText GetItemDisplayName(FName RowName) const;
 	TArray<FName> GetSkillRowNames() const;
 	TArray<FName> GetShopRecipeRowNames() const;
 	const FShopRecipeDataTableRow* GetShopRecipeDataTableRow(FName RowName) const;

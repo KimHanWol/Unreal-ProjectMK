@@ -29,6 +29,9 @@ struct FShopRecipeDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText DisplayName;
 
+	UPROPERTY(EditAnywhere, BlueprintReadWrite, meta = (MultiLine = "true"))
+	FText Description;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FShopRecipeItem> RequiredItems;
 

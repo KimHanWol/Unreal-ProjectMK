@@ -87,32 +87,9 @@ void UHealthBarWidget::UnbindEvents()
 
 void UHealthBarWidget::BuildDefaultWidgetTree()
 {
-	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("RuntimeHealthBar"));
-	RootSize->SetWidthOverride(260.f);
-	RootSize->SetHeightOverride(32.f);
-	WidgetTree->RootWidget = RootSize;
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("BarFrame"));
-	Frame->SetPadding(FMargin(40.f, 9.f, 10.f, 9.f));
-	RootSize->SetContent(Frame);
-	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
-	Frame->SetContent(Overlay);
-
-	ProgressBar_Health = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ProgressBar_Health"));
-	FProgressBarStyle ProgressStyle;
-	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
-	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
-	ProgressBar_Health->SetWidgetStyle(ProgressStyle);
-	ProgressBar_Health->SetFillColorAndOpacity(FLinearColor(0.8f, 0.12f, 0.1f, 1.f));
-	UOverlaySlot* FillSlot = Overlay->AddChildToOverlay(ProgressBar_Health);
-	FillSlot->SetHorizontalAlignment(HAlign_Fill);
-	FillSlot->SetVerticalAlignment(VAlign_Fill);
-	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	Label->SetText(NSLOCTEXT("HUD", "HealthLabel", "HP"));
-	ApplyTextRole(Label, EMKTextRole::Caption);
-	UOverlaySlot* LabelSlot = Overlay->AddChildToOverlay(Label);
-	LabelSlot->SetHorizontalAlignment(HAlign_Left);
-	LabelSlot->SetVerticalAlignment(VAlign_Center);
-	LabelSlot->SetPadding(FMargin(0.f));
+	UProgressBar* Bar = nullptr;
+	WidgetTree->RootWidget = BuildStatusGauge(Bar, TEXT("RuntimeHealthBar"), TEXT("BarFrame"), NSLOCTEXT("HUD", "HealthLabel", "HP"), FLinearColor(0.8f, 0.12f, 0.1f));
+	ProgressBar_Health = Bar;
 }
 
 void UHealthBarWidget::ApplyProgressBarStyle()

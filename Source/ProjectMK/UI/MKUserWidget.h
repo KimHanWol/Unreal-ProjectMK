@@ -16,6 +16,7 @@ class UHorizontalBox;
 class UImage;
 class USizeBox;
 class UTextBlock;
+class UProgressBar;
 
 enum class EMKTextRole : uint8
 {
@@ -59,9 +60,11 @@ protected:
 	void ApplyVisualStyle();
 	void ApplyBorderStyle(UBorder* Border, FName BrushName) const;
 	void ApplyTextRole(UTextBlock* TextBlock, EMKTextRole TextRole, bool bAutoWrap = false) const;
-	UBorder* BuildSectionHeader(const FText& Title, FName IconBrushName);
+	UBorder* BuildSectionHeader(const FText& Title, FName IconBrushName, UTextBlock** OutTitle = nullptr);
 	UTextBlock* BuildSectionLabel(const FText& Label);
+	USizeBox* BuildSectionDivider();
 	UBorder* BuildItemIconFrame(UImage*& OutIcon, float IconSize = FMKUILayout::ItemIconSize, FName BrushName = TEXT("Slot"));
+	USizeBox* BuildStatusGauge(UProgressBar*& OutBar, FName RootName, FName FrameName, const FText& Label, const FLinearColor& FillColor);
 	USizeBox* BuildActionButton(UButton*& OutButton, UTextBlock*& OutLabel, const FText& Label,
 		float MinWidth = FMKUILayout::CompactButtonWidth, float MinHeight = FMKUILayout::ButtonHeight);
 	UHorizontalBox* BuildCurrencyAmount(UTextBlock*& OutAmountText, const FText& Amount, EMKTextRole TextRole = EMKTextRole::Numeric);

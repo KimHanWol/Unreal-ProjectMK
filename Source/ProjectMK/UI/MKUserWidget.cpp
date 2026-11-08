@@ -13,6 +13,13 @@
 #include "Components/SizeBox.h"
 #include "Components/ScrollBox.h"
 #include "Components/SpinBox.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "Components/ProgressBar.h"
+#include "Components/ScaleBox.h"
+#include "Components/ScaleBoxSlot.h"
+#include "Brushes/SlateColorBrush.h"
+#include "Brushes/SlateNoResource.h"
 #include "Components/TextBlock.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
@@ -23,6 +30,11 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/HUDWidget.h"
+
+bool UMKUserWidget::IsVisible() const
+{
+	return GetVisibility() != ESlateVisibility::Collapsed;
+}
 
 void UMKUserWidget::NativeConstruct()
 {
@@ -65,7 +77,7 @@ void UMKUserWidget::ApplyVisualStyle()
 			{
 				FSpinBoxStyle InputStyle = Input->GetWidgetStyle();
 				InputStyle.SetBackgroundBrush(*Background).SetHoveredBackgroundBrush(*Hover);
-				InputStyle.SetActiveFillBrush(FSlateBrush()).SetInactiveFillBrush(FSlateBrush());
+				InputStyle.SetActiveFillBrush(FSlateNoResource()).SetInactiveFillBrush(FSlateNoResource());
 				Input->SetWidgetStyle(InputStyle);
 				Input->SetForegroundColor(FSlateColor(FLinearColor(0.96f, 0.9f, 0.73f)));
 				FSlateFontInfo Font = Input->GetFont();
@@ -232,7 +244,7 @@ void UMKUserWidget::ApplyTextRole(UTextBlock* TextBlock, const EMKTextRole TextR
 	TextBlock->SetShadowColorAndOpacity(FLinearColor(0.f, 0.f, 0.f, 0.8f));
 }
 
-UBorder* UMKUserWidget::BuildSectionHeader(const FText& Title, FName IconBrushName)
+UBorder* UMKUserWidget::BuildSectionHeader(const FText& Title, FName IconBrushName, UTextBlock** OutTitle)
 {
 	UBorder* Header = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("WindowTitle"));
 	Header->SetPadding(FMargin(FMKUILayout::SpaceXL + FMKUILayout::SpaceS, FMKUILayout::SpaceS, FMKUILayout::SpaceM, FMKUILayout::SpaceS));
@@ -251,6 +263,7 @@ UBorder* UMKUserWidget::BuildSectionHeader(const FText& Title, FName IconBrushNa
 	ApplyTextRole(Label, EMKTextRole::WindowTitle);
 	Label->SetColorAndOpacity(FSlateColor(FLinearColor(0.95f, 0.87f, 0.68f)));
 	Row->AddChildToHorizontalBox(Label)->SetVerticalAlignment(VAlign_Center);
+	if (OutTitle != nullptr) { *OutTitle = Label; }
 	return Header;
 }
 
@@ -263,14 +276,74 @@ UTextBlock* UMKUserWidget::BuildSectionLabel(const FText& Label)
 	return TextBlock;
 }
 
+USizeBox* UMKUserWidget::BuildSectionDivider()
+{
+	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
+	Size->SetHeightOverride(12.f);
+	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
+	Size->SetContent(Overlay);
+	USizeBox* LineSize = WidgetTree->ConstructWidget<USizeBox>();
+	LineSize->SetHeightOverride(1.f);
+	UBorder* Line = WidgetTree->ConstructWidget<UBorder>();
+	Line->SetBrush(FSlateColorBrush(FLinearColor(0.32f, 0.25f, 0.16f)));
+	Line->SetPadding(FMargin(0.f));
+	LineSize->SetContent(Line);
+	UOverlaySlot* Layout = Overlay->AddChildToOverlay(LineSize);
+	Layout->SetHorizontalAlignment(HAlign_Fill);
+	Layout->SetVerticalAlignment(VAlign_Center);
+	Layout->SetPadding(FMargin(8.f, 0.f));
+	return Size;
+}
+
 UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSize, const FName BrushName)
 {
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), BrushName);
+	ApplyBorderStyle(Frame, BrushName);
 	Frame->SetPadding(FMargin(FMKUILayout::SpaceS));
 	OutIcon = WidgetTree->ConstructWidget<UImage>();
-	OutIcon->SetDesiredSizeOverride(FVector2D(IconSize));
-	Frame->SetContent(OutIcon);
+	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
+	Size->SetWidthOverride(IconSize);
+	Size->SetHeightOverride(IconSize);
+	Size->SetContent(OutIcon);
+	Frame->SetContent(Size);
 	return Frame;
+}
+
+USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName, FName FrameName, const FText& Label, const FLinearColor& FillColor)
+{
+	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), RootName);
+	Size->SetWidthOverride(260.f);
+	Size->SetHeightOverride(32.f);
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), FrameName);
+	Frame->SetPadding(FMargin(34.f, 8.f, 7.f, 9.f));
+	Size->SetContent(Frame);
+	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
+	Frame->SetContent(Overlay);
+	OutBar = WidgetTree->ConstructWidget<UProgressBar>();
+	FProgressBarStyle Style;
+	Style.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f)));
+	Style.SetFillImage(FSlateColorBrush(FLinearColor::White));
+	OutBar->SetWidgetStyle(Style);
+	OutBar->SetBorderPadding(FVector2D::ZeroVector);
+	OutBar->SetFillColorAndOpacity(FillColor);
+	UOverlaySlot* Fill = Overlay->AddChildToOverlay(OutBar);
+	Fill->SetHorizontalAlignment(HAlign_Fill);
+	Fill->SetVerticalAlignment(VAlign_Fill);
+	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>();
+	Text->SetText(Label);
+	ApplyTextRole(Text, EMKTextRole::Caption);
+	Text->SetShadowOffset(FVector2D::ZeroVector);
+	UScaleBox* Fit = WidgetTree->ConstructWidget<UScaleBox>();
+	Fit->SetStretch(EStretch::ScaleToFit);
+	Fit->SetStretchDirection(EStretchDirection::DownOnly);
+	Fit->SetClipping(EWidgetClipping::ClipToBounds);
+	Fit->SetContent(Text);
+	CastChecked<UScaleBoxSlot>(Text->Slot)->SetHorizontalAlignment(HAlign_Left);
+	UOverlaySlot* Copy = Overlay->AddChildToOverlay(Fit);
+	Copy->SetHorizontalAlignment(HAlign_Fill);
+	Copy->SetVerticalAlignment(VAlign_Fill);
+	Copy->SetPadding(FMargin(6.f, 0.f, 0.f, 0.f));
+	return Size;
 }
 
 USizeBox* UMKUserWidget::BuildActionButton(UButton*& OutButton, UTextBlock*& OutLabel, const FText& Label,
@@ -298,8 +371,11 @@ UHorizontalBox* UMKUserWidget::BuildCurrencyAmount(UTextBlock*& OutAmountText, c
 	{
 		CurrencyIcon->SetBrush(*CurrencyBrush);
 	}
-	CurrencyIcon->SetDesiredSizeOverride(FVector2D(18.f));
-	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(CurrencyIcon);
+	USizeBox* CurrencySize = WidgetTree->ConstructWidget<USizeBox>();
+	CurrencySize->SetWidthOverride(20.f);
+	CurrencySize->SetHeightOverride(20.f);
+	CurrencySize->SetContent(CurrencyIcon);
+	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(CurrencySize);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 	IconSlot->SetPadding(FMargin(0.f, 0.f, FMKUILayout::SpaceXS, 0.f));
 
@@ -372,11 +448,6 @@ const UAttributeSet_Character* UMKUserWidget::GetCharacterAttributeSet() const
 
 	return ::IsValid(AbilitySystemComponent)
 		? Cast<UAttributeSet_Character>(AbilitySystemComponent->GetAttributeSet(UAttributeSet_Character::StaticClass())) : nullptr;
-}
-
-bool UMKUserWidget::IsVisible() const
-{
-	return GetVisibility() != ESlateVisibility::Collapsed;
 }
 
 void UMKUserWidget::SetVisible(bool bVisible)

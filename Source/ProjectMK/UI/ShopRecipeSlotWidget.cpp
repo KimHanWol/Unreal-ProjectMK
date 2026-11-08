@@ -1,6 +1,7 @@
 ﻿#include "ProjectMK/UI/ShopRecipeSlotWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "ProjectMK/UI/HUDWidget.h"
 #include "Components/Button.h"
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
@@ -22,6 +23,18 @@ TSharedRef<SWidget> UShopRecipeSlotWidget::RebuildWidget()
 	}
 
 	return Super::RebuildWidget();
+}
+
+void UShopRecipeSlotWidget::NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event)
+{
+	Super::NativeOnMouseEnter(Geometry, Event);
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey); }
+}
+
+void UShopRecipeSlotWidget::NativeOnMouseLeave(const FPointerEvent& Event)
+{
+	Super::NativeOnMouseLeave(Event);
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ClearTooltipSource(this); }
 }
 
 void UShopRecipeSlotWidget::BindEvents()
@@ -124,7 +137,6 @@ void UShopRecipeSlotWidget::BuildDefaultWidgetTree()
 	USizeBox* UnlockButtonSize = BuildCurrencyButton(RawUnlockButton, RawUnlockPriceText, FText::GetEmpty());
 	UnlockButton = RawUnlockButton;
 	UnlockPriceText = RawUnlockPriceText;
-	UnlockButton->SetToolTipText(NSLOCTEXT("ShopMenu", "UnlockRecipeHint", "표시된 재화를 사용해 이 설계도를 해금합니다."));
 	if (UHorizontalBoxSlot* ButtonSlot = RootBox->AddChildToHorizontalBox(UnlockButtonSize))
 	{
 		ButtonSlot->SetVerticalAlignment(VAlign_Center);

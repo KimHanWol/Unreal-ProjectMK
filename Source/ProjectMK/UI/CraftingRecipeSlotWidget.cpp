@@ -1,6 +1,7 @@
 ﻿#include "ProjectMK/UI/CraftingRecipeSlotWidget.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "ProjectMK/UI/HUDWidget.h"
 #include "Components/Border.h"
 #include "Components/Button.h"
 #include "Components/HorizontalBox.h"
@@ -25,6 +26,18 @@ TSharedRef<SWidget> UCraftingRecipeSlotWidget::RebuildWidget()
 		BuildDefaultWidgetTree();
 	}
 	return Super::RebuildWidget();
+}
+
+void UCraftingRecipeSlotWidget::NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event)
+{
+	Super::NativeOnMouseEnter(Geometry, Event);
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey); }
+}
+
+void UCraftingRecipeSlotWidget::NativeOnMouseLeave(const FPointerEvent& Event)
+{
+	Super::NativeOnMouseLeave(Event);
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ClearTooltipSource(this); }
 }
 
 void UCraftingRecipeSlotWidget::BindEvents()

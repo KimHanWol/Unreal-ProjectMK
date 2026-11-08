@@ -116,3 +116,4 @@ for asset in [character, hud]:
     unreal.BlueprintEditorLibrary.compile_blueprint(blueprint)
     unreal.EditorAssetLibrary.save_loaded_asset(blueprint, False)
 print('Applied native brush sizes, shared state badges, scrollbar, 128x96 shop, HUD alignment.')
+exec((root / 'AGENT/Scripts/ApplyInventoryUX.py').read_text(encoding='utf-8-sig'), {})

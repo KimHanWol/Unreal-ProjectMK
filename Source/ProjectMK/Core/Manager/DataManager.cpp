@@ -22,6 +22,16 @@ UDataManager* UDataManager::Get(UObject* WorldContextObject)
 	return nullptr;
 }
 
+UDataTable* UDataManager::GetDataTable(EDataTableType DataTableType) const
+{
+	if (::IsValid(DataTableDataAsset) == false)
+	{
+		return nullptr;
+	}
+
+	return DataTableDataAsset->GetDataTable(DataTableType);
+}
+
 const FBlockDataTableRow* UDataManager::GetBlockDataTableRow(int32 TileIndex) const
 {
 	if (::IsValid(DataTableDataAsset) == false)
@@ -142,6 +152,12 @@ const FSkillDataTableRow* UDataManager::GetSkillDataTableRow(FName RowName) cons
 	return GetDataTableRow<FSkillDataTableRow>(EDataTableType::Skill, RowName);
 }
 
+FText UDataManager::GetItemDisplayName(FName RowName) const
+{
+	const FItemDataTableRow* Row = RowName.IsNone() ? nullptr : GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, RowName);
+	return Row != nullptr && Row->DisplayName.IsEmpty() == false ? Row->DisplayName : FText::FromName(RowName);
+}
+
 TArray<FName> UDataManager::GetSkillRowNames() const
 {
 	UDataTable* SkillDataTable = GetDataTable(EDataTableType::Skill);
@@ -177,16 +193,6 @@ const UGameSettingDataAsset* UDataManager::GetGameSettingDataAsset() const
 const UVisualStyleDataAsset* UDataManager::GetVisualStyleDataAsset() const
 {
 	return VisualStyleDataAsset;
-}
-
-UDataTable* UDataManager::GetDataTable(EDataTableType DataTableType) const
-{
-	if (::IsValid(DataTableDataAsset) == false)
-	{
-		return nullptr;
-	}
-
-	return DataTableDataAsset->GetDataTable(DataTableType);
 }
 
 TSubclassOf<UGameplayEffect> UDataManager::GetGameplayEffect(EGameplayEffectType EffectType) const

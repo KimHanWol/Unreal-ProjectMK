@@ -8,6 +8,8 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/ScrollBox.h"
+#include "Components/ScrollBoxSlot.h"
+#include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
@@ -39,12 +41,17 @@ bool UShopMenuContents::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
 	if (::IsValid(Item) && ::IsValid(Inventory) && MerchantColumn->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition()))
 	{
-		const int32 Count = FMath::Min(Item->ItemCount, Inventory->GetItemCount(Item->ItemKey));
+		const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(Item->SourceContainer);
+		if (Slots.IsValidIndex(Item->SourceSlotIndex) == false || Slots[Item->SourceSlotIndex].ItemUID != Item->ItemKey) { return true; }
+		const int32 Count = FMath::Min(Item->ItemCount, Slots[Item->SourceSlotIndex].ItemCount);
 		if (Count > 0 && Inventory->CalculateSellPrice(Item->ItemKey, 1) > 0)
 		{
+			PendingSaleContainer = Item->SourceContainer;
+			PendingSaleIndex = Item->SourceSlotIndex;
 			QuantityDialog->ShowQuantity(Item->ItemKey, Count);
 			return true;
 		}
+		return true;
 	}
 	return Super::NativeOnDrop(InGeometry, Event, Operation);
 }
@@ -107,7 +114,8 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	MerchantSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
 	UMenuDisplayCardWidget* Merchant = CreateWidget<UMenuDisplayCardWidget>(this);
 	Merchant->SetDisplayRole(TEXT("Shop"));
-	MerchantColumn->AddChildToVerticalBox(Merchant)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	MerchantColumn->AddChildToVerticalBox(Merchant);
+	MerchantColumn->AddChildToVerticalBox(BuildSectionDivider());
 	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Blueprints", "설계도")))->SetPadding(FMargin(8.f));
 	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
 	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
@@ -117,10 +125,13 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	Columns->AddChildToHorizontalBox(PlayerColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	UMenuDisplayCardWidget* Player = CreateWidget<UMenuDisplayCardWidget>(this);
 	Player->SetDisplayRole(TEXT("Player"));
-	PlayerColumn->AddChildToVerticalBox(Player)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
+	PlayerColumn->AddChildToVerticalBox(Player);
+	PlayerColumn->AddChildToVerticalBox(BuildSectionDivider());
 	UScrollBox* Items = WidgetTree->ConstructWidget<UScrollBox>();
 	PlayerColumn->AddChildToVerticalBox(Items)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	Items->AddChild(CreateWidget<UInventoryWidget>(this));
+	UInventoryWidget* PlayerInventory = CreateWidget<UInventoryWidget>(this);
+	PlayerInventory->SetShowQuickSlots(true);
+	CastChecked<UScrollBoxSlot>(Items->AddChild(PlayerInventory))->SetHorizontalAlignment(HAlign_Center);
 	QuantityDialog = CreateWidget<UItemQuantityDialog>(this);
 	UOverlaySlot* DialogSlot = Overlay->AddChildToOverlay(QuantityDialog);
 	DialogSlot->SetHorizontalAlignment(HAlign_Fill);
@@ -145,7 +156,9 @@ void UShopMenuContents::RefreshRecipeSlotList()
 void UShopMenuContents::OnSaleConfirmed(FName ItemKey, int32 Count)
 {
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
-	if (::IsValid(Inventory) && Inventory->TrySellItem(ItemKey, Count))
+	if (::IsValid(Inventory) == false) { return; }
+	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(PendingSaleContainer);
+	if (Slots.IsValidIndex(PendingSaleIndex) && Slots[PendingSaleIndex].ItemUID == ItemKey && Inventory->TrySellItemSlot(PendingSaleContainer, PendingSaleIndex, Count))
 	{
 		USoundManager::TryPlaySFX(this, ESFXType::Shop_Sell);
 		if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->TrySaveGame(); }

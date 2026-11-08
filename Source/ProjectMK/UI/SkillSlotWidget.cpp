@@ -20,6 +20,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
+#include "ProjectMK/UI/HUDWidget.h"
 #include "ProjectMK/UI/SkillTreeMenuContents.h"
 
 TSharedRef<SWidget> USkillSlotWidget::RebuildWidget()
@@ -251,7 +252,7 @@ void USkillSlotWidget::InitializeSkill(const FName InSkillKeyName)
 
 void USkillSlotWidget::BuildDefaultWidgetTree()
 {
-	DefaultSlotSize = FVector2D(96.f);
+	DefaultSlotSize = FVector2D(84.f);
 	Super::BuildDefaultWidgetTree();
 }
 
@@ -370,9 +371,11 @@ bool USkillSlotWidget::AreRequiredSkillsPurchased() const
 void USkillSlotWidget::OnCoinChanged(const FOnAttributeChangeData& Data)
 {
 	UpdateWidget();
+	if (IsHovered()) { if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(this); } }
 }
 
 void USkillSlotWidget::OnSkillPurchased(FName PurchasedSkillKeyName)
 {
 	UpdateWidget();
+	if (IsHovered()) { if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(this); } }
 }

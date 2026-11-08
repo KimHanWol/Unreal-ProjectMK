@@ -2,12 +2,14 @@
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 #include "HUDWidget.generated.h"
 
 class UInventoryWidget;
 class UMKMenuBase;
 class UMKSlotBase;
 class UMKTooltipBase;
+class UItemQuantityDialog;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -16,7 +18,9 @@ class PROJECTMK_API UHUDWidget : public UMKUserWidget
 
 public:
 	virtual void NativeConstruct() override;
+	virtual void NativeDestruct() override;
 	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
+	virtual bool NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation) override;
 
 	bool ToggleInventoryWidget();
 	bool ToggleSkillTree();
@@ -26,10 +30,14 @@ public:
 	UMKTooltipBase* GetTooltipWidget() const;
 	void SetHoveredSlot(UMKSlotBase* HoveredSlot);
 	void ClearHoveredSlot(UMKSlotBase* HoveredSlot);
+	void ShowRecipeTooltip(UWidget* Source, FName RecipeKey);
+	void ClearTooltipSource(UWidget* Source);
 
 private:
 	void UpdateTooltipWidget();
 	void UpdateTooltipPosition();
+	void OnDropConfirmed(FName ItemKey, int32 Count);
+	void OnDropCancelled();
 
 protected:
 	UPROPERTY(meta = (BindWidget))
@@ -46,4 +54,11 @@ protected:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UMKSlotBase> HoveredSlot;
+	UPROPERTY(Transient)
+	TObjectPtr<UWidget> HoveredTooltipSource;
+	UPROPERTY(Transient)
+	TObjectPtr<UItemQuantityDialog> DropQuantityDialog;
+	EItemContainer PendingDropContainer = EItemContainer::Inventory;
+	int32 PendingDropIndex = INDEX_NONE;
+	FName PendingDropKey;
 };

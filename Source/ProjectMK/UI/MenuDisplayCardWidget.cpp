@@ -5,6 +5,9 @@
 #include "Components/Image.h"
 #include "Components/ScaleBox.h"
 #include "Components/SizeBox.h"
+#include "Brushes/SlateNoResource.h"
+#include "PaperSprite.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 
@@ -15,7 +18,7 @@ TSharedRef<SWidget> UMenuDisplayCardWidget::RebuildWidget()
 		USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
 		Size->SetHeightOverride(180.f);
 		WidgetTree->RootWidget = Size;
-		UBorder* Stage = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("InsetPanel"));
+		Stage = WidgetTree->ConstructWidget<UBorder>();
 		Stage->SetPadding(FMargin(20.f));
 		Stage->SetHorizontalAlignment(HAlign_Center);
 		Stage->SetVerticalAlignment(VAlign_Center);
@@ -42,13 +45,17 @@ void UMenuDisplayCardWidget::SetDisplayRole(FName InRole)
 void UMenuDisplayCardWidget::UpdateWidget()
 {
 	if (::IsValid(Portrait) == false) { return; }
+	Stage->SetBrush(FSlateNoResource());
 	if (DisplayRole == TEXT("Player"))
 	{
-		const UDataManager* Data = UDataManager::Get(this);
-		const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
-		if (::IsValid(Style))
+		const AMKCharacter* Character = GetLocalPlayerCharacter();
+		const UPaperSprite* Sprite = ::IsValid(Character) ? Character->GetPortraitSprite() : nullptr;
+		if (::IsValid(Sprite))
 		{
-			if (const FSlateBrush* Brush = Style->Brushes.Find(TEXT("PlayerPortrait"))) { Portrait->SetBrush(*Brush); }
+			FSlateBrush Brush;
+			Brush.SetResourceObject(const_cast<UPaperSprite*>(Sprite));
+			Brush.ImageSize = Sprite->GetSourceSize();
+			Portrait->SetBrush(Brush);
 		}
 	}
 	else

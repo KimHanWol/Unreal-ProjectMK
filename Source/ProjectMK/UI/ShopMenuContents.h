@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "ProjectMK/UI/MKMenuContentsBase.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 #include "ShopMenuContents.generated.h"
 
 class UPanelWidget;
@@ -42,4 +43,6 @@ private:
 	TObjectPtr<UVerticalBox> MerchantColumn;
 	UPROPERTY(Transient)
 	TObjectPtr<UItemQuantityDialog> QuantityDialog;
+	EItemContainer PendingSaleContainer = EItemContainer::Inventory;
+	int32 PendingSaleIndex = INDEX_NONE;
 };

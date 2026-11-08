@@ -8,7 +8,7 @@ class UHorizontalBox;
 class UPlaytestQuickSlotWidget;
 class UTextBlock;
 
-/** 인벤토리 첫 8칸의 전용 퀵바. WBP가 없으면 독립된 기본 레이아웃을 만든다. */
+/** 사용 가능한 아이템만 보관하는 독립된 8칸 퀵바. */
 UCLASS()
 class PROJECTMK_API UQuickInventoryWidget : public UMKUserWidget
 {
@@ -21,6 +21,7 @@ protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
+	virtual bool NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 	virtual void UpdateWidget() override;

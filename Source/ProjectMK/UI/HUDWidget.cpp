@@ -5,6 +5,10 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Widget.h"
+#include "Blueprint/WidgetTree.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/UI/ItemQuantityDialog.h"
+#include "ProjectMK/UI/ItemSlotDragDropOperation.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
@@ -15,6 +19,12 @@
 void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	SetVisibility(ESlateVisibility::Visible);
+	DropQuantityDialog = CreateWidget<UItemQuantityDialog>(this);
+	DropQuantityDialog->AddToViewport(200);
+	DropQuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
+	DropQuantityDialog->OnQuantityConfirmed.AddUObject(this, &UHUDWidget::OnDropConfirmed);
+	DropQuantityDialog->OnQuantityCancelled.AddUObject(this, &UHUDWidget::OnDropCancelled);
 
 	if (::IsValid(Inventory))
 	{
@@ -27,16 +37,46 @@ void UHUDWidget::NativeConstruct()
 	}
 }
 
+void UHUDWidget::NativeDestruct()
+{
+	if (::IsValid(DropQuantityDialog))
+	{
+		DropQuantityDialog->OnQuantityConfirmed.RemoveAll(this);
+		DropQuantityDialog->OnQuantityCancelled.RemoveAll(this);
+		DropQuantityDialog->RemoveFromParent();
+	}
+	Super::NativeDestruct();
+}
+
 void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 
-	if (::IsValid(HoveredSlot) == false || ::IsValid(Tooltip) == false || Tooltip->IsVisible() == false)
+	if (::IsValid(HoveredTooltipSource) == false || ::IsValid(Tooltip) == false || Tooltip->IsVisible() == false)
 	{
 		return;
 	}
 
 	UpdateTooltipPosition();
+}
+
+bool UHUDWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
+{
+	const UItemSlotDragDropOperation* Item = Cast<UItemSlotDragDropOperation>(Operation);
+	UInventoryComponent* Items = GetLocalInventoryComponent();
+	if (::IsValid(Item) == false || ::IsValid(Items) == false) { return Super::NativeOnDrop(Geometry, Event, Operation); }
+	if (::IsValid(Inventory) && Inventory->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition())) { return true; }
+	UWidget* MenuFrame = ::IsValid(Menu) ? Menu->WidgetTree->FindWidget(TEXT("BG")) : nullptr;
+	if (IsMenuVisible() && ::IsValid(MenuFrame) && MenuFrame->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition())) { return true; }
+	const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(Item->SourceContainer);
+	if (Slots.IsValidIndex(Item->SourceSlotIndex) == false || Slots[Item->SourceSlotIndex].ItemUID != Item->ItemKey) { return true; }
+	PendingDropContainer = Item->SourceContainer;
+	PendingDropIndex = Item->SourceSlotIndex;
+	PendingDropKey = Item->ItemKey;
+	DropQuantityDialog->ShowQuantity(Item->ItemKey, Slots[Item->SourceSlotIndex].ItemCount, true);
+	SetHoveredSlot(nullptr);
+	if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->SetMenuInputBlocked(true); }
+	return true;
 }
 
 bool UHUDWidget::ToggleInventoryWidget()
@@ -110,6 +150,7 @@ void UHUDWidget::SetHoveredSlot(UMKSlotBase* InHoveredSlot)
 	}
 
 	HoveredSlot = InHoveredSlot;
+	HoveredTooltipSource = InHoveredSlot;
 	UpdateTooltipWidget();
 	UpdateTooltipPosition();
 }
@@ -122,11 +163,24 @@ void UHUDWidget::ClearHoveredSlot(UMKSlotBase* InHoveredSlot)
 	}
 
 	HoveredSlot = nullptr;
+	HoveredTooltipSource = nullptr;
 
 	if (::IsValid(Tooltip))
 	{
 		Tooltip->HideTooltip();
 	}
+}
+
+void UHUDWidget::ShowRecipeTooltip(UWidget* Source, FName RecipeKey)
+{
+	HoveredSlot = nullptr;
+	HoveredTooltipSource = Source;
+	if (::IsValid(Tooltip)) { Tooltip->ShowRecipeTooltip(RecipeKey); UpdateTooltipPosition(); }
+}
+
+void UHUDWidget::ClearTooltipSource(UWidget* Source)
+{
+	if (HoveredTooltipSource == Source) { HoveredTooltipSource = nullptr; HoveredSlot = nullptr; if (::IsValid(Tooltip)) { Tooltip->HideTooltip(); } }
 }
 
 void UHUDWidget::UpdateTooltipWidget()
@@ -201,4 +255,25 @@ void UHUDWidget::UpdateTooltipPosition()
 	}
 
 	Tooltip->SetRenderTranslation(TooltipPosition);
+}
+
+void UHUDWidget::OnDropConfirmed(FName ItemKey, int32 Count)
+{
+	UInventoryComponent* Items = GetLocalInventoryComponent();
+	if (::IsValid(Items))
+	{
+		const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(PendingDropContainer);
+		if (Slots.IsValidIndex(PendingDropIndex) && Slots[PendingDropIndex].ItemUID == ItemKey && ItemKey == PendingDropKey)
+		{
+			Items->TryDropItemSlot(PendingDropContainer, PendingDropIndex, Count);
+		}
+	}
+	OnDropCancelled();
+}
+
+void UHUDWidget::OnDropCancelled()
+{
+	PendingDropIndex = INDEX_NONE;
+	PendingDropKey = NAME_None;
+	if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->SetMenuInputBlocked(IsMenuVisible()); }
 }

@@ -87,32 +87,9 @@ void UOxygenBarWidget::UnbindEvents()
 
 void UOxygenBarWidget::BuildDefaultWidgetTree()
 {
-	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("RuntimeOxygenBar"));
-	RootSize->SetWidthOverride(260.f);
-	RootSize->SetHeightOverride(32.f);
-	WidgetTree->RootWidget = RootSize;
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("OxygenFrame"));
-	Frame->SetPadding(FMargin(40.f, 9.f, 10.f, 9.f));
-	RootSize->SetContent(Frame);
-	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
-	Frame->SetContent(Overlay);
-
-	ProgressBar_Oxygen = WidgetTree->ConstructWidget<UProgressBar>(UProgressBar::StaticClass(), TEXT("ProgressBar_Oxygen"));
-	FProgressBarStyle ProgressStyle;
-	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
-	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
-	ProgressBar_Oxygen->SetWidgetStyle(ProgressStyle);
-	ProgressBar_Oxygen->SetFillColorAndOpacity(FLinearColor(0.08f, 0.65f, 0.82f, 1.f));
-	UOverlaySlot* FillSlot = Overlay->AddChildToOverlay(ProgressBar_Oxygen);
-	FillSlot->SetHorizontalAlignment(HAlign_Fill);
-	FillSlot->SetVerticalAlignment(VAlign_Fill);
-	UTextBlock* Label = WidgetTree->ConstructWidget<UTextBlock>();
-	Label->SetText(NSLOCTEXT("HUD", "OxygenLabel", "O₂"));
-	ApplyTextRole(Label, EMKTextRole::Caption);
-	UOverlaySlot* LabelSlot = Overlay->AddChildToOverlay(Label);
-	LabelSlot->SetHorizontalAlignment(HAlign_Left);
-	LabelSlot->SetVerticalAlignment(VAlign_Center);
-	LabelSlot->SetPadding(FMargin(0.f));
+	UProgressBar* Bar = nullptr;
+	WidgetTree->RootWidget = BuildStatusGauge(Bar, TEXT("RuntimeOxygenBar"), TEXT("OxygenFrame"), NSLOCTEXT("HUD", "OxygenLabel", "O₂"), FLinearColor(0.08f, 0.65f, 0.82f));
+	ProgressBar_Oxygen = Bar;
 }
 
 void UOxygenBarWidget::ApplyProgressBarStyle()

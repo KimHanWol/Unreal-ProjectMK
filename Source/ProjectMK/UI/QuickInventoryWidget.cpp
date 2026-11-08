@@ -17,6 +17,7 @@
 #include "ProjectMK/Component/ConsumableComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/UI/PlaytestQuickSlotWidget.h"
+#include "ProjectMK/UI/ItemSlotDragDropOperation.h"
 
 UQuickInventoryWidget::UQuickInventoryWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -47,6 +48,11 @@ void UQuickInventoryWidget::NativeDestruct()
 		World->GetTimerManager().ClearTimer(RecallTimerHandle);
 	}
 	Super::NativeDestruct();
+}
+
+bool UQuickInventoryWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
+{
+	return Cast<UItemSlotDragDropOperation>(Operation) != nullptr || Super::NativeOnDrop(Geometry, Event, Operation);
 }
 
 void UQuickInventoryWidget::BindEvents()
