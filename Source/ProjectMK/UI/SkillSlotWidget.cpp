@@ -201,6 +201,10 @@ void USkillSlotWidget::UnbindEvents()
 
 void USkillSlotWidget::UpdateWidget()
 {
+	if (SkillKeyName.IsNone())
+	{
+		return;
+	}
 	UpdateSkillImage();
 	UpdateCompleteImage();
 	UpdatePriceText();
@@ -263,7 +267,11 @@ void USkillSlotWidget::UpdateEnabledState()
 	const bool bShouldEnable = bIsPurchased || AreRequiredSkillsPurchased();
 
 	SetIsEnabled(true);
-	SetRenderOpacity(bShouldEnable ? 1.f : 0.45f);
+	SetRenderOpacity(1.f);
+	if (::IsValid(LockImage))
+	{
+		LockImage->SetVisibility(bShouldEnable ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	}
 	if (::IsValid(IconImage))
 	{
 		IconImage->SetColorAndOpacity(bIsPurchased ? FLinearColor(0.5f, 1.f, 0.8f) : (bShouldEnable ? FLinearColor::White : FLinearColor(0.4f, 0.4f, 0.4f)));
@@ -275,18 +283,10 @@ void USkillSlotWidget::UpdateCompleteImage()
 	USkillComponent* SkillComponent = GetLocalSkillComponent();
 	const bool bIsPurchased = ::IsValid(SkillComponent) && SkillComponent->HasPurchasedSkill(SkillKeyName);
 	SetSelected(false);
-	if (::IsValid(SelectionText))
-	{
-		const FString Key = SkillKeyName.ToString();
-		const FString Rank = Key.EndsWith(TEXT("_1")) ? TEXT("I") : (Key.EndsWith(TEXT("_2")) ? TEXT("II") : (Key.EndsWith(TEXT("_3")) ? TEXT("III") : TEXT("")));
-		SelectionText->SetText(FText::FromString(Rank));
-		SelectionText->SetVisibility(Rank.IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
-	}
-	if (::IsValid(CountText))
-	{
-		CountText->SetText(bIsPurchased ? NSLOCTEXT("Skill", "Owned", "습득") : FText::GetEmpty());
-		CountText->SetVisibility(bIsPurchased ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-	}
+	SetAcquired(bIsPurchased);
+	const FString Key = SkillKeyName.ToString();
+	const FString Rank = Key.EndsWith(TEXT("_1")) ? TEXT("I") : (Key.EndsWith(TEXT("_2")) ? TEXT("II") : (Key.EndsWith(TEXT("_3")) ? TEXT("III") : TEXT("")));
+	SetRankBadge(FText::FromString(Rank));
 	if (::IsValid(CompleteImage))
 	{
 		CompleteImage->SetVisibility(bIsPurchased ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);

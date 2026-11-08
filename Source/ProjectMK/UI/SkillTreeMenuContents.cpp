@@ -7,6 +7,9 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/SizeBox.h"
+#include "Components/Image.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
+#include "ProjectMK/UI/MenuDisplayCardWidget.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
 #include "Input/Reply.h"
@@ -93,6 +96,21 @@ void USkillTreeMenuContents::NativeConstruct()
 {
 	Super::NativeConstruct();
 	RefreshSkillTree();
+}
+
+void USkillTreeMenuContents::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
+{
+	Super::NativeTick(MyGeometry, InDeltaTime);
+	if (bNeedsCentering && ::IsValid(SkillTreeViewportPanel))
+	{
+		const FVector2D ViewSize = SkillTreeViewportPanel->GetCachedGeometry().GetLocalSize();
+		if (ViewSize.X > 100.f && ViewSize.Y > 100.f)
+		{
+			SkillTreeCanvasPanel->SetRenderTransformPivot(FVector2D::ZeroVector);
+			CastChecked<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot)->SetPosition(CalculateClampedCanvasPosition(ViewSize * 0.5f - CentralPlayerPosition, 1.f));
+			bNeedsCentering = false;
+		}
+	}
 }
 
 FReply USkillTreeMenuContents::NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -269,15 +287,41 @@ void USkillTreeMenuContents::RefreshSkillTree()
 		UCanvasPanelSlot* NodeSlot = SkillTreeCanvasPanel->AddChildToCanvas(SkillNode);
 		NodeSlot->SetPosition(*NodePosition);
 		NodeSlot->SetSize(FVector2D(SkillNodeSize, SkillNodeSize));
+		NodeSlot->SetZOrder(2);
 		SkillNode->InitializeSkill(SkillKey);
 	}
 
+	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);
+	PlayerCard->SetDisplayRole(TEXT("Player"));
+	UCanvasPanelSlot* PlayerSlot = SkillTreeCanvasPanel->AddChildToCanvas(PlayerCard);
+	PlayerSlot->SetPosition(FVector2D(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX - 12.f,
+		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY - 36.f));
+	PlayerSlot->SetSize(FVector2D(120.f, 168.f));
+	PlayerSlot->SetZOrder(2);
+	CentralPlayerPosition = PlayerSlot->GetPosition() + FVector2D(60.f, 84.f);
+	bNeedsCentering = true;
 	CurrentZoomScale = 1.f;
 	SkillTreeCanvasPanel->SetRenderScale(FVector2D(1.f));
 }
 
 void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition)
 {
+	const FVector2D ConnectionDirection = ToPosition - FromPosition;
+	const bool bHorizontal = FMath::Abs(ConnectionDirection.X) >= FMath::Abs(ConnectionDirection.Y);
+	const FVector2D Axis = bHorizontal ? FVector2D(FMath::Sign(ConnectionDirection.X), 0.f) : FVector2D(0.f, FMath::Sign(ConnectionDirection.Y));
+	UImage* Arrow = WidgetTree->ConstructWidget<UImage>();
+	const UDataManager* Data = UDataManager::Get(this);
+	const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
+	if (::IsValid(Style))
+	{
+		if (const FSlateBrush* Brush = Style->Brushes.Find(TEXT("ArrowRight"))) { Arrow->SetBrush(*Brush); }
+	}
+	Arrow->SetVisibility(ESlateVisibility::HitTestInvisible);
+	Arrow->SetRenderTransformAngle(FMath::RadiansToDegrees(FMath::Atan2(Axis.Y, Axis.X)));
+	UCanvasPanelSlot* ArrowSlot = SkillTreeCanvasPanel->AddChildToCanvas(Arrow);
+	ArrowSlot->SetSize(FVector2D(20.f));
+	ArrowSlot->SetPosition(ToPosition + FVector2D(SkillNodeSize * 0.5f) - Axis * (SkillNodeSize * 0.5f + 12.f) - FVector2D(10.f));
+	ArrowSlot->SetZOrder(1);
 	const FVector2D FromCenter = FromPosition + FVector2D(SkillNodeSize * 0.5f);
 	const FVector2D ToCenter = ToPosition + FVector2D(SkillNodeSize * 0.5f);
 	const FVector2D Delta = ToCenter - FromCenter;

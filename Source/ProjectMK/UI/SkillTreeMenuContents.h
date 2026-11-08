@@ -19,6 +19,7 @@ public:
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
+	virtual void NativeTick(const FGeometry& MyGeometry, float InDeltaTime) override;
 	virtual FReply NativeOnMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
@@ -53,6 +54,9 @@ protected:
 	float ZoomStep = 0.1f;
 
 private:
+	bool bNeedsCentering = true;
+	FVector2D CentralPlayerPosition;
+
 	UPROPERTY(Transient)
 	float CurrentZoomScale = 1.f;
 
