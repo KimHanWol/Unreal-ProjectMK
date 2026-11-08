@@ -71,13 +71,13 @@ private:
 	float VisualYOffset = 0.f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Floating")
-	float FloatAmplitude = 5.0f; // 위아래 움직임의 크기
+	float FloatAmplitude = 2.5f;
 
 	UPROPERTY(EditDefaultsOnly, Category = "Floating")
 	float FloatSpeed = 3.0f; // 움직임 속도
 
 	UPROPERTY(Transient)
-	float FloatPhase = 0.f;
+	float FloatElapsedTime = 0.f;
 
 	UPROPERTY(Transient)
 	float FallingVelocity = 0.f;

@@ -64,7 +64,7 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 {
 	ItemKey = InItemKey;
 	ItemCount = FMath::Max(1, InItemCount);
-	FloatPhase = FMath::FRandRange(0.f, UE_TWO_PI);
+	FloatElapsedTime = 0.f;
 
 	if (::IsValid(PaperSpriteComponent) == false)
 	{
@@ -85,6 +85,7 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 
 	UPaperSprite* LoadedItemSprite = ItemDataTableRow->ItemIcon.LoadSynchronous();
 	PaperSpriteComponent->SetSprite(LoadedItemSprite);
+	PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f));
 
 	float DisplaySize = 10.f;
 	float Lifetime = 300.f;
@@ -252,8 +253,8 @@ void AItemBase::UpdatePosition(float DeltaTime)
 			FallingVelocity = 0.f;
 		}
 
-		const float Time = GetWorld()->GetTimeSeconds();
-		const float FloatAlpha = FMath::Sin((Time * FloatSpeed) + FloatPhase) + 1.f;
+		FloatElapsedTime += DeltaTime;
+		const float FloatAlpha = 1.f - FMath::Cos(FloatElapsedTime * FloatSpeed);
 		const float OffsetZ = FloatAlpha * FloatAmplitude;
 
 		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, OffsetZ));

@@ -135,8 +135,8 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
 	float WorldItemDisplaySize = 10.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
-	float WorldCoinSizeMultiplier = 1.5f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.1"))
+	float WorldCoinSizeMultiplier = 0.9f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
 	float WorldItemLifetime = 300.f;

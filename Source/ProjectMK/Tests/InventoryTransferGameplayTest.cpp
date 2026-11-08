@@ -6,6 +6,7 @@
 #include "EngineUtils.h"
 #include "Kismet/GameplayStatics.h"
 #include "PaperSpriteComponent.h"
+#include "PaperSprite.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -78,9 +79,16 @@ namespace
 					if (It->GetItemKey() == UsableKey && It->CanBeCollectedBy(Player.Get()) == false) { DroppedItem = *It; break; }
 				}
 				if (Test->TestTrue(TEXT("Field stack records its drop owner"), DroppedItem.IsValid()) == false) { return Finish(); }
-				const UPaperSpriteComponent* FieldSprite = DroppedItem->FindComponentByClass<UPaperSpriteComponent>();
+				UPaperSpriteComponent* FieldSprite = DroppedItem->FindComponentByClass<UPaperSpriteComponent>();
 				Test->TestTrue(TEXT("Field item image is in front of the player plane"), FieldSprite->GetComponentLocation().Y < Player->GetActorLocation().Y);
 				Test->TestTrue(TEXT("Field item sorts above character sprite accessories"), FieldSprite->TranslucencySortPriority > 1);
+				AItemBase* CoinProbe = World->SpawnActor<AItemBase>(SavedTransform.GetLocation() + FVector(5000.f, 0.f, 100.f), FRotator::ZeroRotator);
+				CoinProbe->InitializeItemBase(TEXT("Coin"));
+				UPaperSpriteComponent* CoinSprite = CoinProbe->FindComponentByClass<UPaperSpriteComponent>();
+				const float CoinWidth = CoinSprite->GetSprite()->GetSourceSize().X * CoinSprite->GetRelativeScale3D().X / CoinSprite->GetSprite()->GetPixelsPerUnrealUnit();
+				const float ItemWidth = FieldSprite->GetSprite()->GetSourceSize().X * FieldSprite->GetRelativeScale3D().X / FieldSprite->GetSprite()->GetPixelsPerUnrealUnit();
+				Test->TestTrue(TEXT("Dropped coin is no larger than a normal item"), CoinWidth <= ItemWidth);
+				CoinProbe->Destroy();
 				Inventory->SetItemCollectionActive(true);
 				Test->TestFalse(TEXT("Dropped items cannot be collected immediately"), Inventory->TryCollectWorldItem(DroppedItem.Get()));
 				DroppedItem->TryLoot(Player);
@@ -89,6 +97,7 @@ namespace
 				Player->SetActorLocation(SavedTransform.GetLocation() + FVector(Inventory->GetItemGainRange() + 100.f, 0.f, 32.f), false, nullptr, ETeleportType::TeleportPhysics);
 				BlinkItem = World->SpawnActor<AItemBase>(SavedTransform.GetLocation() + FVector(5000.f, 0.f, 100.f), FRotator::ZeroRotator);
 				BlinkItem->InitializeItemBase(UsableKey);
+				Test->TestTrue(TEXT("New item begins at the bottom of its hover motion"), FMath::IsNearlyZero(BlinkItem->FindComponentByClass<UPaperSpriteComponent>()->GetRelativeLocation().Z));
 				BlinkItem->SetLifeSpan(1.4f);
 				++Step;
 				Started = FPlatformTime::Seconds();
@@ -97,9 +106,11 @@ namespace
 			if (BlinkItem.IsValid())
 			{
 				bSawHiddenBlink |= BlinkItem->FindComponentByClass<UPaperSpriteComponent>()->IsVisible() == false;
+				MaximumHoverOffset = FMath::Max(MaximumHoverOffset, BlinkItem->FindComponentByClass<UPaperSpriteComponent>()->GetRelativeLocation().Z);
 			}
 			if (Step == 1 && Elapsed() > 0.2)
 			{
+				Test->TestTrue(TEXT("Hover first rises from its bottom position"), BlinkItem->FindComponentByClass<UPaperSpriteComponent>()->GetRelativeLocation().Z > 0.f);
 				Test->TestTrue(TEXT("Leaving the pickup radius releases the owner lock"), DroppedItem->CanBeCollectedBy(Player.Get()));
 				Player->SetActorTransform(SavedTransform, false, nullptr, ETeleportType::TeleportPhysics);
 				Inventory->SetItemCollectionActive(true);
@@ -123,6 +134,7 @@ namespace
 			{
 				Test->TestTrue(TEXT("Items blink before expiration"), bSawHiddenBlink);
 				Test->TestFalse(TEXT("Expired field item is destroyed"), BlinkItem.IsValid());
+				Test->TestTrue(TEXT("Hover range is half the previous ten-unit range"), MaximumHoverOffset > 4.f && MaximumHoverOffset <= 5.01f);
 				return Finish();
 			}
 			return false;
@@ -144,6 +156,7 @@ namespace
 			return true;
 		}
 		FAutomationTestBase* Test;
+		float MaximumHoverOffset = 0.f;
 		TWeakObjectPtr<AMKCharacter> Player;
 		TWeakObjectPtr<UInventoryComponent> Inventory;
 		TWeakObjectPtr<AItemBase> DroppedItem;
