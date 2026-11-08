@@ -6,10 +6,13 @@
 #include "Materials/MaterialInterface.h"
 #include "PaperSpriteComponent.h"
 #include "PaperSprite.h"
+#include "PaperFlipbook.h"
+#include "PaperFlipbookComponent.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
 #include "UObject/ConstructorHelpers.h"
@@ -55,7 +58,10 @@ void AItemBase::Tick(float DeltaTime)
 	}
 	if (::IsValid(PaperSpriteComponent) && GetLifeSpan() > 0.f && GetLifeSpan() <= BlinkDuration)
 	{
-		PaperSpriteComponent->SetVisibility(FMath::Fmod(GetLifeSpan(), 0.4f) >= 0.2f);
+		const bool bVisible = FMath::Fmod(GetLifeSpan(), 0.4f) >= 0.2f;
+		PaperSpriteComponent->SetVisibility(ItemKey != TEXT("Oxygen") && bVisible);
+		if (::IsValid(OxygenGlow)) { OxygenGlow->SetVisibility(bVisible); }
+		if (::IsValid(OxygenCore)) { OxygenCore->SetVisibility(bVisible); }
 	}
 	UpdatePosition(DeltaTime);
 }
@@ -100,6 +106,7 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 	const float PixelsPerUnit = ::IsValid(LoadedItemSprite) ? LoadedItemSprite->GetPixelsPerUnrealUnit() : 2.f;
 	const float ItemSpriteScale = DisplaySize * PixelsPerUnit / FMath::Max(1.f, static_cast<float>(FMath::Max(SourceSize.X, SourceSize.Y)));
 	PaperSpriteComponent->SetRelativeScale3D(FVector(ItemSpriteScale, 1.f, ItemSpriteScale));
+	if (ItemKey == TEXT("Oxygen")) { InitializeOxygenVisuals(); }
 	bIsInitialized = true;
 	SetLifeSpan(FMath::Max(1.f, Lifetime));
 }
@@ -133,6 +140,9 @@ void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 	}
 
 	Looter = InLooter;
+	OxygenFlightStart = GetActorLocation();
+	OxygenFlightTime = 0.f;
+	OxygenTrailPositions.Reset();
 	CurrentLootingSpeed = InitialLootingSpeed;
 	FallingVelocity = 0.f;
 
@@ -162,7 +172,7 @@ void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 
 void AItemBase::OnLootFinished()
 {
-	UMKBlueprintFunctionLibrary::PlayVisualEffect(this, TEXT("Pickup"), GetActorLocation(), 0.6f);
+	if (ItemKey != TEXT("Oxygen")) { UMKBlueprintFunctionLibrary::PlayVisualEffect(this, TEXT("Pickup"), GetActorLocation(), 0.6f); }
 	Destroy();
 }
 
@@ -175,6 +185,8 @@ void AItemBase::SetVisualLayer(float InVisualYOffset)
 		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f));
 		PaperSpriteComponent->SetTranslucentSortPriority(10);
 	}
+	if (::IsValid(OxygenGlow)) { OxygenGlow->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f)); }
+	if (::IsValid(OxygenCore)) { OxygenCore->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f)); }
 }
 
 void AItemBase::SetDropOwner(AMKCharacter* Character)
@@ -188,12 +200,88 @@ bool AItemBase::CanBeCollectedBy(const AActor* Character) const
 	return DropOwner.IsValid() == false || DropOwner.Get() != Character;
 }
 
+void AItemBase::InitializeOxygenVisuals()
+{
+	const UDataManager* Data = UDataManager::Get(this);
+	const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
+	const UGameSettingDataAsset* Settings = ::IsValid(Data) ? Data->GetGameSettingDataAsset() : nullptr;
+	UPaperFlipbook* Effect = ::IsValid(Style) ? Style->Effects.FindRef(TEXT("Pickup")) : nullptr;
+	if (::IsValid(Effect) == false) { return; }
+	PaperSpriteComponent->SetVisibility(false);
+	OxygenFlightDuration = ::IsValid(Settings) ? Settings->OxygenPickupFlightDuration : 0.85f;
+	OxygenArcHeight = ::IsValid(Settings) ? Settings->OxygenPickupArcHeight : 64.f;
+	const float Size = ::IsValid(Settings) ? Settings->OxygenPickupDisplaySize : 18.f;
+	const UPaperSprite* Frame = Effect->GetSpriteAtFrame(1);
+	const float Scale = ::IsValid(Frame) ? Size * Frame->GetPixelsPerUnrealUnit() / FMath::Max(1.f, static_cast<float>(Frame->GetSourceSize().GetMax())) : 1.f;
+	OxygenGlow = NewObject<UPaperFlipbookComponent>(this);
+	OxygenGlow->SetupAttachment(RootComponent);
+	OxygenGlow->SetFlipbook(Effect);
+	OxygenGlow->SetLooping(true);
+	OxygenGlow->SetSpriteColor(FLinearColor(0.35f, 0.8f, 0.95f, 0.95f));
+	OxygenGlow->SetRelativeLocation(BaseSpriteRelativeLocation);
+	OxygenGlow->SetRelativeScale3D(FVector(Scale, 1.f, Scale));
+	OxygenGlow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	OxygenGlow->SetTranslucentSortPriority(12);
+	if (::IsValid(Style->OxygenPickupMaterial)) { OxygenGlow->SetMaterial(0, Style->OxygenPickupMaterial); }
+	OxygenGlow->RegisterComponent();
+	OxygenGlow->Play();
+	if (::IsValid(Style->OxygenPickupCore))
+	{
+		OxygenCore = NewObject<UPaperSpriteComponent>(this);
+		OxygenCore->SetupAttachment(RootComponent);
+		OxygenCore->SetSprite(Style->OxygenPickupCore);
+		const UPaperSprite* Core = Style->OxygenPickupCore;
+		const float CoreScale = Size * 0.75f * Core->GetPixelsPerUnrealUnit() / FMath::Max(1.f, static_cast<float>(Core->GetSourceSize().GetMax()));
+		OxygenCore->SetRelativeScale3D(FVector(CoreScale, 1.f, CoreScale));
+		OxygenCore->SetRelativeLocation(BaseSpriteRelativeLocation);
+		OxygenCore->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		OxygenCore->SetTranslucentSortPriority(13);
+		OxygenCore->RegisterComponent();
+	}
+	for (int32 Index = 0; Index < 3; ++Index)
+	{
+		UPaperSpriteComponent* Trail = NewObject<UPaperSpriteComponent>(this);
+		Trail->SetupAttachment(RootComponent);
+		Trail->SetSprite(::IsValid(Style->OxygenPickupCore) ? Style->OxygenPickupCore.Get() : Effect->GetSpriteAtFrame(1));
+		const UPaperSprite* TrailSprite = Trail->GetSprite();
+		const float TrailScale = Size * (0.5f - Index * 0.12f) * TrailSprite->GetPixelsPerUnrealUnit() / FMath::Max(1.f, static_cast<float>(TrailSprite->GetSourceSize().GetMax()));
+		Trail->SetRelativeScale3D(FVector(TrailScale, 1.f, TrailScale));
+		Trail->SetSpriteColor(FLinearColor(0.32f, 0.72f, 0.88f, 0.6f - Index * 0.15f));
+		Trail->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Trail->SetTranslucentSortPriority(11);
+		if (::IsValid(Style->OxygenPickupCore) == false && ::IsValid(Style->OxygenPickupMaterial)) { Trail->SetMaterial(0, Style->OxygenPickupMaterial); }
+		Trail->SetVisibility(false);
+		Trail->RegisterComponent();
+		OxygenTrail.Add(Trail);
+	}
+}
+
+void AItemBase::UpdateOxygenTrail()
+{
+	OxygenTrailPositions.SetNum(10);
+	const FVector Target = Looter->GetActorLocation();
+	const FVector Arc(FMath::Sign(LootLateralOffsetScale) * OxygenArcHeight * 0.45f, 0.f, OxygenArcHeight);
+	for (int32 Sample = 0; Sample < OxygenTrailPositions.Num(); ++Sample)
+	{
+		const float Alpha = FMath::Clamp((OxygenFlightTime - Sample * 0.0225f) / FMath::Max(0.1f, OxygenFlightDuration), 0.f, 1.f);
+		OxygenTrailPositions[Sample] = FMath::Lerp(OxygenFlightStart, Target, Alpha) + Arc * (4.f * Alpha * (1.f - Alpha))
+			+ BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f);
+	}
+	for (int32 Index = 0; Index < OxygenTrail.Num(); ++Index)
+	{
+		const int32 Sample = (Index + 1) * 2;
+		OxygenTrail[Index]->SetVisibility(OxygenFlightTime >= Sample * 0.0225f);
+		OxygenTrail[Index]->SetWorldLocation(OxygenTrailPositions[Sample]);
+	}
+}
+
 void AItemBase::ClearLooting()
 {
 	Looter = nullptr;
 	CurrentLootingSpeed = InitialLootingSpeed;
 	LootLateralDirection = FVector::ZeroVector;
 	LootLateralOffsetScale = 0.f;
+	for (UPaperSpriteComponent* Trail : OxygenTrail) { Trail->SetVisibility(false); }
 }
 
 void AItemBase::UpdatePosition(float DeltaTime)
@@ -225,6 +313,16 @@ void AItemBase::UpdatePosition(float DeltaTime)
 
 		FVector ItemLocation = GetActorLocation();
 		FVector PlayerLocation = Looter->GetActorLocation();
+		if (ItemKey == TEXT("Oxygen"))
+		{
+			OxygenFlightTime += DeltaTime;
+			const float Alpha = FMath::Clamp(OxygenFlightTime / FMath::Max(0.1f, OxygenFlightDuration), 0.f, 1.f);
+			const FVector Arc(FMath::Sign(LootLateralOffsetScale) * OxygenArcHeight * 0.45f, 0.f, OxygenArcHeight);
+			SetActorLocation(FMath::Lerp(OxygenFlightStart, PlayerLocation, Alpha) + Arc * (4.f * Alpha * (1.f - Alpha)));
+			UpdateOxygenTrail();
+			if (Alpha >= 1.f && InventoryComponent->TryCollectWorldItem(this) == false) { ClearLooting(); }
+			return;
+		}
 		CurrentLootingSpeed += GetWorld()->GetDeltaSeconds() * LootingAccelerationRate;
 
 		const FVector ToPlayer = PlayerLocation - ItemLocation;
@@ -244,6 +342,16 @@ void AItemBase::UpdatePosition(float DeltaTime)
 	}
 	else
 	{
+		if (ItemKey == TEXT("Oxygen"))
+		{
+			FloatElapsedTime += DeltaTime;
+			if (::IsValid(OxygenGlow))
+			{
+				OxygenGlow->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, FMath::Sin(FloatElapsedTime * 3.f) * 2.f));
+			}
+			if (::IsValid(OxygenCore)) { OxygenCore->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, FMath::Sin(FloatElapsedTime * 3.f) * 2.f)); }
+			return;
+		}
 		FallingVelocity = FMath::Max(FallingVelocity + (GetWorld()->GetGravityZ() * DeltaTime), -MaxFallingSpeed);
 
 		FHitResult FallingHit;

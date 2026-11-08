@@ -9,6 +9,7 @@
 class AMKCharacter;
 class USphereComponent;
 class UPaperSpriteComponent;
+class UPaperFlipbookComponent;
 
 UCLASS()
 class PROJECTMK_API AItemBase : public AActor
@@ -37,6 +38,8 @@ public:
 	bool CanBeCollectedBy(const AActor* Character) const;
 
 private:
+	void InitializeOxygenVisuals();
+	void UpdateOxygenTrail();
 	void ClearLooting();
 	void UpdatePosition(float DeltaTime);
 
@@ -47,9 +50,23 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
 
+	UPROPERTY(Transient)
+	TObjectPtr<UPaperFlipbookComponent> OxygenGlow;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UPaperSpriteComponent> OxygenCore;
+
+	UPROPERTY(Transient)
+	TArray<TObjectPtr<UPaperSpriteComponent>> OxygenTrail;
+
 private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
 	TWeakObjectPtr<AMKCharacter> DropOwner;
+	TArray<FVector> OxygenTrailPositions;
+	FVector OxygenFlightStart;
+	float OxygenFlightTime = 0.f;
+	float OxygenFlightDuration = 0.85f;
+	float OxygenArcHeight = 64.f;
 	float BlinkDuration = 10.f;
 
 	UPROPERTY(Transient)

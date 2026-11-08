@@ -27,4 +27,10 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
 	TMap<FName, TObjectPtr<UPaperFlipbook>> Effects;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TObjectPtr<UMaterialInterface> OxygenPickupMaterial;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Effects")
+	TObjectPtr<UPaperSprite> OxygenPickupCore;
 };
