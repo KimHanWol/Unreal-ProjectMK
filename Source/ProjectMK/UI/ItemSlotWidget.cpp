@@ -63,10 +63,7 @@ void UItemSlotWidget::ClearItem()
 	CurrentItemKey = NAME_None;
 	CurrentItemCount = 0;
 
-	if (::IsValid(Text_Count))
-	{
-		Text_Count->SetText(FText::GetEmpty());
-	}
+	SetSlotCount(0, false);
 
 	if (::IsValid(IconImage))
 	{
@@ -92,10 +89,7 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 		return;
 	}
 
-	if (::IsValid(Text_Count))
-	{
-		Text_Count->SetText(FText::AsNumber(ItemCount));
-	}
+	SetSlotCount(ItemCount, ItemCount > 1);
 
 	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
 	if (ItemDataTableRow == nullptr)

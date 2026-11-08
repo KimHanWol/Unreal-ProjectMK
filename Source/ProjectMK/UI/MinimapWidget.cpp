@@ -154,7 +154,8 @@ void UMinimapWidget::BuildDefaultWidgetTree()
 	PositionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("PositionText"));
 	ApplyTextRole(PositionText, EMKTextRole::Caption);
 	PositionText->SetJustification(ETextJustify::Center);
-	Column->AddChildToVerticalBox(PositionText)->SetPadding(FMargin(0.f, FMKUILayout::SpaceXS, 0.f, 0.f));
+	Column->AddChildToVerticalBox(PositionText)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceXS));
+	Column->ShiftChild(0, PositionText);
 }
 
 void UMinimapWidget::UpdateMinimap()

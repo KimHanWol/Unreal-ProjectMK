@@ -191,6 +191,10 @@ void UHUDWidget::UpdateTooltipPosition()
 
 	if (UCanvasPanelSlot* TooltipSlot = Cast<UCanvasPanelSlot>(Tooltip->Slot))
 	{
+		TooltipSlot->SetAnchors(FAnchors(0.f, 0.f));
+		TooltipSlot->SetAlignment(FVector2D::ZeroVector);
+		TooltipSlot->SetAutoSize(true);
+		TooltipSlot->SetZOrder(100);
 		Tooltip->SetRenderTranslation(FVector2D::ZeroVector);
 		TooltipSlot->SetPosition(TooltipPosition);
 		return;

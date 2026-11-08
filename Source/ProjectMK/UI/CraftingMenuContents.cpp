@@ -167,7 +167,15 @@ void UCraftingMenuContents::UpdateRecipeSlots()
 	{
 		const bool bCanCraftA = CanCraftRecipe(A);
 		const bool bCanCraftB = CanCraftRecipe(B);
-		return bCanCraftA != bCanCraftB ? bCanCraftA : A.LexicalLess(B);
+		if (bCanCraftA != bCanCraftB)
+		{
+			return bCanCraftA;
+		}
+		const AMKCharacter* Character = GetLocalPlayerCharacter();
+		const UCraftingComponent* Crafting = ::IsValid(Character) ? Character->GetCraftingComponent() : nullptr;
+		const bool bUnlockedA = ::IsValid(Crafting) && Crafting->IsRecipeUnlocked(A);
+		const bool bUnlockedB = ::IsValid(Crafting) && Crafting->IsRecipeUnlocked(B);
+		return bUnlockedA != bUnlockedB ? bUnlockedA : A.LexicalLess(B);
 	});
 	for (const FName RecipeKey : RecipeKeys)
 	{

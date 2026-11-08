@@ -170,12 +170,16 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	RootSize->SetHeightOverride(DefaultSlotSize.Y);
 	WidgetTree->RootWidget = RootSize;
 
-	UBorder* FrameBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
-	FrameBorder->SetPadding(FMargin(FMKUILayout::SpaceXS));
-	RootSize->SetContent(FrameBorder);
-
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
-	FrameBorder->SetContent(Overlay);
+	RootSize->SetContent(Overlay);
+	Overlay->SetClipping(EWidgetClipping::Inherit);
+	UBorder* FrameBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Slot"));
+	FrameBorder->SetPadding(FMargin(0.f));
+	Overlay->AddChildToOverlay(FrameBorder);
+
+	FocusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SelectedSlot"));
+	FocusImage->SetVisibility(ESlateVisibility::Collapsed);
+	Overlay->AddChildToOverlay(FocusImage);
 
 	IconImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("IconImage"));
 	IconImage->SetDesiredSizeOverride(FVector2D(40.f));
@@ -184,10 +188,6 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	IconSlot->SetHorizontalAlignment(HAlign_Center);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 
-	FocusImage = WidgetTree->ConstructWidget<UImage>(UImage::StaticClass(), TEXT("SelectedSlot"));
-	FocusImage->SetVisibility(ESlateVisibility::Collapsed);
-	Overlay->AddChildToOverlay(FocusImage);
-
 	CountText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("CountText"));
 	ApplyTextRole(CountText, EMKTextRole::Caption);
 	CountText->SetJustification(ETextJustify::Right);
@@ -195,19 +195,19 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	UOverlaySlot* CountSlot = Overlay->AddChildToOverlay(CountText);
 	CountSlot->SetHorizontalAlignment(HAlign_Right);
 	CountSlot->SetVerticalAlignment(VAlign_Bottom);
-	CountSlot->SetPadding(FMargin(0.f, 0.f, 1.f, 1.f));
+	CountSlot->SetPadding(FMargin(0.f, 0.f, 7.f, 7.f));
 
 	KeyGuideText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("KeyGuideText"));
-	ApplyTextRole(KeyGuideText, EMKTextRole::Caption);
+	ApplyTextRole(KeyGuideText, EMKTextRole::Numeric);
 	KeyGuideText->SetJustification(ETextJustify::Center);
 	KeyGuideBorder = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Keycap"));
-	KeyGuideBorder->SetPadding(FMargin(FMKUILayout::SpaceXS, 0.f));
+	KeyGuideBorder->SetPadding(FMargin(9.f, 4.f));
 	KeyGuideBorder->SetContent(KeyGuideText);
 	KeyGuideBorder->SetVisibility(ESlateVisibility::Collapsed);
 	UOverlaySlot* KeySlot = Overlay->AddChildToOverlay(KeyGuideBorder);
 	KeySlot->SetHorizontalAlignment(HAlign_Center);
 	KeySlot->SetVerticalAlignment(VAlign_Bottom);
-	KeySlot->SetPadding(FMargin(0.f, 0.f, 0.f, -5.f));
+	KeyGuideBorder->SetRenderTranslation(FVector2D(0.f, 14.f));
 
 	SelectionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("SelectionText"));
 	SelectionText->SetText(FText::FromString(TEXT("✓")));

@@ -75,7 +75,7 @@ void UCraftingRecipeSlotWidget::UpdateWidget()
 	CraftButton->SetIsEnabled(bCanCraft);
 	CraftButtonText->SetText(bUnlocked
 		? (bCanCraft ? NSLOCTEXT("CraftingMenu", "Craft", "제작") : NSLOCTEXT("CraftingMenu", "Unavailable", "재료 / 공간 부족"))
-		: NSLOCTEXT("CraftingMenu", "Locked", "상점 해금"));
+		: NSLOCTEXT("CraftingMenu", "Locked", "해금 필요"));
 	const FItemDataTableRow* Item = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Recipe->GetResultItemKey());
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
 	ItemIcon->SetBrushResourceObject(Sprite);
@@ -125,6 +125,7 @@ void UCraftingRecipeSlotWidget::BuildDefaultWidgetTree()
 	UButton* RawCraftButton = nullptr;
 	UTextBlock* RawCraftButtonText = nullptr;
 	USizeBox* ButtonSize = BuildActionButton(RawCraftButton, RawCraftButtonText, FText::GetEmpty());
+	ButtonSize->SetWidthOverride(156.f);
 	CraftButton = RawCraftButton;
 	CraftButtonText = RawCraftButtonText;
 	UHorizontalBoxSlot* ButtonSlot = Row->AddChildToHorizontalBox(ButtonSize);

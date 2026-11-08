@@ -58,11 +58,6 @@ void UInventoryWidget::UpdateItemSlotPanel()
 	ItemSlotPanel->ClearChildren();
 	ItemSlotList.Reset();
 
-	if (::IsValid(ItemSlotClass) == false)
-	{
-		return;
-	}
-
 	const int32 DesiredSlotCount = GetDesiredSlotCount();
 	const int32 ColumnCount = FMath::Max(1, InventoryColumnCount);
 	const int32 RowCount = FMath::Max(1, FMath::CeilToInt(static_cast<float>(DesiredSlotCount) / static_cast<float>(ColumnCount)));
@@ -79,7 +74,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 
 	for (int32 SlotIndex = 0; SlotIndex < DesiredSlotCount; ++SlotIndex)
 	{
-		UItemSlotWidget* NewItemSlot = CreateWidget<UItemSlotWidget>(this, ItemSlotClass);
+		UItemSlotWidget* NewItemSlot = CreateWidget<UItemSlotWidget>(this, UItemSlotWidget::StaticClass());
 		if (::IsValid(NewItemSlot) == false)
 		{
 			continue;
@@ -90,7 +85,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 
 		if (UGridSlot* ItemGridSlot = ItemSlotPanel->AddChildToGrid(NewItemSlot, Row, Column))
 		{
-			ItemGridSlot->SetPadding(FMargin(0.f));
+			ItemGridSlot->SetPadding(FMargin(4.f));
 			ItemGridSlot->SetHorizontalAlignment(HAlign_Fill);
 			ItemGridSlot->SetVerticalAlignment(VAlign_Fill);
 		}

@@ -119,8 +119,7 @@ void UMKTooltipBase::UpdateWidget()
 void UMKTooltipBase::BuildDefaultWidgetTree()
 {
 	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("RuntimeTooltipRoot"));
-	RootSize->SetMinDesiredWidth(280.f);
-	RootSize->SetMaxDesiredWidth(360.f);
+	RootSize->SetWidthOverride(340.f);
 	WidgetTree->RootWidget = RootSize;
 
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Tooltip"));
@@ -193,7 +192,8 @@ void UMKTooltipBase::UpdateTooltipFromSkillData(const FSkillDataTableRow& SkillD
 
 	if (::IsValid(Desc))
 	{
-		Desc->SetText(SkillDataTableRow.Description);
+		Desc->SetText(FText::Format(NSLOCTEXT("Tooltip", "SkillPrice", "{0}\n가격  {1}\n길게 눌러 구매"),
+			SkillDataTableRow.Description, FText::AsNumber(SkillDataTableRow.Price)));
 	}
 
 	if (SkillDataTableRow.IconPath.IsNull() == false)

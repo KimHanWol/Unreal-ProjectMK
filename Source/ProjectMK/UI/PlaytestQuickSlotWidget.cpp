@@ -24,7 +24,7 @@ void UPlaytestQuickSlotWidget::UpdateWidget()
 	ItemDataKey = SlotData.ItemUID;
 	SetKeyGuide(bShowKeyGuide ? FText::AsNumber(SlotIndex + 1) : FText::GetEmpty());
 	SetSlotCount(SlotData.ItemCount, SlotData.IsEmpty() == false && SlotData.ItemCount > 1);
-	SetSelected(bCanUseItem);
+	SetSelected(false);
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
 	SetSlotIcon(Sprite);
 }
