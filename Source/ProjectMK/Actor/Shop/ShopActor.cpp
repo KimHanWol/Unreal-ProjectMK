@@ -2,7 +2,9 @@
 
 #include "Components/BoxComponent.h"
 #include "GameFramework/Pawn.h"
-#include "Kismet/GameplayStatics.h"
+#include "PaperSprite.h"
+#include "PaperSpriteComponent.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Controller/MKPlayerController.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 
@@ -22,7 +24,10 @@ AShopActor::AShopActor()
 	RootComponent = InteractionBox;
 	InteractionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 	InteractionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
-	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Block);
+	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Overlap);
+	ShopSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("ShopSprite"));
+	ShopSprite->SetupAttachment(RootComponent);
+	ShopSprite->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 }
 
 void AShopActor::BeginPlay()
@@ -37,13 +42,6 @@ void AShopActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 	UnbindEvents();
 
 	Super::EndPlay(EndPlayReason);
-}
-
-void AShopActor::NotifyActorOnClicked(FKey ButtonPressed)
-{
-	Super::NotifyActorOnClicked(ButtonPressed);
-
-	TryInteract(UGameplayStatics::GetPlayerPawn(this, 0));
 }
 
 float AShopActor::GetInteractRange() const
@@ -88,6 +86,21 @@ void AShopActor::InitializeShop(const FIntPoint& TileSize)
 	}
 
 	InteractionBox->SetBoxExtent(FVector(TileSize.X * ShopHalfWidthInTiles, InteractionBoxDepth, TileSize.Y * ShopHalfHeightInTiles));
+	const UDataManager* DataManager = UDataManager::Get(this);
+	const FBlockDataTableRow* ShopData = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Shop"))) : nullptr;
+	UPaperSprite* Sprite = ShopData != nullptr ? ShopData->TileSprite.LoadSynchronous() : nullptr;
+	if (::IsValid(Sprite))
+	{
+		ShopSprite->SetSprite(Sprite);
+		const FVector2D SourceSize = Sprite->GetSourceSize() / Sprite->GetPixelsPerUnrealUnit();
+		const float Scale = FMath::Min(TileSize.X / FMath::Max(1.f, SourceSize.X), TileSize.Y / FMath::Max(1.f, SourceSize.Y)) * VisualSizeInTiles;
+		ShopSprite->SetRelativeScale3D(FVector(Scale, 1.f, Scale));
+		ShopSprite->SetRelativeLocation(FVector(0.f, 0.f, (VisualSizeInTiles - 1.f) * TileSize.Y * 0.5f));
+		if (AActor* OwnerBlock = GetOwner())
+		{
+			OwnerBlock->SetActorHiddenInGame(true);
+		}
+	}
 }
 
 void AShopActor::OnOwnerDestroyed(AActor* DestroyedActor)

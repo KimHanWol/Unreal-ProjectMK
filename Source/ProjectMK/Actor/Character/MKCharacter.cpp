@@ -535,7 +535,12 @@ void AMKCharacter::UpdateInteractionPrompt()
 {
 	if (::IsValid(InteractionPromptComponent))
 	{
-		InteractionPromptComponent->SetVisibility(FindNearestInteractable() != nullptr);
+		const bool bShowPrompt = bIsMenuInputBlocked == false && FindNearestInteractable() != nullptr;
+		InteractionPromptComponent->SetVisibility(bShowPrompt);
+		if (UUserWidget* PromptWidget = InteractionPromptComponent->GetUserWidgetObject())
+		{
+			PromptWidget->SetVisibility(bShowPrompt ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		}
 	}
 }
 

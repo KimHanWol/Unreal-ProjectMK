@@ -6,6 +6,7 @@
 #include "ShopActor.generated.h"
 
 class UBoxComponent;
+class UPaperSpriteComponent;
 
 /** 지표면 Shop 블록 위에 붙어 클릭 / 상호작용 키로 상점 메뉴를 여는 액터 */
 UCLASS()
@@ -19,7 +20,6 @@ public:
 protected:
 	virtual void BeginPlay() override;
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
-	virtual void NotifyActorOnClicked(FKey ButtonPressed) override;
 
 	virtual float GetInteractRange() const override;
 	virtual bool OnInteract(AActor* Interactor) override;
@@ -38,7 +38,13 @@ protected:
 	UPROPERTY(VisibleAnywhere, Category = "Components")
 	TObjectPtr<UBoxComponent> InteractionBox;
 
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UPaperSpriteComponent> ShopSprite;
+
+	UPROPERTY(EditDefaultsOnly, Category = "Shop", meta = (ClampMin = "1.0"))
+	float VisualSizeInTiles = 4.f;
+
 	/** 캐릭터와 상점 중심 사이의 최대 상호작용 거리 */
 	UPROPERTY(EditDefaultsOnly, Category = "Shop", meta = (ClampMin = "0.0"))
-	float InteractRange = 200.f;
+	float InteractRange = 80.f;
 };
