@@ -22,7 +22,7 @@
 namespace
 {
 	constexpr float SkillNodeSize = 84.f;
-	constexpr float SkillTreePadding = 40.f;
+	constexpr float SkillTreePadding = 128.f;
 	constexpr float SkillGridStepX = 84.f;
 	constexpr float SkillGridStepY = 84.f;
 
@@ -152,6 +152,12 @@ FReply USkillTreeMenuContents::NativeOnMouseWheel(const FGeometry& InGeometry, c
 	return Super::NativeOnMouseWheel(InGeometry, InMouseEvent);
 }
 
+void USkillTreeMenuContents::NativeOnMouseCaptureLost(const FCaptureLostEvent& Event)
+{
+	Super::NativeOnMouseCaptureLost(Event);
+	EndSkillTreeDrag();
+}
+
 void USkillTreeMenuContents::BindEvents()
 {
 	Super::BindEvents();
@@ -237,6 +243,7 @@ void USkillTreeMenuContents::RefreshSkillTree()
 
 	SkillTreeCanvasPanel->ClearChildren();
 	Connections.Reset();
+	OccupiedConnectionCells.Reset();
 	TArray<FName> SkillKeys = DataManager->GetSkillRowNames();
 	SkillKeys.RemoveAll([DataManager](const FName SkillKey)
 	{
@@ -276,6 +283,7 @@ void USkillTreeMenuContents::RefreshSkillTree()
 
 	const FVector2D PlayerNodePosition(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX,
 		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY);
+	NodePositions.Add(NAME_None, PlayerNodePosition);
 	for (const FName& SkillKey : SkillKeys)
 	{
 		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
@@ -284,12 +292,12 @@ void USkillTreeMenuContents::RefreshSkillTree()
 		{
 			continue;
 		}
-		if (SkillData->RequiredSkill.IsEmpty()) { AddSkillConnection(PlayerNodePosition, *TargetPosition, SkillKey); }
+		if (SkillData->RequiredSkill.IsEmpty()) { AddSkillConnection(PlayerNodePosition, *TargetPosition, NAME_None, SkillKey, NodePositions); }
 		for (const FName& RequiredSkillKey : SkillData->RequiredSkill)
 		{
 			if (const FVector2D* RequiredPosition = NodePositions.Find(RequiredSkillKey))
 			{
-				AddSkillConnection(*RequiredPosition, *TargetPosition, SkillKey);
+				AddSkillConnection(*RequiredPosition, *TargetPosition, RequiredSkillKey, SkillKey, NodePositions);
 			}
 		}
 	}
@@ -323,32 +331,9 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	SkillTreeCanvasPanel->SetRenderScale(FVector2D(CurrentZoomScale));
 }
 
-void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName TargetSkillKey)
+void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName SourceSkillKey, FName TargetSkillKey, const TMap<FName, FVector2D>& NodePositions)
 {
-	const FVector2D FromCenter = FromPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D ToCenter = ToPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D Delta = ToCenter - FromCenter;
-	TArray<FVector2D> Points;
-	if (FMath::Abs(Delta.X) >= FMath::Abs(Delta.Y))
-	{
-		const float Direction = FMath::Sign(Delta.X);
-		const FVector2D Start(FromCenter.X + Direction * SkillNodeSize * 0.5f, FromCenter.Y);
-		const FVector2D End(ToCenter.X - Direction * SkillNodeSize * 0.5f, ToCenter.Y);
-		const float MiddleX = (Start.X + End.X) * 0.5f;
-		Points = { Start, FVector2D(MiddleX, Start.Y), FVector2D(MiddleX, End.Y), End };
-	}
-	else
-	{
-		const float Direction = FMath::Sign(Delta.Y);
-		const FVector2D Start(FromCenter.X, FromCenter.Y + Direction * SkillNodeSize * 0.5f);
-		const FVector2D End(ToCenter.X, ToCenter.Y - Direction * SkillNodeSize * 0.5f);
-		const float MiddleY = (Start.Y + End.Y) * 0.5f;
-		Points = { Start, FVector2D(Start.X, MiddleY), FVector2D(End.X, MiddleY), End };
-	}
-	for (int32 Index = Points.Num() - 1; Index > 0; --Index)
-	{
-		if (Points[Index].Equals(Points[Index - 1])) { Points.RemoveAt(Index); }
-	}
+	TArray<FVector2D> Points = CalculateConnectionPath(FromPosition, ToPosition, NodePositions);
 	if (Points.Num() < 2) { return; }
 	FBox2D Bounds(ForceInit);
 	float PathLength = 0.f;
@@ -373,6 +358,8 @@ void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, c
 	}
 	FSkillConnectionVisual& Connection = Connections.AddDefaulted_GetRef();
 	Connection.TargetSkillKey = TargetSkillKey;
+	Connection.SourceSkillKey = SourceSkillKey;
+	Connection.RoutePoints = Points;
 	UImage* Arrow = WidgetTree->ConstructWidget<UImage>();
 	Connection.Elements.Add(Arrow);
 	const UDataManager* Data = UDataManager::Get(this);
@@ -412,7 +399,7 @@ void USkillTreeMenuContents::UpdateConnectionStates()
 		const bool bPurchased = Skills->HasPurchasedSkill(Connection.TargetSkillKey);
 		const FLinearColor Color = bPurchased ? FLinearColor(0.35f, 0.9f, 0.68f)
 			: (bAvailable ? FLinearColor(0.75f, 0.48f, 0.18f) : FLinearColor(0.22f, 0.22f, 0.18f));
-		const int32 LineLayer = bPurchased ? 6 : (bAvailable ? 4 : 2);
+		const int32 LineLayer = bPurchased ? 4 : (bAvailable ? 3 : 2);
 		for (UWidget* Element : Connection.Elements)
 		{
 			UCanvasPanelSlot* Layout = CastChecked<UCanvasPanelSlot>(Element->Slot);
@@ -424,10 +411,80 @@ void USkillTreeMenuContents::UpdateConnectionStates()
 			if (UImage* Arrow = Cast<UImage>(Element))
 			{
 				Arrow->SetColorAndOpacity(Color);
-				Layout->SetZOrder(LineLayer + 1);
+				Layout->SetZOrder(8);
 			}
 		}
 	}
+}
+
+TArray<FVector2D> USkillTreeMenuContents::CalculateConnectionPath(const FVector2D& FromPosition, const FVector2D& ToPosition, const TMap<FName, FVector2D>& NodePositions)
+{
+	constexpr float Step = SkillNodeSize * 0.25f;
+	const FVector2D Origin(SkillTreePadding + SkillNodeSize * 0.5f);
+	const FVector2D From = FromPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D To = ToPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D Delta = To - From;
+	const FVector2D Direction = FMath::Abs(Delta.X) > FMath::Abs(Delta.Y)
+		? FVector2D(FMath::Sign(Delta.X), 0.f) : FVector2D(0.f, FMath::Sign(Delta.Y));
+	auto ToCell = [Origin](const FVector2D& Point) { return FIntPoint(FMath::RoundToInt((Point.X - Origin.X) / Step), FMath::RoundToInt((Point.Y - Origin.Y) / Step)); };
+	const FIntPoint Start = ToCell(From + Direction * (Step * 3.f));
+	const FIntPoint Goal = ToCell(To - Direction * (Step * 3.f));
+	TSet<FIntPoint> Blocked;
+	FIntPoint Minimum(MAX_int32, MAX_int32), Maximum(MIN_int32, MIN_int32);
+	for (const TPair<FName, FVector2D>& Pair : NodePositions)
+	{
+		const FIntPoint Center = ToCell(Pair.Value + FVector2D(SkillNodeSize * 0.5f));
+		Minimum.X = FMath::Min(Minimum.X, Center.X - 6); Minimum.Y = FMath::Min(Minimum.Y, Center.Y - 6);
+		Maximum.X = FMath::Max(Maximum.X, Center.X + 6); Maximum.Y = FMath::Max(Maximum.Y, Center.Y + 6);
+		for (int32 Y = -2; Y <= 2; ++Y) { for (int32 X = -2; X <= 2; ++X) { Blocked.Add(Center + FIntPoint(X, Y)); } }
+	}
+	TArray<FIntPoint> Open = { Start };
+	TMap<FIntPoint, FIntPoint> Parent;
+	TMap<FIntPoint, int32> Cost;
+	TSet<FIntPoint> Closed;
+	Cost.Add(Start, 0);
+	const FIntPoint Directions[] = { FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0), FIntPoint(0, -1) };
+	while (Open.IsEmpty() == false)
+	{
+		int32 BestIndex = 0, BestScore = MAX_int32;
+		for (int32 Index = 0; Index < Open.Num(); ++Index)
+		{
+			const FIntPoint Cell = Open[Index];
+			const int32 Score = Cost.FindChecked(Cell) + (FMath::Abs(Cell.X - Goal.X) + FMath::Abs(Cell.Y - Goal.Y)) * 10;
+			if (Score < BestScore) { BestScore = Score; BestIndex = Index; }
+		}
+		const FIntPoint Current = Open[BestIndex];
+		Open.RemoveAtSwap(BestIndex);
+		if (Current == Goal)
+		{
+			TArray<FIntPoint> Cells = { Goal };
+			while (Cells.Last() != Start) { Cells.Add(Parent.FindChecked(Cells.Last())); }
+			TArray<FVector2D> Points = { From + Direction * SkillNodeSize * 0.5f };
+			for (int32 Index = Cells.Num() - 1; Index >= 0; --Index)
+			{
+				Points.Add(Origin + FVector2D(Cells[Index]) * Step);
+				OccupiedConnectionCells.Add(Cells[Index]);
+			}
+			Points.Add(To - Direction * SkillNodeSize * 0.5f);
+			return Points;
+		}
+		Closed.Add(Current);
+		for (const FIntPoint& Offset : Directions)
+		{
+			const FIntPoint Next = Current + Offset;
+			if (Next.X < Minimum.X || Next.Y < Minimum.Y || Next.X > Maximum.X || Next.Y > Maximum.Y || Blocked.Contains(Next) || Closed.Contains(Next)) { continue; }
+			const FIntPoint* Previous = Parent.Find(Current);
+			const bool bTurn = Previous != nullptr && Current - *Previous != Offset;
+			const int32 NewCost = Cost.FindChecked(Current) + 10 + (bTurn ? 4 : 0) + (OccupiedConnectionCells.Contains(Next) ? 12 : 0);
+			const int32* Existing = Cost.Find(Next);
+			if (Existing == nullptr || NewCost < *Existing)
+			{
+				Cost.Add(Next, NewCost); Parent.Add(Next, Current); Open.AddUnique(Next);
+			}
+		}
+	}
+	ensureMsgf(false, TEXT("Skill connection could not route around nodes."));
+	return {};
 }
 
 bool USkillTreeMenuContents::UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, const float WheelDelta)

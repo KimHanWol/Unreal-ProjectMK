@@ -64,6 +64,7 @@ private:
 	float PurchaseHoldDuration = 0.8f;
 
 	float HoldProgress = 0.f;
+	float UnlockFlashTime = 0.f;
 
 	UPROPERTY(Transient)
 	bool bPendingClickPurchase = false;

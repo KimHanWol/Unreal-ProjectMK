@@ -17,6 +17,12 @@ struct FSkillConnectionVisual
 	FName TargetSkillKey;
 
 	UPROPERTY(Transient)
+	FName SourceSkillKey;
+
+	UPROPERTY(Transient)
+	TArray<FVector2D> RoutePoints;
+
+	UPROPERTY(Transient)
 	TArray<TObjectPtr<UWidget>> Elements;
 };
 
@@ -36,6 +42,7 @@ protected:
 	virtual FReply NativeOnMouseMove(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseWheel(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
+	virtual void NativeOnMouseCaptureLost(const FCaptureLostEvent& Event) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 
@@ -48,8 +55,9 @@ public:
 private:
 	void BuildDefaultWidgetTree();
 	void RefreshSkillTree();
-	void AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName TargetSkillKey);
+	void AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName SourceSkillKey, FName TargetSkillKey, const TMap<FName, FVector2D>& NodePositions);
 	void UpdateConnectionStates();
+	TArray<FVector2D> CalculateConnectionPath(const FVector2D& FromPosition, const FVector2D& ToPosition, const TMap<FName, FVector2D>& NodePositions);
 	bool UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, float WheelDelta);
 	float CalculateMinimumZoomScale() const;
 	FVector2D CalculateClampedCanvasPosition(const FVector2D& TargetPosition, float ContentScale) const;
@@ -73,6 +81,7 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TArray<FSkillConnectionVisual> Connections;
+	TSet<FIntPoint> OccupiedConnectionCells;
 
 	bool bNeedsCentering = true;
 	FVector2D CentralPlayerPosition;

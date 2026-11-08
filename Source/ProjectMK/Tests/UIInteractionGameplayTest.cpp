@@ -201,6 +201,17 @@ namespace
 				UTextBlock* State = Cast<UTextBlock>(SkillTooltip->WidgetTree->FindWidget(TEXT("TooltipStatus")));
 				Test->TestEqual(TEXT("Unaffordable skill replaces the hold prompt"), State->GetText().ToString(), FString(TEXT("코인 부족")));
 				SkillData->Price = SavedPrice;
+				for (FName Candidate : UDataManager::Get(Player.Get())->GetSkillRowNames())
+				{
+					const FSkillDataTableRow* Row = UDataManager::Get(Player.Get())->GetSkillDataTableRow(Candidate);
+					if (Player->GetSkillComponent()->HasPurchasedSkill(Candidate)) { continue; }
+					for (FName Required : Row->RequiredSkill)
+					{
+						if (Player->GetSkillComponent()->HasPurchasedSkill(Required)) { continue; }
+						SkillTooltip->ShowSkillTooltip(Candidate);
+						Test->TestTrue(TEXT("Locked tooltips name each missing prerequisite"), State->GetText().ToString().Contains(UDataManager::Get(Player.Get())->GetSkillDataTableRow(Required)->DisplayName.ToString()));
+					}
+				}
 				SkillTooltip->HideTooltip();
 				SendSkillPointer(true);
 				Advance();
@@ -250,7 +261,7 @@ namespace
 			const FVector2D Position = Geometry.GetAbsolutePosition();
 			const FPointerEvent Pointer(0, Position, Position, bDown ? TSet<FKey>{ EKeys::LeftMouseButton } : TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
 			if (bDown) { Skill->TakeWidget()->OnMouseButtonDown(Geometry, Pointer); }
-			else { Skill->TakeWidget()->OnMouseButtonUp(Geometry, Pointer); }
+			else { Test->TestTrue(TEXT("Releasing a short or completed hold always releases capture"), Skill->TakeWidget()->OnMouseButtonUp(Geometry, Pointer).ShouldReleaseMouse()); }
 		}
 		bool Finish()
 		{

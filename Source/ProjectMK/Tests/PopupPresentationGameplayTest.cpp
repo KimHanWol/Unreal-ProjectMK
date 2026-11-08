@@ -7,6 +7,7 @@
 #include "Components/Image.h"
 #include "Components/Border.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Components/CanvasPanel.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Tests/AutomationEditorCommon.h"
@@ -152,6 +153,19 @@ namespace
 						const UImage* DirectionArrow = Cast<UImage>(Connection.Elements[0]);
 						Test->TestTrue(TEXT("Each connection shares the reusable beveled rail widget"), Rail != nullptr);
 						Test->TestTrue(TEXT("Rail and arrow always use the same state color"), Rail != nullptr && DirectionArrow != nullptr && Rail->GetLineColor().Equals(DirectionArrow->GetColorAndOpacity()));
+						Test->TestTrue(TEXT("Arrows stay above learned and unlearned rails"), CastChecked<UCanvasPanelSlot>(Connection.Elements[0]->Slot)->GetZOrder() > 4);
+						const FSkillDataTableRow* TargetRow = UDataManager::Get(World)->GetSkillDataTableRow(Connection.TargetSkillKey);
+						Test->TestTrue(TEXT("Connections represent only the target's actual prerequisites"), TargetRow != nullptr && (TargetRow->RequiredSkill.IsEmpty() ? Connection.SourceSkillKey.IsNone() : TargetRow->RequiredSkill.Contains(Connection.SourceSkillKey)));
+						for (UUserWidget* Node : Nodes)
+						{
+							if (Node->GetTypedOuter<USkillTreeMenuContents>() != Tree) { continue; }
+							const FName Key = KeyProperty->GetPropertyValue_InContainer(Node);
+							if (Key == Connection.SourceSkillKey || Key == Connection.TargetSkillKey) { continue; }
+							const UCanvasPanelSlot* Slot = Cast<UCanvasPanelSlot>(Node->Slot);
+							if (Slot == nullptr) { continue; }
+							const FBox2D Obstacle(Slot->GetPosition() - FVector2D(2.f), Slot->GetPosition() + Slot->GetSize() + FVector2D(2.f));
+							for (const FVector2D& Point : Connection.RoutePoints) { Test->TestFalse(TEXT("A route never passes through an unrelated skill"), Obstacle.IsInside(Point)); }
+						}
 						if (Player->GetSkillComponent()->HasPurchasedSkill(Connection.TargetSkillKey))
 						{
 							const UImage* Arrow = Cast<UImage>(Connection.Elements[0]);
@@ -179,6 +193,45 @@ namespace
 							const USkillConnectionWidget* Rail = CastChecked<USkillConnectionWidget>(Connection.Elements[1]);
 							Test->TestTrue(TEXT("Purchase recolors and promotes the whole rail above shared trunks"), Rail->GetLineColor().Equals(Arrow->GetColorAndOpacity()) && CastChecked<UCanvasPanelSlot>(Rail->Slot)->GetZOrder() > HighestUnpurchasedLineLayer);
 						}
+					}
+				}
+				Step = 3;
+				Started = FPlatformTime::Seconds();
+				return false;
+			}
+			if (Step == 3 && FPlatformTime::Seconds() - Started > 0.4)
+			{
+				TArray<UUserWidget*> Trees;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, Trees, USkillTreeMenuContents::StaticClass(), false);
+				USkillTreeMenuContents* Tree = nullptr;
+				for (UUserWidget* Candidate : Trees) { if (Candidate->GetVisibility() == ESlateVisibility::Visible) { Tree = Cast<USkillTreeMenuContents>(Candidate); } }
+				if (Test->TestNotNull(TEXT("Visible tree exists for input testing"), Tree))
+				{
+					UCanvasPanel* View = CastChecked<UCanvasPanel>(Tree->WidgetTree->FindWidget(TEXT("RuntimeSkillTreeViewport")));
+					UCanvasPanel* Canvas = CastChecked<UCanvasPanel>(View->GetChildAt(0));
+					UCanvasPanelSlot* CanvasLayout = CastChecked<UCanvasPanelSlot>(Canvas->Slot);
+					Player->GetSkillComponent()->TryAddCoin(5000, false);
+					USkillSlotWidget* DragSlot = nullptr;
+					const FNameProperty* Key = FindFProperty<FNameProperty>(USkillSlotWidget::StaticClass(), TEXT("SkillKeyName"));
+					for (UWidget* Child : Canvas->GetAllChildren())
+					{
+						USkillSlotWidget* Slot = Cast<USkillSlotWidget>(Child);
+						if (Slot != nullptr && Player->GetSkillComponent()->CanPurchaseSkill(Key->GetPropertyValue_InContainer(Slot))) { DragSlot = Slot; break; }
+					}
+					if (Test->TestNotNull(TEXT("An available slot can start a drag"), DragSlot))
+					{
+						const FGeometry Geometry = DragSlot->GetCachedGeometry();
+						const FVector2D Start = Geometry.LocalToAbsolute(Geometry.GetLocalSize() * 0.5f);
+						const FVector2D End = Start + FVector2D(45.f, 30.f);
+						const FVector2D Before = CanvasLayout->GetPosition();
+						FPointerEvent Down(0, Start, Start, TSet<FKey>{EKeys::LeftMouseButton}, EKeys::LeftMouseButton, 0.f, FModifierKeysState());
+						DragSlot->TakeWidget()->OnMouseButtonDown(Geometry, Down);
+						FPointerEvent Move(0, End, Start, TSet<FKey>{EKeys::LeftMouseButton}, EKeys::Invalid, 0.f, FModifierKeysState());
+						Test->TestTrue(TEXT("Moving an available slot cancels hold and begins tree drag"), DragSlot->TakeWidget()->OnMouseMove(Geometry, Move).IsEventHandled() && Tree->HasActiveSkillTreeDrag());
+						Test->TestFalse(TEXT("Dragging actually moves the canvas"), Before.Equals(CanvasLayout->GetPosition()));
+						FPointerEvent Up(0, End, End, TSet<FKey>(), EKeys::LeftMouseButton, 0.f, FModifierKeysState());
+						Test->TestTrue(TEXT("Ending drag releases pointer capture"), Tree->TakeWidget()->OnMouseButtonUp(Tree->GetCachedGeometry(), Up).ShouldReleaseMouse());
+						Test->TestFalse(TEXT("Drag state ends on release"), Tree->HasActiveSkillTreeDrag());
 					}
 				}
 				Menu->CloseMenu();

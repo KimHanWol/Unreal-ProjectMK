@@ -15,6 +15,7 @@
 #include "Components/VerticalBoxSlot.h"
 #include "Engine/Texture2D.h"
 #include "Rendering/DrawElementTypes.h"
+#include "Framework/Application/SlateApplication.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
@@ -36,6 +37,7 @@ TSharedRef<SWidget> USkillSlotWidget::RebuildWidget()
 void USkillSlotWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	UnlockFlashTime = FMath::Max(0.f, UnlockFlashTime - InDeltaTime);
 	if (bPendingClickPurchase)
 	{
 		HoldProgress = FMath::Min(1.f, HoldProgress + InDeltaTime / PurchaseHoldDuration);
@@ -43,6 +45,8 @@ void USkillSlotWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime
 		{
 			bPendingClickPurchase = false;
 			OnSlotClicked();
+			UnlockFlashTime = 0.25f;
+			if (HasMouseCapture()) { FSlateApplication::Get().ReleaseAllPointerCapture(); }
 		}
 		InvalidateLayoutAndVolatility();
 	}
@@ -52,21 +56,41 @@ int32 USkillSlotWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Geo
 	FSlateWindowElementList& DrawElements, int32 LayerId, const FWidgetStyle& Style, bool bEnabled) const
 {
 	const int32 Layer = Super::NativePaint(Args, Geometry, CullingRect, DrawElements, LayerId, Style, bEnabled);
-	if (bPendingClickPurchase && HoldProgress > 0.f)
+	if ((bPendingClickPurchase && HoldProgress > 0.f) || UnlockFlashTime > 0.f)
 	{
-		TArray<FVector2D> Points;
-		const FVector2D Center = Geometry.GetLocalSize() * 0.5f;
-		const float Radius = FMath::Min(Center.X, Center.Y) - 3.f;
-		const int32 Steps = FMath::Max(1, FMath::CeilToInt(HoldProgress * 64.f));
-		for (int32 Index = 0; Index <= Steps; ++Index)
+		const FVector2D Size = Geometry.GetLocalSize();
+		const TArray<FVector2D> Track = {
+			{ Size.X * 0.5f, 5.f }, { Size.X - 10.f, 5.f }, { Size.X - 5.f, 10.f },
+			{ Size.X - 5.f, Size.Y - 10.f }, { Size.X - 10.f, Size.Y - 5.f },
+			{ 10.f, Size.Y - 5.f }, { 5.f, Size.Y - 10.f }, { 5.f, 10.f },
+			{ 10.f, 5.f }, { Size.X * 0.5f, 5.f }
+		};
+		float Length = 0.f;
+		for (int32 Index = 1; Index < Track.Num(); ++Index) { Length += FVector2D::Distance(Track[Index - 1], Track[Index]); }
+		float Remaining = Length * (UnlockFlashTime > 0.f ? 1.f : HoldProgress);
+		TArray<FVector2D> Progress = { Track[0] };
+		for (int32 Index = 1; Index < Track.Num(); ++Index)
 		{
-			const float Angle = -HALF_PI + 2.f * PI * HoldProgress * Index / Steps;
-			Points.Add(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * Radius);
+			const FVector2D Segment = Track[Index] - Track[Index - 1];
+			Progress.Add(Track[Index - 1] + Segment.GetSafeNormal() * FMath::Min(Remaining, Segment.Size()));
+			Remaining -= Segment.Size();
+			if (Remaining <= 0.f) { break; }
 		}
-		FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Points,
-			ESlateDrawEffect::None, FLinearColor(1.f, 0.75f, 0.2f), true, 4.f);
+		const FLinearColor Color = UnlockFlashTime > 0.f ? FLinearColor(0.35f, 0.9f, 0.68f) : FLinearColor(0.95f, 0.68f, 0.28f);
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Track,
+			ESlateDrawEffect::None, FLinearColor(0.02f, 0.04f, 0.05f), false, 8.f);
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 2, Geometry.ToPaintGeometry(), Track,
+			ESlateDrawEffect::None, FLinearColor(0.23f, 0.29f, 0.29f), false, 5.f);
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 3, Geometry.ToPaintGeometry(), Progress,
+			ESlateDrawEffect::None, Color, false, 4.f);
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 4, Geometry.ToPaintGeometry(), Progress,
+			ESlateDrawEffect::None, FMath::Lerp(Color, FLinearColor::White, 0.3f), false, 1.f);
+		const FVector2D Tip = Progress.Last();
+		const TArray<FVector2D> Marker = { Tip + FVector2D(0.f, -3.f), Tip + FVector2D(3.f, 0.f), Tip + FVector2D(0.f, 3.f), Tip + FVector2D(-3.f, 0.f), Tip + FVector2D(0.f, -3.f) };
+		FSlateDrawElement::MakeLines(DrawElements, Layer + 5, Geometry.ToPaintGeometry(), Marker,
+			ESlateDrawEffect::None, FLinearColor(1.f, 0.91f, 0.65f), false, 2.f);
 	}
-	return Layer + 1;
+	return Layer + 5;
 }
 
 void USkillSlotWidget::NativeOnMouseCaptureLost(const FCaptureLostEvent& CaptureLostEvent)
@@ -84,6 +108,12 @@ FReply USkillSlotWidget::NativeOnMouseMove(const FGeometry& InGeometry, const FP
 		{
 			bPendingClickPurchase = false;
 			HoldProgress = 0.f;
+			if (USkillTreeMenuContents* Tree = GetOwningSkillTreeMenuContents())
+			{
+				Tree->BeginSkillTreeDrag(PendingClickScreenPosition);
+				Tree->UpdateSkillTreeDrag(InMouseEvent.GetScreenSpacePosition());
+				return FReply::Handled().CaptureMouse(Tree->TakeWidget());
+			}
 		}
 		return FReply::Handled();
 	}
@@ -140,29 +170,16 @@ FReply USkillSlotWidget::NativeOnMouseButtonDown(const FGeometry& InGeometry, co
 FReply USkillSlotWidget::NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
 	const bool bIsLeftMouseButton = InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;
-	const bool bCanHandleClick = bIsLeftMouseButton && bPendingClickPurchase && HoldProgress >= 1.f;
-	bool bEndedSkillTreeDrag = false;
 
 	bPendingClickPurchase = false;
 	HoldProgress = 0.f;
 
 	if (USkillTreeMenuContents* SkillTreeMenuContents = GetOwningSkillTreeMenuContents())
 	{
-		bEndedSkillTreeDrag = SkillTreeMenuContents->HasActiveSkillTreeDrag();
 		SkillTreeMenuContents->EndSkillTreeDrag();
 	}
 
-	if (bCanHandleClick)
-	{
-		const float ClickMovementDistance = FVector2D::Distance(PendingClickScreenPosition, InMouseEvent.GetScreenSpacePosition());
-		if (ClickMovementDistance <= 4.f && IsHovered())
-		{
-			OnSlotClicked();
-			return FReply::Handled().ReleaseMouseCapture();
-		}
-	}
-
-	if (bIsLeftMouseButton && bEndedSkillTreeDrag)
+	if (bIsLeftMouseButton)
 	{
 		return FReply::Handled().ReleaseMouseCapture();
 	}

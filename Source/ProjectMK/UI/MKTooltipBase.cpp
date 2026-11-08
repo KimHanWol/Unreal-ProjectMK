@@ -268,13 +268,20 @@ void UMKTooltipBase::UpdateTooltipFromSkillData(FName SkillKey, const FSkillData
 	const bool bPurchased = ::IsValid(Skills) && Skills->HasPurchasedSkill(SkillKey);
 	SetCost(Skill.Price, bPurchased == false);
 	if (bPurchased) { SetStatus(NSLOCTEXT("Tooltip", "Learned", "습득 완료"), FLinearColor(0.45f, 0.86f, 0.67f)); return; }
+	TArray<FString> MissingSkills;
 	for (FName Required : Skill.RequiredSkill)
 	{
 		if (::IsValid(Skills) == false || Skills->HasPurchasedSkill(Required) == false)
 		{
-			SetStatus(NSLOCTEXT("Tooltip", "Prerequisite", "선행 기술 필요"), FLinearColor(0.9f, 0.65f, 0.4f));
-			return;
+			const UDataManager* Data = UDataManager::Get(this);
+			const FSkillDataTableRow* Prerequisite = ::IsValid(Data) ? Data->GetSkillDataTableRow(Required) : nullptr;
+			MissingSkills.Add(Prerequisite != nullptr ? Prerequisite->DisplayName.ToString() : Required.ToString());
 		}
+	}
+	if (MissingSkills.IsEmpty() == false)
+	{
+		SetStatus(FText::Format(NSLOCTEXT("Tooltip", "MissingSkills", "선행 기술 필요\n{0}"), FText::FromString(FString::Join(MissingSkills, TEXT("\n")))), FLinearColor(0.9f, 0.65f, 0.4f));
+		return;
 	}
 	const UAttributeSet_Character* Attributes = GetCharacterAttributeSet();
 	const bool bCanAfford = ::IsValid(Attributes) && Attributes->GetCoin() >= Skill.Price;
