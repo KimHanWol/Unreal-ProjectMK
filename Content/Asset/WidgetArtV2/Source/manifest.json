@@ -1,0 +1,242 @@
+﻿[
+  {
+    "name": "ActionPrimary",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/ActionPrimary.png",
+    "width": 128,
+    "height": 40,
+    "marginX": 16,
+    "marginY": 12,
+    "cell": 0,
+    "atlasBounds": [
+      18,
+      126,
+      299,
+      222
+    ]
+  },
+  {
+    "name": "ActionSecondary",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/ActionSecondary.png",
+    "width": 128,
+    "height": 40,
+    "marginX": 16,
+    "marginY": 12,
+    "cell": 1,
+    "atlasBounds": [
+      18,
+      136,
+      295,
+      213
+    ]
+  },
+  {
+    "name": "ActionDanger",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/ActionDanger.png",
+    "width": 128,
+    "height": 40,
+    "marginX": 16,
+    "marginY": 12,
+    "cell": 2,
+    "atlasBounds": [
+      16,
+      131,
+      297,
+      217
+    ]
+  },
+  {
+    "name": "QuantityPreset",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/QuantityPreset.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10,
+    "cell": 3,
+    "atlasBounds": [
+      45,
+      130,
+      266,
+      213
+    ]
+  },
+  {
+    "name": "Stepper",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/Stepper.png",
+    "width": 32,
+    "height": 32,
+    "marginX": 10,
+    "marginY": 10,
+    "cell": 4,
+    "atlasBounds": [
+      83,
+      98,
+      230,
+      244
+    ]
+  },
+  {
+    "name": "QuantityPresetSelected",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/QuantityPresetSelected.png",
+    "width": 96,
+    "height": 32,
+    "marginX": 12,
+    "marginY": 10,
+    "cell": 5,
+    "atlasBounds": [
+      25,
+      118,
+      286,
+      214
+    ]
+  },
+  {
+    "name": "InputWell",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/InputWell.png",
+    "width": 128,
+    "height": 40,
+    "marginX": 12,
+    "marginY": 12,
+    "cell": 6,
+    "atlasBounds": [
+      9,
+      118,
+      302,
+      219
+    ]
+  },
+  {
+    "name": "SaleTotal",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/SaleTotal.png",
+    "width": 128,
+    "height": 40,
+    "marginX": 12,
+    "marginY": 12,
+    "cell": 7,
+    "atlasBounds": [
+      13,
+      111,
+      298,
+      223
+    ]
+  },
+  {
+    "name": "MerchantMat",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/MerchantMat.png",
+    "width": 160,
+    "height": 88,
+    "marginX": 24,
+    "marginY": 24,
+    "cell": 8,
+    "atlasBounds": [
+      24,
+      92,
+      289,
+      243
+    ]
+  },
+  {
+    "name": "RecipeRow",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/RecipeRow.png",
+    "width": 192,
+    "height": 64,
+    "marginX": 56,
+    "marginY": 16,
+    "cell": 9,
+    "atlasBounds": [
+      10,
+      120,
+      301,
+      215
+    ]
+  },
+  {
+    "name": "InventoryDrawer",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/InventoryDrawer.png",
+    "width": 160,
+    "height": 88,
+    "marginX": 16,
+    "marginY": 20,
+    "cell": 10,
+    "atlasBounds": [
+      14,
+      92,
+      300,
+      242
+    ]
+  },
+  {
+    "name": "SectionDivider",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/SectionDivider.png",
+    "width": 192,
+    "height": 16,
+    "marginX": 80,
+    "marginY": 0,
+    "cell": 11,
+    "atlasBounds": [
+      17,
+      149,
+      294,
+      184
+    ]
+  },
+  {
+    "name": "IconSatchel",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/IconSatchel.png",
+    "width": 48,
+    "height": 48,
+    "marginX": 0,
+    "marginY": 0,
+    "cell": 12,
+    "atlasBounds": [
+      37,
+      66,
+      270,
+      253
+    ]
+  },
+  {
+    "name": "IconWorkbench",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/IconWorkbench.png",
+    "width": 64,
+    "height": 64,
+    "marginX": 0,
+    "marginY": 0,
+    "cell": 13,
+    "atlasBounds": [
+      42,
+      48,
+      265,
+      260
+    ]
+  },
+  {
+    "name": "IconTrade",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/IconTrade.png",
+    "width": 48,
+    "height": 48,
+    "marginX": 0,
+    "marginY": 0,
+    "cell": 14,
+    "atlasBounds": [
+      35,
+      50,
+      279,
+      261
+    ]
+  },
+  {
+    "name": "IconStorage",
+    "file": "Content/Asset/WidgetArtV2/Source/UI/IconStorage.png",
+    "width": 48,
+    "height": 40,
+    "marginX": 0,
+    "marginY": 0,
+    "cell": 15,
+    "atlasBounds": [
+      21,
+      78,
+      285,
+      249
+    ]
+  }
+]

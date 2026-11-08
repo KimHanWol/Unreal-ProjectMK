@@ -64,7 +64,8 @@ void UMenuDisplayCardWidget::UpdateWidget()
 		const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
 		if (::IsValid(Style))
 		{
-			if (const FSlateBrush* Brush = Style->Brushes.Find(DisplayRole)) { Portrait->SetBrush(*Brush); }
+			const FName IconRole = DisplayRole == TEXT("Crafting") ? TEXT("IconWorkbench") : (DisplayRole == TEXT("Shop") ? TEXT("IconTrade") : DisplayRole);
+			if (const FSlateBrush* Brush = Style->Brushes.Find(IconRole)) { Portrait->SetBrush(*Brush); }
 		}
 	}
 }

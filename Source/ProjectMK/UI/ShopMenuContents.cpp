@@ -123,7 +123,10 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	MerchantColumn->AddChildToVerticalBox(BuildSectionDivider());
 	UTextBlock* SaleHint = BuildSectionLabel(NSLOCTEXT("Shop", "SellHint", "광물을 놓아 판매 · 우클릭으로 수량 선택"));
 	ApplyTextRole(SaleHint, EMKTextRole::Caption);
-	MerchantColumn->AddChildToVerticalBox(SaleHint)->SetPadding(FMargin(8.f, 0.f, 8.f, 8.f));
+	UBorder* SaleMat = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MerchantMat"));
+	SaleMat->SetPadding(FMargin(24.f, 16.f));
+	SaleMat->SetContent(SaleHint);
+	MerchantColumn->AddChildToVerticalBox(SaleMat)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Blueprints", "설계도")))->SetPadding(FMargin(8.f));
 	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
 	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));

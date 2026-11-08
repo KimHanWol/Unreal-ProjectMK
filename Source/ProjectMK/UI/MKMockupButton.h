@@ -15,4 +15,11 @@ public:
 	{
 		InitIsFocusable(false);
 	}
+
+	void SetVisualRole(FName Role);
+	void ApplyButtonStyle();
+
+private:
+	UPROPERTY(EditAnywhere, Category = "Style")
+	FName VisualRole = TEXT("ActionPrimary");
 };

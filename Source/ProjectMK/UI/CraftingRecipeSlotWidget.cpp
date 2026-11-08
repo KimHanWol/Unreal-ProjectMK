@@ -111,16 +111,16 @@ void UCraftingRecipeSlotWidget::BuildDefaultWidgetTree()
 {
 	USizeBox* CardSize = WidgetTree->ConstructWidget<USizeBox>();
 	CardSize->SetMinDesiredWidth(284.f);
-	CardSize->SetMinDesiredHeight(80.f);
+	CardSize->SetMinDesiredHeight(64.f);
 	WidgetTree->RootWidget = CardSize;
 	UBorder* Border = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
 	Border->SetBrushColor(FLinearColor(0.06f, 0.09f, 0.13f, 1.f));
-	Border->SetPadding(FMargin(FMKUILayout::SpaceM));
+	Border->SetPadding(FMargin(4.f, 8.f, 12.f, 8.f));
 	CardSize->SetContent(Border);
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
 	Border->SetContent(Row);
 	UImage* RawItemIcon = nullptr;
-	UBorder* IconFrame = BuildItemIconFrame(RawItemIcon);
+	UBorder* IconFrame = BuildItemIconFrame(RawItemIcon, 32.f, NAME_None);
 	ItemIcon = RawItemIcon;
 	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
 	IconSlot->SetVerticalAlignment(VAlign_Center);

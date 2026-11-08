@@ -14,6 +14,7 @@
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "Components/Image.h"
 #include "PaperSprite.h"
+#include "ProjectMK/UI/MKMockupButton.h"
 
 TSharedRef<SWidget> UItemQuantityDialog::RebuildWidget()
 {
@@ -52,7 +53,7 @@ TSharedRef<SWidget> UItemQuantityDialog::RebuildWidget()
 		Column->AddChildToVerticalBox(AmountRow)->SetHorizontalAlignment(HAlign_Center);
 		UButton* Button = nullptr;
 		UTextBlock* Label = nullptr;
-		AmountRow->AddChildToHorizontalBox(BuildActionButton(Button, Label, FText::FromString(TEXT("−")), 44.f))->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+		AmountRow->AddChildToHorizontalBox(BuildActionButton(Button, Label, FText::FromString(TEXT("−")), 44.f, 44.f, TEXT("Stepper")))->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
 		DecreaseButton = Button;
 		DecreaseButton->Rename(TEXT("QuantityDecrease"));
 		QuantityInput = WidgetTree->ConstructWidget<USpinBox>();
@@ -68,24 +69,27 @@ TSharedRef<SWidget> UItemQuantityDialog::RebuildWidget()
 		InputSize->SetWidthOverride(128.f);
 		InputSize->SetContent(QuantityInput);
 		AmountRow->AddChildToHorizontalBox(InputSize)->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
-		AmountRow->AddChildToHorizontalBox(BuildActionButton(Button, Label, FText::FromString(TEXT("+")), 44.f));
+		AmountRow->AddChildToHorizontalBox(BuildActionButton(Button, Label, FText::FromString(TEXT("+")), 44.f, 44.f, TEXT("Stepper")));
 		IncreaseButton = Button;
 		IncreaseButton->Rename(TEXT("QuantityIncrease"));
 		UHorizontalBox* Presets = WidgetTree->ConstructWidget<UHorizontalBox>();
 		UVerticalBoxSlot* PresetLayout = Column->AddChildToVerticalBox(Presets);
 		PresetLayout->SetHorizontalAlignment(HAlign_Center);
 		PresetLayout->SetPadding(FMargin(0.f, 12.f, 0.f, 16.f));
-		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "One", "1개"), 72.f, 36.f))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "One", "1개"), 72.f, 36.f, TEXT("QuantityPreset")))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
 		OneButton = Button;
 		OneButton->Rename(TEXT("QuantityOne"));
-		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "Half", "절반"), 72.f, 36.f))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
+		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "Half", "절반"), 72.f, 36.f, TEXT("QuantityPreset")))->SetPadding(FMargin(0.f, 0.f, 8.f, 0.f));
 		HalfButton = Button;
 		HalfButton->Rename(TEXT("QuantityHalf"));
-		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "All", "전체"), 72.f, 36.f));
+		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "All", "전체"), 72.f, 36.f, TEXT("QuantityPreset")));
 		AllButton = Button;
 		AllButton->Rename(TEXT("QuantityAll"));
 		PriceRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("QuantityPriceRow"));
-		Column->AddChildToVerticalBox(PriceRow)->SetPadding(FMargin(0.f, 0.f, 0.f, 24.f));
+		UBorder* PriceFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("SaleTotal"));
+		PriceFrame->SetPadding(FMargin(12.f, 10.f));
+		PriceFrame->SetContent(PriceRow);
+		Column->AddChildToVerticalBox(PriceFrame)->SetPadding(FMargin(0.f, 0.f, 0.f, 20.f));
 		UTextBlock* PriceCaption = BuildSectionLabel(NSLOCTEXT("Quantity", "SaleTotal", "판매 금액"));
 		ApplyTextRole(PriceCaption, EMKTextRole::Body);
 		PriceRow->AddChildToHorizontalBox(PriceCaption)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
@@ -100,7 +104,7 @@ TSharedRef<SWidget> UItemQuantityDialog::RebuildWidget()
 		ConfirmButton->Rename(TEXT("QuantityConfirm"));
 		ConfirmLabel = Label;
 		UButton* Cancel = nullptr;
-		Actions->AddChildToHorizontalBox(BuildActionButton(Cancel, Label, NSLOCTEXT("Sale", "Cancel", "취소"), 160.f));
+		Actions->AddChildToHorizontalBox(BuildActionButton(Cancel, Label, NSLOCTEXT("Sale", "Cancel", "취소"), 160.f, 44.f, TEXT("ActionSecondary")));
 		CancelButton = Cancel;
 		CancelButton->Rename(TEXT("QuantityCancel"));
 	}
@@ -121,6 +125,7 @@ void UItemQuantityDialog::ShowQuantity(FName InItemKey, int32 InMaximumCount, bo
 	TakeWidget();
 	ActionTitle->SetText(bDrop ? NSLOCTEXT("Item", "DropQuantity", "버릴 수량") : NSLOCTEXT("Sale", "Quantity", "판매 수량"));
 	ConfirmLabel->SetText(bDrop ? NSLOCTEXT("Item", "Drop", "버리기") : NSLOCTEXT("Sale", "Sell", "판매"));
+	CastChecked<UMKMockupButton>(ConfirmButton)->SetVisualRole(bDrop ? TEXT("ActionDanger") : TEXT("ActionPrimary"));
 	QuantityInput->SetMaxValue(MaximumCount);
 	QuantityInput->SetMaxSliderValue(MaximumCount);
 	QuantityInput->SetValue(bDrop ? 1 : MaximumCount);
@@ -132,6 +137,7 @@ void UItemQuantityDialog::ShowQuantity(FName InItemKey, int32 InMaximumCount, bo
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
 	UnitPrice = ::IsValid(Inventory) ? Inventory->CalculateSellPrice(ItemKey, 1) : 0;
 	PriceRow->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	PriceRow->GetParent()->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
 	OnQuantityChanged(QuantityInput->GetValue());
 	SetVisibility(ESlateVisibility::Visible);
 	QuantityInput->SetKeyboardFocus();
@@ -190,6 +196,9 @@ void UItemQuantityDialog::OnQuantityChanged(float Value)
 	TotalPrice->SetText(FText::AsNumber(static_cast<int64>(UnitPrice) * Count));
 	DecreaseButton->SetIsEnabled(Count > 1);
 	IncreaseButton->SetIsEnabled(Count < MaximumCount);
+	CastChecked<UMKMockupButton>(OneButton)->SetVisualRole(Count == 1 ? TEXT("QuantityPresetSelected") : TEXT("QuantityPreset"));
+	CastChecked<UMKMockupButton>(HalfButton)->SetVisualRole(Count > 1 && Count == MaximumCount / 2 ? TEXT("QuantityPresetSelected") : TEXT("QuantityPreset"));
+	CastChecked<UMKMockupButton>(AllButton)->SetVisualRole(Count > 1 && Count == MaximumCount ? TEXT("QuantityPresetSelected") : TEXT("QuantityPreset"));
 }
 
 void UItemQuantityDialog::OnQuantityCommitted(float Value, ETextCommit::Type CommitType)

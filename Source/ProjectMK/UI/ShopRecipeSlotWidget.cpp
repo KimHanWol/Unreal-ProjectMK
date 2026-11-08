@@ -111,12 +111,12 @@ void UShopRecipeSlotWidget::BuildDefaultWidgetTree()
 {
 	UHorizontalBox* RootBox = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("RootBox"));
 	UBorder* Card = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RecipeCard"));
-	Card->SetPadding(FMargin(FMKUILayout::SpaceM));
+	Card->SetPadding(FMargin(4.f, 8.f, 12.f, 8.f));
 	Card->SetContent(RootBox);
 	WidgetTree->RootWidget = Card;
 
 	UImage* RawResultItemIcon = nullptr;
-	UBorder* IconFrame = BuildItemIconFrame(RawResultItemIcon);
+	UBorder* IconFrame = BuildItemIconFrame(RawResultItemIcon, 32.f, NAME_None);
 	ResultItemIconImage = RawResultItemIcon;
 	if (UHorizontalBoxSlot* IconSlot = RootBox->AddChildToHorizontalBox(IconFrame))
 	{

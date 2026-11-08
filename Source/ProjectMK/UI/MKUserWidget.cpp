@@ -74,8 +74,8 @@ void UMKUserWidget::ApplyVisualStyle()
 	{
 		if (USpinBox* Input = Cast<USpinBox>(Widget))
 		{
-			const FSlateBrush* Background = Style->Brushes.Find(TEXT("InsetPanel"));
-			const FSlateBrush* Hover = Style->Brushes.Find(TEXT("InsetPanel"));
+			const FSlateBrush* Background = Style->Brushes.Find(TEXT("InputWell"));
+			const FSlateBrush* Hover = Background;
 			if (Background && Hover)
 			{
 				FSpinBoxStyle InputStyle = Input->GetWidgetStyle();
@@ -138,20 +138,9 @@ void UMKUserWidget::ApplyVisualStyle()
 				Image->SetBrush(*Brush);
 			}
 		}
-		if (UButton* Button = Cast<UMKMockupButton>(Widget))
+		if (UMKMockupButton* Button = Cast<UMKMockupButton>(Widget))
 		{
-			const FSlateBrush* Normal = Style->Brushes.Find(TEXT("Button"));
-			const FSlateBrush* Hover = Style->Brushes.Find(TEXT("ButtonHover"));
-			const FSlateBrush* Pressed = Style->Brushes.Find(TEXT("ButtonPressed"));
-			const FSlateBrush* Disabled = Style->Brushes.Find(TEXT("ButtonDisabled"));
-			if (Normal && Hover && Pressed && Disabled)
-			{
-				FButtonStyle ButtonStyle = Button->GetStyle();
-				ButtonStyle.SetNormal(*Normal).SetHovered(*Hover).SetPressed(*Pressed).SetDisabled(*Disabled);
-				ButtonStyle.SetNormalPadding(FMargin(12.f, 8.f)).SetPressedPadding(FMargin(12.f, 9.f, 12.f, 7.f));
-				Button->SetStyle(ButtonStyle);
-				Button->SetBackgroundColor(FLinearColor::White);
-			}
+			Button->ApplyButtonStyle();
 		}
 		if (UTextBlock* TextBlock = Cast<UTextBlock>(Widget))
 		{
@@ -193,7 +182,7 @@ void UMKUserWidget::ApplyBorderStyle(UBorder* Border, FName BrushName) const
 {
 	if (BrushName == TEXT("RecipeCard"))
 	{
-		BrushName = TEXT("InsetPanel");
+		BrushName = TEXT("RecipeRow");
 	}
 
 	const UDataManager* DataManager = UDataManager::Get(const_cast<UMKUserWidget*>(this));
@@ -300,19 +289,23 @@ UTextBlock* UMKUserWidget::BuildSectionLabel(const FText& Label)
 USizeBox* UMKUserWidget::BuildSectionDivider()
 {
 	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
-	Size->SetHeightOverride(12.f);
+	Size->SetHeightOverride(16.f);
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
 	Size->SetContent(Overlay);
 	USizeBox* LineSize = WidgetTree->ConstructWidget<USizeBox>();
-	LineSize->SetHeightOverride(1.f);
-	UBorder* Line = WidgetTree->ConstructWidget<UBorder>();
-	Line->SetBrush(FSlateColorBrush(FLinearColor(0.32f, 0.25f, 0.16f)));
-	Line->SetPadding(FMargin(0.f));
+	LineSize->SetWidthOverride(192.f);
+	LineSize->SetHeightOverride(16.f);
+	UImage* Line = WidgetTree->ConstructWidget<UImage>();
+	const UDataManager* Data = UDataManager::Get(this);
+	const UVisualStyleDataAsset* VisualStyle = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
+	if (::IsValid(VisualStyle))
+	{
+		if (const FSlateBrush* Brush = VisualStyle->Brushes.Find(TEXT("SectionDivider"))) { Line->SetBrush(*Brush); }
+	}
 	LineSize->SetContent(Line);
 	UOverlaySlot* Layout = Overlay->AddChildToOverlay(LineSize);
-	Layout->SetHorizontalAlignment(HAlign_Fill);
+	Layout->SetHorizontalAlignment(HAlign_Center);
 	Layout->SetVerticalAlignment(VAlign_Center);
-	Layout->SetPadding(FMargin(8.f, 0.f));
 	return Size;
 }
 
@@ -329,7 +322,8 @@ UBorder* UMKUserWidget::BuildModalBackdrop()
 UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSize, const FName BrushName)
 {
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), BrushName);
-	ApplyBorderStyle(Frame, BrushName);
+	if (BrushName.IsNone()) { Frame->SetBrush(FSlateNoResource()); }
+	else { ApplyBorderStyle(Frame, BrushName); }
 	Frame->SetPadding(FMargin(FMKUILayout::SpaceS));
 	OutIcon = WidgetTree->ConstructWidget<UImage>();
 	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
@@ -392,12 +386,13 @@ USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName,
 }
 
 USizeBox* UMKUserWidget::BuildActionButton(UButton*& OutButton, UTextBlock*& OutLabel, const FText& Label,
-	const float MinWidth, const float MinHeight)
+	const float MinWidth, const float MinHeight, const FName VisualRole)
 {
 	USizeBox* ButtonSize = WidgetTree->ConstructWidget<USizeBox>();
 	ButtonSize->SetMinDesiredWidth(MinWidth);
 	ButtonSize->SetMinDesiredHeight(MinHeight);
 	OutButton = WidgetTree->ConstructWidget<UMKMockupButton>();
+	CastChecked<UMKMockupButton>(OutButton)->SetVisualRole(VisualRole);
 	OutLabel = WidgetTree->ConstructWidget<UTextBlock>();
 	OutLabel->SetText(Label);
 	ApplyTextRole(OutLabel, EMKTextRole::Button);
