@@ -17,6 +17,8 @@
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
+#include "Brushes/SlateNoResource.h"
 
 void UInventoryWidget::SetShowQuickSlots(bool bShow)
 {
@@ -86,19 +88,26 @@ void UInventoryWidget::UnbindEvents()
 void UInventoryWidget::BuildDefaultWidgetTree()
 {
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("RuntimeInventoryRoot"));
-	ApplyBorderStyle(Frame, TEXT("InsetPanel"));
-	Frame->SetPadding(FMargin(bShowQuickSlots ? 8.f : 12.f));
+	Frame->SetBrush(FSlateNoResource());
+	Frame->SetPadding(FMargin(0.f));
 	WidgetTree->RootWidget = Frame;
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 	Frame->SetContent(Column);
 	if (bShowQuickSlots)
 	{
+		UBorder* QuickFrame = WidgetTree->ConstructWidget<UBorder>();
+		ApplyBorderStyle(QuickFrame, TEXT("InsetPanel"));
+		QuickFrame->SetPadding(FMargin(12.f, 12.f, 12.f, 8.f));
+		Column->AddChildToVerticalBox(QuickFrame)->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
 		QuickSlotPanel = WidgetTree->ConstructWidget<UGridPanel>();
-		Column->AddChildToVerticalBox(QuickSlotPanel)->SetHorizontalAlignment(HAlign_Center);
-		Column->AddChildToVerticalBox(BuildSectionDivider());
+		QuickFrame->SetContent(QuickSlotPanel);
 	}
+	UBorder* BagFrame = WidgetTree->ConstructWidget<UBorder>();
+	ApplyBorderStyle(BagFrame, TEXT("InsetPanel"));
+	BagFrame->SetPadding(FMargin(12.f));
+	Column->AddChildToVerticalBox(BagFrame);
 	ItemSlotPanel = WidgetTree->ConstructWidget<UGridPanel>(UGridPanel::StaticClass(), TEXT("ItemSlotPanel"));
-	Column->AddChildToVerticalBox(ItemSlotPanel)->SetHorizontalAlignment(HAlign_Center);
+	BagFrame->SetContent(ItemSlotPanel);
 }
 
 void UInventoryWidget::UpdateItemSlotPanel()
@@ -114,6 +123,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 		Layout->SetHorizontalAlignment(HAlign_Center);
 		Layout->SetVerticalAlignment(VAlign_Center);
 		ItemWidget->SetSlotAddress(EItemContainer::Inventory, Index);
+		ItemWidget->OnSecondaryAction.AddUObject(this, &UInventoryWidget::OnSlotSecondaryAction);
 		ItemSlotList.Add(ItemWidget);
 	}
 	if (::IsValid(QuickSlotPanel))
@@ -126,6 +136,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 			UGridSlot* Layout = QuickSlotPanel->AddChildToGrid(ItemWidget, Index / 4, Index % 4);
 			Layout->SetPadding(FMargin(4.f, 4.f, 4.f, 12.f));
 			ItemWidget->SetSlotAddress(EItemContainer::QuickSlot, Index);
+			ItemWidget->OnSecondaryAction.AddUObject(this, &UInventoryWidget::OnSlotSecondaryAction);
 			QuickSlotList.Add(ItemWidget);
 		}
 	}
@@ -139,6 +150,7 @@ void UInventoryWidget::RefreshInventory()
 	const TArray<FInventorySlotData>& Slots = Inventory->GetInventorySlotDataList();
 	for (int32 Index = 0; Index < ItemSlotList.Num(); ++Index)
 	{
+		ItemSlotList[Index]->SetSlotLocked(Index >= Inventory->GetMaxInventoryCount());
 		if (Slots.IsValidIndex(Index) && Slots[Index].IsEmpty() == false) { ItemSlotList[Index]->SetItem(Slots[Index].ItemUID, Slots[Index].ItemCount); }
 		else { ItemSlotList[Index]->ClearItem(); }
 	}
@@ -153,7 +165,35 @@ void UInventoryWidget::RefreshInventory()
 int32 UInventoryWidget::GetDesiredSlotCount() const
 {
 	const UInventoryComponent* Inventory = GetLocalInventoryComponent();
-	return ::IsValid(Inventory) ? Inventory->GetMaxInventoryCount() : 0;
+	if (::IsValid(Inventory) == false) { return 0; }
+	int32 MaximumSlots = Inventory->GetMaxInventoryCount();
+	if (bShowQuickSlots == false) { return MaximumSlots; }
+	const UDataManager* Data = UDataManager::Get(const_cast<UInventoryWidget*>(this));
+	const USkillComponent* Skills = GetLocalSkillComponent();
+	if (::IsValid(Data) && ::IsValid(Skills))
+	{
+		for (const FName Key : Data->GetSkillRowNames())
+		{
+			const FSkillDataTableRow* Skill = Data->GetSkillDataTableRow(Key);
+			if (Skill == nullptr || Skill->AcquisitionType != ESkillAcquisitionType::SkillTree || Skills->HasPurchasedSkill(Key)) { continue; }
+			for (const FSkillGameplayEffectData& Effect : Skill->GameplayEffectList)
+			{
+				const UClass* EffectClass = Effect.GameplayEffect.LoadSynchronous();
+				const UGameplayEffect* Definition = ::IsValid(EffectClass) ? EffectClass->GetDefaultObject<UGameplayEffect>() : nullptr;
+				if (::IsValid(Definition) == false) { continue; }
+				for (const FGameplayModifierInfo& Modifier : Definition->Modifiers)
+				{
+					if (Modifier.Attribute != UAttributeSet_Character::GetInventorySlotCountAttribute()
+						|| Modifier.ModifierMagnitude.GetMagnitudeCalculationType() != EGameplayEffectMagnitudeCalculation::SetByCaller) { continue; }
+					for (const FSkillSetByCallerData& Value : Effect.SetByCallerDataList)
+					{
+						if (Value.SetByCallerTag == Modifier.ModifierMagnitude.GetSetByCallerFloat().DataTag) { MaximumSlots += FMath::Max(0, FMath::RoundToInt(Value.SetByCallerValue)); }
+					}
+				}
+			}
+		}
+	}
+	return MaximumSlots;
 }
 
 void UInventoryWidget::OnInventoryChanged()
@@ -171,4 +211,9 @@ void UInventoryWidget::OnSkillPurchased(FName SkillKey)
 {
 	UpdateItemSlotPanel();
 	RefreshInventory();
+}
+
+void UInventoryWidget::OnSlotSecondaryAction(EItemContainer Container, int32 Index, FName ItemKey)
+{
+	OnItemSecondaryAction.Broadcast(Container, Index, ItemKey);
 }

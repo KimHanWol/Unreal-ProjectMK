@@ -20,6 +20,8 @@ public:
 	void SetSlotIndex(int32 InSlotIndex);
 	void SetSlotAddress(EItemContainer Container, int32 InSlotIndex);
 	virtual void UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const override;
+	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnSecondaryAction, EItemContainer, int32, FName);
+	FOnSecondaryAction OnSecondaryAction;
 
 protected:
 	virtual void UpdateWidget() override;

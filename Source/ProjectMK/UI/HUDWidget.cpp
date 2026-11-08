@@ -25,6 +25,11 @@ void UHUDWidget::NativeConstruct()
 	DropQuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
 	DropQuantityDialog->OnQuantityConfirmed.AddUObject(this, &UHUDWidget::OnDropConfirmed);
 	DropQuantityDialog->OnQuantityCancelled.AddUObject(this, &UHUDWidget::OnDropCancelled);
+	if (::IsValid(Menu))
+	{
+		Menu->RemoveFromParent();
+		Menu->AddToViewport(50);
+	}
 
 	if (::IsValid(Inventory))
 	{
@@ -41,6 +46,7 @@ void UHUDWidget::NativeConstruct()
 
 void UHUDWidget::NativeDestruct()
 {
+	if (::IsValid(Menu)) { Menu->RemoveFromParent(); }
 	if (::IsValid(Tooltip)) { Tooltip->RemoveFromParent(); }
 	if (::IsValid(DropQuantityDialog))
 	{

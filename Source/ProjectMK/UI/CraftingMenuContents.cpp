@@ -122,7 +122,10 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 	RecipeScrollBox->AddChild(RecipeSlotListPanel);
 
 	UVerticalBox* InventoryColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	Columns->AddChildToHorizontalBox(InventoryColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	USizeBox* InventoryWidth = WidgetTree->ConstructWidget<USizeBox>();
+	InventoryWidth->SetWidthOverride(336.f);
+	InventoryWidth->SetContent(InventoryColumn);
+	Columns->AddChildToHorizontalBox(InventoryWidth);
 	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);
 	PlayerCard->SetDisplayRole(TEXT("Player"));
 	InventoryColumn->AddChildToVerticalBox(PlayerCard);

@@ -2,6 +2,7 @@
 
 #include "CoreMinimal.h"
 #include "MKUserWidget.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 #include "InventoryWidget.generated.h"
 
 class UGridPanel;
@@ -15,6 +16,8 @@ class PROJECTMK_API UInventoryWidget : public UMKUserWidget
 
 public:
 	void SetShowQuickSlots(bool bShow);
+	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnItemSecondaryAction, EItemContainer, int32, FName);
+	FOnItemSecondaryAction OnItemSecondaryAction;
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
@@ -34,6 +37,7 @@ private:
 	void OnInventoryChanged();
 	void OnInventorySlotCountChanged(const FOnAttributeChangeData& Data);
 	void OnSkillPurchased(FName SkillKey);
+	void OnSlotSecondaryAction(EItemContainer Container, int32 Index, FName ItemKey);
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Inventory")

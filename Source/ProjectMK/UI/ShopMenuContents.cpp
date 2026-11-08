@@ -23,6 +23,7 @@
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/MenuDisplayCardWidget.h"
 #include "ProjectMK/UI/ShopRecipeSlotWidget.h"
+#include "ProjectMK/UI/HUDWidget.h"
 
 UShopMenuContents::UShopMenuContents(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -33,6 +34,12 @@ TSharedRef<SWidget> UShopMenuContents::RebuildWidget()
 {
 	if (::IsValid(WidgetTree) && WidgetTree->RootWidget == nullptr) { BuildDefaultWidgetTree(); }
 	return Super::RebuildWidget();
+}
+
+void UShopMenuContents::NativeDestruct()
+{
+	if (::IsValid(QuantityDialog)) { QuantityDialog->RemoveFromParent(); }
+	Super::NativeDestruct();
 }
 
 bool UShopMenuContents::NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
@@ -46,9 +53,7 @@ bool UShopMenuContents::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
 		const int32 Count = FMath::Min(Item->ItemCount, Slots[Item->SourceSlotIndex].ItemCount);
 		if (Count > 0 && Inventory->CalculateSellPrice(Item->ItemKey, 1) > 0)
 		{
-			PendingSaleContainer = Item->SourceContainer;
-			PendingSaleIndex = Item->SourceSlotIndex;
-			QuantityDialog->ShowQuantity(Item->ItemKey, Count);
+			OnItemSaleRequested(Item->SourceContainer, Item->SourceSlotIndex, Item->ItemKey);
 			return true;
 		}
 		return true;
@@ -59,6 +64,7 @@ bool UShopMenuContents::NativeOnDrop(const FGeometry& InGeometry, const FDragDro
 void UShopMenuContents::BindEvents()
 {
 	Super::BindEvents();
+	if (QuantityDialog->IsInViewport() == false) { QuantityDialog->AddToViewport(200); }
 	OnVisibilityChanged.AddUniqueDynamic(this, &UShopMenuContents::OnMenuVisibilityChanged);
 	QuantityDialog->OnQuantityConfirmed.AddUObject(this, &UShopMenuContents::OnSaleConfirmed);
 	if (UAbilitySystemComponent* ASC = GetOwnerAbilitySystemComponent())
@@ -115,13 +121,19 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	Merchant->SetDisplayRole(TEXT("Shop"));
 	MerchantColumn->AddChildToVerticalBox(Merchant);
 	MerchantColumn->AddChildToVerticalBox(BuildSectionDivider());
+	UTextBlock* SaleHint = BuildSectionLabel(NSLOCTEXT("Shop", "SellHint", "광물을 놓아 판매 · 우클릭으로 수량 선택"));
+	ApplyTextRole(SaleHint, EMKTextRole::Caption);
+	MerchantColumn->AddChildToVerticalBox(SaleHint)->SetPadding(FMargin(8.f, 0.f, 8.f, 8.f));
 	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Blueprints", "설계도")))->SetPadding(FMargin(8.f));
 	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
 	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	RecipeSlotListPanel = WidgetTree->ConstructWidget<UVerticalBox>();
 	Recipes->AddChild(RecipeSlotListPanel);
 	UVerticalBox* PlayerColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	Columns->AddChildToHorizontalBox(PlayerColumn)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	USizeBox* InventoryWidth = WidgetTree->ConstructWidget<USizeBox>();
+	InventoryWidth->SetWidthOverride(336.f);
+	InventoryWidth->SetContent(PlayerColumn);
+	Columns->AddChildToHorizontalBox(InventoryWidth);
 	UMenuDisplayCardWidget* Player = CreateWidget<UMenuDisplayCardWidget>(this);
 	Player->SetDisplayRole(TEXT("Player"));
 	PlayerColumn->AddChildToVerticalBox(Player);
@@ -130,11 +142,9 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	PlayerColumn->AddChildToVerticalBox(Items)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	UInventoryWidget* PlayerInventory = CreateWidget<UInventoryWidget>(this);
 	PlayerInventory->SetShowQuickSlots(true);
+	PlayerInventory->OnItemSecondaryAction.AddUObject(this, &UShopMenuContents::OnItemSaleRequested);
 	CastChecked<UScrollBoxSlot>(Items->AddChild(PlayerInventory))->SetHorizontalAlignment(HAlign_Center);
 	QuantityDialog = CreateWidget<UItemQuantityDialog>(this);
-	UOverlaySlot* DialogSlot = Overlay->AddChildToOverlay(QuantityDialog);
-	DialogSlot->SetHorizontalAlignment(HAlign_Fill);
-	DialogSlot->SetVerticalAlignment(VAlign_Fill);
 	QuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
 }
 
@@ -150,6 +160,18 @@ void UShopMenuContents::RefreshRecipeSlotList()
 		CastChecked<UVerticalBox>(RecipeSlotListPanel)->AddChildToVerticalBox(Entry)->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeRecipeSlot(this, Key, Crafting->CanUnlockRecipe(Key));
 	}
+}
+
+void UShopMenuContents::OnItemSaleRequested(EItemContainer Container, int32 Index, FName ItemKey)
+{
+	UInventoryComponent* Inventory = GetLocalInventoryComponent();
+	if (::IsValid(Inventory) == false) { return; }
+	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(Container);
+	if (Slots.IsValidIndex(Index) == false || Slots[Index].ItemUID != ItemKey || Inventory->CalculateSellPrice(ItemKey, 1) <= 0) { return; }
+	PendingSaleContainer = Container;
+	PendingSaleIndex = Index;
+	QuantityDialog->ShowQuantity(ItemKey, Slots[Index].ItemCount);
+	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(nullptr); }
 }
 
 void UShopMenuContents::OnSaleConfirmed(FName ItemKey, int32 Count)

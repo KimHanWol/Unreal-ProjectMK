@@ -7,6 +7,7 @@
 #include "Components/Border.h"
 #include "Components/HorizontalBox.h"
 #include "Components/TextBlock.h"
+#include "Components/SizeBox.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 
 TSharedRef<SWidget> UCurrencyWidget::RebuildWidget()
@@ -47,10 +48,13 @@ void UCurrencyWidget::UnbindEvents()
 void UCurrencyWidget::BuildDefaultWidgetTree()
 {
 	UBorder* Panel = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("CurrencyPanel"));
-	Panel->SetPadding(FMargin(FMKUILayout::SpaceS, FMKUILayout::SpaceXS));
-	WidgetTree->RootWidget = Panel;
+	Panel->SetPadding(FMargin(12.f, 8.f));
+	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
+	Size->SetMinDesiredWidth(132.f);
+	Size->SetContent(Panel);
+	WidgetTree->RootWidget = Size;
 	UTextBlock* RawAmountText = nullptr;
-	UHorizontalBox* CurrencyRow = BuildCurrencyAmount(RawAmountText, FText::GetEmpty());
+	UHorizontalBox* CurrencyRow = BuildCurrencyAmount(RawAmountText, FText::GetEmpty(), EMKTextRole::HUDMetric, 32.f);
 	Text_Coin = RawAmountText;
 	Panel->SetContent(CurrencyRow);
 }

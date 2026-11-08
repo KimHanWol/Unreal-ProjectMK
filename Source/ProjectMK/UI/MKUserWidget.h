@@ -64,11 +64,12 @@ protected:
 	UBorder* BuildSectionHeader(const FText& Title, FName IconBrushName, UTextBlock** OutTitle = nullptr);
 	UTextBlock* BuildSectionLabel(const FText& Label);
 	USizeBox* BuildSectionDivider();
+	UBorder* BuildModalBackdrop();
 	UBorder* BuildItemIconFrame(UImage*& OutIcon, float IconSize = FMKUILayout::ItemIconSize, FName BrushName = TEXT("Slot"));
 	USizeBox* BuildStatusGauge(UProgressBar*& OutBar, FName RootName, FName FrameName, const FText& Label, const FLinearColor& FillColor);
 	USizeBox* BuildActionButton(UButton*& OutButton, UTextBlock*& OutLabel, const FText& Label,
 		float MinWidth = FMKUILayout::CompactButtonWidth, float MinHeight = FMKUILayout::ButtonHeight);
-	UHorizontalBox* BuildCurrencyAmount(UTextBlock*& OutAmountText, const FText& Amount, EMKTextRole TextRole = EMKTextRole::Numeric);
+	UHorizontalBox* BuildCurrencyAmount(UTextBlock*& OutAmountText, const FText& Amount, EMKTextRole TextRole = EMKTextRole::Numeric, float IconSize = 20.f);
 	USizeBox* BuildCurrencyButton(UButton*& OutButton, UTextBlock*& OutAmountText, const FText& Amount,
 		float MinWidth = FMKUILayout::CompactButtonWidth, float MinHeight = FMKUILayout::ButtonHeight);
 

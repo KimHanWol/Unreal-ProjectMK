@@ -101,6 +101,11 @@ void UItemSlotWidget::UpdateWidget()
 
 FReply UItemSlotWidget::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (bIsSlotLocked == false && HasItem() && InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton && OnSecondaryAction.IsBound())
+	{
+		OnSecondaryAction.Broadcast(SlotContainer, SlotIndex, CurrentItemKey);
+		return FReply::Handled();
+	}
 	if (bIsSlotLocked == false && HasItem())
 	{
 		bPendingUseClick = SlotContainer == EItemContainer::QuickSlot && InMouseEvent.GetEffectingButton() == EKeys::LeftMouseButton;

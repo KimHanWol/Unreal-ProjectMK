@@ -10,6 +10,10 @@
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
 #include "Components/Border.h"
+#include "Components/HorizontalBox.h"
+#include "Components/HorizontalBoxSlot.h"
+#include "Components/SizeBox.h"
+#include "Components/ButtonSlot.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/MKMenuContentsBase.h"
@@ -30,16 +34,55 @@ void UMKMenuBase::NativeConstruct()
 	UOverlay* Shell = ::IsValid(MenuContentsCanvasPanel) ? Cast<UOverlay>(MenuContentsCanvasPanel->GetParent()) : nullptr;
 	if (::IsValid(Shell) && ::IsValid(MenuTitle) == false)
 	{
+		if (UCanvasPanel* Canvas = Cast<UCanvasPanel>(WidgetTree->RootWidget))
+		{
+			Canvas->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+			UBorder* Backdrop = BuildModalBackdrop();
+			Backdrop->SetVisibility(ESlateVisibility::HitTestInvisible);
+			UCanvasPanelSlot* BackdropLayout = Canvas->AddChildToCanvas(Backdrop);
+			BackdropLayout->SetAnchors(FAnchors(0.f, 0.f, 1.f, 1.f));
+			BackdropLayout->SetOffsets(FMargin(0.f));
+			BackdropLayout->SetZOrder(-1);
+		}
 		UTextBlock* TitleText = nullptr;
 		UBorder* Header = BuildSectionHeader(FText::GetEmpty(), NAME_None, &TitleText);
 		MenuTitle = TitleText;
-		UOverlaySlot* HeaderLayout = Shell->AddChildToOverlay(Header);
+		UHorizontalBox* HeaderRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+		USizeBox* HeaderSize = WidgetTree->ConstructWidget<USizeBox>();
+		HeaderSize->SetHeightOverride(48.f);
+		HeaderSize->SetContent(Header);
+		UHorizontalBoxSlot* TitleLayout = HeaderRow->AddChildToHorizontalBox(HeaderSize);
+		TitleLayout->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+		TitleLayout->SetVerticalAlignment(VAlign_Center);
+		TitleLayout->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+		ExitButton->RemoveFromParent();
+		UWidget* CloseArt = ExitButton->GetContent();
+		ExitButton->SetContent(nullptr);
+		USizeBox* CloseArtSize = WidgetTree->ConstructWidget<USizeBox>();
+		CloseArtSize->SetWidthOverride(32.f);
+		CloseArtSize->SetHeightOverride(32.f);
+		CloseArtSize->SetContent(CloseArt);
+		ExitButton->SetContent(CloseArtSize);
+		CastChecked<UButtonSlot>(CloseArtSize->Slot)->SetHorizontalAlignment(HAlign_Center);
+		CastChecked<UButtonSlot>(CloseArtSize->Slot)->SetVerticalAlignment(VAlign_Center);
+		USizeBox* CloseSize = WidgetTree->ConstructWidget<USizeBox>();
+		CloseSize->SetWidthOverride(48.f);
+		CloseSize->SetHeightOverride(48.f);
+		CloseSize->SetContent(ExitButton);
+		HeaderRow->AddChildToHorizontalBox(CloseSize)->SetVerticalAlignment(VAlign_Center);
+		UOverlaySlot* HeaderLayout = Shell->AddChildToOverlay(HeaderRow);
 		HeaderLayout->SetHorizontalAlignment(HAlign_Fill);
 		HeaderLayout->SetVerticalAlignment(VAlign_Top);
-		HeaderLayout->SetPadding(FMargin(32.f, 20.f, 88.f, 0.f));
+		HeaderLayout->SetPadding(FMargin(32.f, 20.f, 24.f, 0.f));
 		CastChecked<UOverlaySlot>(MenuContentsCanvasPanel->Slot)->SetPadding(FMargin(24.f, 80.f, 24.f, 24.f));
 		ApplyVisualStyle();
 	}
+}
+
+bool UMKMenuBase::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
+{
+	if (UHUDWidget* HUD = GetHUDWidget()) { return HUD->NativeOnDrop(Geometry, Event, Operation); }
+	return Super::NativeOnDrop(Geometry, Event, Operation);
 }
 
 void UMKMenuBase::BindEvents()
@@ -94,6 +137,7 @@ bool UMKMenuBase::OpenMenu(EMenuContentsType InMenuContentsType)
 		Character->SetMenuInputBlocked(true);
 	}
 	SetVisible(true);
+	SetVisibility(ESlateVisibility::SelfHitTestInvisible);
 	USoundManager::TryPlaySFX(this, ESFXType::UI_MenuOpen);
 	return true;
 }

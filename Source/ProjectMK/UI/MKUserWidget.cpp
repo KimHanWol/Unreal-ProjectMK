@@ -74,13 +74,14 @@ void UMKUserWidget::ApplyVisualStyle()
 	{
 		if (USpinBox* Input = Cast<USpinBox>(Widget))
 		{
-			const FSlateBrush* Background = Style->Brushes.Find(TEXT("Button"));
-			const FSlateBrush* Hover = Style->Brushes.Find(TEXT("ButtonHover"));
+			const FSlateBrush* Background = Style->Brushes.Find(TEXT("InsetPanel"));
+			const FSlateBrush* Hover = Style->Brushes.Find(TEXT("InsetPanel"));
 			if (Background && Hover)
 			{
 				FSpinBoxStyle InputStyle = Input->GetWidgetStyle();
 				InputStyle.SetBackgroundBrush(*Background).SetHoveredBackgroundBrush(*Hover);
 				InputStyle.SetActiveFillBrush(FSlateNoResource()).SetInactiveFillBrush(FSlateNoResource());
+				InputStyle.SetTextPadding(FMargin(12.f, 8.f));
 				Input->SetWidgetStyle(InputStyle);
 				Input->SetForegroundColor(FSlateColor(FLinearColor(0.96f, 0.9f, 0.73f)));
 				FSlateFontInfo Font = Input->GetFont();
@@ -315,6 +316,16 @@ USizeBox* UMKUserWidget::BuildSectionDivider()
 	return Size;
 }
 
+UBorder* UMKUserWidget::BuildModalBackdrop()
+{
+	UBorder* Dim = WidgetTree->ConstructWidget<UBorder>();
+	Dim->SetBrush(FSlateColorBrush(FLinearColor(0.f, 0.f, 0.f, 0.55f)));
+	Dim->SetPadding(FMargin(0.f));
+	Dim->SetHorizontalAlignment(HAlign_Center);
+	Dim->SetVerticalAlignment(VAlign_Center);
+	return Dim;
+}
+
 UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSize, const FName BrushName)
 {
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), BrushName);
@@ -336,7 +347,11 @@ USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName,
 	Size->SetHeightOverride(32.f);
 	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), FrameName);
 	Frame->SetPadding(FMargin(34.f, 8.f, 7.f, 9.f));
-	Size->SetContent(Frame);
+	UOverlay* GaugeLayers = WidgetTree->ConstructWidget<UOverlay>();
+	Size->SetContent(GaugeLayers);
+	UOverlaySlot* FrameLayout = GaugeLayers->AddChildToOverlay(Frame);
+	FrameLayout->SetHorizontalAlignment(HAlign_Fill);
+	FrameLayout->SetVerticalAlignment(VAlign_Fill);
 	UOverlay* Overlay = WidgetTree->ConstructWidget<UOverlay>();
 	Frame->SetContent(Overlay);
 	OutBar = WidgetTree->ConstructWidget<UProgressBar>();
@@ -365,11 +380,14 @@ USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName,
 	Fit->SetStretchDirection(EStretchDirection::DownOnly);
 	Fit->SetClipping(EWidgetClipping::ClipToBounds);
 	Fit->SetContent(Text);
-	CastChecked<UScaleBoxSlot>(Text->Slot)->SetHorizontalAlignment(HAlign_Left);
-	UOverlaySlot* Copy = Overlay->AddChildToOverlay(Fit);
-	Copy->SetHorizontalAlignment(HAlign_Fill);
+	CastChecked<UScaleBoxSlot>(Text->Slot)->SetHorizontalAlignment(HAlign_Center);
+	USizeBox* OrbLabel = WidgetTree->ConstructWidget<USizeBox>();
+	OrbLabel->SetWidthOverride(32.f);
+	OrbLabel->SetContent(Fit);
+	UOverlaySlot* Copy = GaugeLayers->AddChildToOverlay(OrbLabel);
+	Copy->SetHorizontalAlignment(HAlign_Left);
 	Copy->SetVerticalAlignment(VAlign_Fill);
-	Copy->SetPadding(FMargin(6.f, 0.f, 0.f, 0.f));
+	Copy->SetPadding(FMargin(2.f, 7.f, 0.f, 7.f));
 	return Size;
 }
 
@@ -388,7 +406,7 @@ USizeBox* UMKUserWidget::BuildActionButton(UButton*& OutButton, UTextBlock*& Out
 	return ButtonSize;
 }
 
-UHorizontalBox* UMKUserWidget::BuildCurrencyAmount(UTextBlock*& OutAmountText, const FText& Amount, const EMKTextRole TextRole)
+UHorizontalBox* UMKUserWidget::BuildCurrencyAmount(UTextBlock*& OutAmountText, const FText& Amount, const EMKTextRole TextRole, const float IconSize)
 {
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
 	UImage* CurrencyIcon = WidgetTree->ConstructWidget<UImage>();
@@ -399,8 +417,8 @@ UHorizontalBox* UMKUserWidget::BuildCurrencyAmount(UTextBlock*& OutAmountText, c
 		CurrencyIcon->SetBrush(*CurrencyBrush);
 	}
 	USizeBox* CurrencySize = WidgetTree->ConstructWidget<USizeBox>();
-	CurrencySize->SetWidthOverride(20.f);
-	CurrencySize->SetHeightOverride(20.f);
+	CurrencySize->SetWidthOverride(IconSize);
+	CurrencySize->SetHeightOverride(IconSize);
 	CurrencySize->SetContent(CurrencyIcon);
 	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(CurrencySize);
 	IconSlot->SetVerticalAlignment(VAlign_Center);

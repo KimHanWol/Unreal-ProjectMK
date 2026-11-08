@@ -21,6 +21,7 @@ public:
 
 protected:
 	virtual void NativeConstruct() override;
+	virtual bool NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 	virtual void UpdateWidget() override;

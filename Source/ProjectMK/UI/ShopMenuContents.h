@@ -20,6 +20,7 @@ public:
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
+	virtual void NativeDestruct() override;
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& Event, UDragDropOperation* Operation) override;
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
@@ -31,6 +32,7 @@ public:
 private:
 	void BuildDefaultWidgetTree();
 	void RefreshRecipeSlotList();
+	void OnItemSaleRequested(EItemContainer Container, int32 Index, FName ItemKey);
 	void OnSaleConfirmed(FName ItemKey, int32 Count);
 	void OnCoinChanged(const FOnAttributeChangeData& Data);
 	void OnRecipeUnlocked(FName RecipeKey);
