@@ -73,16 +73,6 @@ namespace
 	}
 }
 
-AMKCharacter* UMKCheatManager::GetLocalPlayerCharacter() const
-{
-	return Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-}
-
-AMKPlayerController* UMKCheatManager::GetMKPlayerController() const
-{
-	return Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
-}
-
 void UMKCheatManager::DamagePlayer(float Damage)
 {
 	if (Damage <= 0.f)
@@ -252,9 +242,9 @@ void UMKCheatManager::UseQuickSlot(int32 SlotNumber)
 	AMKCharacter* LocalCharacter = GetLocalPlayerCharacter();
 	UConsumableComponent* ConsumableComponent = ::IsValid(LocalCharacter) ? LocalCharacter->GetConsumableComponent() : nullptr;
 	UInventoryComponent* InventoryComponent = ::IsValid(LocalCharacter) ? LocalCharacter->FindComponentByClass<UInventoryComponent>() : nullptr;
-	const TArray<FInventorySlotData> SlotDataList = ::IsValid(InventoryComponent) ? InventoryComponent->GetInventorySlotDataList() : TArray<FInventorySlotData>();
+	const TArray<FInventorySlotData> SlotDataList = ::IsValid(InventoryComponent) ? InventoryComponent->GetItemSlots(EItemContainer::QuickSlot) : TArray<FInventorySlotData>();
 	const FName SlotItemUID = SlotDataList.IsValidIndex(SlotNumber - 1) ? SlotDataList[SlotNumber - 1].ItemUID : NAME_None;
-	const bool bUsed = ::IsValid(ConsumableComponent) && ConsumableComponent->TryUseInventorySlot(SlotNumber - 1);
+	const bool bUsed = ::IsValid(ConsumableComponent) && ConsumableComponent->TryUseQuickSlot(SlotNumber - 1);
 	const int32 RemainingCount = ::IsValid(InventoryComponent) ? InventoryComponent->GetItemCount(SlotItemUID) : 0;
 	SendCheatMessage(this, FString::Printf(TEXT("UseQuickSlot %d (%s): %s, remaining %d"), SlotNumber, *SlotItemUID.ToString(), bUsed ? TEXT("used") : TEXT("failed"), RemainingCount));
 }
@@ -275,3 +265,12 @@ void UMKCheatManager::CraftRecipe(FName RecipeKey)
 	SendCheatMessage(this, FString::Printf(TEXT("CraftRecipe %s: %s"), *RecipeKey.ToString(), bCrafted ? TEXT("crafted") : TEXT("failed")));
 }
 
+AMKCharacter* UMKCheatManager::GetLocalPlayerCharacter() const
+{
+	return Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
+}
+
+AMKPlayerController* UMKCheatManager::GetMKPlayerController() const
+{
+	return Cast<AMKPlayerController>(UGameplayStatics::GetPlayerController(this, 0));
+}

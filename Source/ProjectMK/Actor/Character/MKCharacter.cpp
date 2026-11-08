@@ -20,6 +20,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/AbilitySystem/GameplayAbility/GA_Drill.h"
 #include "ProjectMK/Component/ConsumableComponent.h"
+#include "ProjectMK/Data/DataAsset/CharacterAnimationDataAsset.h"
 #include "ProjectMK/Component/CraftingComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/MagnetRangeComponent.h"
@@ -299,31 +300,6 @@ void AMKCharacter::OnDestroyed()
 	bIsRespawning = false;
 }
 
-void AMKCharacter::ApplyDeathPenalty()
-{
-	if (::IsValid(AttributeSet_Character) == false || ::IsValid(AbilitySystemComponent) == false)
-	{
-		return;
-	}
-
-	// 보험 증서가 있으면 1개 소모하고 코인·광물 손실을 막는다.
-	if (::IsValid(ConsumableComponent) && ConsumableComponent->TryConsumeInsurance())
-	{
-		return;
-	}
-
-	const float CurrentCoin = AttributeSet_Character->GetCoin();
-	const float CoinLossRatio = FMath::Clamp(AttributeSet_Character->GetDeathCoinLossRatio(), 0.f, 1.f);
-	const float LostCoin = FMath::CeilToFloat(FMath::Max(0.f, CurrentCoin) * CoinLossRatio);
-	const float NewCoin = FMath::Max(0.f, CurrentCoin - LostCoin);
-	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
-
-	if (::IsValid(InventoryComponent))
-	{
-		InventoryComponent->RemoveAllOreItems();
-	}
-}
-
 void AMKCharacter::RespawnAtSpawnLocation()
 {
 	GetWorldTimerManager().ClearTimer(KnockbackRecoveryTimerHandle);
@@ -365,23 +341,48 @@ void AMKCharacter::ApplyKnockback(float HorizontalVelocity, float UpwardVelocity
 	GetWorldTimerManager().SetTimer(KnockbackRecoveryTimerHandle, this, &AMKCharacter::ClearKnockback, RecoveryTime, false);
 }
 
-float AMKCharacter::CalculateCurrentMoveSpeed() const
+bool AMKCharacter::TrySaveGame()
 {
-	if (::IsValid(AttributeSet_Character) == false)
+	USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
+	UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
+	// 세이브 데이터를 적용하기 전(BeginPlay 초기화 중)에 저장하면 기존 진행이 초기값으로 덮어써진다.
+	if (bHasAppliedSaveGame == false)
 	{
-		return 0.f;
+		return false;
 	}
 
-	const float BaseMoveSpeed = AttributeSet_Character->GetMoveSpeed();
-	if (::IsValid(InventoryComponent) == false)
+	if (::IsValid(SaveGame) == false || ::IsValid(AttributeSet_Character) == false || SaveGameSubsystem->IsPlaytestSession())
 	{
-		return BaseMoveSpeed;
+		return false;
 	}
 
-	const float InventoryOccupancyRatio = InventoryComponent->GetInventoryOccupancyRatio();
-	const float InventoryBurdenMoveSpeedPenaltyRate = AttributeSet_Character->GetInventoryBurdenMoveSpeedPenaltyRate();
-	const float MoveSpeedMultiplier = 1.f - (InventoryOccupancyRatio * InventoryBurdenMoveSpeedPenaltyRate);
-	return FMath::Max(0.f, BaseMoveSpeed * FMath::Max(0.f, MoveSpeedMultiplier));
+	SaveGame->Coin = FMath::FloorToInt(AttributeSet_Character->GetCoin());
+
+	if (::IsValid(SkillComponent))
+	{
+		SaveGame->PurchasedSkillKeys = SkillComponent->GetPurchasedSkillKeys();
+	}
+
+	if (::IsValid(InventoryComponent))
+	{
+		SaveGame->InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
+		SaveGame->QuickSlotDataList = InventoryComponent->GetItemSlots(EItemContainer::QuickSlot);
+		SaveGame->SaveVersion = 2;
+	}
+
+	if (::IsValid(CraftingComponent))
+	{
+		SaveGame->UnlockedRecipeKeys = CraftingComponent->GetPurchasedRecipeKeys();
+	}
+
+	const UWorld* World = GetWorld();
+	const ULevelManagerSubsystem* LevelManagerSubsystem = ::IsValid(World) ? World->GetSubsystem<ULevelManagerSubsystem>() : nullptr;
+	if (::IsValid(LevelManagerSubsystem))
+	{
+		SaveGame->GenerationSeed = LevelManagerSubsystem->GetLastGenerationSeed();
+	}
+
+	return SaveGameSubsystem->TrySaveGameToSlot();
 }
 
 void AMKCharacter::SetMenuInputBlocked(bool bBlocked)
@@ -414,6 +415,50 @@ void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
 	}
 
 	DrillingVector = InDrillingVector;
+}
+
+FVector AMKCharacter::GetCharacterDirection() const
+{
+	return CharacterDir;
+}
+
+FVector AMKCharacter::GetDrillingVector() const
+{
+	return DrillingVector;
+}
+
+bool AMKCharacter::IsKnockedBack() const
+{
+	return GetWorld() != nullptr && GetWorld()->GetTimeSeconds() < KnockbackEndTime;
+}
+
+bool AMKCharacter::IsOnGround() const
+{
+	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
+	return ::IsValid(MoveComp) && MoveComp->IsMovingOnGround();
+}
+
+USkillComponent* AMKCharacter::GetSkillComponent() const
+{
+	return SkillComponent.Get();
+}
+
+UConsumableComponent* AMKCharacter::GetConsumableComponent() const
+{
+	return ConsumableComponent.Get();
+}
+
+UCraftingComponent* AMKCharacter::GetCraftingComponent() const
+{
+	return CraftingComponent.Get();
+}
+
+const UPaperSprite* AMKCharacter::GetPortraitSprite() const
+{
+	const FCharacterDataTableRow* Data = GetCharacterData();
+	const UCharacterAnimationDataAsset* Animation = Data != nullptr ? Data->AnimationDataAsset.LoadSynchronous() : nullptr;
+	if (::IsValid(Animation) && Animation->Animations.IdleDown.HasSprites()) { return Animation->Animations.IdleDown.GetSpriteByFrameIndex(0); }
+	return GetCurrentBaseFrameSprite();
 }
 
 void AMKCharacter::GiveAbilities()
@@ -460,6 +505,50 @@ void AMKCharacter::ApplyInitialEffects()
 	bIsApplyingInitialEffects = false;
 
 	RestoreOxygenToMax();
+}
+
+void AMKCharacter::ApplyDeathPenalty()
+{
+	if (::IsValid(AttributeSet_Character) == false || ::IsValid(AbilitySystemComponent) == false)
+	{
+		return;
+	}
+
+	// 보험 증서가 있으면 1개 소모하고 코인·광물 손실을 막는다.
+	if (::IsValid(ConsumableComponent) && ConsumableComponent->TryConsumeInsurance())
+	{
+		return;
+	}
+
+	const float CurrentCoin = AttributeSet_Character->GetCoin();
+	const float CoinLossRatio = FMath::Clamp(AttributeSet_Character->GetDeathCoinLossRatio(), 0.f, 1.f);
+	const float LostCoin = FMath::CeilToFloat(FMath::Max(0.f, CurrentCoin) * CoinLossRatio);
+	const float NewCoin = FMath::Max(0.f, CurrentCoin - LostCoin);
+	AbilitySystemComponent->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), NewCoin);
+
+	if (::IsValid(InventoryComponent))
+	{
+		InventoryComponent->RemoveAllOreItems();
+	}
+}
+
+float AMKCharacter::CalculateCurrentMoveSpeed() const
+{
+	if (::IsValid(AttributeSet_Character) == false)
+	{
+		return 0.f;
+	}
+
+	const float BaseMoveSpeed = AttributeSet_Character->GetMoveSpeed();
+	if (::IsValid(InventoryComponent) == false)
+	{
+		return BaseMoveSpeed;
+	}
+
+	const float InventoryOccupancyRatio = InventoryComponent->GetInventoryOccupancyRatio();
+	const float InventoryBurdenMoveSpeedPenaltyRate = AttributeSet_Character->GetInventoryBurdenMoveSpeedPenaltyRate();
+	const float MoveSpeedMultiplier = 1.f - (InventoryOccupancyRatio * InventoryBurdenMoveSpeedPenaltyRate);
+	return FMath::Max(0.f, BaseMoveSpeed * FMath::Max(0.f, MoveSpeedMultiplier));
 }
 
 void AMKCharacter::TryDrill()
@@ -786,6 +875,7 @@ void AMKCharacter::ApplySaveGame()
 	if (::IsValid(InventoryComponent))
 	{
 		InventoryComponent->ApplySavedInventorySlots(SaveGame->InventorySlotDataList);
+		InventoryComponent->ApplySavedQuickSlots(SaveGame->QuickSlotDataList);
 	}
 
 	if (::IsValid(CraftingComponent))
@@ -794,84 +884,6 @@ void AMKCharacter::ApplySaveGame()
 	}
 
 	bHasAppliedSaveGame = true;
-}
-
-bool AMKCharacter::TrySaveGame()
-{
-	USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
-	UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
-	// 세이브 데이터를 적용하기 전(BeginPlay 초기화 중)에 저장하면 기존 진행이 초기값으로 덮어써진다.
-	if (bHasAppliedSaveGame == false)
-	{
-		return false;
-	}
-
-	if (::IsValid(SaveGame) == false || ::IsValid(AttributeSet_Character) == false)
-	{
-		return false;
-	}
-
-	SaveGame->Coin = FMath::FloorToInt(AttributeSet_Character->GetCoin());
-
-	if (::IsValid(SkillComponent))
-	{
-		SaveGame->PurchasedSkillKeys = SkillComponent->GetPurchasedSkillKeys();
-	}
-
-	if (::IsValid(InventoryComponent))
-	{
-		SaveGame->InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
-	}
-
-	if (::IsValid(CraftingComponent))
-	{
-		SaveGame->UnlockedRecipeKeys = CraftingComponent->GetPurchasedRecipeKeys();
-	}
-
-	const UWorld* World = GetWorld();
-	const ULevelManagerSubsystem* LevelManagerSubsystem = ::IsValid(World) ? World->GetSubsystem<ULevelManagerSubsystem>() : nullptr;
-	if (::IsValid(LevelManagerSubsystem))
-	{
-		SaveGame->GenerationSeed = LevelManagerSubsystem->GetLastGenerationSeed();
-	}
-
-	return SaveGameSubsystem->TrySaveGameToSlot();
-}
-
-FVector AMKCharacter::GetCharacterDirection() const
-{
-	return CharacterDir;
-}
-
-FVector AMKCharacter::GetDrillingVector() const
-{
-	return DrillingVector;
-}
-
-bool AMKCharacter::IsKnockedBack() const
-{
-	return GetWorld() != nullptr && GetWorld()->GetTimeSeconds() < KnockbackEndTime;
-}
-
-bool AMKCharacter::IsOnGround() const
-{
-	const UCharacterMovementComponent* MoveComp = GetCharacterMovement();
-	return ::IsValid(MoveComp) && MoveComp->IsMovingOnGround();
-}
-
-USkillComponent* AMKCharacter::GetSkillComponent() const
-{
-	return SkillComponent.Get();
-}
-
-UConsumableComponent* AMKCharacter::GetConsumableComponent() const
-{
-	return ConsumableComponent.Get();
-}
-
-UCraftingComponent* AMKCharacter::GetCraftingComponent() const
-{
-	return CraftingComponent.Get();
 }
 
 TSubclassOf<UGameplayAbility> AMKCharacter::GetPrimaryDrillAbilityClass() const
@@ -1092,7 +1104,7 @@ void AMKCharacter::OnQuickSlot(int32 SlotIndex)
 {
 	if (::IsValid(ConsumableComponent))
 	{
-		ConsumableComponent->TryUseInventorySlot(SlotIndex);
+		ConsumableComponent->TryUseQuickSlot(SlotIndex);
 	}
 }
 

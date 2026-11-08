@@ -18,6 +18,10 @@ class PROJECTMK_API AItemBase : public AActor
 public:
 	AItemBase();
 
+protected:
+	virtual void Tick(float DeltaTime) override;
+
+public:
 	bool IsInitialized() { return bIsInitialized; }
 
 	void InitializeItemBase(FName InItemKey, int32 InItemCount = 1);
@@ -29,9 +33,8 @@ public:
 	void TryLoot(TWeakObjectPtr<AMKCharacter> InLooter);
 	void OnLootFinished();
 	void SetVisualLayer(float InVisualYOffset);
-
-protected:
-	virtual void Tick(float DeltaTime) override;
+	void SetDropOwner(AMKCharacter* Character);
+	bool CanBeCollectedBy(const AActor* Character) const;
 
 private:
 	void ClearLooting();
@@ -46,6 +49,8 @@ protected:
 
 private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
+	TWeakObjectPtr<AMKCharacter> DropOwner;
+	float BlinkDuration = 10.f;
 
 	UPROPERTY(Transient)
 	bool bIsInitialized = false;

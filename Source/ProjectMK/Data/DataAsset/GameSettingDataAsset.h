@@ -136,6 +136,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.01"))
 	float WorldItemSpriteScale = 0.7f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "1.0"))
+	float WorldItemLifetime = 300.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.0"))
+	float WorldItemBlinkDuration = 10.f;
+
 	/** 강제 지정된 캐릭터 시각 방향 반전 여부 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character")
 	bool bReverseOverrideVisualFacingDirection = false;

@@ -36,46 +36,21 @@ bool UConsumableComponent::TryUseInventorySlot(int32 SlotIndex)
 		return false;
 	}
 
-	return TryUseItem(SlotDataList[SlotIndex].ItemUID);
+	return TryUseStoredItem(SlotDataList[SlotIndex].ItemUID, EItemContainer::Inventory, SlotIndex);
+}
+
+bool UConsumableComponent::TryUseQuickSlot(int32 SlotIndex)
+{
+	UInventoryComponent* Inventory = GetInventoryComponent();
+	if (::IsValid(Inventory) == false) { return false; }
+	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(EItemContainer::QuickSlot);
+	return Slots.IsValidIndex(SlotIndex) && Slots[SlotIndex].IsEmpty() == false
+		&& TryUseStoredItem(Slots[SlotIndex].ItemUID, EItemContainer::QuickSlot, SlotIndex);
 }
 
 bool UConsumableComponent::TryUseItem(FName ItemUID)
 {
-	UInventoryComponent* InventoryComponent = GetInventoryComponent();
-	const UDataManager* DataManager = UDataManager::Get(this);
-	if (ItemUID.IsNone() || ::IsValid(InventoryComponent) == false || ::IsValid(DataManager) == false || InventoryComponent->GetItemCount(ItemUID) <= 0)
-	{
-		return false;
-	}
-
-	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
-	if (ItemDataTableRow == nullptr || ItemDataTableRow->ConsumableEffect == EConsumableEffectType::None)
-	{
-		return false;
-	}
-
-	// 보험 증서는 소지형이라 직접 사용하지 않는다.
-	if (ItemDataTableRow->ConsumableEffect == EConsumableEffectType::Insurance || bIsRecalling)
-	{
-		USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_UseFailed);
-		return false;
-	}
-
-	if (TryApplyConsumableEffect(ItemUID, *ItemDataTableRow) == false)
-	{
-		USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_UseFailed);
-		return false;
-	}
-
-	// 귀환은 대기 시간이 끝났을 때 소모한다.
-	if (ItemDataTableRow->ConsumableEffect != EConsumableEffectType::Recall)
-	{
-		InventoryComponent->TryRemoveItem(ItemUID, 1);
-		OnConsumableUsedDelegate.Broadcast(ItemUID);
-	}
-
-	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_Use);
-	return true;
+	return TryUseStoredItem(ItemUID, EItemContainer::Inventory, INDEX_NONE);
 }
 
 bool UConsumableComponent::TryConsumeInsurance()
@@ -123,6 +98,48 @@ void UConsumableComponent::ClearRecall()
 
 	USoundManager::TryStopSFX(GetOwner(), ESFXType::Recall_Start);
 	OnRecallStateChangedDelegate.Broadcast(false);
+}
+
+bool UConsumableComponent::TryUseStoredItem(FName ItemUID, EItemContainer Container, int32 SlotIndex)
+{
+	UInventoryComponent* InventoryComponent = GetInventoryComponent();
+	const UDataManager* DataManager = UDataManager::Get(this);
+	if (ItemUID.IsNone() || ::IsValid(InventoryComponent) == false || ::IsValid(DataManager) == false || InventoryComponent->GetItemCount(ItemUID) <= 0)
+	{
+		return false;
+	}
+
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
+	if (ItemDataTableRow == nullptr || ItemDataTableRow->ConsumableEffect == EConsumableEffectType::None)
+	{
+		return false;
+	}
+
+	// 보험 증서는 소지형이라 직접 사용하지 않는다.
+	if (ItemDataTableRow->ConsumableEffect == EConsumableEffectType::Insurance || bIsRecalling)
+	{
+		USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_UseFailed);
+		return false;
+	}
+
+	RecallContainer = Container;
+	RecallSlotIndex = SlotIndex;
+	if (TryApplyConsumableEffect(ItemUID, *ItemDataTableRow) == false)
+	{
+		USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_UseFailed);
+		return false;
+	}
+
+	// 귀환은 대기 시간이 끝났을 때 소모한다.
+	if (ItemDataTableRow->ConsumableEffect != EConsumableEffectType::Recall)
+	{
+		if (SlotIndex == INDEX_NONE) { InventoryComponent->TryRemoveItem(ItemUID, 1); }
+		else { InventoryComponent->TryRemoveItemFromSlot(Container, SlotIndex, 1); }
+		OnConsumableUsedDelegate.Broadcast(ItemUID);
+	}
+
+	USoundManager::TryPlaySFX(GetOwner(), ESFXType::Item_Use);
+	return true;
 }
 
 bool UConsumableComponent::TryApplyConsumableEffect(FName ItemUID, const FItemDataTableRow& ItemDataTableRow)
@@ -284,12 +301,18 @@ void UConsumableComponent::ApplyRecallComplete()
 	AMKCharacter* OwnerCharacter = GetOwnerCharacter();
 	UInventoryComponent* InventoryComponent = GetInventoryComponent();
 	const FName UsedItemUID = RecallItemUID;
+	const EItemContainer SourceContainer = RecallContainer;
+	const int32 SourceIndex = RecallSlotIndex;
 	ClearRecall();
 
-	if (::IsValid(OwnerCharacter) == false || ::IsValid(InventoryComponent) == false || InventoryComponent->TryRemoveItem(UsedItemUID, 1) == false)
+	if (::IsValid(OwnerCharacter) == false || ::IsValid(InventoryComponent) == false)
 	{
 		return;
 	}
+	const TArray<FInventorySlotData>& Slots = InventoryComponent->GetItemSlots(SourceContainer);
+	const bool bOriginalSlot = Slots.IsValidIndex(SourceIndex) && Slots[SourceIndex].ItemUID == UsedItemUID && Slots[SourceIndex].ItemCount > 0;
+	const bool bConsumed = bOriginalSlot ? InventoryComponent->TryRemoveItemFromSlot(SourceContainer, SourceIndex, 1) : InventoryComponent->TryRemoveItem(UsedItemUID, 1);
+	if (bConsumed == false) { return; }
 
 	OnConsumableUsedDelegate.Broadcast(UsedItemUID);
 	OwnerCharacter->RespawnAtSpawnLocation();

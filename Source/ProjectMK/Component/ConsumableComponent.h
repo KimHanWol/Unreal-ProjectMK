@@ -9,6 +9,7 @@
 class AMKCharacter;
 class UInventoryComponent;
 struct FItemDataTableRow;
+enum class EItemContainer : uint8;
 
 /** 퀵슬롯 숫자 키로 쓰는 소모품의 효과를 적용한다 */
 UCLASS(ClassGroup=(Custom), meta=(BlueprintSpawnableComponent))
@@ -20,9 +21,10 @@ protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 
 public:
-	/** 인벤토리 슬롯(퀵슬롯 숫자 키)에 있는 소모품을 사용한다. 실패하면 소모하지 않는다 */
+	/** 지정한 인벤토리 칸의 소모품을 사용한다. 실패하면 소모하지 않는다. */
 	UFUNCTION(BlueprintCallable, Category = "Consumable")
 	bool TryUseInventorySlot(int32 SlotIndex);
+	bool TryUseQuickSlot(int32 SlotIndex);
 
 	UFUNCTION(BlueprintCallable, Category = "Consumable")
 	bool TryUseItem(FName ItemUID);
@@ -32,6 +34,7 @@ public:
 	void ClearRecall();
 
 private:
+	bool TryUseStoredItem(FName ItemUID, EItemContainer Container, int32 SlotIndex);
 	bool TryApplyConsumableEffect(FName ItemUID, const FItemDataTableRow& ItemDataTableRow);
 	bool TryRestoreOxygen(float RestoreRatio);
 	bool TryRestoreHealth(float RestoreAmount);
@@ -72,6 +75,8 @@ private:
 
 	FTimerHandle RecallTimerHandle;
 	FName RecallItemUID = NAME_None;
+	EItemContainer RecallContainer = static_cast<EItemContainer>(0);
+	int32 RecallSlotIndex = INDEX_NONE;
 	FVector RecallStartLocation = FVector::ZeroVector;
 	float RecallRemainingTime = 0.f;
 	bool bIsRecalling = false;

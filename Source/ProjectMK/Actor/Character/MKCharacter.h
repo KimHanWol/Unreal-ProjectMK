@@ -62,6 +62,7 @@ public:
 	USkillComponent* GetSkillComponent() const;
 	UConsumableComponent* GetConsumableComponent() const;
 	UCraftingComponent* GetCraftingComponent() const;
+	const UPaperSprite* GetPortraitSprite() const;
 
 private:
 	void GiveAbilities();

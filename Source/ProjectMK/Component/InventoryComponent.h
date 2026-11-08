@@ -8,6 +8,13 @@ struct FShopRecipeDataTableRow;
 struct FItemDataTableRow;
 class AItemBase;
 
+UENUM(BlueprintType)
+enum class EItemContainer : uint8
+{
+	Inventory,
+	QuickSlot,
+};
+
 USTRUCT(BlueprintType)
 struct FInventorySlotData
 {
@@ -55,14 +62,21 @@ public:
 	bool TryRemoveItem(FName ItemUID, int32 ItemCount);
 	void RemoveAllOreItems();
 	void ApplySavedInventorySlots(const TArray<FInventorySlotData>& SavedSlotDataList);
+	void ApplySavedQuickSlots(const TArray<FInventorySlotData>& SavedSlots);
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	bool TryCollectWorldItem(AItemBase* ItemActor);
-	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex);
+	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer = EItemContainer::Inventory, EItemContainer TargetContainer = EItemContainer::Inventory);
+	bool TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count);
+	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count);
+	bool CanEquipQuickSlot(FName ItemKey) const;
+	const TArray<FInventorySlotData>& GetItemSlots(EItemContainer Container);
+	static constexpr int32 QuickSlotCount = 8;
 	void SetGainRadius(float NewRadius);
 	void SetItemCollectionActive(bool bActive);
 	bool CraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData);
 	bool CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const;
 	bool TrySellItem(FName ItemUID, int32 ItemCount);
+	bool TrySellItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count);
 	bool TrySellAllItems();
 	int32 CalculateSellPrice(FName ItemUID, int32 ItemCount) const;
 
@@ -100,6 +114,9 @@ public:
 private:
 	UPROPERTY(Transient)
 	TArray<FInventorySlotData> InventorySlotDataList;
+
+	UPROPERTY(Transient)
+	TArray<FInventorySlotData> QuickSlotDataList;
 
 	UPROPERTY(Transient)
 	TMap<FName, int32> InventoryItemMap;

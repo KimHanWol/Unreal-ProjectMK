@@ -45,6 +45,16 @@ void AItemBase::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
 
+	if (DropOwner.IsValid())
+	{
+		const UInventoryComponent* Inventory = DropOwner->FindComponentByClass<UInventoryComponent>();
+		const float Range = ::IsValid(Inventory) ? Inventory->GetItemGainRange() + GetCollisionRadius() : 0.f;
+		if (FVector::DistSquared(GetActorLocation(), DropOwner->GetActorLocation()) > FMath::Square(Range)) { DropOwner.Reset(); }
+	}
+	if (::IsValid(PaperSpriteComponent) && GetLifeSpan() > 0.f && GetLifeSpan() <= BlinkDuration)
+	{
+		PaperSpriteComponent->SetVisibility(FMath::Fmod(GetLifeSpan(), 0.4f) >= 0.2f);
+	}
 	UpdatePosition(DeltaTime);
 }
 
@@ -75,13 +85,17 @@ void AItemBase::InitializeItemBase(FName InItemKey, int32 InItemCount)
 	PaperSpriteComponent->SetSprite(LoadedItemSprite);
 
 	float ItemSpriteScale = 0.7f;
+	float Lifetime = 300.f;
 	if (const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset())
 	{
 		ItemSpriteScale = GameSettings->WorldItemSpriteScale;
+		Lifetime = GameSettings->WorldItemLifetime;
+		BlinkDuration = GameSettings->WorldItemBlinkDuration;
 	}
 
 	PaperSpriteComponent->SetRelativeScale3D(FVector(ItemSpriteScale, 1.f, ItemSpriteScale));
 	bIsInitialized = true;
+	SetLifeSpan(FMath::Max(1.f, Lifetime));
 }
 
 float AItemBase::GetCollisionRadius() const
@@ -101,7 +115,7 @@ bool AItemBase::IsOccupied()
 
 void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 {
-	if (IsOccupied() || InLooter.IsValid() == false)
+	if (IsOccupied() || InLooter.IsValid() == false || CanBeCollectedBy(InLooter.Get()) == false)
 	{
 		return;
 	}
@@ -155,6 +169,17 @@ void AItemBase::SetVisualLayer(float InVisualYOffset)
 		PaperSpriteComponent->SetRelativeLocation(BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f));
 		PaperSpriteComponent->SetTranslucentSortPriority(static_cast<int32>(GetUniqueID()));
 	}
+}
+
+void AItemBase::SetDropOwner(AMKCharacter* Character)
+{
+	ClearLooting();
+	DropOwner = Character;
+}
+
+bool AItemBase::CanBeCollectedBy(const AActor* Character) const
+{
+	return DropOwner.IsValid() == false || DropOwner.Get() != Character;
 }
 
 void AItemBase::ClearLooting()

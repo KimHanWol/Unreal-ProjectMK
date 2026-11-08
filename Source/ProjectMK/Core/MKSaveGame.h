@@ -12,7 +12,7 @@ class PROJECTMK_API UMKSaveGame : public USaveGame
 
 public:
 	UPROPERTY()
-	int32 SaveVersion = 1;
+	int32 SaveVersion = 2;
 
 	UPROPERTY()
 	int32 Coin = 0;
@@ -22,6 +22,9 @@ public:
 
 	UPROPERTY()
 	TArray<FInventorySlotData> InventorySlotDataList;
+
+	UPROPERTY()
+	TArray<FInventorySlotData> QuickSlotDataList;
 
 	/** INDEX_NONE 이면 저장된 지형이 없어 새 시드로 생성한다 */
 	UPROPERTY()

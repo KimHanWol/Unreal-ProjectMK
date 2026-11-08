@@ -85,16 +85,6 @@ void UInventoryComponent::TickComponent(float DeltaTime, ELevelTick TickType, FA
 	}
 }
 
-float UInventoryComponent::GetItemGainRange() const
-{
-	return ItemGainRange;
-}
-
-bool UInventoryComponent::IsItemCollectionActive() const
-{
-	return bIsItemCollectionActive;
-}
-
 int32 UInventoryComponent::GetItemCount(FName ItemUID)
 {
 	UpdateInventoryItemMap();
@@ -136,6 +126,16 @@ float UInventoryComponent::GetInventoryOccupancyRatio() const
 	}
 
 	return FMath::Clamp(static_cast<float>(OccupiedSlotCount) / static_cast<float>(MaxInventorySlotCount), 0.f, 1.f);
+}
+
+float UInventoryComponent::GetItemGainRange() const
+{
+	return ItemGainRange;
+}
+
+bool UInventoryComponent::IsItemCollectionActive() const
+{
+	return bIsItemCollectionActive;
 }
 
 void UInventoryComponent::SetItemCount(FName ItemUID, int32 ItemCount)
@@ -211,7 +211,12 @@ void UInventoryComponent::RemoveAllOreItems()
 void UInventoryComponent::ApplySavedInventorySlots(const TArray<FInventorySlotData>& SavedSlotDataList)
 {
 	InventorySlotDataList = SavedSlotDataList;
-	UpdateInventorySlotDataList();
+	OnInventoryUpdated();
+}
+
+void UInventoryComponent::ApplySavedQuickSlots(const TArray<FInventorySlotData>& SavedSlots)
+{
+	QuickSlotDataList = SavedSlots;
 	OnInventoryUpdated();
 }
 
@@ -229,6 +234,7 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	}
 
 	const FName ItemKey = ItemActor->GetItemKey();
+	if (ItemActor->CanBeCollectedBy(GetOwner()) == false) { return false; }
 	if (ItemActor->IsInitialized() == false)
 	{
 		return false;
@@ -271,59 +277,81 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	return true;
 }
 
-bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex)
+bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer)
 {
 	UpdateInventorySlotDataList();
-
-	if (IsValidSlotIndex(SourceSlotIndex) == false || IsValidSlotIndex(TargetSlotIndex) == false || SourceSlotIndex == TargetSlotIndex)
+	TArray<FInventorySlotData>& SourceSlots = SourceContainer == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
+	TArray<FInventorySlotData>& TargetSlots = TargetContainer == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
+	if (SourceSlots.IsValidIndex(SourceSlotIndex) == false || TargetSlots.IsValidIndex(TargetSlotIndex) == false
+		|| (SourceContainer == TargetContainer && SourceSlotIndex == TargetSlotIndex)) { return false; }
+	FInventorySlotData& Source = SourceSlots[SourceSlotIndex];
+	FInventorySlotData& Target = TargetSlots[TargetSlotIndex];
+	if (Source.IsEmpty() || (TargetContainer == EItemContainer::QuickSlot && CanEquipQuickSlot(Source.ItemUID) == false)
+		|| (SourceContainer == EItemContainer::QuickSlot && Target.IsEmpty() == false && CanEquipQuickSlot(Target.ItemUID) == false)) { return false; }
+	if (Target.IsEmpty())
 	{
-		return false;
+		Target = Source;
+		Source.Clear();
 	}
-
-	FInventorySlotData& SourceSlotData = InventorySlotDataList[SourceSlotIndex];
-	FInventorySlotData& TargetSlotData = InventorySlotDataList[TargetSlotIndex];
-
-	if (SourceSlotData.IsEmpty())
+	else if (Source.ItemUID == Target.ItemUID)
 	{
-		return false;
+		const int32 Count = FMath::Min(Source.ItemCount, GetItemMaxStackCount(Source.ItemUID) - Target.ItemCount);
+		if (Count <= 0) { return false; }
+		Target.ItemCount += Count;
+		Source.ItemCount -= Count;
+		if (Source.ItemCount <= 0) { Source.Clear(); }
 	}
-
-	if (TargetSlotData.IsEmpty())
-	{
-		TargetSlotData = SourceSlotData;
-		SourceSlotData.Clear();
-		OnInventoryUpdated();
-		return true;
-	}
-
-	if (SourceSlotData.ItemUID == TargetSlotData.ItemUID)
-	{
-		const int32 MaxStackCount = GetItemMaxStackCount(SourceSlotData.ItemUID);
-		if (TargetSlotData.ItemCount >= MaxStackCount)
-		{
-			return false;
-		}
-
-		const int32 MoveCount = FMath::Min(SourceSlotData.ItemCount, MaxStackCount - TargetSlotData.ItemCount);
-		if (MoveCount <= 0)
-		{
-			return false;
-		}
-
-		TargetSlotData.ItemCount += MoveCount;
-		SourceSlotData.ItemCount -= MoveCount;
-		if (SourceSlotData.ItemCount <= 0)
-		{
-			SourceSlotData.Clear();
-		}
-
-		OnInventoryUpdated();
-		return true;
-	}
-
-	Swap(SourceSlotData, TargetSlotData);
+	else { Swap(Source, Target); }
 	OnInventoryUpdated();
 	return true;
+}
+
+bool UInventoryComponent::TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count)
+{
+	UpdateInventorySlotDataList();
+	TArray<FInventorySlotData>& Slots = Container == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
+	if (Slots.IsValidIndex(SlotIndex) == false || Count <= 0 || Slots[SlotIndex].ItemCount < Count) { return false; }
+	Slots[SlotIndex].ItemCount -= Count;
+	if (Slots[SlotIndex].ItemCount <= 0) { Slots[SlotIndex].Clear(); }
+	OnInventoryUpdated();
+	return true;
+}
+
+bool UInventoryComponent::TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count)
+{
+	const TArray<FInventorySlotData>& Slots = GetItemSlots(Container);
+	AMKCharacter* Character = Cast<AMKCharacter>(GetOwner());
+	if (::IsValid(Character) == false || Slots.IsValidIndex(SlotIndex) == false || Slots[SlotIndex].IsEmpty()
+		|| Count <= 0 || Count > Slots[SlotIndex].ItemCount) { return false; }
+	const FName Key = Slots[SlotIndex].ItemUID;
+	FActorSpawnParameters Parameters;
+	Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AItemBase* Item = GetWorld()->SpawnActor<AItemBase>(AItemBase::StaticClass(), Character->GetActorLocation(), FRotator::ZeroRotator, Parameters);
+	if (::IsValid(Item) == false) { return false; }
+	Item->InitializeItemBase(Key, Count);
+	Item->SetDropOwner(Character);
+	if (Item->IsInitialized() == false || TryRemoveItemFromSlot(Container, SlotIndex, Count) == false)
+	{
+		Item->Destroy();
+		return false;
+	}
+	Character->TrySaveGame();
+	return true;
+}
+
+bool UInventoryComponent::CanEquipQuickSlot(FName ItemKey) const
+{
+	const UDataManager* Data = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	const FItemDataTableRow* Item = ::IsValid(Data) && ItemKey.IsNone() == false
+		? Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey) : nullptr;
+	return Item != nullptr && Item->bIsInventoryItem && Item->bIsOre == false
+		&& Item->ConsumableEffect != EConsumableEffectType::None && Item->ConsumableEffect != EConsumableEffectType::Insurance;
+}
+
+const TArray<FInventorySlotData>& UInventoryComponent::GetItemSlots(EItemContainer Container)
+{
+	UpdateInventorySlotDataList();
+	return Container == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
 }
 
 void UInventoryComponent::SetGainRadius(float NewRadius)
@@ -353,43 +381,39 @@ bool UInventoryComponent::CraftShopRecipe(const FShopRecipeDataTableRow& ShopRec
 	return true;
 }
 
-bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& ShopRecipeData) const
+bool UInventoryComponent::CanCraftShopRecipe(const FShopRecipeDataTableRow& Recipe) const
 {
 	const_cast<UInventoryComponent*>(this)->UpdateInventorySlotDataList();
-
-	if (ShopRecipeData.GetResultItemKey().IsNone())
+	if (Recipe.GetResultItemKey().IsNone()) { return false; }
+	TArray<FInventorySlotData> Inventory = InventorySlotDataList;
+	TArray<FInventorySlotData> Quick = QuickSlotDataList;
+	for (const FShopRecipeItem& Required : Recipe.RequiredItems)
 	{
-		return false;
+		if (Required.GetItemKey().IsNone() || Required.ItemCount <= 0) { return false; }
+		int32 Remaining = Required.ItemCount;
+		for (TArray<FInventorySlotData>* Slots : { &Inventory, &Quick })
+		{
+			for (FInventorySlotData& Slot : *Slots)
+			{
+				if (Slot.ItemUID != Required.GetItemKey()) { continue; }
+				const int32 Used = FMath::Min(Remaining, Slot.ItemCount);
+				Slot.ItemCount -= Used;
+				Remaining -= Used;
+				if (Slot.ItemCount <= 0) { Slot.Clear(); }
+				if (Remaining == 0) { break; }
+			}
+			if (Remaining == 0) { break; }
+		}
+		if (Remaining > 0) { return false; }
 	}
-
-	TMap<FName, int32> SimulatedInventory = GetInventoryItems();
-	for (const FShopRecipeItem& RequiredItem : ShopRecipeData.RequiredItems)
+	const int32 Maximum = GetItemMaxStackCount(Recipe.GetResultItemKey());
+	int32 Capacity = 0;
+	for (const FInventorySlotData& Slot : Inventory)
 	{
-		const FName RequiredItemKey = RequiredItem.GetItemKey();
-		if (RequiredItemKey.IsNone() || RequiredItem.ItemCount <= 0)
-		{
-			return false;
-		}
-
-		int32* InventoryItemCountPtr = SimulatedInventory.Find(RequiredItemKey);
-		if (InventoryItemCountPtr == nullptr || (*InventoryItemCountPtr) < RequiredItem.ItemCount)
-		{
-			return false;
-		}
-
-		(*InventoryItemCountPtr) -= RequiredItem.ItemCount;
-		if ((*InventoryItemCountPtr) <= 0)
-		{
-			SimulatedInventory.Remove(RequiredItemKey);
-		}
+		if (Slot.IsEmpty()) { Capacity += Maximum; }
+		else if (Slot.ItemUID == Recipe.GetResultItemKey()) { Capacity += FMath::Max(0, Maximum - Slot.ItemCount); }
 	}
-
-	if (CalculateAvailableItemCapacity(ShopRecipeData.GetResultItemKey()) < FMath::Max(1, ShopRecipeData.ResultItemCount) && SimulatedInventory.Contains(ShopRecipeData.GetResultItemKey()) == false)
-	{
-		return false;
-	}
-
-	return true;
+	return Capacity >= FMath::Max(1, Recipe.ResultItemCount);
 }
 
 bool UInventoryComponent::TrySellItem(FName ItemUID, int32 ItemCount)
@@ -411,6 +435,19 @@ bool UInventoryComponent::TrySellItem(FName ItemUID, int32 ItemCount)
 	SpendItem(ItemUID, SellItemCount);
 	// 코인 획득 배율은 채굴 중 코인 드롭량에만 적용하고 판매 대금에는 적용하지 않는다.
 	SkillComponent->TryAddCoin(SellPrice, false);
+	return true;
+}
+
+bool UInventoryComponent::TrySellItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count)
+{
+	const TArray<FInventorySlotData>& Slots = GetItemSlots(Container);
+	if (Slots.IsValidIndex(SlotIndex) == false || Slots[SlotIndex].IsEmpty() || Count <= 0 || Count > Slots[SlotIndex].ItemCount) { return false; }
+	const int32 Price = CalculateSellPrice(Slots[SlotIndex].ItemUID, Count);
+	AMKCharacter* Character = Cast<AMKCharacter>(GetOwner());
+	USkillComponent* Skills = ::IsValid(Character) ? Character->GetSkillComponent() : nullptr;
+	if (Price <= 0 || ::IsValid(Skills) == false) { return false; }
+	if (TryRemoveItemFromSlot(Container, SlotIndex, Count) == false) { return false; }
+	Skills->TryAddCoin(Price, false);
 	return true;
 }
 
@@ -446,6 +483,12 @@ int32 UInventoryComponent::CalculateSellPrice(FName ItemUID, int32 ItemCount) co
 	}
 
 	return FMath::Max(0, ItemDataTableRow->SellPrice) * ItemCount;
+}
+
+const TArray<FInventorySlotData>& UInventoryComponent::GetInventorySlotDataList()
+{
+	UpdateInventorySlotDataList();
+	return InventorySlotDataList;
 }
 
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
@@ -490,35 +533,22 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 
 void UInventoryComponent::SpendItem(FName ItemUID, int32 ItemCount)
 {
-	if (ItemUID.IsNone() || ItemCount <= 0)
-	{
-		return;
-	}
-
+	if (ItemUID.IsNone() || ItemCount <= 0) { return; }
 	UpdateInventorySlotDataList();
-
-	int32 RemainingItemCount = ItemCount;
-	for (FInventorySlotData& SlotData : InventorySlotDataList)
+	int32 Remaining = ItemCount;
+	for (TArray<FInventorySlotData>* Slots : { &InventorySlotDataList, &QuickSlotDataList })
 	{
-		if (SlotData.ItemUID != ItemUID || SlotData.ItemCount <= 0)
+		for (FInventorySlotData& Slot : *Slots)
 		{
-			continue;
+			if (Slot.ItemUID != ItemUID || Slot.IsEmpty()) { continue; }
+			const int32 Spent = FMath::Min(Remaining, Slot.ItemCount);
+			Slot.ItemCount -= Spent;
+			Remaining -= Spent;
+			if (Slot.ItemCount <= 0) { Slot.Clear(); }
+			if (Remaining <= 0) { break; }
 		}
-
-		const int32 SpentItemCount = FMath::Min(RemainingItemCount, SlotData.ItemCount);
-		SlotData.ItemCount -= SpentItemCount;
-		RemainingItemCount -= SpentItemCount;
-		if (SlotData.ItemCount <= 0)
-		{
-			SlotData.Clear();
-		}
-
-		if (RemainingItemCount <= 0)
-		{
-			break;
-		}
+		if (Remaining <= 0) { break; }
 	}
-
 	OnInventoryUpdated();
 }
 
@@ -528,6 +558,47 @@ void UInventoryComponent::OnInventoryUpdated()
 	NormalizeInventorySlotDataList();
 	UpdateInventoryItemMap();
 	OnInventoryChangedDelegate.Broadcast();
+}
+
+void UInventoryComponent::UpdateInventorySlotDataList()
+{
+	QuickSlotDataList.SetNum(QuickSlotCount);
+	const int32 DesiredSlotCount = GetMaxInventoryCount();
+	if (InventorySlotDataList.Num() == DesiredSlotCount)
+	{
+		return;
+	}
+
+	TArray<FInventorySlotData> PreviousSlotDataList = InventorySlotDataList;
+	InventorySlotDataList.Init(FInventorySlotData(), DesiredSlotCount);
+	for (int32 SlotIndex = 0; SlotIndex < PreviousSlotDataList.Num() && SlotIndex < DesiredSlotCount; ++SlotIndex)
+	{
+		InventorySlotDataList[SlotIndex] = PreviousSlotDataList[SlotIndex];
+	}
+}
+
+void UInventoryComponent::UpdateInventoryItemMap()
+{
+	InventoryItemMap.Reset();
+	for (const TArray<FInventorySlotData>* Slots : { &InventorySlotDataList, &QuickSlotDataList })
+	{
+		for (const FInventorySlotData& Slot : *Slots)
+		{
+			if (Slot.IsEmpty() == false) { InventoryItemMap.FindOrAdd(Slot.ItemUID) += Slot.ItemCount; }
+		}
+	}
+}
+
+void UInventoryComponent::NormalizeInventorySlotDataList()
+{
+	// Slot moves must preserve the player's arrangement; only explicit moves merge stacks.
+	for (TArray<FInventorySlotData>* Slots : { &InventorySlotDataList, &QuickSlotDataList })
+	{
+		for (FInventorySlotData& Slot : *Slots)
+		{
+			if (Slot.IsEmpty()) { Slot.Clear(); }
+		}
+	}
 }
 
 const UAttributeSet_Character* UInventoryComponent::GetCharacterAttributeSet() const
@@ -547,20 +618,21 @@ const UAttributeSet_Character* UInventoryComponent::GetCharacterAttributeSet() c
 	return Cast<UAttributeSet_Character>(OwnerASC->GetAttributeSet(UAttributeSet_Character::StaticClass()));
 }
 
-void UInventoryComponent::UpdateInventorySlotDataList()
+int32 UInventoryComponent::GetItemMaxStackCount(FName ItemUID) const
 {
-	const int32 DesiredSlotCount = GetMaxInventoryCount();
-	if (InventorySlotDataList.Num() == DesiredSlotCount)
+	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
+	if (::IsValid(DataManager) == false)
 	{
-		return;
+		return 99;
 	}
 
-	TArray<FInventorySlotData> PreviousSlotDataList = InventorySlotDataList;
-	InventorySlotDataList.Init(FInventorySlotData(), DesiredSlotCount);
-	for (int32 SlotIndex = 0; SlotIndex < PreviousSlotDataList.Num() && SlotIndex < DesiredSlotCount; ++SlotIndex)
+	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
+	if (ItemDataTableRow == nullptr)
 	{
-		InventorySlotDataList[SlotIndex] = PreviousSlotDataList[SlotIndex];
+		return 99;
 	}
+
+	return FMath::Max(1, ItemDataTableRow->MaxStackCount);
 }
 
 int32 UInventoryComponent::FindEmptySlotIndex() const
@@ -579,85 +651,6 @@ int32 UInventoryComponent::FindEmptySlotIndex() const
 bool UInventoryComponent::IsValidSlotIndex(int32 SlotIndex) const
 {
 	return InventorySlotDataList.IsValidIndex(SlotIndex);
-}
-
-const TArray<FInventorySlotData>& UInventoryComponent::GetInventorySlotDataList()
-{
-	UpdateInventorySlotDataList();
-	return InventorySlotDataList;
-}
-
-void UInventoryComponent::UpdateInventoryItemMap()
-{
-	InventoryItemMap.Reset();
-
-	for (const FInventorySlotData& SlotData : InventorySlotDataList)
-	{
-		if (SlotData.IsEmpty())
-		{
-			continue;
-		}
-
-		InventoryItemMap.FindOrAdd(SlotData.ItemUID) += SlotData.ItemCount;
-	}
-}
-
-void UInventoryComponent::NormalizeInventorySlotDataList()
-{
-	for (int32 SourceSlotIndex = 0; SourceSlotIndex < InventorySlotDataList.Num(); ++SourceSlotIndex)
-	{
-		FInventorySlotData& SourceSlotData = InventorySlotDataList[SourceSlotIndex];
-		if (SourceSlotData.IsEmpty())
-		{
-			continue;
-		}
-
-		const int32 MaxStackCount = GetItemMaxStackCount(SourceSlotData.ItemUID);
-		if (SourceSlotData.ItemCount > MaxStackCount)
-		{
-			SourceSlotData.ItemCount = MaxStackCount;
-		}
-
-		for (int32 TargetSlotIndex = 0; TargetSlotIndex < SourceSlotIndex; ++TargetSlotIndex)
-		{
-			FInventorySlotData& TargetSlotData = InventorySlotDataList[TargetSlotIndex];
-			if (TargetSlotData.ItemUID != SourceSlotData.ItemUID || TargetSlotData.ItemCount >= MaxStackCount)
-			{
-				continue;
-			}
-
-			const int32 MergeItemCount = FMath::Min(SourceSlotData.ItemCount, MaxStackCount - TargetSlotData.ItemCount);
-			if (MergeItemCount <= 0)
-			{
-				continue;
-			}
-
-			TargetSlotData.ItemCount += MergeItemCount;
-			SourceSlotData.ItemCount -= MergeItemCount;
-			if (SourceSlotData.ItemCount <= 0)
-			{
-				SourceSlotData.Clear();
-				break;
-			}
-		}
-	}
-}
-
-int32 UInventoryComponent::GetItemMaxStackCount(FName ItemUID) const
-{
-	UDataManager* DataManager = UDataManager::Get(const_cast<UInventoryComponent*>(this));
-	if (::IsValid(DataManager) == false)
-	{
-		return 99;
-	}
-
-	const FItemDataTableRow* ItemDataTableRow = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemUID);
-	if (ItemDataTableRow == nullptr)
-	{
-		return 99;
-	}
-
-	return FMath::Max(1, ItemDataTableRow->MaxStackCount);
 }
 
 int32 UInventoryComponent::FindStackableSlotIndex(FName ItemUID) const
@@ -704,7 +697,7 @@ int32 UInventoryComponent::CalculateAvailableItemCapacity(FName ItemUID) const
 
 bool UInventoryComponent::CanCollectWorldItem(AItemBase* ItemActor) const
 {
-	if (::IsValid(ItemActor) == false)
+	if (::IsValid(ItemActor) == false || ItemActor->IsInitialized() == false || ItemActor->CanBeCollectedBy(GetOwner()) == false)
 	{
 		return false;
 	}
