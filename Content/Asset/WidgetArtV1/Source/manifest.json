@@ -1,12 +1,12 @@
-[
+﻿[
   {
     "name": "Panel",
     "group": "UI",
     "file": "Content/Asset/WidgetArtV1/Source/UI/Panel.png",
     "width": 160,
     "height": 120,
-    "marginX": 16,
-    "marginY": 16
+    "marginX": 32,
+    "marginY": 32
   },
   {
     "name": "InsetPanel",
@@ -14,8 +14,8 @@
     "file": "Content/Asset/WidgetArtV1/Source/UI/InsetPanel.png",
     "width": 128,
     "height": 80,
-    "marginX": 8,
-    "marginY": 8
+    "marginX": 16,
+    "marginY": 16
   },
   {
     "name": "WindowTitle",
@@ -131,8 +131,8 @@
     "file": "Content/Asset/WidgetArtV1/Source/UI/Minimap.png",
     "width": 96,
     "height": 96,
-    "marginX": 18,
-    "marginY": 18
+    "marginX": 32,
+    "marginY": 32
   },
   {
     "name": "Keycap",

@@ -20,6 +20,9 @@
 #include "Components/ScaleBoxSlot.h"
 #include "Brushes/SlateColorBrush.h"
 #include "Brushes/SlateNoResource.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
+#include "Misc/Paths.h"
+#include "Fonts/CompositeFont.h"
 #include "Components/TextBlock.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
@@ -87,15 +90,22 @@ void UMKUserWidget::ApplyVisualStyle()
 		}
 		if (UScrollBox* Scroll = Cast<UScrollBox>(Widget))
 		{
+			Scroll->SetAnimateWheelScrolling(true);
+			Scroll->SetScrollAnimationInterpolationSpeed(12.f);
+			Scroll->SetAllowOverscroll(false);
 			if (const FSlateBrush* Thumb = Style->Brushes.Find(TEXT("ScrollHandle")))
 			{
-				FSlateBrush CroppedThumb = *Thumb;
-				// The 32px symbol sheet has transparent side gutters; keep the visible handle at full rail width.
-				CroppedThumb.SetUVRegion(FBox2D(FVector2D(12.f / 32.f, 2.f / 32.f), FVector2D(20.f / 32.f, 30.f / 32.f)));
 				FScrollBarStyle Bar = Scroll->GetWidgetBarStyle();
-				Bar.SetNormalThumbImage(CroppedThumb).SetHoveredThumbImage(CroppedThumb).SetDraggedThumbImage(CroppedThumb);
+				const FSlateRoundedBoxBrush Rail(FLinearColor(0.018f, 0.025f, 0.03f), 2.f, FLinearColor(0.18f, 0.14f, 0.08f), 1.f);
+				FSlateBrush HoveredThumb = *Thumb;
+				HoveredThumb.TintColor = FSlateColor(FLinearColor(1.15f, 1.08f, 0.9f));
+				Bar.SetVerticalBackgroundImage(Rail).SetHorizontalBackgroundImage(Rail);
+				Bar.SetVerticalTopSlotImage(FSlateNoResource()).SetVerticalBottomSlotImage(FSlateNoResource());
+				Bar.SetHorizontalTopSlotImage(FSlateNoResource()).SetHorizontalBottomSlotImage(FSlateNoResource());
+				Bar.SetNormalThumbImage(*Thumb).SetHoveredThumbImage(HoveredThumb).SetDraggedThumbImage(HoveredThumb);
 				Scroll->SetWidgetBarStyle(Bar);
-				Scroll->SetAlwaysShowScrollbar(true);
+				Scroll->SetAlwaysShowScrollbar(false);
+				Scroll->SetAlwaysShowScrollbarTrack(false);
 				Scroll->SetScrollBarVisibility(ESlateVisibility::Visible);
 				Scroll->SetScrollbarThickness(FVector2D(12.f, 12.f));
 				Scroll->SetScrollbarPadding(FMargin(8.f, 2.f, 0.f, 2.f));
@@ -234,6 +244,16 @@ void UMKUserWidget::ApplyTextRole(UTextBlock* TextBlock, const EMKTextRole TextR
 		Font.Size = 16;
 		Font.TypefaceFontName = TEXT("Bold");
 		break;
+	case EMKTextRole::HUDMetric:
+	{
+		static const TSharedPtr<const FCompositeFont> MetricFont = MakeShared<FCompositeFont>(TEXT("BoldCondensed"),
+			FPaths::EngineContentDir() / TEXT("Slate/Fonts/Roboto-BoldCondensed.ttf"), EFontHinting::Default, EFontLoadingPolicy::LazyLoad);
+		Font = FSlateFontInfo(MetricFont, 14, TEXT("BoldCondensed"));
+		Font.LetterSpacing = 80;
+		Font.OutlineSettings.OutlineSize = 1;
+		Font.OutlineSettings.OutlineColor = FLinearColor(0.015f, 0.025f, 0.03f);
+		break;
+	}
 	default:
 		break;
 	}
@@ -323,15 +343,22 @@ USizeBox* UMKUserWidget::BuildStatusGauge(UProgressBar*& OutBar, FName RootName,
 	FProgressBarStyle Style;
 	Style.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f)));
 	Style.SetFillImage(FSlateColorBrush(FLinearColor::White));
+	const UDataManager* Data = UDataManager::Get(this);
+	const UVisualStyleDataAsset* VisualStyle = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
+	const FSlateBrush* FillBrush = ::IsValid(VisualStyle) ? VisualStyle->Brushes.Find(FrameName == TEXT("OxygenFrame") ? TEXT("OxygenFill") : TEXT("HealthFill")) : nullptr;
+	if (FillBrush != nullptr) { Style.SetFillImage(*FillBrush); }
 	OutBar->SetWidgetStyle(Style);
 	OutBar->SetBorderPadding(FVector2D::ZeroVector);
-	OutBar->SetFillColorAndOpacity(FillColor);
+	OutBar->SetFillColorAndOpacity(FillBrush != nullptr ? FLinearColor::White : FillColor);
 	UOverlaySlot* Fill = Overlay->AddChildToOverlay(OutBar);
 	Fill->SetHorizontalAlignment(HAlign_Fill);
 	Fill->SetVerticalAlignment(VAlign_Fill);
 	UTextBlock* Text = WidgetTree->ConstructWidget<UTextBlock>();
 	Text->SetText(Label);
-	ApplyTextRole(Text, EMKTextRole::Caption);
+	ApplyTextRole(Text, EMKTextRole::HUDMetric);
+	FSlateFontInfo GaugeFont = Text->GetFont();
+	GaugeFont.Size = 12;
+	Text->SetFont(GaugeFont);
 	Text->SetShadowOffset(FVector2D::ZeroVector);
 	UScaleBox* Fit = WidgetTree->ConstructWidget<UScaleBox>();
 	Fit->SetStretch(EStretch::ScaleToFit);

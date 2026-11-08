@@ -9,6 +9,7 @@
 class UButton;
 class UCanvasPanel;
 class UMKMenuContentsBase;
+class UTextBlock;
 
 UCLASS()
 class PROJECTMK_API UMKMenuBase : public UMKUserWidget
@@ -18,6 +19,13 @@ class PROJECTMK_API UMKMenuBase : public UMKUserWidget
 public:
 	UMKMenuBase(const FObjectInitializer& ObjectInitializer);
 
+protected:
+	virtual void NativeConstruct() override;
+	virtual void BindEvents() override;
+	virtual void UnbindEvents() override;
+	virtual void UpdateWidget() override;
+
+public:
 	UFUNCTION(BlueprintCallable)
 	bool OpenMenu(EMenuContentsType InMenuContentsType);
 
@@ -26,11 +34,6 @@ public:
 
 	bool IsMenuOpen() const;
 	bool IsMenuOpen(EMenuContentsType InMenuContentsType) const;
-
-protected:
-	virtual void BindEvents() override;
-	virtual void UnbindEvents() override;
-	virtual void UpdateWidget() override;
 
 private:
 	UFUNCTION()
@@ -53,6 +56,8 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TObjectPtr<UMKMenuContentsBase> CurrentMenuContents;
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> MenuTitle;
 
 	UPROPERTY(Transient)
 	TMap<EMenuContentsType, TObjectPtr<UMKMenuContentsBase>> MenuContentsMap;

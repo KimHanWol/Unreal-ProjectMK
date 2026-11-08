@@ -5,6 +5,11 @@
 #include "Components/Button.h"
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
+#include "Blueprint/WidgetTree.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "Components/TextBlock.h"
+#include "Components/Border.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/MKMenuContentsBase.h"
@@ -17,6 +22,24 @@ UMKMenuBase::UMKMenuBase(const FObjectInitializer& ObjectInitializer)
 {
 	RuntimeMenuContentsClasses.Add(UShopMenuContents::StaticClass());
 	RuntimeMenuContentsClasses.Add(UCraftingMenuContents::StaticClass());
+}
+
+void UMKMenuBase::NativeConstruct()
+{
+	Super::NativeConstruct();
+	UOverlay* Shell = ::IsValid(MenuContentsCanvasPanel) ? Cast<UOverlay>(MenuContentsCanvasPanel->GetParent()) : nullptr;
+	if (::IsValid(Shell) && ::IsValid(MenuTitle) == false)
+	{
+		UTextBlock* TitleText = nullptr;
+		UBorder* Header = BuildSectionHeader(FText::GetEmpty(), NAME_None, &TitleText);
+		MenuTitle = TitleText;
+		UOverlaySlot* HeaderLayout = Shell->AddChildToOverlay(Header);
+		HeaderLayout->SetHorizontalAlignment(HAlign_Fill);
+		HeaderLayout->SetVerticalAlignment(VAlign_Top);
+		HeaderLayout->SetPadding(FMargin(32.f, 20.f, 88.f, 0.f));
+		CastChecked<UOverlaySlot>(MenuContentsCanvasPanel->Slot)->SetPadding(FMargin(24.f, 80.f, 24.f, 24.f));
+		ApplyVisualStyle();
+	}
 }
 
 void UMKMenuBase::BindEvents()
@@ -113,41 +136,6 @@ void UMKMenuBase::OnExitButtonClicked()
 	CloseMenu();
 }
 
-bool UMKMenuBase::UpdateMenuContents(EMenuContentsType InMenuContentsType)
-{
-	if (::IsValid(MenuContentsCanvasPanel) == false)
-	{
-		return false;
-	}
-
-	if (MenuContentsMap.IsEmpty())
-	{
-		CacheMenuContents();
-	}
-
-	UMKMenuContentsBase* TargetMenuContents = nullptr;
-	if (TObjectPtr<UMKMenuContentsBase>* FoundMenuContents = MenuContentsMap.Find(InMenuContentsType))
-	{
-		TargetMenuContents = FoundMenuContents->Get();
-	}
-
-	if (::IsValid(TargetMenuContents) == false)
-	{
-		return false;
-	}
-
-	for (const TPair<EMenuContentsType, TObjectPtr<UMKMenuContentsBase>>& MenuContentsPair : MenuContentsMap)
-	{
-		if (::IsValid(MenuContentsPair.Value))
-		{
-			MenuContentsPair.Value->SetVisibility(MenuContentsPair.Key == InMenuContentsType ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
-		}
-	}
-
-	CurrentMenuContents = TargetMenuContents;
-	return true;
-}
-
 void UMKMenuBase::CacheMenuContents()
 {
 	MenuContentsMap.Empty();
@@ -191,4 +179,44 @@ void UMKMenuBase::CacheMenuContents()
 		MenuContentsMap.FindOrAdd(MenuContents->GetMenuContentsType()) = MenuContents;
 		MenuContents->SetVisibility(ESlateVisibility::Collapsed);
 	}
+}
+bool UMKMenuBase::UpdateMenuContents(EMenuContentsType InMenuContentsType)
+{
+	if (::IsValid(MenuContentsCanvasPanel) == false)
+	{
+		return false;
+	}
+
+	if (MenuContentsMap.IsEmpty())
+	{
+		CacheMenuContents();
+	}
+
+	UMKMenuContentsBase* TargetMenuContents = nullptr;
+	if (TObjectPtr<UMKMenuContentsBase>* FoundMenuContents = MenuContentsMap.Find(InMenuContentsType))
+	{
+		TargetMenuContents = FoundMenuContents->Get();
+	}
+
+	if (::IsValid(TargetMenuContents) == false)
+	{
+		return false;
+	}
+
+	for (const TPair<EMenuContentsType, TObjectPtr<UMKMenuContentsBase>>& MenuContentsPair : MenuContentsMap)
+	{
+		if (::IsValid(MenuContentsPair.Value))
+		{
+			MenuContentsPair.Value->SetVisibility(MenuContentsPair.Key == InMenuContentsType ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+		}
+	}
+
+	CurrentMenuContents = TargetMenuContents;
+	if (::IsValid(MenuTitle))
+	{
+		const FText Title = InMenuContentsType == EMenuContentsType::Crafting ? NSLOCTEXT("CraftingMenu", "Title", "제작 작업대")
+			: (InMenuContentsType == EMenuContentsType::Shop ? NSLOCTEXT("Shop", "Title", "광산 보급소") : NSLOCTEXT("SkillTreeMenu", "Title", "기술 설계도"));
+		MenuTitle->SetText(Title);
+	}
+	return true;
 }

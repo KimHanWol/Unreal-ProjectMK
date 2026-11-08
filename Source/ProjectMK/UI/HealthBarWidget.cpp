@@ -101,15 +101,10 @@ void UHealthBarWidget::ApplyProgressBarStyle()
 
 	ProgressBar_Health->PercentDelegate.Unbind();
 	ProgressBar_Health->FillColorAndOpacityDelegate.Unbind();
-	FProgressBarStyle ProgressStyle;
-	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
-	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
-	ProgressBar_Health->SetWidgetStyle(ProgressStyle);
 	ProgressBar_Health->SetBarFillType(EProgressBarFillType::LeftToRight);
 	ProgressBar_Health->SetBarFillStyle(EProgressBarFillStyle::Scale);
 	ProgressBar_Health->SetIsMarquee(false);
 	ProgressBar_Health->SetBorderPadding(FVector2D::ZeroVector);
-	ProgressBar_Health->SetFillColorAndOpacity(FLinearColor(0.8f, 0.12f, 0.1f, 1.f));
 }
 
 float UHealthBarWidget::GetHealthRatio() const

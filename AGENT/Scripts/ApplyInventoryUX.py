@@ -65,3 +65,5 @@ for recipe in recipe_rows:
 unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(recipes, json.dumps(recipe_rows, ensure_ascii=False))
 unreal.EditorAssetLibrary.save_loaded_asset(recipes)
 print('Applied asymmetric gauge/tooltip slices and item/recipe copy:', len(rows), len(recipe_rows))
+from pathlib import Path
+exec((Path(unreal.Paths.project_dir()) / 'AGENT/Scripts/ApplyPopupPolish.py').read_text(encoding='utf-8-sig'), {})

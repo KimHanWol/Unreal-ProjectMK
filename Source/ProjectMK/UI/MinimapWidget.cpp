@@ -9,6 +9,8 @@
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
 #include "Components/VerticalBoxSlot.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
 #include "Engine/World.h"
 #include "GameFramework/PlayerController.h"
 #include "Rendering/DrawElementTypes.h"
@@ -58,73 +60,6 @@ void UMinimapWidget::NativeDestruct()
 	Super::NativeDestruct();
 }
 
-int32 UMinimapWidget::NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-	FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
-{
-	const int32 BaseLayer = Super::NativePaint(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled);
-	if (::IsValid(MapArea) == false || MapBounds.bIsValid == false)
-	{
-		return BaseLayer;
-	}
-	const FGeometry& MapGeometry = MapArea->GetPaintSpaceGeometry();
-	const FVector2D AreaSize = MapGeometry.GetLocalSize();
-	const FVector2D BoundsSize = MapBounds.GetSize();
-	if (AreaSize.X <= 8.f || AreaSize.Y <= 8.f || BoundsSize.X <= 0.f || BoundsSize.Y <= 0.f)
-	{
-		return BaseLayer;
-	}
-	const double Scale = FMath::Min((AreaSize.X - 8.f) / BoundsSize.X, (AreaSize.Y - 8.f) / BoundsSize.Y);
-	const FVector2D Origin = (AreaSize - BoundsSize * Scale) * 0.5f;
-	const FVector2D CellSize(FMath::Max(1.0, TileWorldSize * Scale));
-	static const FSlateColorBrush PixelBrush(FLinearColor::White);
-	const FLinearColor Tint = InWidgetStyle.GetColorAndOpacityTint();
-	OutDrawElements.PushClip(FSlateClippingZone(MapGeometry));
-	for (const FMinimapTile& Tile : Tiles)
-	{
-		const FVector2D Position = Origin + (Tile.Position - MapBounds.Min - FVector2D(TileWorldSize * 0.5f)) * Scale;
-		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 1,
-			MapGeometry.ToPaintGeometry(CellSize, FSlateLayoutTransform(Position)), &PixelBrush, ESlateDrawEffect::None, Tile.Color * Tint);
-	}
-	for (const FVector2D& ShopPosition : ShopPositions)
-	{
-		if (MapBounds.IsInside(ShopPosition) == false)
-		{
-			continue;
-		}
-		const FVector2D Position = Origin + (ShopPosition - MapBounds.Min) * Scale;
-		if (ShopMarkerBrush.GetResourceObject())
-		{
-			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
-				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
-				&ShopMarkerBrush, ESlateDrawEffect::None, Tint);
-			continue;
-		}
-		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
-			MapGeometry.ToPaintGeometry(FVector2D(6.f), FSlateLayoutTransform(Position - FVector2D(3.f))),
-			&PixelBrush, ESlateDrawEffect::None, FLinearColor(1.f, 0.7f, 0.16f) * Tint);
-	}
-	if (bHasPlayer && MapBounds.IsInside(PlayerPosition))
-	{
-		const FVector2D Position = Origin + (PlayerPosition - MapBounds.Min) * Scale;
-		if (PlayerMarkerBrush.GetResourceObject())
-		{
-			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 4,
-				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
-				&PlayerMarkerBrush, ESlateDrawEffect::None, Tint);
-			OutDrawElements.PopClip();
-			return BaseLayer + 4;
-		}
-		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 3,
-			MapGeometry.ToPaintGeometry(FVector2D(8.f), FSlateLayoutTransform(Position - FVector2D(4.f))),
-			&PixelBrush, ESlateDrawEffect::None, FLinearColor(0.01f, 0.04f, 0.06f) * Tint);
-		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 4,
-			MapGeometry.ToPaintGeometry(FVector2D(4.f), FSlateLayoutTransform(Position - FVector2D(2.f))),
-			&PixelBrush, ESlateDrawEffect::None, FLinearColor(0.2f, 1.f, 0.95f) * Tint);
-	}
-	OutDrawElements.PopClip();
-	return BaseLayer + 4;
-}
-
 void UMinimapWidget::UpdateWidget()
 {
 	UpdateMinimap();
@@ -134,28 +69,37 @@ void UMinimapWidget::BuildDefaultWidgetTree()
 {
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>();
 	WidgetTree->RootWidget = Canvas;
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MinimapFrame"));
-	Frame->SetBrushColor(FLinearColor(0.025f, 0.04f, 0.065f, 0.95f));
-	Frame->SetPadding(FMargin(FMKUILayout::SpaceM));
-	UCanvasPanelSlot* FrameSlot = Canvas->AddChildToCanvas(Frame);
+	USizeBox* Shell = WidgetTree->ConstructWidget<USizeBox>();
+	Shell->SetWidthOverride(MinimapSize.X + 12.f);
+	Shell->SetHeightOverride(MinimapSize.Y + 12.f);
+	UCanvasPanelSlot* FrameSlot = Canvas->AddChildToCanvas(Shell);
 	FrameSlot->SetAnchors(FAnchors(1.f, 0.f));
 	FrameSlot->SetAlignment(FVector2D(1.f, 0.f));
 	FrameSlot->SetPosition(ViewportOffset);
 	FrameSlot->SetAutoSize(true);
-	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
-	Frame->SetContent(Column);
+	UOverlay* Layers = WidgetTree->ConstructWidget<UOverlay>();
+	Shell->SetContent(Layers);
 	MapArea = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("MapArea"));
-	MapArea->SetWidthOverride(MinimapSize.X);
-	MapArea->SetHeightOverride(MinimapSize.Y);
-	Column->AddChildToVerticalBox(MapArea);
-	UBorder* MapBackground = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MapBackground"));
-	MapBackground->SetBrushColor(FLinearColor(0.008f, 0.015f, 0.025f, 1.f));
-	MapArea->SetContent(MapBackground);
+	UOverlaySlot* MapLayout = Layers->AddChildToOverlay(MapArea);
+	MapLayout->SetHorizontalAlignment(HAlign_Fill);
+	MapLayout->SetVerticalAlignment(VAlign_Fill);
+	MapLayout->SetPadding(FMargin(6.f));
+	TerrainWidget = CreateWidget<UMinimapTerrainWidget>(this);
+	TerrainWidget->SetMapOwner(this);
+	MapArea->SetContent(TerrainWidget);
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("MinimapFrame"));
+	Frame->SetPadding(FMargin(0.f));
+	UOverlaySlot* RimLayout = Layers->AddChildToOverlay(Frame);
+	RimLayout->SetHorizontalAlignment(HAlign_Fill);
+	RimLayout->SetVerticalAlignment(VAlign_Fill);
 	PositionText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("PositionText"));
-	ApplyTextRole(PositionText, EMKTextRole::Caption);
+	ApplyTextRole(PositionText, EMKTextRole::HUDMetric);
+	PositionText->SetColorAndOpacity(FSlateColor(FLinearColor(0.97f, 0.86f, 0.57f)));
 	PositionText->SetJustification(ETextJustify::Center);
-	Column->AddChildToVerticalBox(PositionText)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceXS));
-	Column->ShiftChild(0, PositionText);
+	UOverlaySlot* DepthLayout = Layers->AddChildToOverlay(PositionText);
+	DepthLayout->SetHorizontalAlignment(HAlign_Center);
+	DepthLayout->SetVerticalAlignment(VAlign_Top);
+	DepthLayout->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
 }
 
 void UMinimapWidget::UpdateMinimap()
@@ -172,6 +116,7 @@ void UMinimapWidget::UpdateMinimap()
 	MapBounds = FBox2D(ForceInit);
 	if (CalculateCameraBounds(MapBounds) == false)
 	{
+		if (::IsValid(TerrainWidget)) { TerrainWidget->InvalidateLayoutAndVolatility(); }
 		InvalidateLayoutAndVolatility();
 		return;
 	}
@@ -235,6 +180,7 @@ void UMinimapWidget::UpdateMinimap()
 			PositionText->SetText(FText::Format(NSLOCTEXT("Minimap", "Position", "{0}m"), DepthInMeters));
 		}
 	}
+	if (::IsValid(TerrainWidget)) { TerrainWidget->InvalidateLayoutAndVolatility(); }
 	InvalidateLayoutAndVolatility();
 }
 
@@ -283,4 +229,84 @@ bool UMinimapWidget::CalculateCameraBounds(FBox2D& OutBounds) const
 	}
 	OutBounds = FBox2D(CameraBounds.GetCenter() - Extent, CameraBounds.GetCenter() + Extent);
 	return true;
+}
+
+int32 UMinimapWidget::PaintTerrain(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+	FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+{
+	const int32 BaseLayer = LayerId;
+	if (::IsValid(MapArea) == false || MapBounds.bIsValid == false)
+	{
+		return BaseLayer;
+	}
+	const FGeometry& MapGeometry = AllottedGeometry;
+	const FVector2D AreaSize = MapGeometry.GetLocalSize();
+	const FVector2D BoundsSize = MapBounds.GetSize();
+	if (AreaSize.X <= 8.f || AreaSize.Y <= 8.f || BoundsSize.X <= 0.f || BoundsSize.Y <= 0.f)
+	{
+		return BaseLayer;
+	}
+	const double Scale = FMath::Max(AreaSize.X / BoundsSize.X, AreaSize.Y / BoundsSize.Y);
+	const FVector2D Origin = (AreaSize - BoundsSize * Scale) * 0.5f;
+	const FVector2D CellSize(FMath::Max(1.0, TileWorldSize * Scale));
+	static const FSlateColorBrush PixelBrush(FLinearColor::White);
+	const FLinearColor Tint = InWidgetStyle.GetColorAndOpacityTint();
+	OutDrawElements.PushClip(FSlateClippingZone(MapGeometry));
+	FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer,
+		MapGeometry.ToPaintGeometry(AreaSize, FSlateLayoutTransform()), &PixelBrush, ESlateDrawEffect::None, FLinearColor(0.008f, 0.015f, 0.025f) * Tint);
+	for (const FMinimapTile& Tile : Tiles)
+	{
+		const FVector2D Position = Origin + (Tile.Position - MapBounds.Min - FVector2D(TileWorldSize * 0.5f)) * Scale;
+		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 1,
+			MapGeometry.ToPaintGeometry(CellSize, FSlateLayoutTransform(Position)), &PixelBrush, ESlateDrawEffect::None, Tile.Color * Tint);
+	}
+	for (const FVector2D& ShopPosition : ShopPositions)
+	{
+		if (MapBounds.IsInside(ShopPosition) == false)
+		{
+			continue;
+		}
+		const FVector2D Position = Origin + (ShopPosition - MapBounds.Min) * Scale;
+		if (ShopMarkerBrush.GetResourceObject())
+		{
+			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
+				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
+				&ShopMarkerBrush, ESlateDrawEffect::None, Tint);
+			continue;
+		}
+		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 2,
+			MapGeometry.ToPaintGeometry(FVector2D(6.f), FSlateLayoutTransform(Position - FVector2D(3.f))),
+			&PixelBrush, ESlateDrawEffect::None, FLinearColor(1.f, 0.7f, 0.16f) * Tint);
+	}
+	if (bHasPlayer && MapBounds.IsInside(PlayerPosition))
+	{
+		const FVector2D Position = Origin + (PlayerPosition - MapBounds.Min) * Scale;
+		if (PlayerMarkerBrush.GetResourceObject())
+		{
+			FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 4,
+				MapGeometry.ToPaintGeometry(FVector2D(16.f), FSlateLayoutTransform(Position - FVector2D(8.f))),
+				&PlayerMarkerBrush, ESlateDrawEffect::None, Tint);
+			OutDrawElements.PopClip();
+			return BaseLayer + 4;
+		}
+		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 3,
+			MapGeometry.ToPaintGeometry(FVector2D(8.f), FSlateLayoutTransform(Position - FVector2D(4.f))),
+			&PixelBrush, ESlateDrawEffect::None, FLinearColor(0.01f, 0.04f, 0.06f) * Tint);
+		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 4,
+			MapGeometry.ToPaintGeometry(FVector2D(4.f), FSlateLayoutTransform(Position - FVector2D(2.f))),
+			&PixelBrush, ESlateDrawEffect::None, FLinearColor(0.2f, 1.f, 0.95f) * Tint);
+	}
+	OutDrawElements.PopClip();
+	return BaseLayer + 4;
+}
+
+int32 UMinimapTerrainWidget::NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+	FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const
+{
+	return MapOwner.IsValid() ? MapOwner->PaintTerrain(Args, AllottedGeometry, MyCullingRect, OutDrawElements, LayerId, InWidgetStyle, bParentEnabled) : LayerId;
+}
+
+void UMinimapTerrainWidget::SetMapOwner(UMinimapWidget* Map)
+{
+	MapOwner = Map;
 }

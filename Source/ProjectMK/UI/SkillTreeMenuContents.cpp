@@ -197,8 +197,6 @@ void USkillTreeMenuContents::BuildDefaultWidgetTree()
 
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>();
 	RootBorder->SetContent(RootBox);
-	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("SkillTreeMenu", "Title", "기술 설계도"), NAME_None))
-		->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceS));
 
 	SkillTreeViewportPanel = WidgetTree->ConstructWidget<UCanvasPanel>(UCanvasPanel::StaticClass(), TEXT("RuntimeSkillTreeViewport"));
 	SkillTreeViewportPanel->SetClipping(EWidgetClipping::ClipToBounds);

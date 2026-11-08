@@ -33,12 +33,15 @@ void UHUDWidget::NativeConstruct()
 
 	if (::IsValid(Tooltip))
 	{
+		Tooltip->RemoveFromParent();
+		Tooltip->AddToViewport(100);
 		Tooltip->HideTooltip();
 	}
 }
 
 void UHUDWidget::NativeDestruct()
 {
+	if (::IsValid(Tooltip)) { Tooltip->RemoveFromParent(); }
 	if (::IsValid(DropQuantityDialog))
 	{
 		DropQuantityDialog->OnQuantityConfirmed.RemoveAll(this);
@@ -242,6 +245,13 @@ void UHUDWidget::UpdateTooltipPosition()
 
 	TooltipPosition.X = FMath::Clamp(TooltipPosition.X, 0.f, FMath::Max(0.f, ViewportSize.X - TooltipSize.X));
 	TooltipPosition.Y = FMath::Clamp(TooltipPosition.Y, 0.f, FMath::Max(0.f, ViewportSize.Y - TooltipSize.Y));
+
+	if (Tooltip->IsInViewport())
+	{
+		Tooltip->SetDesiredSizeInViewport(TooltipSize);
+		Tooltip->SetPositionInViewport(TooltipPosition, false);
+		return;
+	}
 
 	if (UCanvasPanelSlot* TooltipSlot = Cast<UCanvasPanelSlot>(Tooltip->Slot))
 	{

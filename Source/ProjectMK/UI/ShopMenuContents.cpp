@@ -105,7 +105,6 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	PanelSlot->SetVerticalAlignment(VAlign_Fill);
 	UVerticalBox* Root = WidgetTree->ConstructWidget<UVerticalBox>();
 	Panel->SetContent(Root);
-	Root->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("Shop", "Title", "광산 보급소"), TEXT("ShopMarker")))->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
 	UHorizontalBox* Columns = WidgetTree->ConstructWidget<UHorizontalBox>();
 	Root->AddChildToVerticalBox(Columns)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	MerchantColumn = WidgetTree->ConstructWidget<UVerticalBox>();

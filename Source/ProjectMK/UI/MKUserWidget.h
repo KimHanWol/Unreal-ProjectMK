@@ -27,6 +27,7 @@ enum class EMKTextRole : uint8
 	SectionTitle,
 	WindowTitle,
 	Numeric,
+	HUDMetric,
 };
 
 struct FMKUILayout

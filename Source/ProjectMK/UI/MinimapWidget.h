@@ -6,6 +6,7 @@
 
 class USizeBox;
 class UTextBlock;
+class UMinimapTerrainWidget;
 
 UCLASS()
 class PROJECTMK_API UMinimapWidget : public UMKUserWidget
@@ -16,14 +17,15 @@ protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
 	virtual void NativeConstruct() override;
 	virtual void NativeDestruct() override;
-	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
-		FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
 	virtual void UpdateWidget() override;
 
 private:
+	friend class UMinimapTerrainWidget;
 	void BuildDefaultWidgetTree();
 	void UpdateMinimap();
 	bool CalculateCameraBounds(FBox2D& OutBounds) const;
+	int32 PaintTerrain(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+		FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const;
 
 protected:
 	UPROPERTY(EditDefaultsOnly, Category = "Minimap")
@@ -49,6 +51,8 @@ protected:
 
 private:
 	UPROPERTY(Transient)
+	TObjectPtr<UMinimapTerrainWidget> TerrainWidget;
+	UPROPERTY(Transient)
 	FSlateBrush PlayerMarkerBrush;
 
 	UPROPERTY(Transient)
@@ -67,4 +71,20 @@ private:
 	float TileWorldSize = 16.f;
 	bool bHasPlayer = false;
 	FTimerHandle MinimapTimerHandle;
+};
+
+UCLASS()
+class PROJECTMK_API UMinimapTerrainWidget : public UMKUserWidget
+{
+	GENERATED_BODY()
+
+protected:
+	virtual int32 NativePaint(const FPaintArgs& Args, const FGeometry& AllottedGeometry, const FSlateRect& MyCullingRect,
+		FSlateWindowElementList& OutDrawElements, int32 LayerId, const FWidgetStyle& InWidgetStyle, bool bParentEnabled) const override;
+
+public:
+	void SetMapOwner(UMinimapWidget* Map);
+
+private:
+	TWeakObjectPtr<UMinimapWidget> MapOwner;
 };

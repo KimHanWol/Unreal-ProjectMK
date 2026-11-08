@@ -88,7 +88,7 @@ void UOxygenBarWidget::UnbindEvents()
 void UOxygenBarWidget::BuildDefaultWidgetTree()
 {
 	UProgressBar* Bar = nullptr;
-	WidgetTree->RootWidget = BuildStatusGauge(Bar, TEXT("RuntimeOxygenBar"), TEXT("OxygenFrame"), NSLOCTEXT("HUD", "OxygenLabel", "O₂"), FLinearColor(0.08f, 0.65f, 0.82f));
+	WidgetTree->RootWidget = BuildStatusGauge(Bar, TEXT("RuntimeOxygenBar"), TEXT("OxygenFrame"), NSLOCTEXT("HUD", "OxygenLabel", "O2"), FLinearColor(0.08f, 0.65f, 0.82f));
 	ProgressBar_Oxygen = Bar;
 }
 
@@ -101,15 +101,10 @@ void UOxygenBarWidget::ApplyProgressBarStyle()
 
 	ProgressBar_Oxygen->PercentDelegate.Unbind();
 	ProgressBar_Oxygen->FillColorAndOpacityDelegate.Unbind();
-	FProgressBarStyle ProgressStyle;
-	ProgressStyle.SetBackgroundImage(FSlateColorBrush(FLinearColor(0.055f, 0.06f, 0.07f, 1.f)));
-	ProgressStyle.SetFillImage(FSlateColorBrush(FLinearColor::White));
-	ProgressBar_Oxygen->SetWidgetStyle(ProgressStyle);
 	ProgressBar_Oxygen->SetBarFillType(EProgressBarFillType::LeftToRight);
 	ProgressBar_Oxygen->SetBarFillStyle(EProgressBarFillStyle::Scale);
 	ProgressBar_Oxygen->SetIsMarquee(false);
 	ProgressBar_Oxygen->SetBorderPadding(FVector2D::ZeroVector);
-	ProgressBar_Oxygen->SetFillColorAndOpacity(FLinearColor(0.08f, 0.65f, 0.82f, 1.f));
 }
 
 float UOxygenBarWidget::GetOxygenRatio() const

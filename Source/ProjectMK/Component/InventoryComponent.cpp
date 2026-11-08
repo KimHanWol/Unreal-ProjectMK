@@ -22,11 +22,13 @@ namespace
 UInventoryComponent::UInventoryComponent()
 {
 	PrimaryComponentTick.bCanEverTick = true;
+	SetHiddenInGame(true);
 }
 
 void UInventoryComponent::BeginPlay()
 {
 	Super::BeginPlay();
+	SetHiddenInGame(true);
 
 	const UAttributeSet_Character* CharacterAttributeSet = GetCharacterAttributeSet();
 	if (::IsValid(CharacterAttributeSet) == false)

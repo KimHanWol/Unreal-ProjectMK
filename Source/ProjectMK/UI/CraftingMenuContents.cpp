@@ -102,7 +102,6 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 	WidgetTree->RootWidget = RootBorder;
 	UVerticalBox* RootBox = WidgetTree->ConstructWidget<UVerticalBox>();
 	RootBorder->SetContent(RootBox);
-	RootBox->AddChildToVerticalBox(BuildSectionHeader(NSLOCTEXT("CraftingMenu", "Title", "제작 작업대"), TEXT("Crafting")))->SetPadding(FMargin(FMKUILayout::SpaceS, 0.f, FMKUILayout::SpaceS, FMKUILayout::SpaceL));
 
 	StatusText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("StatusText"));
 	StatusText->SetVisibility(ESlateVisibility::Collapsed);
