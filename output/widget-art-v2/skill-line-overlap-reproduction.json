@@ -1,0 +1,95 @@
+﻿{
+  "magnet_prerequisites": [],
+  "overlaps": [
+    {
+      "root": {
+        "source": "Player",
+        "target": "Skill_Magnet_1",
+        "rect": [
+          798.0,
+          880,
+          42.0,
+          4
+        ]
+      },
+      "overlay": {
+        "source": "Player",
+        "target": "Skill_FlyingSpeed_1",
+        "rect": [
+          714.0,
+          880,
+          126.0,
+          4
+        ]
+      }
+    },
+    {
+      "root": {
+        "source": "Player",
+        "target": "Skill_Magnet_1",
+        "rect": [
+          798.0,
+          880,
+          42.0,
+          4
+        ]
+      },
+      "overlay": {
+        "source": "Player",
+        "target": "Skill_MoveSpeed_1",
+        "rect": [
+          630.0,
+          880,
+          210.0,
+          4
+        ]
+      }
+    },
+    {
+      "root": {
+        "source": "Player",
+        "target": "Skill_Magnet_1",
+        "rect": [
+          756,
+          880,
+          42.0,
+          4
+        ]
+      },
+      "overlay": {
+        "source": "Player",
+        "target": "Skill_FlyingSpeed_1",
+        "rect": [
+          714.0,
+          880,
+          126.0,
+          4
+        ]
+      }
+    },
+    {
+      "root": {
+        "source": "Player",
+        "target": "Skill_Magnet_1",
+        "rect": [
+          756,
+          880,
+          42.0,
+          4
+        ]
+      },
+      "overlay": {
+        "source": "Player",
+        "target": "Skill_MoveSpeed_1",
+        "rect": [
+          630.0,
+          880,
+          210.0,
+          4
+        ]
+      }
+    }
+  ],
+  "status": "Reproduced before fix: unpurchased movement/flying root routes overlay the learned magnet root rail.",
+  "correction": "Learned rails and arrows render above available and locked paths, below skill slots."
+}

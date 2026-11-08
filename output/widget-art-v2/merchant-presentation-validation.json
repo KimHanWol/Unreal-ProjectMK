@@ -1,0 +1,93 @@
+﻿{
+  "checked_at_kst": "2026-11-09",
+  "blueprint_item": {
+    "key": "Blueprint",
+    "icon": "/Game/Asset/WidgetArtV2/UI/S_Blueprint.S_Blueprint",
+    "texture": "/Game/Asset/WidgetArtV2/UI/T_Blueprint.T_Blueprint",
+    "reused_source": "Content/Asset/Texture/Items/item669.png",
+    "nearest_filter": true
+  },
+  "recipes": [
+    {
+      "key": "Recipe_1",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_1_ShortDescription\", \"제작 테스트용 광물\")"
+    },
+    {
+      "key": "Recipe_OxygenCapsule",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_OxygenCapsule_ShortDescription\", \"최대 산소의 40% 회복\")"
+    },
+    {
+      "key": "Recipe_RepairKit",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_RepairKit_ShortDescription\", \"체력 50 회복\")"
+    },
+    {
+      "key": "Recipe_RecallFlare",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_RecallFlare_ShortDescription\", \"준비 후 지상으로 귀환\")"
+    },
+    {
+      "key": "Recipe_SupportBeam",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_SupportBeam_ShortDescription\", \"빈 공간에 버팀목 설치\")"
+    },
+    {
+      "key": "Recipe_CushionGel",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_CushionGel_ShortDescription\", \"블록 낙하 충격 방지\")"
+    },
+    {
+      "key": "Recipe_BlastCharge",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_BlastCharge_ShortDescription\", \"주변 블록을 폭파\")"
+    },
+    {
+      "key": "Recipe_Insurance",
+      "blueprint_item_key": "Blueprint",
+      "short_description": "NSLOCTEXT(\"ShopRecipeDataTable [E5B523FD16AFA6D00186158F51D12856]\", \"Recipe_Insurance_ShortDescription\", \"사망 시 광물 손실 1회 방지\")"
+    }
+  ],
+  "hud_bars": {
+    "x": 168.0,
+    "y": 80.0,
+    "width": 260.0,
+    "height": 64.0,
+    "previous_y": 92,
+    "portrait_unchanged": true
+  },
+  "quickbar": {
+    "fixed_endcap_width": 28,
+    "content_padding_left": 32,
+    "content_padding_right": 32,
+    "slot_size": 64,
+    "inter_slot_padding": 4
+  },
+  "save_game": {
+    "gameplay_payload_unchanged": true,
+    "payload_sha256": "ffb2f56ee1f68b4f52adc20a413673e95ebe0d3e3d546e8a6796dc3ae345bdc2"
+  },
+  "automation_tests": [
+    {
+      "time_kst": "2026-11-09 01:06:45",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.DragSaleAndSkillHold"
+    },
+    {
+      "time_kst": "2026-11-09 01:06:48",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification"
+    }
+  ],
+  "build": {
+    "result": "Succeeded",
+    "seconds": 36.5
+  },
+  "screenshots": {
+    "hud": "Saved/AgentLogs/ui-20261109-010707.png",
+    "skill_tree": "Saved/AgentLogs/ui-20261109-010713.png",
+    "shop": "Saved/AgentLogs/ui-20261109-010926.png",
+    "crafting": "Saved/AgentLogs/ui-20261109-004101.png"
+  }
+}
