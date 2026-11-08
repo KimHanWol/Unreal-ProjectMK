@@ -3,6 +3,7 @@
 #include "Misc/AutomationTest.h"
 #include "AbilitySystemComponent.h"
 #include "Components/CapsuleComponent.h"
+#include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
@@ -15,6 +16,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Monster/MKMonster.h"
+#include "ProjectMK/Actor/Shop/ShopActor.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
@@ -550,6 +552,87 @@ namespace
 		double StartZ = 0.0;
 		bool bStarted = false;
 	};
+}
+
+namespace
+{
+	class FShopGroundDrillCommand : public IAutomationLatentCommand
+	{
+	public:
+		explicit FShopGroundDrillCommand(FAutomationTestBase* InTest) : Test(InTest), StartedAt(FPlatformTime::Seconds()) {}
+		virtual bool Update() override
+		{
+			if (Step == 0)
+			{
+				if (Fixture.Initialize() == false)
+				{
+					if (FPlatformTime::Seconds() - StartedAt < 15.0) { return false; }
+					Test->AddError(TEXT("Shop drilling fixture did not initialize."));
+					return true;
+				}
+				for (int32 X = -3; X <= 3; ++X)
+				{
+					ABlockBase* Block = Fixture.Place(X == 0 ? TEXT("Dirt") : TEXT("Rock"), X, 1);
+					if (X == 0) { Target = Block; }
+				}
+				Shop = Fixture.World->SpawnActor<AShopActor>(AShopActor::StaticClass(), Fixture.Origin, FRotator::ZeroRotator);
+				if (Shop.IsValid() == false || Target.IsValid() == false) { return Finish(); }
+				Shop->InitializeShop(FIntPoint(16, 16));
+				Fixture.Player->SetActorLocation(Fixture.Origin, false, nullptr, ETeleportType::TeleportPhysics);
+				Fixture.Player->GetCharacterMovement()->StopMovementImmediately();
+				InitialDurability = Target->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Block::GetDurabilityAttribute());
+				StartedAt = FPlatformTime::Seconds();
+				++Step;
+				return false;
+			}
+			if (Step == 1 && FPlatformTime::Seconds() - StartedAt > 0.5)
+			{
+				Test->TestTrue(TEXT("Standing inside the stall permits interaction"), Shop->CanInteract(Fixture.Player));
+				UBoxComponent* Box = Cast<UBoxComponent>(Shop->GetRootComponent());
+				Test->TestEqual(TEXT("Shop volume never blocks a drill trace"), Box->GetCollisionResponseToChannel(ECC_Visibility), ECR_Overlap);
+				Fixture.Player->GetController<APlayerController>()->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::S, IE_Pressed, 1.f));
+				StartedAt = FPlatformTime::Seconds();
+				++Step;
+				return false;
+			}
+			if (Step == 2 && FPlatformTime::Seconds() - StartedAt > 2.5)
+			{
+				const bool bDrilled = Target.IsValid() == false || Target->IsBreaking()
+					|| Target->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Block::GetDurabilityAttribute()) < InitialDurability;
+				Test->TestTrue(TEXT("Real downward drill input damages dirt inside the stall"), bDrilled);
+				Fixture.Player->SetActorLocation(Fixture.Origin + FVector(80.f, 0.f, 0.f), false, nullptr, ETeleportType::TeleportPhysics);
+				Test->TestFalse(TEXT("Outside the stall rejects interaction"), Shop->CanInteract(Fixture.Player));
+				return Finish();
+			}
+			return false;
+		}
+	private:
+		bool Finish()
+		{
+			Fixture.Player->GetController<APlayerController>()->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::S, IE_Released, 0.f));
+			if (Shop.IsValid()) { Shop->Destroy(); }
+			Fixture.Clear();
+			return true;
+		}
+		FAutomationTestBase* Test;
+		FGeometryFixture Fixture;
+		TWeakObjectPtr<AShopActor> Shop;
+		TWeakObjectPtr<ABlockBase> Target;
+		float InitialDurability = 0.f;
+		int32 Step = 0;
+		double StartedAt;
+	};
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FShopGroundDrillTest, "ProjectMK.PIE.Shop.GroundDrillingAndInteraction",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+
+bool FShopGroundDrillTest::RunTest(const FString& Parameters)
+{
+	ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+	ADD_LATENT_AUTOMATION_COMMAND(FShopGroundDrillCommand(this));
+	ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+	return true;
 }
 
 IMPLEMENT_SIMPLE_AUTOMATION_TEST(FMonsterSequentialDrillTest, "ProjectMK.PIE.Monster.SequentialSingleBlockDrilling",

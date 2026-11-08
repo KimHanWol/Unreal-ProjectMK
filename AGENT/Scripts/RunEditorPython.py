@@ -18,8 +18,11 @@ try:
     if not nodes:
         raise RuntimeError('ProjectMK editor Python connection is unavailable.')
     remote.open_command_connection(nodes[0]['node_id'])
-    script = pathlib.Path(sys.argv[1]).resolve()
-    result = remote.run_command(script.as_posix(), raise_on_failure=False)
+    if sys.argv[1] == '--command':
+        command = sys.argv[2]
+    else:
+        command = pathlib.Path(sys.argv[1]).resolve().as_posix()
+    result = remote.run_command(command, raise_on_failure=False)
     print(json.dumps(result, ensure_ascii=False))
     if not result['success']:
         sys.exit(1)
