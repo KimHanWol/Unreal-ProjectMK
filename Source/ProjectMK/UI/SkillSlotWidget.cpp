@@ -269,13 +269,18 @@ void USkillSlotWidget::UpdateEnabledState()
 
 	SetIsEnabled(true);
 	SetRenderOpacity(1.f);
+	if (UBorder* Frame = Cast<UBorder>(WidgetTree->FindWidget(TEXT("Slot"))))
+	{
+		Frame->SetBrushColor(bShouldEnable ? FLinearColor::White : FLinearColor(0.3f, 0.33f, 0.34f));
+	}
+	if (::IsValid(RankBorder)) { RankBorder->SetRenderOpacity(bShouldEnable ? 1.f : 0.4f); }
 	if (::IsValid(LockImage))
 	{
 		LockImage->SetVisibility(bShouldEnable ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	}
 	if (::IsValid(IconImage))
 	{
-		IconImage->SetColorAndOpacity(bIsPurchased ? FLinearColor(0.5f, 1.f, 0.8f) : (bShouldEnable ? FLinearColor::White : FLinearColor(0.4f, 0.4f, 0.4f)));
+		IconImage->SetColorAndOpacity(bIsPurchased ? FLinearColor(0.5f, 1.f, 0.8f) : (bShouldEnable ? FLinearColor::White : FLinearColor(0.22f, 0.25f, 0.27f)));
 	}
 }
 

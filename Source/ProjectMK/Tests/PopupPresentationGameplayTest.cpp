@@ -4,6 +4,8 @@
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/ScrollBox.h"
+#include "Components/Image.h"
+#include "Components/Border.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Tests/AutomationEditorCommon.h"
@@ -19,6 +21,7 @@
 #include "ProjectMK/UI/MKTooltipBase.h"
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
+#include "ProjectMK/UI/SkillTreeMenuContents.h"
 #include "Widgets/SWidget.h"
 
 namespace
@@ -122,6 +125,44 @@ namespace
 					const FName Key = KeyProperty->GetPropertyValue_InContainer(Node);
 					const FSkillDataTableRow* Row = UDataManager::Get(World)->GetSkillDataTableRow(Key);
 					Test->TestTrue(TEXT("Only purchasable skills have tree nodes"), Row != nullptr && Row->AcquisitionType == ESkillAcquisitionType::SkillTree);
+				}
+				TArray<UUserWidget*> Trees;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, Trees, USkillTreeMenuContents::StaticClass(), false);
+				Trees.RemoveAll([](UUserWidget* Tree) { return Tree->GetVisibility() == ESlateVisibility::Collapsed || Tree->GetVisibility() == ESlateVisibility::Hidden; });
+				if (Test->TestFalse(TEXT("Skill tree exists"), Trees.IsEmpty()))
+				{
+					USkillTreeMenuContents* Tree = CastChecked<USkillTreeMenuContents>(Trees[0]);
+					const FArrayProperty* ConnectionsProperty = FindFProperty<FArrayProperty>(USkillTreeMenuContents::StaticClass(), TEXT("Connections"));
+					const TArray<FSkillConnectionVisual>& Connections = *ConnectionsProperty->ContainerPtrToValuePtr<TArray<FSkillConnectionVisual>>(Tree);
+					FName PurchaseKey;
+					int32 RootConnections = 0;
+					for (const FSkillConnectionVisual& Connection : Connections)
+					{
+						if (Player->GetSkillComponent()->HasPurchasedSkill(Connection.TargetSkillKey))
+						{
+							const UImage* Arrow = Cast<UImage>(Connection.Elements[0]);
+							Test->TestTrue(TEXT("Opening the visible tree reflects previously loaded purchases"), Arrow != nullptr && Arrow->GetColorAndOpacity().G > Arrow->GetColorAndOpacity().R * 2.f);
+						}
+						const FSkillDataTableRow* Row = UDataManager::Get(World)->GetSkillDataTableRow(Connection.TargetSkillKey);
+						if (Row != nullptr && Row->RequiredSkill.IsEmpty())
+						{
+							++RootConnections;
+							Test->TestTrue(TEXT("Each root skill has visible segments from the central character"), Connection.Elements.Num() >= 2);
+							if (Player->GetSkillComponent()->HasPurchasedSkill(Connection.TargetSkillKey) == false) { PurchaseKey = Connection.TargetSkillKey; }
+						}
+					}
+					Test->TestTrue(TEXT("The central character connects to first skills"), RootConnections > 0);
+					if (PurchaseKey.IsNone() == false)
+					{
+						Player->GetSkillComponent()->TryAddCoin(UDataManager::Get(World)->GetSkillDataTableRow(PurchaseKey)->Price, false);
+						Test->TestTrue(TEXT("Root fixture purchase succeeds"), Player->GetSkillComponent()->TryPurchaseSkill(PurchaseKey));
+						for (const FSkillConnectionVisual& Connection : Connections)
+						{
+							if (Connection.TargetSkillKey != PurchaseKey) { continue; }
+							UImage* Arrow = Cast<UImage>(Connection.Elements[0]);
+							Test->TestTrue(TEXT("Purchase immediately recolors the existing connection teal"), Arrow != nullptr && Arrow->GetColorAndOpacity().G > Arrow->GetColorAndOpacity().R * 2.f);
+						}
+					}
 				}
 				Menu->CloseMenu();
 				return true;

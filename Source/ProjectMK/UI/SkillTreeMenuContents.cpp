@@ -15,6 +15,7 @@
 #include "Input/Reply.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
+#include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 
 namespace
@@ -151,6 +152,23 @@ FReply USkillTreeMenuContents::NativeOnMouseWheel(const FGeometry& InGeometry, c
 	return Super::NativeOnMouseWheel(InGeometry, InMouseEvent);
 }
 
+void USkillTreeMenuContents::BindEvents()
+{
+	Super::BindEvents();
+	OnVisibilityChanged.AddUniqueDynamic(this, &USkillTreeMenuContents::OnMenuVisibilityChanged);
+	if (USkillComponent* Skills = GetLocalSkillComponent())
+	{
+		Skills->OnSkillPurchasedDelegate.AddUObject(this, &USkillTreeMenuContents::OnSkillPurchased);
+	}
+}
+
+void USkillTreeMenuContents::UnbindEvents()
+{
+	OnVisibilityChanged.RemoveDynamic(this, &USkillTreeMenuContents::OnMenuVisibilityChanged);
+	if (USkillComponent* Skills = GetLocalSkillComponent()) { Skills->OnSkillPurchasedDelegate.RemoveAll(this); }
+	Super::UnbindEvents();
+}
+
 bool USkillTreeMenuContents::BeginSkillTreeDrag(const FVector2D& ScreenSpacePosition)
 {
 	UCanvasPanelSlot* CanvasPanelSlot = ::IsValid(SkillTreeCanvasPanel) ? Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot) : nullptr;
@@ -218,6 +236,7 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	}
 
 	SkillTreeCanvasPanel->ClearChildren();
+	Connections.Reset();
 	TArray<FName> SkillKeys = DataManager->GetSkillRowNames();
 	SkillKeys.RemoveAll([DataManager](const FName SkillKey)
 	{
@@ -255,6 +274,8 @@ void USkillTreeMenuContents::RefreshSkillTree()
 			SkillTreePadding + ((GridPosition.Y - MinimumGrid.Y) * SkillGridStepY)));
 	}
 
+	const FVector2D PlayerNodePosition(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX,
+		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY);
 	for (const FName& SkillKey : SkillKeys)
 	{
 		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
@@ -263,14 +284,16 @@ void USkillTreeMenuContents::RefreshSkillTree()
 		{
 			continue;
 		}
+		if (SkillData->RequiredSkill.IsEmpty()) { AddSkillConnection(PlayerNodePosition, *TargetPosition, SkillKey); }
 		for (const FName& RequiredSkillKey : SkillData->RequiredSkill)
 		{
 			if (const FVector2D* RequiredPosition = NodePositions.Find(RequiredSkillKey))
 			{
-				AddSkillConnection(*RequiredPosition, *TargetPosition);
+				AddSkillConnection(*RequiredPosition, *TargetPosition, SkillKey);
 			}
 		}
 	}
+	UpdateConnectionStates();
 
 	for (const FName& SkillKey : SkillKeys)
 	{
@@ -300,14 +323,17 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	SkillTreeCanvasPanel->SetRenderScale(FVector2D(CurrentZoomScale));
 }
 
-void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition)
+void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName TargetSkillKey)
 {
+	FSkillConnectionVisual& Connection = Connections.AddDefaulted_GetRef();
+	Connection.TargetSkillKey = TargetSkillKey;
 	const FVector2D ConnectionDirection = ToPosition - FromPosition;
 	const bool bHorizontal = FMath::Abs(ConnectionDirection.X) >= FMath::Abs(ConnectionDirection.Y);
 	const FVector2D Axis = bHorizontal
 		? (FMath::IsNearlyZero(ConnectionDirection.Y) ? FVector2D(FMath::Sign(ConnectionDirection.X), 0.f) : FVector2D(0.f, FMath::Sign(ConnectionDirection.Y)))
 		: (FMath::IsNearlyZero(ConnectionDirection.X) ? FVector2D(0.f, FMath::Sign(ConnectionDirection.Y)) : FVector2D(FMath::Sign(ConnectionDirection.X), 0.f));
 	UImage* Arrow = WidgetTree->ConstructWidget<UImage>();
+	Connection.Elements.Add(Arrow);
 	const UDataManager* Data = UDataManager::Get(this);
 	const UVisualStyleDataAsset* Style = ::IsValid(Data) ? Data->GetVisualStyleDataAsset() : nullptr;
 	if (::IsValid(Style))
@@ -357,11 +383,35 @@ void USkillTreeMenuContents::AddConnectionSegment(const FVector2D& Position, con
 		return;
 	}
 	UBorder* Segment = WidgetTree->ConstructWidget<UBorder>();
+	Connections.Last().Elements.Add(Segment);
 	Segment->SetPadding(FMargin(0.f));
-	Segment->SetBrushColor(FLinearColor(0.75f, 0.48f, 0.18f, 0.9f));
+	Segment->SetVisibility(ESlateVisibility::HitTestInvisible);
 	UCanvasPanelSlot* SegmentSlot = SkillTreeCanvasPanel->AddChildToCanvas(Segment);
 	SegmentSlot->SetPosition(Position);
 	SegmentSlot->SetSize(Size);
+}
+
+void USkillTreeMenuContents::UpdateConnectionStates()
+{
+	const USkillComponent* Skills = GetLocalSkillComponent();
+	const UDataManager* Data = UDataManager::Get(this);
+	if (::IsValid(Skills) == false || ::IsValid(Data) == false) { return; }
+	for (const FSkillConnectionVisual& Connection : Connections)
+	{
+		const FSkillDataTableRow* Target = Data->GetSkillDataTableRow(Connection.TargetSkillKey);
+		bool bAvailable = Target != nullptr;
+		if (Target != nullptr)
+		{
+			for (FName Required : Target->RequiredSkill) { bAvailable &= Skills->HasPurchasedSkill(Required); }
+		}
+		const FLinearColor Color = Skills->HasPurchasedSkill(Connection.TargetSkillKey) ? FLinearColor(0.35f, 0.9f, 0.68f)
+			: (bAvailable ? FLinearColor(0.75f, 0.48f, 0.18f) : FLinearColor(0.22f, 0.22f, 0.18f));
+		for (UWidget* Element : Connection.Elements)
+		{
+			if (UBorder* Segment = Cast<UBorder>(Element)) { Segment->SetBrushColor(Color); }
+			if (UImage* Arrow = Cast<UImage>(Element)) { Arrow->SetColorAndOpacity(Color); }
+		}
+	}
 }
 
 bool USkillTreeMenuContents::UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, const float WheelDelta)
@@ -489,4 +539,14 @@ FVector2D USkillTreeMenuContents::CalculateClampedCanvasPosition(const FVector2D
 	);
 
 	return TargetPosition + (ClampedContentPosition - TargetContentPosition);
+}
+
+void USkillTreeMenuContents::OnSkillPurchased(FName SkillKey)
+{
+	UpdateConnectionStates();
+}
+
+void USkillTreeMenuContents::OnMenuVisibilityChanged(ESlateVisibility InVisibility)
+{
+	if (InVisibility != ESlateVisibility::Collapsed && InVisibility != ESlateVisibility::Hidden) { UpdateConnectionStates(); }
 }
