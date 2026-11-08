@@ -49,7 +49,6 @@ private:
 	void BuildDefaultWidgetTree();
 	void RefreshSkillTree();
 	void AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName TargetSkillKey);
-	void AddConnectionSegment(const FVector2D& Position, const FVector2D& Size);
 	void UpdateConnectionStates();
 	bool UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, float WheelDelta);
 	float CalculateMinimumZoomScale() const;

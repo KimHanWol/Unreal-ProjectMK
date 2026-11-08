@@ -6,6 +6,7 @@
 #include "Components/ScrollBox.h"
 #include "Components/Image.h"
 #include "Components/Border.h"
+#include "Components/CanvasPanelSlot.h"
 #include "Components/TextBlock.h"
 #include "Engine/World.h"
 #include "Tests/AutomationEditorCommon.h"
@@ -22,6 +23,7 @@
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 #include "ProjectMK/UI/SkillTreeMenuContents.h"
+#include "ProjectMK/UI/SkillConnectionWidget.h"
 #include "Widgets/SWidget.h"
 
 namespace
@@ -136,12 +138,25 @@ namespace
 					const TArray<FSkillConnectionVisual>& Connections = *ConnectionsProperty->ContainerPtrToValuePtr<TArray<FSkillConnectionVisual>>(Tree);
 					FName PurchaseKey;
 					int32 RootConnections = 0;
+					int32 HighestUnpurchasedLineLayer = 0;
 					for (const FSkillConnectionVisual& Connection : Connections)
 					{
+						if (Player->GetSkillComponent()->HasPurchasedSkill(Connection.TargetSkillKey) == false)
+						{
+							HighestUnpurchasedLineLayer = FMath::Max(HighestUnpurchasedLineLayer, CastChecked<UCanvasPanelSlot>(Connection.Elements[1]->Slot)->GetZOrder());
+						}
+					}
+					for (const FSkillConnectionVisual& Connection : Connections)
+					{
+						const USkillConnectionWidget* Rail = Cast<USkillConnectionWidget>(Connection.Elements[1]);
+						const UImage* DirectionArrow = Cast<UImage>(Connection.Elements[0]);
+						Test->TestTrue(TEXT("Each connection shares the reusable beveled rail widget"), Rail != nullptr);
+						Test->TestTrue(TEXT("Rail and arrow always use the same state color"), Rail != nullptr && DirectionArrow != nullptr && Rail->GetLineColor().Equals(DirectionArrow->GetColorAndOpacity()));
 						if (Player->GetSkillComponent()->HasPurchasedSkill(Connection.TargetSkillKey))
 						{
 							const UImage* Arrow = Cast<UImage>(Connection.Elements[0]);
 							Test->TestTrue(TEXT("Opening the visible tree reflects previously loaded purchases"), Arrow != nullptr && Arrow->GetColorAndOpacity().G > Arrow->GetColorAndOpacity().R * 2.f);
+							Test->TestTrue(TEXT("Purchased trunks render above overlapping unpurchased paths"), CastChecked<UCanvasPanelSlot>(Connection.Elements[1]->Slot)->GetZOrder() > HighestUnpurchasedLineLayer);
 						}
 						const FSkillDataTableRow* Row = UDataManager::Get(World)->GetSkillDataTableRow(Connection.TargetSkillKey);
 						if (Row != nullptr && Row->RequiredSkill.IsEmpty())
@@ -161,6 +176,8 @@ namespace
 							if (Connection.TargetSkillKey != PurchaseKey) { continue; }
 							UImage* Arrow = Cast<UImage>(Connection.Elements[0]);
 							Test->TestTrue(TEXT("Purchase immediately recolors the existing connection teal"), Arrow != nullptr && Arrow->GetColorAndOpacity().G > Arrow->GetColorAndOpacity().R * 2.f);
+							const USkillConnectionWidget* Rail = CastChecked<USkillConnectionWidget>(Connection.Elements[1]);
+							Test->TestTrue(TEXT("Purchase recolors and promotes the whole rail above shared trunks"), Rail->GetLineColor().Equals(Arrow->GetColorAndOpacity()) && CastChecked<UCanvasPanelSlot>(Rail->Slot)->GetZOrder() > HighestUnpurchasedLineLayer);
 						}
 					}
 				}

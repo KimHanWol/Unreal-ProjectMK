@@ -17,12 +17,12 @@
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
+#include "ProjectMK/UI/SkillConnectionWidget.h"
 
 namespace
 {
 	constexpr float SkillNodeSize = 84.f;
 	constexpr float SkillTreePadding = 40.f;
-	constexpr float SkillConnectionThickness = 4.f;
 	constexpr float SkillGridStepX = 84.f;
 	constexpr float SkillGridStepY = 84.f;
 
@@ -306,7 +306,7 @@ void USkillTreeMenuContents::RefreshSkillTree()
 		UCanvasPanelSlot* NodeSlot = SkillTreeCanvasPanel->AddChildToCanvas(SkillNode);
 		NodeSlot->SetPosition(*NodePosition);
 		NodeSlot->SetSize(FVector2D(SkillNodeSize, SkillNodeSize));
-		NodeSlot->SetZOrder(2);
+		NodeSlot->SetZOrder(10);
 		SkillNode->InitializeSkill(SkillKey);
 	}
 
@@ -316,7 +316,7 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	PlayerSlot->SetPosition(FVector2D(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX + SkillNodeSize * 0.5f - 60.f,
 		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY + SkillNodeSize * 0.5f - 84.f));
 	PlayerSlot->SetSize(FVector2D(120.f, 168.f));
-	PlayerSlot->SetZOrder(2);
+	PlayerSlot->SetZOrder(10);
 	CentralPlayerPosition = PlayerSlot->GetPosition() + FVector2D(60.f, 84.f);
 	bNeedsCentering = true;
 	CurrentZoomScale = 0.85f;
@@ -325,13 +325,54 @@ void USkillTreeMenuContents::RefreshSkillTree()
 
 void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName TargetSkillKey)
 {
+	const FVector2D FromCenter = FromPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D ToCenter = ToPosition + FVector2D(SkillNodeSize * 0.5f);
+	const FVector2D Delta = ToCenter - FromCenter;
+	TArray<FVector2D> Points;
+	if (FMath::Abs(Delta.X) >= FMath::Abs(Delta.Y))
+	{
+		const float Direction = FMath::Sign(Delta.X);
+		const FVector2D Start(FromCenter.X + Direction * SkillNodeSize * 0.5f, FromCenter.Y);
+		const FVector2D End(ToCenter.X - Direction * SkillNodeSize * 0.5f, ToCenter.Y);
+		const float MiddleX = (Start.X + End.X) * 0.5f;
+		Points = { Start, FVector2D(MiddleX, Start.Y), FVector2D(MiddleX, End.Y), End };
+	}
+	else
+	{
+		const float Direction = FMath::Sign(Delta.Y);
+		const FVector2D Start(FromCenter.X, FromCenter.Y + Direction * SkillNodeSize * 0.5f);
+		const FVector2D End(ToCenter.X, ToCenter.Y - Direction * SkillNodeSize * 0.5f);
+		const float MiddleY = (Start.Y + End.Y) * 0.5f;
+		Points = { Start, FVector2D(Start.X, MiddleY), FVector2D(End.X, MiddleY), End };
+	}
+	for (int32 Index = Points.Num() - 1; Index > 0; --Index)
+	{
+		if (Points[Index].Equals(Points[Index - 1])) { Points.RemoveAt(Index); }
+	}
+	if (Points.Num() < 2) { return; }
+	FBox2D Bounds(ForceInit);
+	float PathLength = 0.f;
+	for (int32 Index = 0; Index < Points.Num(); ++Index)
+	{
+		Bounds += Points[Index];
+		if (Index > 0) { PathLength += FVector2D::Distance(Points[Index - 1], Points[Index]); }
+	}
+	FVector2D ArrowPosition = Points[0];
+	FVector2D ArrowDirection = FVector2D(1.f, 0.f);
+	float Remaining = PathLength * 0.5f;
+	for (int32 Index = 1; Index < Points.Num(); ++Index)
+	{
+		const FVector2D Segment = Points[Index] - Points[Index - 1];
+		if (Remaining <= Segment.Size())
+		{
+			ArrowDirection = Segment.GetSafeNormal();
+			ArrowPosition = Points[Index - 1] + ArrowDirection * Remaining;
+			break;
+		}
+		Remaining -= Segment.Size();
+	}
 	FSkillConnectionVisual& Connection = Connections.AddDefaulted_GetRef();
 	Connection.TargetSkillKey = TargetSkillKey;
-	const FVector2D ConnectionDirection = ToPosition - FromPosition;
-	const bool bHorizontal = FMath::Abs(ConnectionDirection.X) >= FMath::Abs(ConnectionDirection.Y);
-	const FVector2D Axis = bHorizontal
-		? (FMath::IsNearlyZero(ConnectionDirection.Y) ? FVector2D(FMath::Sign(ConnectionDirection.X), 0.f) : FVector2D(0.f, FMath::Sign(ConnectionDirection.Y)))
-		: (FMath::IsNearlyZero(ConnectionDirection.X) ? FVector2D(0.f, FMath::Sign(ConnectionDirection.Y)) : FVector2D(FMath::Sign(ConnectionDirection.X), 0.f));
 	UImage* Arrow = WidgetTree->ConstructWidget<UImage>();
 	Connection.Elements.Add(Arrow);
 	const UDataManager* Data = UDataManager::Get(this);
@@ -341,54 +382,18 @@ void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, c
 		if (const FSlateBrush* Brush = Style->Brushes.Find(TEXT("ArrowRight"))) { Arrow->SetBrush(*Brush); }
 	}
 	Arrow->SetVisibility(ESlateVisibility::HitTestInvisible);
-	Arrow->SetRenderTransformAngle(FMath::RadiansToDegrees(FMath::Atan2(Axis.Y, Axis.X)));
+	Arrow->SetRenderTransformAngle(FMath::RadiansToDegrees(FMath::Atan2(ArrowDirection.Y, ArrowDirection.X)));
 	UCanvasPanelSlot* ArrowSlot = SkillTreeCanvasPanel->AddChildToCanvas(Arrow);
-	ArrowSlot->SetSize(FVector2D(20.f));
-	ArrowSlot->SetPosition((FromPosition + ToPosition) * 0.5f + FVector2D(SkillNodeSize * 0.5f) - FVector2D(10.f));
-	ArrowSlot->SetZOrder(1);
-	const FVector2D FromCenter = FromPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D ToCenter = ToPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D Delta = ToCenter - FromCenter;
-	if (FMath::Abs(Delta.X) >= FMath::Abs(Delta.Y))
-	{
-		const float Direction = FMath::Sign(Delta.X);
-		const FVector2D Start(FromCenter.X + (Direction * SkillNodeSize * 0.5f), FromCenter.Y);
-		const FVector2D End(ToCenter.X - (Direction * SkillNodeSize * 0.5f), ToCenter.Y);
-		const float MiddleX = (Start.X + End.X) * 0.5f;
-		AddConnectionSegment(FVector2D(FMath::Min(Start.X, MiddleX), Start.Y - (SkillConnectionThickness * 0.5f)),
-			FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(MiddleX - Start.X)), SkillConnectionThickness));
-		AddConnectionSegment(FVector2D(MiddleX - (SkillConnectionThickness * 0.5f), FMath::Min(Start.Y, End.Y)),
-			FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(End.Y - Start.Y))));
-		AddConnectionSegment(FVector2D(FMath::Min(MiddleX, End.X), End.Y - (SkillConnectionThickness * 0.5f)),
-			FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(End.X - MiddleX)), SkillConnectionThickness));
-		return;
-	}
-
-	const float Direction = FMath::Sign(Delta.Y);
-	const FVector2D Start(FromCenter.X, FromCenter.Y + (Direction * SkillNodeSize * 0.5f));
-	const FVector2D End(ToCenter.X, ToCenter.Y - (Direction * SkillNodeSize * 0.5f));
-	const float MiddleY = (Start.Y + End.Y) * 0.5f;
-	AddConnectionSegment(FVector2D(Start.X - (SkillConnectionThickness * 0.5f), FMath::Min(Start.Y, MiddleY)),
-		FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(MiddleY - Start.Y))));
-	AddConnectionSegment(FVector2D(FMath::Min(Start.X, End.X), MiddleY - (SkillConnectionThickness * 0.5f)),
-		FVector2D(FMath::Max(SkillConnectionThickness, FMath::Abs(End.X - Start.X)), SkillConnectionThickness));
-	AddConnectionSegment(FVector2D(End.X - (SkillConnectionThickness * 0.5f), FMath::Min(MiddleY, End.Y)),
-		FVector2D(SkillConnectionThickness, FMath::Max(SkillConnectionThickness, FMath::Abs(End.Y - MiddleY))));
-}
-
-void USkillTreeMenuContents::AddConnectionSegment(const FVector2D& Position, const FVector2D& Size)
-{
-	if (Size.X <= SkillConnectionThickness && Size.Y <= SkillConnectionThickness)
-	{
-		return;
-	}
-	UBorder* Segment = WidgetTree->ConstructWidget<UBorder>();
-	Connections.Last().Elements.Add(Segment);
-	Segment->SetPadding(FMargin(0.f));
-	Segment->SetVisibility(ESlateVisibility::HitTestInvisible);
-	UCanvasPanelSlot* SegmentSlot = SkillTreeCanvasPanel->AddChildToCanvas(Segment);
-	SegmentSlot->SetPosition(Position);
-	SegmentSlot->SetSize(Size);
+	ArrowSlot->SetSize(FVector2D(24.f));
+	ArrowSlot->SetPosition(ArrowPosition - FVector2D(12.f));
+	USkillConnectionWidget* Rail = CreateWidget<USkillConnectionWidget>(this);
+	Connection.Elements.Add(Rail);
+	const FVector2D Origin = Bounds.Min - FVector2D(8.f);
+	for (FVector2D& Point : Points) { Point -= Origin; }
+	Rail->InitializePath(Points);
+	UCanvasPanelSlot* RailSlot = SkillTreeCanvasPanel->AddChildToCanvas(Rail);
+	RailSlot->SetPosition(Origin);
+	RailSlot->SetSize(Bounds.GetSize() + FVector2D(16.f));
 }
 
 void USkillTreeMenuContents::UpdateConnectionStates()
@@ -404,12 +409,23 @@ void USkillTreeMenuContents::UpdateConnectionStates()
 		{
 			for (FName Required : Target->RequiredSkill) { bAvailable &= Skills->HasPurchasedSkill(Required); }
 		}
-		const FLinearColor Color = Skills->HasPurchasedSkill(Connection.TargetSkillKey) ? FLinearColor(0.35f, 0.9f, 0.68f)
+		const bool bPurchased = Skills->HasPurchasedSkill(Connection.TargetSkillKey);
+		const FLinearColor Color = bPurchased ? FLinearColor(0.35f, 0.9f, 0.68f)
 			: (bAvailable ? FLinearColor(0.75f, 0.48f, 0.18f) : FLinearColor(0.22f, 0.22f, 0.18f));
+		const int32 LineLayer = bPurchased ? 6 : (bAvailable ? 4 : 2);
 		for (UWidget* Element : Connection.Elements)
 		{
-			if (UBorder* Segment = Cast<UBorder>(Element)) { Segment->SetBrushColor(Color); }
-			if (UImage* Arrow = Cast<UImage>(Element)) { Arrow->SetColorAndOpacity(Color); }
+			UCanvasPanelSlot* Layout = CastChecked<UCanvasPanelSlot>(Element->Slot);
+			if (USkillConnectionWidget* Rail = Cast<USkillConnectionWidget>(Element))
+			{
+				Rail->SetLineColor(Color);
+				Layout->SetZOrder(LineLayer);
+			}
+			if (UImage* Arrow = Cast<UImage>(Element))
+			{
+				Arrow->SetColorAndOpacity(Color);
+				Layout->SetZOrder(LineLayer + 1);
+			}
 		}
 	}
 }
