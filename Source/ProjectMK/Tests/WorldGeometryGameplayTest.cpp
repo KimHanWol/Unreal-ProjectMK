@@ -690,4 +690,51 @@ bool FMonsterContactKnockbackTest::RunTest(const FString& Parameters)
 	return true;
 }
 
+namespace
+{
+	class FHeadSupportCommand : public IAutomationLatentCommand
+	{
+	public:
+		explicit FHeadSupportCommand(FAutomationTestBase* InTest) : Test(InTest), Started(FPlatformTime::Seconds()) {}
+		virtual bool Update() override
+		{
+			FGeometryFixture Fixture;
+			if (Fixture.Initialize() == false) { return FPlatformTime::Seconds() - Started > 15.0; }
+			ABlockBase* Block = Fixture.Place(TEXT("Dirt"), 0, 0);
+			if (Test->TestNotNull(TEXT("Head support fixture block exists"), Block) == false) { return true; }
+			Fixture.Player->GetCharacterMovement()->DisableMovement();
+			Fixture.Player->SetActorLocation(Fixture.Origin - FVector(0.f, 0.f, 48.f), false, nullptr, ETeleportType::TeleportPhysics);
+			FFallingBlockGroupData Group;
+			FFallingVerticalBlocksData Column;
+			Column.BottomBlock = Block;
+			Column.FallingBlocks.Add(Block);
+			Column.BlockOriginPositionMap.Add(Block, Block->GetActorLocation());
+			Group.FallingBlockMap.Add(UMKBlueprintFunctionLibrary::GetBlockPosition(Block).X, Column);
+			for (int32 Index = 0; Index < 120 && Group.IsFallingFinished() == false; ++Index) { Group.Tick_FallBlocks(0.02f); }
+			Test->TestTrue(TEXT("A head contact finishes the fall instead of pausing it"), Group.IsFallingFinished());
+			Test->TestTrue(TEXT("Head landing preserves the contact position"), Group.FallingBlockMap.FindChecked(UMKBlueprintFunctionLibrary::GetBlockPosition(Block).X).bLandedOnCharacter);
+			const FVector Contact = Block->GetActorLocation();
+			Fixture.Player->AddActorWorldOffset(FVector(64.f, 0.f, 0.f));
+			Group.Tick_FallBlocks(1.f);
+			Test->TestTrue(TEXT("The block stays at head height after the character leaves"), Block->GetActorLocation().Equals(Contact, 0.01f));
+			Fixture.Player->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+			Fixture.Clear();
+			return true;
+		}
+	private:
+		FAutomationTestBase* Test;
+		double Started;
+	};
+}
+
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FFallingHeadSupportTest, "ProjectMK.PIE.World.FallingBlockStaysAtHeadContact",
+	EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FFallingHeadSupportTest::RunTest(const FString& Parameters)
+{
+	ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));
+	ADD_LATENT_AUTOMATION_COMMAND(FHeadSupportCommand(this));
+	ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand());
+	return true;
+}
+
 #endif

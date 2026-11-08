@@ -18,6 +18,9 @@ public:
 	static void PlayVisualEffect(UObject* WorldContextObject, FName EffectName, const FVector& Location, float Scale = 1.f);
 
 	UFUNCTION()
+	static TArray<FString> GetBlockRowNames();
+
+	UFUNCTION()
 	static TArray<FString> GetItemRowNames();
 
 	UFUNCTION()

@@ -33,7 +33,7 @@
 
 ABlockBase::ABlockBase()
 {
-	PrimaryActorTick.bCanEverTick = true;
+	PrimaryActorTick.bCanEverTick = false;
 
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	RootComponent = BoxCollision;
@@ -62,6 +62,7 @@ ABlockBase::ABlockBase()
 	DestroyFlipbookComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DestroyFlipbookComponent->SetLooping(false);
 	DestroyFlipbookComponent->SetVisibility(false);
+	DestroyFlipbookComponent->PrimaryComponentTick.bStartWithTickEnabled = false;
 	DestroyFlipbookComponent->SetTranslucentSortPriority(2);
 
 	DamageFlipbookComponent = CreateDefaultSubobject<UPaperFlipbookComponent>(TEXT("DamageFlipbook"));
@@ -70,6 +71,7 @@ ABlockBase::ABlockBase()
 	DamageFlipbookComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	DamageFlipbookComponent->SetLooping(false);
 	DamageFlipbookComponent->SetVisibility(false);
+	DamageFlipbookComponent->PrimaryComponentTick.bStartWithTickEnabled = false;
 	DamageFlipbookComponent->SetTranslucentSortPriority(2);
 
 	static ConstructorHelpers::FObjectFinder<UMaterialInterface> TranslucentSpriteMaterialFinder(TEXT("/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial"));
@@ -202,6 +204,13 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 	}
 
 	BlockTileData = InBlockTileData;
+	// Paper2D must cache its first frame before a previously hidden render proxy is created.
+	DestroyFlipbookComponent->Stop();
+	DamageFlipbookComponent->Stop();
+	DestroyFlipbookComponent->TickComponent(0.f, LEVELTICK_All, nullptr);
+	DamageFlipbookComponent->TickComponent(0.f, LEVELTICK_All, nullptr);
+	DestroyFlipbookComponent->SetComponentTickEnabled(false);
+	DamageFlipbookComponent->SetComponentTickEnabled(false);
 
 	const FBlockDataTableRow* BlockDataTableRow = DataManager->GetBlockDataTableRow(BlockTileData.TileSetIndex);
 	if (BlockDataTableRow == nullptr)
@@ -672,6 +681,7 @@ void ABlockBase::PlayDestroyFlipbook()
 	DestroyFlipbookComponent->OnFinishedPlaying.AddDynamic(this, &ABlockBase::OnDestroyFlipbookFinished);
 	DestroyFlipbookComponent->SetLooping(false);
 	DestroyFlipbookComponent->SetVisibility(true);
+	DestroyFlipbookComponent->SetComponentTickEnabled(true);
 	DestroyFlipbookComponent->PlayFromStart();
 }
 

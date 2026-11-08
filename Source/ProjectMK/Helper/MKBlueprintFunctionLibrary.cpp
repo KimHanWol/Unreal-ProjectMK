@@ -15,6 +15,7 @@
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataTable/CharacterDataTableRow.h"
+#include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/Data/DataTable/ItemDataTableRow.h"
 #include "ProjectMK/Data/DataTable/MonsterDataTableRow.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
@@ -108,6 +109,13 @@ void UMKBlueprintFunctionLibrary::PlayVisualEffect(UObject* WorldContextObject, 
 		Actor->SetLifeSpan((*Effect)->GetTotalDuration() + 0.05f);
 		Component->PlayFromStart();
 	}
+}
+
+TArray<FString> UMKBlueprintFunctionLibrary::GetBlockRowNames()
+{
+	TSet<FName> Names;
+	CollectDataTableRowNames(GetDataTableAssets(), TEXT("BlockDataTableRow"), FBlockDataTableRow::StaticStruct(), Names);
+	return ConvertRowNamesToStrings(Names);
 }
 
 TArray<FString> UMKBlueprintFunctionLibrary::GetItemRowNames()

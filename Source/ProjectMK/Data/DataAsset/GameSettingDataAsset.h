@@ -7,11 +7,59 @@
 
 #include "GameSettingDataAsset.generated.h"
 
+USTRUCT(BlueprintType)
+struct FMineDepthLayer
+{
+	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetBlockRowNames"))
+	FName BlockKey = TEXT("Dirt");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
+	int32 StartDepth = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "0"))
+	int32 TransitionDepth = 12;
+};
+
 /** 절차형 채굴 지형 생성 조정값 */
 USTRUCT(BlueprintType)
 struct FMineableLevelGenerationSettings
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World Size", meta = (ClampMin = "16", ClampMax = "512"))
+	int32 WidthInBlocks = 128;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World Size", meta = (ClampMin = "16", ClampMax = "512"))
+	int32 DepthInBlocks = 128;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World Size")
+	int32 StartColumn = 0;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World Size", meta = (ClampMin = "1", ClampMax = "16"))
+	int32 OuterRockThickness = 4;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World Size")
+	int32 ShopColumn = 70;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Depth Layers")
+	TArray<FMineDepthLayer> DepthLayers;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Depth Layers", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetBlockRowNames"))
+	FName SurfaceBlockKey = TEXT("Dirt_Grass");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose")
+	bool bGenerateOrePuzzles = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose")
+	bool bGenerateShortcuts = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose")
+	bool bGenerateCombatTraps = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetMonsterRowNames"))
+	FName StructureMonsterRowKey = TEXT("DrillCrawler");
 
 	/** 전체 채굴 영역에서 비워 둘 블록 비율 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "General", meta = (ClampMin = "0.0", ClampMax = "1.0"))
@@ -61,17 +109,6 @@ struct FMineableLevelGenerationSettings
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
 	TArray<FBlockSpawnableItemData> StructureRewardItemDataList;
 
-	/** 몬스터 방 생성 확률 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster Room", meta = (ClampMin = "0.0", ClampMax = "1.0"))
-	float MonsterRoomGenerationChance = 0.35f;
-
-	/** 몬스터 방 너비의 최소·최대 타일 수 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster Room")
-	FInt32Interval MonsterRoomWidthRange = FInt32Interval(6, 10);
-
-	/** 몬스터 방 높이 타일 수 */
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Monster Room", meta = (ClampMin = "1"))
-	int32 MonsterRoomHeight = 3;
 };
 
 UCLASS(BlueprintType)
@@ -112,6 +149,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block", meta = (ClampMin = "0.0"))
 	float MaximumFallingBlockImpactPower = 1200.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block", meta = (ClampMin = "0.0"))
+	float FallingBlockMonsterDamageScale = 2.f;
+
 	/** 낙하 블록이 멈춰 있는 블록에 부딪혔을 때 충격 대미지를 전달하는 비율. [0] 직접 맞은 블록, [1] 그 아래, [2] 그 아래 ... 채굴 불가 블록을 만나면 전달을 멈춘다 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Block")
 	TArray<float> FallingBlockImpactPropagationRatios = { 0.7f, 0.35f, 0.15f };
@@ -143,6 +183,15 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.0"))
 	float WorldItemBlinkDuration = 10.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "0.1"))
+	float OxygenPickupFlightDuration = 0.85f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "0.0"))
+	float OxygenPickupArcHeight = 64.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "1.0"))
+	float OxygenPickupDisplaySize = 18.f;
 
 	/** 강제 지정된 캐릭터 시각 방향 반전 여부 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character")

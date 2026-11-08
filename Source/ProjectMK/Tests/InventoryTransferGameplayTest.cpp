@@ -26,6 +26,7 @@ namespace
 
 		virtual bool Update() override
 		{
+			if (Step > 0 && FPlatformTime::Seconds() - Started > 30.0) { Test->AddError(TEXT("World drop fixture timed out.")); return Finish(); }
 			if (Step == 0)
 			{
 				UWorld* World = GEditor->PlayWorld;
@@ -101,6 +102,7 @@ namespace
 				BlinkItem->SetLifeSpan(1.4f);
 				++Step;
 				Started = FPlatformTime::Seconds();
+				GameStarted = World->GetTimeSeconds();
 				return false;
 			}
 			if (BlinkItem.IsValid())
@@ -141,7 +143,10 @@ namespace
 		}
 
 	private:
-		double Elapsed() const { return FPlatformTime::Seconds() - Started; }
+		double Elapsed() const
+		{
+			return Step > 0 && Player.IsValid() ? Player->GetWorld()->GetTimeSeconds() - GameStarted : FPlatformTime::Seconds() - Started;
+		}
 		bool Finish()
 		{
 			if (DroppedItem.IsValid()) { DroppedItem->Destroy(); }
@@ -170,6 +175,7 @@ namespace
 		bool bSawHiddenBlink = false;
 		int32 Step = 0;
 		double Started;
+		double GameStarted = 0.0;
 	};
 }
 

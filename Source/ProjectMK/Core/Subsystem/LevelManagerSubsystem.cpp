@@ -4,19 +4,18 @@
 
 #include "AbilitySystemComponent.h"
 #include "EngineUtils.h"
-#include "PaperTileLayer.h"
-#include "PaperTileMap.h"
 #include "PaperTileMapActor.h"
-#include "PaperTileMapComponent.h"
-#include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Actor/Monster/MKMonster.h"
+#include "Kismet/GameplayStatics.h"
 #include "ProjectMK/Actor/Shop/ShopActor.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Block.h"
+#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Core/MKSaveGame.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
@@ -98,7 +97,9 @@ namespace
 			const bool bIsBlockInFallingColumn =
 				::IsValid(HitBlock) &&
 				UMKBlueprintFunctionLibrary::GetBlockPosition(HitBlock).X == FallingBlockPositionX;
-			AMKCharacter* HitCharacter = Cast<AMKCharacter>(HitActor);
+			ACharacter* HitCharacter = Cast<ACharacter>(HitActor);
+			const AMKMonster* HitMonster = Cast<AMKMonster>(HitActor);
+			if (::IsValid(HitMonster) && HitMonster->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCurrentHealthAttribute()) <= 0.f) { continue; }
 			const bool bIsCharacterCapsule =
 				::IsValid(HitCharacter) &&
 				SweepHitResult.GetComponent() == HitCharacter->GetCapsuleComponent();
@@ -1389,13 +1390,11 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 		const FVector MoveVector(0.f, 0.f, -VerticalBlockData.FallingVelocity * DeltaTime);
 		FVector RemainingMoveVector = MoveVector;
 		bool bShouldFinishFalling = false;
-		bool bShouldPauseFalling = false;
 		// 낙하 블록 파괴와 부딪힌 블록 파괴가 한 프레임에 여러 번 일어날 수 있다.
 		const int32 MaximumCollisionIterationCount = (VerticalBlockData.FallingBlocks.Num() * 2) + 4;
 		int32 CollisionIterationCount = 0;
 		while (RemainingMoveVector.Z < -KINDA_SMALL_NUMBER &&
-			bShouldFinishFalling == false &&
-			bShouldPauseFalling == false)
+			bShouldFinishFalling == false)
 		{
 			if (CollisionIterationCount >= MaximumCollisionIterationCount)
 			{
@@ -1461,6 +1460,18 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 			{
 				// 완충 젤 위로 떨어진 블록은 충격 없이 착지해 드롭을 유지한다.
 				bShouldFinishFalling = true;
+			}
+			else if (AMKMonster* Monster = Cast<AMKMonster>(HitActor))
+			{
+				const UGameSettingDataAsset* Settings = UDataManager::Get(BottomBlock.Get())->GetGameSettingDataAsset();
+				const float Scale = ::IsValid(Settings) ? Settings->FallingBlockMonsterDamageScale : 2.f;
+				const float Damage = FMath::Max(1.f, CalculateFallingBlockImpactDamage(BottomBlock.Get(), VerticalBlockData.FallingVelocity)) * Scale;
+				FGameplayAbilityUtils::ApplyDamage(Monster->GetAbilitySystemComponent(), nullptr, Damage);
+				if (Monster->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCurrentHealthAttribute()) > 0.f)
+				{
+					VerticalBlockData.bLandedOnCharacter = true;
+					bShouldFinishFalling = true;
+				}
 			}
 			else if (::IsValid(HitBlock))
 			{
@@ -1537,7 +1548,8 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 
 				VerticalBlockData.FallingVelocity = 0.f;
 				VerticalBlockData.FallenDistance = 0.f;
-				bShouldPauseFalling = true;
+				VerticalBlockData.bLandedOnCharacter = true;
+				bShouldFinishFalling = true;
 			}
 
 			++CollisionIterationCount;
@@ -1695,18 +1707,19 @@ bool FFallingBlockGroupData::TryDestroyFallingBlockOnImpact(
 void ULevelManagerSubsystem::OnWorldBeginPlay(UWorld& InWorld)
 {
 	Super::OnWorldBeginPlay(InWorld);
-
-	LoadTileMap();
-	if (TileMapActor.IsValid())
+	// Older maps may still spawn a foreground tile-map actor. It is hidden, never read for terrain generation.
+	for (TActorIterator<APaperTileMapActor> It(GetWorld()); It; ++It)
 	{
-		CaptureOriginalTileTemplates(UDataManager::Get(this), TileMapActor->GetRenderComponent());
+		if (It->ActorHasTag(TEXT("ArtBackground")) == false) { It->SetActorHiddenInGame(true); It->SetActorEnableCollision(false); }
 	}
-	GenerateTileActors();
+	GenerateWorldBlocks();
 }
 
 void ULevelManagerSubsystem::Tick(float DeltaTime)
 {
 	Super::Tick(DeltaTime);
+	VisibilityUpdateTime += DeltaTime;
+	if (VisibilityUpdateTime >= 0.25f) { VisibilityUpdateTime = 0.f; UpdateBlockVisibility(); }
 	ProcessPendingCollapseBlocks();
 	ApplyPendingBlockSounds();
 
@@ -1729,7 +1742,7 @@ void ULevelManagerSubsystem::Tick(float DeltaTime)
 					PendingLandedBlockCount += LandedBlock.IsValid() ? 1 : 0;
 				}
 
-				SnapBlocks(VerticalBlockData.FallingBlocks);
+				SnapBlocks(VerticalBlockData.FallingBlocks, VerticalBlockData.bLandedOnCharacter);
 				It.RemoveCurrent();
 				continue;
 			}
@@ -1758,30 +1771,7 @@ TStatId ULevelManagerSubsystem::GetStatId() const
 	RETURN_QUICK_DECLARE_CYCLE_STAT(UMyWorldSubsystem, STATGROUP_Tickables);
 }
 
-void ULevelManagerSubsystem::LoadTileMap()
-{
-	if (TileMapActor.IsValid() == false)
-	{
-		for (TActorIterator<APaperTileMapActor> It(GetWorld()); It; ++It)
-		{
-			APaperTileMapActor* InTileMapActor = *It;
-			if (InTileMapActor->ActorHasTag(TEXT("ArtBackground")))
-			{
-				continue;
-			}
-			TileMapActor = InTileMapActor;
-			break;
-		}
-	}
-
-	if (TileMapActor.IsValid() == false)
-	{
-		ensureMsgf(false, TEXT("Can't load tile map : Can't find tile map in recent level."));
-		return;
-	}
-}
-
-void ULevelManagerSubsystem::GenerateTileActors()
+void ULevelManagerSubsystem::GenerateWorldBlocks()
 {
 	const USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
 	const UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
@@ -1790,34 +1780,12 @@ void ULevelManagerSubsystem::GenerateTileActors()
 
 void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 {
-	if (TileMapActor.IsValid() == false)
-	{
-		LoadTileMap();
-		if (TileMapActor.IsValid() == false)
-		{
-			return;
-		}
-	}
-
-	UPaperTileMapComponent* TileMapComp = TileMapActor->GetRenderComponent();
-	if (::IsValid(TileMapComp) == false)
-	{
-		return;
-	}
-
-	UPaperTileMap* TileMap = TileMapComp->TileMap;
-	if (::IsValid(TileMap) == false)
-	{
-		return;
-	}
-
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
 	{
 		return;
 	}
 
-	CaptureOriginalTileTemplates(DataManager, TileMapComp);
 
 	const FBlockDataTableRow* RockBlockData = DataManager->GetBlockDataTableRow(FName(TEXT("Rock")));
 	if (RockBlockData == nullptr)
@@ -1842,6 +1810,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 
 	LastGenerationSeed = GenerationSeed == INDEX_NONE ? FMath::Rand() : GenerationSeed;
 	FRandomStream RandomStream(LastGenerationSeed);
+	BuildTerrainLayout(DataManager, GenerationSettings, LastGenerationSeed);
 
 	const FBlockDataTableRow* SandBlockData = DataManager->GetBlockDataTableRow(FName(TEXT("Sand")));
 	const int32 SandTileIndex = SandBlockData != nullptr ? SandBlockData->TileIndex : INDEX_NONE;
@@ -1861,11 +1830,11 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	ClearGeneratedBlocks();
 
 	TArray<FIntPoint> FixedTileCoordinates;
-	OriginalFixedTileTemplate.GenerateKeyArray(FixedTileCoordinates);
+	BoundaryTerrainLayout.GenerateKeyArray(FixedTileCoordinates);
 	SortTileCoordinates(FixedTileCoordinates);
 	for (const FIntPoint& TileCoordinate : FixedTileCoordinates)
 	{
-		SpawnTileActor(TileCoordinate, OriginalFixedTileTemplate[TileCoordinate], TileMapComp, BlockClass);
+		SpawnTileActor(TileCoordinate, BoundaryTerrainLayout[TileCoordinate], BlockClass);
 	}
 
 	TArray<FIntPoint> GeneratedTileCoordinates;
@@ -1874,7 +1843,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	for (const FIntPoint& TileCoordinate : GeneratedTileCoordinates)
 	{
 		const int32 TileIndex = GeneratedMineableTiles[TileCoordinate];
-		ABlockBase* SpawnedBlock = SpawnTileActor(TileCoordinate, TileIndex, TileMapComp, BlockClass);
+		ABlockBase* SpawnedBlock = SpawnTileActor(TileCoordinate, TileIndex, BlockClass);
 		if (::IsValid(SpawnedBlock) == false || TileIndex == RockBlockData->TileIndex)
 		{
 			continue;
@@ -1912,30 +1881,17 @@ void ULevelManagerSubsystem::SetBlockDebugNumbersEnabled(bool bEnabled)
 
 int32 ULevelManagerSubsystem::GetTileSize()
 {
-	if (TileMapActor.IsValid() == false)
-	{
-		return 0;
-	}
-
-	UPaperTileMapComponent* TileMapComp = TileMapActor->GetRenderComponent();
-	if (::IsValid(TileMapComp) == false)
-	{
-		return 0;
-	}
-
-	UPaperTileMap* TileMap = TileMapComp->TileMap;
-	if (::IsValid(TileMap) == false)
-	{
-		return 0;
-	}
-
-	//가로 세로 동일하다고 가정
-	return TileMap->TileWidth;
+	return static_cast<int32>(BLOCK_SIZE);
 }
 
 const TArray<TObjectPtr<ABlockBase>>& ULevelManagerSubsystem::GetBlocks() const
 {
 	return BlockList;
+}
+
+const TArray<FGeneratedMineStructure>& ULevelManagerSubsystem::GetGeneratedStructures() const
+{
+	return GeneratedStructures;
 }
 
 ABlockBase* ULevelManagerSubsystem::GetBlockAtPosition(const FVector2D& BlockPosition) const
@@ -1965,55 +1921,80 @@ ABlockBase* ULevelManagerSubsystem::GetBlockBelowWorldLocation(const FVector& Wo
 		return nullptr;
 	}
 
-	const float TileHeight = TileMapActor->GetRenderComponent()->TileMap->TileHeight;
+	const float TileHeight = BLOCK_SIZE;
 	return GetBlockAtWorldLocation(TileCenterWorldLocation - FVector(0.f, 0.f, TileHeight));
 }
 
-void ULevelManagerSubsystem::CaptureOriginalTileTemplates(UDataManager* DataManager, UPaperTileMapComponent* TileMapComponent)
+void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed)
 {
-	if (bOriginalTileTemplatesCaptured || ::IsValid(DataManager) == false || ::IsValid(TileMapComponent) == false)
+	BaseTerrainLayout.Reset();
+	BoundaryTerrainLayout.Reset();
+	const UGameSettingDataAsset* GameSettings = DataManager->GetGameSettingDataAsset();
+	const int32 Surface = ::IsValid(GameSettings) ? GameSettings->SurfaceBlockPositionY : 0;
+	const int32 Width = FMath::Clamp(Settings.WidthInBlocks, 16, 512);
+	const int32 Depth = FMath::Clamp(Settings.DepthInBlocks, 16, 512);
+	const int32 Edge = FMath::Clamp(Settings.OuterRockThickness, 1, 16);
+	const FBlockDataTableRow* Dirt = DataManager->GetBlockDataTableRow(TEXT("Dirt"));
+	const FBlockDataTableRow* Grass = DataManager->GetBlockDataTableRow(Settings.SurfaceBlockKey);
+	const FBlockDataTableRow* Rock = DataManager->GetBlockDataTableRow(TEXT("Rock"));
+	const FBlockDataTableRow* Shop = DataManager->GetBlockDataTableRow(TEXT("Shop"));
+	if (Dirt == nullptr || Rock == nullptr) { return; }
+	TArray<FMineDepthLayer> Layers = Settings.DepthLayers;
+	Layers.RemoveAll([DataManager](const FMineDepthLayer& Layer) { return DataManager->GetBlockDataTableRow(Layer.BlockKey) == nullptr; });
+	Layers.StableSort([](const FMineDepthLayer& A, const FMineDepthLayer& B) { return A.StartDepth < B.StartDepth; });
+	for (int32 Y = Surface - 24; Y < Surface + Depth + Edge; ++Y)
 	{
-		return;
-	}
-
-	UPaperTileMap* TileMap = TileMapComponent->TileMap;
-	if (::IsValid(TileMap) == false)
-	{
-		return;
-	}
-
-	OriginalFixedTileTemplate.Reset();
-	OriginalMineableTileTemplate.Reset();
-
-	for (int32 Y = 0; Y < TileMap->MapHeight; ++Y)
-	{
-		for (int32 X = 0; X < TileMap->MapWidth; ++X)
+		for (int32 X = Settings.StartColumn - Edge; X < Settings.StartColumn + Width + Edge; ++X)
 		{
-			const FPaperTileInfo TileInfo = TileMapComponent->GetTile(X, Y, 0);
-			if (TileInfo.TileSet == nullptr)
+			const FIntPoint Cell(X, Y);
+			if (X < Settings.StartColumn || X >= Settings.StartColumn + Width || Y >= Surface + Depth)
 			{
+				BoundaryTerrainLayout.Add(Cell, Rock->TileIndex);
 				continue;
 			}
-
-			const int32 TileIndex = TileInfo.PackedTileIndex & 0xFFFF;
-			const FIntPoint TileCoordinate(X, Y);
-			const FBlockDataTableRow* BlockData = DataManager->GetBlockDataTableRow(TileIndex);
-			if (BlockData != nullptr && BlockData->bIsMineable)
+			if (Y < Surface) { continue; }
+			int32 TileIndex = Dirt->TileIndex;
+			FRandomStream CellRandom(HashCombine(HashCombine(GetTypeHash(X / 2), GetTypeHash((Y - Surface) / 2)), GetTypeHash(Seed)));
+			const float Sample = CellRandom.FRand();
+			for (const FMineDepthLayer& Layer : Layers)
 			{
-				OriginalMineableTileTemplate.Add(TileCoordinate, TileIndex);
+				const float Blend = FMath::Max(0, Layer.TransitionDepth);
+				const float Boundary = Layer.StartDepth + FMath::PerlinNoise1D(X * 0.075f + (Seed & 65535) * 0.001f) * Blend * 0.3f;
+				const float Alpha = Blend <= 0.f ? (Y - Surface >= Layer.StartDepth ? 1.f : 0.f)
+					: FMath::Clamp((Y - Surface - Boundary + Blend * 0.5f) / Blend, 0.f, 1.f);
+				if (Sample <= FMath::SmoothStep(0.f, 1.f, Alpha)) { TileIndex = DataManager->GetBlockDataTableRow(Layer.BlockKey)->TileIndex; }
 			}
-			else
-			{
-				OriginalFixedTileTemplate.Add(TileCoordinate, TileIndex);
-			}
+			BaseTerrainLayout.Add(Cell, Y == Surface && Grass != nullptr ? Grass->TileIndex : TileIndex);
 		}
 	}
+	if (Shop != nullptr)
+	{
+		const int32 Column = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, Settings.StartColumn + Width - 5);
+		BoundaryTerrainLayout.Add(FIntPoint(Column, Surface - 1), Shop->TileIndex);
+	}
+}
 
-	bOriginalTileTemplatesCaptured = true;
+void ULevelManagerSubsystem::UpdateBlockVisibility()
+{
+	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
+	if (::IsValid(Player) == false) { return; }
+	const FVector2D Position = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Player->GetActorLocation());
+	const FIntPoint Cell(FMath::RoundToInt(Position.X), FMath::RoundToInt(Position.Y));
+	if (FMath::Abs(Cell.X - LastVisibilityCell.X) < 4 && FMath::Abs(Cell.Y - LastVisibilityCell.Y) < 4) { return; }
+	LastVisibilityCell = Cell;
+	for (ABlockBase* Block : BlockList)
+	{
+		if (::IsValid(Block) == false) { continue; }
+		const FVector2D BlockCell = UMKBlueprintFunctionLibrary::GetBlockPosition(Block);
+		const bool bNear = FMath::Abs(BlockCell.X - Cell.X) <= 42 && FMath::Abs(BlockCell.Y - Cell.Y) <= 32;
+		Block->SetActorHiddenInGame(bNear == false || Block->GetTileIndex() == ShopTileIndex);
+	}
 }
 
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
+	for (const TWeakObjectPtr<AMKMonster>& Monster : GeneratedMonsters) { if (Monster.IsValid()) { Monster->Destroy(); } }
+	GeneratedMonsters.Reset();
 	for (ABlockBase* Block : BlockList)
 	{
 		if (::IsValid(Block))
@@ -2056,9 +2037,9 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	int32 SandTileIndex,
 	TMap<FIntPoint, int32>& OutGeneratedMineableTiles,
 	TMap<FIntPoint, TPair<FName, int32>>& OutRewardTiles,
-	TMap<FIntPoint, float>& OutPreDamageTiles) const
+	TMap<FIntPoint, float>& OutPreDamageTiles)
 {
-	OutGeneratedMineableTiles = OriginalMineableTileTemplate;
+	OutGeneratedMineableTiles = BaseTerrainLayout;
 	OutRewardTiles.Reset();
 	OutPreDamageTiles.Reset();
 	if (OutGeneratedMineableTiles.IsEmpty())
@@ -2067,7 +2048,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	}
 
 	TArray<FIntPoint> TemplateCoordinates;
-	OriginalMineableTileTemplate.GenerateKeyArray(TemplateCoordinates);
+	BaseTerrainLayout.GenerateKeyArray(TemplateCoordinates);
 	SortTileCoordinates(TemplateCoordinates);
 
 	TSet<FIntPoint> ReservedCoordinates;
@@ -2076,58 +2057,11 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	TSet<FIntPoint> RewardCoordinates;
 
 	const int32 MaxPlacementAttempts = PlacementAttemptLimit;
-	if (RandomStream.FRand() <= FMath::Clamp(GenerationSettings.MonsterRoomGenerationChance, 0.f, 1.f))
+	GeneratedStructures.Reset();
+	const int32 SurfaceY = TemplateCoordinates[0].Y;
+	for (const FIntPoint& Cell : TemplateCoordinates)
 	{
-		for (int32 Attempt = 0; Attempt < MaxPlacementAttempts; ++Attempt)
-		{
-			const FIntPoint CenterCoordinate = TemplateCoordinates[RandomStream.RandRange(0, TemplateCoordinates.Num() - 1)];
-			const int32 MinRoomWidth = FMath::Max(1, GenerationSettings.MonsterRoomWidthRange.Min);
-			const int32 MaxRoomWidth = FMath::Max(MinRoomWidth, GenerationSettings.MonsterRoomWidthRange.Max);
-			const int32 RoomWidth = RandomStream.RandRange(MinRoomWidth, MaxRoomWidth);
-			const int32 RoomHeight = FMath::Max(1, GenerationSettings.MonsterRoomHeight);
-			const int32 MinX = CenterCoordinate.X - RoomWidth / 2;
-			const int32 MinY = CenterCoordinate.Y - RoomHeight / 2;
-			const int32 MaxX = MinX + RoomWidth - 1;
-			const int32 MaxY = MinY + RoomHeight - 1;
-
-			bool bCanCreateRoom = true;
-			for (int32 Y = MinY; bCanCreateRoom && Y <= MaxY + 1; ++Y)
-			{
-				for (int32 X = MinX; X <= MaxX; ++X)
-				{
-					const FIntPoint TileCoordinate(X, Y);
-					if (OriginalMineableTileTemplate.Contains(TileCoordinate) == false || ReservedCoordinates.Contains(TileCoordinate))
-					{
-						bCanCreateRoom = false;
-						break;
-					}
-				}
-			}
-
-			if (bCanCreateRoom == false)
-			{
-				continue;
-			}
-
-			for (int32 Y = MinY; Y <= MaxY; ++Y)
-			{
-				for (int32 X = MinX; X <= MaxX; ++X)
-				{
-					const FIntPoint TileCoordinate(X, Y);
-					OutGeneratedMineableTiles.Remove(TileCoordinate);
-					EmptyCoordinates.Add(TileCoordinate);
-					ReservedCoordinates.Add(TileCoordinate);
-				}
-			}
-
-			for (int32 X = MinX; X <= MaxX; ++X)
-			{
-				const FIntPoint FloorCoordinate(X, MaxY + 1);
-				OutGeneratedMineableTiles.Add(FloorCoordinate, RockTileIndex);
-				ReservedCoordinates.Add(FloorCoordinate);
-			}
-			break;
-		}
+		if (Cell.Y < SurfaceY + 2) { ReservedCoordinates.Add(Cell); }
 	}
 
 	// 다양성을 우선한다. 모든 종류를 한 번씩 시도한 뒤, 다음 회차는 적게 배치된 종류부터 시도한다.
@@ -2154,10 +2088,11 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 		{
 			for (int32 PatternIndex = 0; PatternIndex < static_cast<int32>(EFallingPatternType::Count); ++PatternIndex)
 			{
-				if (ExhaustedPatterns[PatternIndex] == false)
-				{
-					PatternBag.Add(static_cast<EFallingPatternType>(PatternIndex));
-				}
+				const EFallingPatternType Pattern = static_cast<EFallingPatternType>(PatternIndex);
+				const bool bEnabled = (Pattern == EFallingPatternType::OreVault && GenerationSettings.bGenerateOrePuzzles)
+					|| (Pattern == EFallingPatternType::HarvestSlab && GenerationSettings.bGenerateShortcuts)
+					|| (Pattern == EFallingPatternType::BaitTrap && GenerationSettings.bGenerateCombatTraps);
+				if (bEnabled && ExhaustedPatterns[PatternIndex] == false) { PatternBag.Add(Pattern); }
 			}
 			if (PatternBag.IsEmpty())
 			{
@@ -2360,9 +2295,40 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 				continue;
 			}
 
+			if (PatternStamp.RewardCells.IsEmpty())
+			{
+				TArray<FIntPoint> Candidates = PatternStamp.BodyCells.Array();
+				SortTileCoordinates(Candidates);
+				if (Candidates.IsEmpty()) { continue; }
+				PatternStamp.RewardCells.Add(Candidates[Candidates.Num() / 2]);
+			}
+			FGeneratedMineStructure Encounter;
+			Encounter.Purpose = PatternType == EFallingPatternType::BaitTrap ? EMineStructurePurpose::CombatTrap
+				: (PatternType == EFallingPatternType::HarvestSlab ? EMineStructurePurpose::Shortcut : EMineStructurePurpose::OrePuzzle);
+			Encounter.RewardCells = PatternStamp.RewardCells.Array();
+			SortTileCoordinates(Encounter.RewardCells);
+			Encounter.GoalCell = Encounter.RewardCells[0];
+			TArray<FIntPoint> EmptyCells = PatternStamp.RequiredEmptyCells.Array();
+			EmptyCells.Sort([CenterCoordinate](const FIntPoint& A, const FIntPoint& B)
+			{
+				const int32 AScore = FMath::Abs(A.X - CenterCoordinate.X), BScore = FMath::Abs(B.X - CenterCoordinate.X);
+				return AScore != BScore ? AScore < BScore : A.Y > B.Y;
+			});
+			for (const FIntPoint& Cell : EmptyCells)
+			{
+				if (PatternStamp.RockAnchorCells.Contains(Cell + FIntPoint(0, 1)) && PatternStamp.RequiredEmptyCells.Contains(Cell - FIntPoint(0, 1)))
+				{
+					Encounter.MonsterCell = Cell;
+					Encounter.bHasMonster = Encounter.Purpose == EMineStructurePurpose::CombatTrap;
+					if (Encounter.Purpose == EMineStructurePurpose::Shortcut) { Encounter.GoalCell = Cell; }
+					break;
+				}
+			}
+			if (Encounter.Purpose == EMineStructurePurpose::CombatTrap && Encounter.bHasMonster == false) { continue; }
+
 			if (ApplyFallingPatternStamp(
 				PatternStamp,
-				OriginalMineableTileTemplate,
+				BaseTerrainLayout,
 				OutGeneratedMineableTiles,
 				ReservedCoordinates,
 				EmptyCoordinates,
@@ -2372,6 +2338,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 				SandTileIndex,
 				MinimumStructureY))
 			{
+				GeneratedStructures.Add(Encounter);
 				++CreatedFallingStructureCount;
 				++PlacedPatternCounts[static_cast<int32>(PatternType)];
 				if (PatternType == EFallingPatternType::TopHammer)
@@ -2400,7 +2367,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 		*PlacedPatternSummary);
 
 	const int32 TargetEmptyBlockCount = FMath::RoundToInt(
-		OriginalMineableTileTemplate.Num() * FMath::Clamp(GenerationSettings.EmptyBlockRatio, 0.f, 1.f));
+		BaseTerrainLayout.Num() * FMath::Clamp(GenerationSettings.EmptyBlockRatio, 0.f, 1.f));
 	for (int32 Attempt = 0;
 		Attempt < MaxPlacementAttempts && EmptyCoordinates.Num() < TargetEmptyBlockCount;
 		++Attempt)
@@ -2439,7 +2406,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	}
 
 	const int32 TargetRandomRockBlockCount = FMath::RoundToInt(
-		OriginalMineableTileTemplate.Num() * FMath::Clamp(GenerationSettings.RockBlockRatio, 0.f, 1.f));
+		BaseTerrainLayout.Num() * FMath::Clamp(GenerationSettings.RockBlockRatio, 0.f, 1.f));
 	for (int32 Attempt = 0;
 		Attempt < MaxPlacementAttempts && RandomRockCoordinates.Num() < TargetRandomRockBlockCount;
 		++Attempt)
@@ -2497,7 +2464,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 		const int32 ExistingAnchorCount = CountAdjacentAnchors(
 			MineableComponent,
 			OutGeneratedMineableTiles,
-			OriginalFixedTileTemplate,
+			BoundaryTerrainLayout,
 			RockTileIndex);
 		const int32 MissingAnchorCount = FMath::Max(0, RequiredAnchorCount - ExistingAnchorCount);
 		TArray<FIntPoint> AnchorCandidateCoordinates;
@@ -2566,22 +2533,15 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
 	const FIntPoint& TileCoordinate,
 	int32 TileIndex,
-	UPaperTileMapComponent* TileMapComponent,
 	TSubclassOf<AActor> BlockClass)
 {
-	if (::IsValid(TileMapComponent) == false || ::IsValid(TileMapComponent->TileMap) == false)
-	{
-		return nullptr;
-	}
-
 	UWorld* World = GetWorld();
 	if (::IsValid(World) == false || BlockClass.Get() == nullptr)
 	{
 		return nullptr;
 	}
 
-	const FVector LocalPosition = TileMapComponent->GetTileCenterPosition(TileCoordinate.X, TileCoordinate.Y, 0);
-	const FVector WorldPosition = TileMapComponent->GetComponentTransform().TransformPosition(LocalPosition);
+	const FVector WorldPosition((TileCoordinate.X + 0.5f) * BLOCK_SIZE, -20.f, -(TileCoordinate.Y + 0.5f) * BLOCK_SIZE);
 
 	FActorSpawnParameters SpawnParameters;
 	SpawnParameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
@@ -2593,7 +2553,7 @@ ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
 
 	FBlockTileData BlockData;
 	BlockData.TileSetIndex = TileIndex;
-	BlockData.TileSize = FIntPoint(TileMapComponent->TileMap->TileWidth, TileMapComponent->TileMap->TileHeight);
+	BlockData.TileSize = FIntPoint(static_cast<int32>(BLOCK_SIZE), static_cast<int32>(BLOCK_SIZE));
 	BlockData.WorldLocation = WorldPosition;
 	BlockData.OnBlockDestroyedDelegate.AddUObject(this, &ULevelManagerSubsystem::OnBlockDestroyed);
 
@@ -2621,12 +2581,24 @@ ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
 
 void ULevelManagerSubsystem::OnGenerateFinished()
 {
-	if (TileMapActor.IsValid() == false)
+	LastVisibilityCell = FIntPoint(MAX_int32 / 2, MAX_int32 / 2);
+	UpdateBlockVisibility();
+	const UGameSettingDataAsset* Settings = UDataManager::Get(this)->GetGameSettingDataAsset();
+	const FName MonsterRow = ::IsValid(Settings) ? Settings->MineableLevelGeneration.StructureMonsterRowKey : NAME_None;
+	if (MonsterRow.IsNone() || UDataManager::Get(this)->GetMonsterDataTableRow(MonsterRow) == nullptr) { return; }
+	for (const FGeneratedMineStructure& Encounter : GeneratedStructures)
 	{
-		return;
+		if (Encounter.bHasMonster == false) { continue; }
+		const FVector Position((Encounter.MonsterCell.X + 0.5f) * BLOCK_SIZE, -20.f, -(Encounter.MonsterCell.Y + 0.5f) * BLOCK_SIZE + 5.f);
+		const FTransform Transform(Position);
+		AMKMonster* Monster = GetWorld()->SpawnActorDeferred<AMKMonster>(AMKMonster::StaticClass(), Transform, nullptr, nullptr, ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButDontSpawnIfColliding);
+		if (::IsValid(Monster))
+		{
+			Monster->SetMonsterDataRowKey(MonsterRow);
+			Monster->FinishSpawning(Transform);
+			GeneratedMonsters.Add(Monster);
+		}
 	}
-
-	TileMapActor->SetActorHiddenInGame(true);
 }
 
 void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
@@ -2723,40 +2695,19 @@ void ULevelManagerSubsystem::UpdateFallingTerrainEdges()
 
 bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount)
 {
-	if (::IsValid(StartBlock) == false)
+	TArray<ABlockBase*> Pending = { StartBlock };
+	TSet<ABlockBase*> Checked;
+	while (Pending.IsEmpty() == false)
 	{
-		return true;
+		ABlockBase* Block = Pending.Pop(EAllowShrinking::No);
+		if (::IsValid(Block) == false || Checked.Contains(Block)) { continue; }
+		Checked.Add(Block);
+		DFSCheckedBlocks.Add(Block);
+		if (Block->IsMineable() == false || Block->IsSupportAnchor()) { return false; }
+		if (bBlockDebugNumbersEnabled) { Block->BP_EnableDebugState(DebugCount++); }
+		OutDisconnectedBlocks.Add(Block);
+		Pending.Append(FBlockUtils::GetSurroundBlocks(this, Block));
 	}
-
-	// DFS cycles should be ignored within a single search only.
-	if (DFSCheckedBlocks.Contains(StartBlock))
-	{
-		return true;
-	}
-	DFSCheckedBlocks.Add(StartBlock);
-
-	// 채굴 불가 블록과 버팀목은 덩어리를 지탱하는 앵커다.
-	if (StartBlock->IsMineable() == false || StartBlock->IsSupportAnchor())
-	{
-		return false;
-	}
-
-	if (bBlockDebugNumbersEnabled)
-	{
-		StartBlock->BP_EnableDebugState(DebugCount);
-	}
-
-	OutDisconnectedBlocks.Add(StartBlock);
-
-	const TArray<ABlockBase*> SurroundBlocks = FBlockUtils::GetSurroundBlocks(this, StartBlock);
-	for (const auto& SurroundBlock : SurroundBlocks)
-	{
-		if (CheckBlockIsAllDisconnected(SurroundBlock, OutDisconnectedBlocks, DFSCheckedBlocks, DebugCount + 1) == false)
-		{
-			return false;
-		}
-	}
-
 	return true;
 }
 
@@ -2878,59 +2829,8 @@ void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& Collapsin
 	}
 }
 
-void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList)
+void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList, bool bPreserveContactPosition)
 {
-	if (TileMapActor.IsValid() == false)
-	{
-		if (bHasLoggedSnapDiagnostic == false)
-		{
-			bHasLoggedSnapDiagnostic = true;
-			UE_LOG(LogTemp, Warning, TEXT("[CollapseDiag][SnapAbort] TileMapActor is invalid. BlockCount=%d"), FallFinishedBlockList.Num());
-		}
-		return;
-	}
-
-	UPaperTileMapComponent* TileMapComponent = TileMapActor->GetRenderComponent();
-	if (::IsValid(TileMapComponent) == false || ::IsValid(TileMapComponent->TileMap) == false)
-	{
-		if (bHasLoggedSnapDiagnostic == false)
-		{
-			bHasLoggedSnapDiagnostic = true;
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[CollapseDiag][SnapAbort] TileMapComponent=%s TileMap=%s BlockCount=%d"),
-				*GetNameSafe(TileMapComponent),
-				*GetNameSafe(::IsValid(TileMapComponent) ? TileMapComponent->TileMap : nullptr),
-				FallFinishedBlockList.Num());
-		}
-		return;
-	}
-
-	const UPaperTileMap* TileMap = TileMapComponent->TileMap;
-	if (FMath::IsNearlyZero(TileMap->PixelsPerUnrealUnit))
-	{
-		if (bHasLoggedSnapDiagnostic == false)
-		{
-			bHasLoggedSnapDiagnostic = true;
-			UE_LOG(
-				LogTemp,
-				Warning,
-				TEXT("[CollapseDiag][SnapAbort] PixelsPerUnrealUnit=%.6f BlockCount=%d"),
-				TileMap->PixelsPerUnrealUnit,
-				FallFinishedBlockList.Num());
-		}
-		return;
-	}
-
-	const float TileWidth = TileMap->TileWidth / TileMap->PixelsPerUnrealUnit;
-	const float TileHeight = TileMap->TileHeight / TileMap->PixelsPerUnrealUnit;
-	const FVector LocalGridOrigin = TileMapComponent->GetTileCenterPosition(0, 0, 0);
-	const FTransform& TileMapTransform = TileMapComponent->GetComponentTransform();
-	const FVector WorldVerticalTileOffset = TileMapTransform.TransformVector(FVector(0.f, 0.f, TileHeight));
-	const bool bCanStepUpInTileMapSpace = FMath::IsNearlyZero(WorldVerticalTileOffset.Z) == false;
-	const float LocalUpwardTileStep = WorldVerticalTileOffset.Z >= 0.f ? TileHeight : -TileHeight;
-
 	TArray<TWeakObjectPtr<ABlockBase>> SortedBlocks = FallFinishedBlockList;
 	SortedBlocks.RemoveAll([](const TWeakObjectPtr<ABlockBase>& Block)
 	{
@@ -2951,13 +2851,9 @@ void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>
 			}
 		}
 
-		FVector LocalSnapLocation = TileMapTransform.InverseTransformPosition(FallFinishedBlock->GetActorLocation());
-		LocalSnapLocation.X = LocalGridOrigin.X +
-			FMath::RoundToFloat((LocalSnapLocation.X - LocalGridOrigin.X) / TileWidth) * TileWidth;
-		LocalSnapLocation.Z = LocalGridOrigin.Z +
-			FMath::RoundToFloat((LocalSnapLocation.Z - LocalGridOrigin.Z) / TileHeight) * TileHeight;
-
-		FVector SnapLocation = TileMapTransform.TransformPosition(LocalSnapLocation);
+		const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(FallFinishedBlock->GetActorLocation());
+		FVector SnapLocation((Cell.X + 0.5f) * BLOCK_SIZE, -20.f, -(Cell.Y + 0.5f) * BLOCK_SIZE);
+		if (bPreserveContactPosition) { SnapLocation = FallFinishedBlock->GetActorLocation(); }
 		FVector2D BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(SnapLocation);
 		const FVector PreSnapLocation = FallFinishedBlock->GetActorLocation();
 		const FVector2D RawBlockPosition = BlockPosition;
@@ -2981,15 +2877,7 @@ void ULevelManagerSubsystem::SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>
 				break;
 			}
 
-			if (bCanStepUpInTileMapSpace)
-			{
-				LocalSnapLocation.Z += LocalUpwardTileStep;
-				SnapLocation = TileMapTransform.TransformPosition(LocalSnapLocation);
-			}
-			else
-			{
-				SnapLocation.Z += TileHeight;
-			}
+			SnapLocation.Z += BLOCK_SIZE;
 			BlockPosition = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(SnapLocation);
 			++StepUpCount;
 		}
@@ -3153,25 +3041,18 @@ ABlockBase* ULevelManagerSubsystem::FindUnsettledBlockAtPosition(
 
 bool ULevelManagerSubsystem::TryGetTileCenterWorldLocation(const FVector& WorldLocation, FIntPoint& OutTileCoordinate, FVector& OutTileCenterWorldLocation) const
 {
-	const UPaperTileMapComponent* TileMapComp = TileMapActor.IsValid() ? TileMapActor->GetRenderComponent() : nullptr;
-	const UPaperTileMap* TileMap = ::IsValid(TileMapComp) ? TileMapComp->TileMap.Get() : nullptr;
-	if (::IsValid(TileMap) == false)
+	const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(WorldLocation);
+	const UDataManager* Data = UDataManager::Get(const_cast<ULevelManagerSubsystem*>(this));
+	const UGameSettingDataAsset* Settings = ::IsValid(Data) ? Data->GetGameSettingDataAsset() : nullptr;
+	if (::IsValid(Settings))
 	{
-		return false;
+		const FMineableLevelGenerationSettings& Size = Settings->MineableLevelGeneration;
+		const int32 Edge = FMath::Clamp(Size.OuterRockThickness, 1, 16);
+		if (Cell.X < Size.StartColumn - Edge || Cell.X >= Size.StartColumn + FMath::Clamp(Size.WidthInBlocks, 16, 512) + Edge
+			|| Cell.Y < Settings->SurfaceBlockPositionY - 24 || Cell.Y >= Settings->SurfaceBlockPositionY + FMath::Clamp(Size.DepthInBlocks, 16, 512) + Edge) { return false; }
 	}
-
-	// 블록은 타일 중심에 놓이므로 월드 좌표를 먼저 타일로 바꿔야 옆 칸 판정이 반 칸씩 어긋나지 않는다.
-	const FVector LocalPosition = TileMapComp->GetComponentTransform().InverseTransformPosition(WorldLocation);
-	int32 TileX = INDEX_NONE;
-	int32 TileY = INDEX_NONE;
-	TileMap->GetTileCoordinatesFromLocalSpacePosition(LocalPosition, TileX, TileY);
-	if (TileX < 0 || TileY < 0 || TileX >= TileMap->MapWidth || TileY >= TileMap->MapHeight)
-	{
-		return false;
-	}
-
-	OutTileCoordinate = FIntPoint(TileX, TileY);
-	OutTileCenterWorldLocation = TileMapComp->GetComponentTransform().TransformPosition(TileMapComp->GetTileCenterPosition(TileX, TileY, 0));
+	OutTileCoordinate = FIntPoint(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y));
+	OutTileCenterWorldLocation = FVector((Cell.X + 0.5f) * BLOCK_SIZE, -20.f, -(Cell.Y + 0.5f) * BLOCK_SIZE);
 	return true;
 }
 
@@ -3253,7 +3134,6 @@ bool ULevelManagerSubsystem::TryPlaceBlock(FName BlockRowName, const FVector& Wo
 		return false;
 	}
 
-	UPaperTileMapComponent* TileMapComp = TileMapActor->GetRenderComponent();
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
 	{
@@ -3269,7 +3149,7 @@ bool ULevelManagerSubsystem::TryPlaceBlock(FName BlockRowName, const FVector& Wo
 
 	// 캐릭터가 통과할 수 없는 블록은 캐릭터나 다른 폰이 들어가 있는 칸에 설치하지 않는다.
 	UWorld* World = GetWorld();
-	const float HalfExtent = TileMapComp->TileMap->TileWidth * 0.45f;
+	const float HalfExtent = BLOCK_SIZE * 0.45f;
 	if (::IsValid(World) == false)
 	{
 		return false;
@@ -3285,7 +3165,7 @@ bool ULevelManagerSubsystem::TryPlaceBlock(FName BlockRowName, const FVector& Wo
 		return false;
 	}
 
-	return ::IsValid(SpawnTileActor(TileCoordinate, BlockData->TileIndex, TileMapComp, BlockClass));
+	return ::IsValid(SpawnTileActor(TileCoordinate, BlockData->TileIndex, BlockClass));
 }
 
 int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC)

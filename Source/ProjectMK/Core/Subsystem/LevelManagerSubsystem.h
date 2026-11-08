@@ -5,12 +5,39 @@
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "LevelManagerSubsystem.generated.h"
 
-class APaperTileMapActor;
 class UAbilitySystemComponent;
 class ABlockBase;
 class UDataManager;
-class UPaperTileMapComponent;
 struct FMineableLevelGenerationSettings;
+
+UENUM(BlueprintType)
+enum class EMineStructurePurpose : uint8
+{
+	OrePuzzle,
+	Shortcut,
+	CombatTrap,
+};
+
+USTRUCT(BlueprintType)
+struct FGeneratedMineStructure
+{
+	GENERATED_BODY()
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EMineStructurePurpose Purpose = EMineStructurePurpose::OrePuzzle;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FIntPoint GoalCell = FIntPoint::ZeroValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<FIntPoint> RewardCells;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FIntPoint MonsterCell = FIntPoint::ZeroValue;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bHasMonster = false;
+};
 
 USTRUCT(BlueprintType)
 struct FFallingVerticalBlocksData
@@ -31,6 +58,9 @@ struct FFallingVerticalBlocksData
 
 	UPROPERTY()
 	float FallingVelocity = 0.f;
+
+	UPROPERTY()
+	bool bLandedOnCharacter = false;
 
 	TMap<TWeakObjectPtr<ABlockBase>, FVector> BlockOriginPositionMap;
 };
@@ -81,8 +111,7 @@ public:
 	virtual TStatId GetStatId() const override;
 	//~UTickableWorldSubsystem
 
-	void LoadTileMap();
-	void GenerateTileActors();
+	void GenerateWorldBlocks();
 
 	UFUNCTION(BlueprintCallable, Category = "Level Generation")
 	void RegenerateMineableBlocks(int32 GenerationSeed = -1);
@@ -91,6 +120,7 @@ public:
 	void SetBlockDebugNumbersEnabled(bool bEnabled);
 	int32 GetTileSize();
 	const TArray<TObjectPtr<ABlockBase>>& GetBlocks() const;
+	const TArray<FGeneratedMineStructure>& GetGeneratedStructures() const;
 	ABlockBase* GetBlockAtPosition(const FVector2D& BlockPosition) const;
 	/** 월드 위치가 속한 타일 칸의 블록. 캐릭터처럼 칸 중심에 있지 않은 위치에 쓴다 */
 	ABlockBase* GetBlockAtWorldLocation(const FVector& WorldLocation) const;
@@ -110,7 +140,8 @@ public:
 private:
 	friend struct FFallingBlockGroupData;
 
-	void CaptureOriginalTileTemplates(UDataManager* DataManager, UPaperTileMapComponent* TileMapComponent);
+	void BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed);
+	void UpdateBlockVisibility();
 	void ClearGeneratedBlocks();
 	void ClearWorldItems();
 	void GenerateMineableLayout(
@@ -120,11 +151,10 @@ private:
 		int32 SandTileIndex,
 		TMap<FIntPoint, int32>& OutGeneratedMineableTiles,
 		TMap<FIntPoint, TPair<FName, int32>>& OutRewardTiles,
-		TMap<FIntPoint, float>& OutPreDamageTiles) const;
+		TMap<FIntPoint, float>& OutPreDamageTiles);
 	ABlockBase* SpawnTileActor(
 		const FIntPoint& TileCoordinate,
 		int32 TileIndex,
-		UPaperTileMapComponent* TileMapComponent,
 		TSubclassOf<AActor> BlockClass);
 
 	void OnGenerateFinished();
@@ -138,7 +168,7 @@ private:
 	void QueueCollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
 	void ProcessPendingCollapseBlocks();
 	void CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
-	void SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList);
+	void SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList, bool bPreserveContactPosition = false);
 	void LogFallingStopDiagnostic(
 		ABlockBase* FallingBlock,
 		ABlockBase* HitBlock,
@@ -155,9 +185,6 @@ private:
 	bool TryGetTileCenterWorldLocation(const FVector& WorldLocation, FIntPoint& OutTileCoordinate, FVector& OutTileCenterWorldLocation) const;
 
 	UPROPERTY(Transient)
-	TWeakObjectPtr<APaperTileMapActor> TileMapActor;
-
-	UPROPERTY(Transient)
 	TArray<TObjectPtr<ABlockBase>> BlockList;
 
 	UPROPERTY(Transient)
@@ -166,15 +193,19 @@ private:
 	TArray<TArray<TWeakObjectPtr<ABlockBase>>> PendingCollapseBlockLists;
 
 	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> BlockActorMap;
-	TMap<FIntPoint, int32> OriginalFixedTileTemplate;
-	TMap<FIntPoint, int32> OriginalMineableTileTemplate;
+	TMap<FIntPoint, int32> BoundaryTerrainLayout;
+	TMap<FIntPoint, int32> BaseTerrainLayout;
+	UPROPERTY(Transient)
+	TArray<FGeneratedMineStructure> GeneratedStructures;
+	TArray<TWeakObjectPtr<class AMKMonster>> GeneratedMonsters;
+	FIntPoint LastVisibilityCell = FIntPoint(MAX_int32 / 2, MAX_int32 / 2);
+	float VisibilityUpdateTime = 0.f;
 
 	int32 LastGenerationSeed = INDEX_NONE;
 	int32 ShopTileIndex = INDEX_NONE;
 	int32 PendingMinedBlockCount = 0;
 	int32 PendingImpactBrokenBlockCount = 0;
 	int32 PendingLandedBlockCount = 0;
-	bool bOriginalTileTemplatesCaptured = false;
 	bool bIsApplyingFallingImpact = false;
 	bool bBlockDebugNumbersEnabled = false;
 	bool bHasLoggedFallingStopDiagnostic = false;
