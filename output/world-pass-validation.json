@@ -1,0 +1,116 @@
+﻿{
+  "build": {
+    "target": "ProjectMKEditor Win64 Development",
+    "result": "Succeeded",
+    "seconds": 8.15,
+    "log": "Saved/AgentLogs/Build.log"
+  },
+  "world": {
+    "width": 128,
+    "depth": 128,
+    "outer_rock_thickness": 4,
+    "transition_rows": 12,
+    "layers": {
+      "Dirt": 0,
+      "Sand": 32,
+      "Ice": 72
+    },
+    "purposes": [
+      "OrePuzzle",
+      "Shortcut",
+      "CombatTrap"
+    ],
+    "tile_map_generation_input": false
+  },
+  "oxygen": {
+    "duration": 0.85,
+    "arc_height": 64,
+    "display_size": 18,
+    "core_sprite": "/Game/Asset/ArtV2/Effects/S_OxygenWispCore",
+    "materials": [
+      "/Game/Asset/ArtV2/Materials/M_OxygenWisp",
+      "/Game/Asset/ArtV2/Materials/M_OxygenWispCore"
+    ],
+    "trail_count": 3
+  },
+  "performance_observation": {
+    "blocks": 16834,
+    "idle_flipbooks": 33668,
+    "enabled_idle_flipbook_ticks": 0,
+    "individual_warm_frame_delta_seconds": [
+      0.01399,
+      0.0148254
+    ],
+    "pie_initialization_seconds_approx": 6,
+    "aggregate_benchmark": false
+  },
+  "tests": {
+    "ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters": {
+      "utc": "2026.11.08-17.19.21:779",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.23.36.log"
+    },
+    "ProjectMK.PIE.UI.DragSaleAndSkillHold": {
+      "utc": "2026.11.08-17.17.56:952",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.23.36.log"
+    },
+    "ProjectMK.PIE.World.FallingBlockStaysAtHeadContact": {
+      "utc": "2026.11.08-17.18.36:925",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.23.36.log"
+    },
+    "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification": {
+      "utc": "2026.11.08-17.18.17:354",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.23.36.log"
+    },
+    "ProjectMK.PIE.World.OxygenWispFlight": {
+      "utc": "2026.11.08-17.33.47:335",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log"
+    },
+    "ProjectMK.PIE.Inventory.SeparateQuickSlotsAndWorldDrop": {
+      "utc": "2026.11.08-17.13.06:160",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.13.42.log"
+    },
+    "ProjectMK.PIE.Monster.SequentialSingleBlockDrilling": {
+      "utc": "2026.11.08-17.13.29:092",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.13.42.log"
+    },
+    "ProjectMK.PIE.Shop.GroundDrillingAndInteraction": {
+      "utc": "2026.11.08-17.17.36:087",
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK-backup-2026.11.08-17.23.36.log"
+    }
+  },
+  "screenshots": [
+    "Saved/AgentLogs/ui-20261109-020945.png",
+    "Saved/AgentLogs/oxygen-flight-live.png"
+  ],
+  "save_comparison": {
+    "MKSave.sav": {
+      "marker_before": 1980,
+      "marker_after": 1980,
+      "payload_equal": true,
+      "before_sha256": "17e4c6c98972297086230877211bbb63fac0cdbc59418e8c709df0f4f6729917",
+      "after_sha256": "17e4c6c98972297086230877211bbb63fac0cdbc59418e8c709df0f4f6729917"
+    },
+    "MKSave_Backup.sav": {
+      "marker_before": 1980,
+      "marker_after": 1980,
+      "payload_equal": true,
+      "before_sha256": "45d76ca8a7538d7e23dcac4102902a563fc41c2fd5017a074965015b1825a370",
+      "after_sha256": "45d76ca8a7538d7e23dcac4102902a563fc41c2fd5017a074965015b1825a370"
+    }
+  },
+  "save_cleanup": "Manual preview changed coin only; the initial main and backup saves were restored from BeforeWorldPass-20261109-013151. Intermediate copies retained in Saved/AgentLogs/BeforeSaveRestore-20261109-021600.",
+  "corrected_regressions": [
+    "Paper2D cached frame is initialized once before disabling idle flipbook ticks; real downward drilling retested.",
+    "Drop and oxygen lifetime checks use world time rather than wall time.",
+    "Oxygen capture run with an unrelated Python inspection error was repeated successfully without that script."
+  ],
+  "limits": "All blocks currently have actors; larger configured dimensions increase loading and memory cost. Chunk streaming is not implemented."
+}
