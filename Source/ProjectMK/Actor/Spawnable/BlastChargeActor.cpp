@@ -1,6 +1,7 @@
 ﻿#include "ProjectMK/Actor/Spawnable/BlastChargeActor.h"
 
 #include "AbilitySystemComponent.h"
+#include "Components/BoxComponent.h"
 #include "Engine/World.h"
 #include "Materials/MaterialInterface.h"
 #include "PaperSprite.h"
@@ -14,7 +15,12 @@ ABlastChargeActor::ABlastChargeActor()
 {
 	PrimaryActorTick.bCanEverTick = false;
 
-	RootComponent = CreateDefaultSubobject<USceneComponent>(TEXT("Root"));
+	InteractionBox = CreateDefaultSubobject<UBoxComponent>(TEXT("InteractionBox"));
+	RootComponent = InteractionBox;
+	InteractionBox->SetBoxExtent(FVector(20.f, 24.f, 20.f));
+	InteractionBox->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+	InteractionBox->SetCollisionResponseToAllChannels(ECR_Ignore);
+	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Overlap);
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
@@ -29,6 +35,8 @@ ABlastChargeActor::ABlastChargeActor()
 	}
 }
 
+FName ABlastChargeActor::GetRecoveryItemKey() const { return TEXT("BlastCharge"); }
+
 void ABlastChargeActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
@@ -39,6 +47,8 @@ void ABlastChargeActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 
 	Super::EndPlay(EndPlayReason);
 }
+
+float ABlastChargeActor::GetInteractRange() const { return 32.f; }
 
 void ABlastChargeActor::InitializeBlastCharge(float InDelay, int32 InRadius, UAbilitySystemComponent* InInstigatorASC, UPaperSprite* InSprite)
 {

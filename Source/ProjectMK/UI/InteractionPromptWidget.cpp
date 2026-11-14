@@ -6,6 +6,9 @@
 #include "Components/Border.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
+#include "Components/VerticalBox.h"
+#include "Components/VerticalBoxSlot.h"
+#include "Rendering/DrawElements.h"
 
 TSharedRef<SWidget> UInteractionPromptWidget::RebuildWidget()
 {
@@ -17,20 +20,64 @@ TSharedRef<SWidget> UInteractionPromptWidget::RebuildWidget()
 	return Super::RebuildWidget();
 }
 
+int32 UInteractionPromptWidget::NativePaint(const FPaintArgs& Args, const FGeometry& Geometry, const FSlateRect& CullingRect,
+	FSlateWindowElementList& DrawElements, int32 LayerId, const FWidgetStyle& Style, bool bEnabled) const
+{
+	const int32 Layer = Super::NativePaint(Args, Geometry, CullingRect, DrawElements, LayerId, Style, bEnabled);
+	if (RecoveryProgress <= 0.f) { return Layer; }
+	TArray<FVector2D> Track, Progress;
+	const FVector2D Center(Geometry.GetLocalSize().X * 0.5f, 18.f);
+	for (int32 Index = 0; Index <= 40; ++Index)
+	{
+		const float Angle = -HALF_PI + 2.f * PI * Index / 40.f;
+		Track.Add(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * 16.f);
+		if (Index / 40.f <= RecoveryProgress) { Progress.Add(Track.Last()); }
+	}
+	FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Track, ESlateDrawEffect::None, FLinearColor(0.02f, 0.04f, 0.05f), false, 5.f);
+	if (Progress.Num() > 1) { FSlateDrawElement::MakeLines(DrawElements, Layer + 2, Geometry.ToPaintGeometry(), Progress, ESlateDrawEffect::None, FLinearColor(0.45f, 0.9f, 0.76f), false, 3.f); }
+	return Layer + 2;
+}
+
+void UInteractionPromptWidget::SetRecoveryState(float Progress, bool bAvailable, const FText& BlockedReason)
+{
+	RecoveryProgress = bAvailable ? FMath::Clamp(Progress, 0.f, 1.f) : 0.f;
+	if (RecoveryHint != nullptr)
+	{
+		RecoveryHint->SetText(BlockedReason.IsEmpty() ? NSLOCTEXT("Interaction", "HoldToRecover", "길게 눌러 회수") : BlockedReason);
+		RecoveryHint->SetVisibility(bAvailable ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	}
+}
+
 void UInteractionPromptWidget::BuildDefaultWidgetTree()
 {
 	USizeBox* RootSize = WidgetTree->ConstructWidget<USizeBox>(USizeBox::StaticClass(), TEXT("InteractionPrompt"));
-	RootSize->SetWidthOverride(36.f);
-	RootSize->SetHeightOverride(36.f);
+	RootSize->SetWidthOverride(144.f);
+	RootSize->SetHeightOverride(56.f);
 	WidgetTree->RootWidget = RootSize;
 
+	UVerticalBox* Stack = WidgetTree->ConstructWidget<UVerticalBox>();
+	RootSize->SetContent(Stack);
+	USizeBox* KeySize = WidgetTree->ConstructWidget<USizeBox>();
+	KeySize->SetWidthOverride(36.f);
+	KeySize->SetHeightOverride(36.f);
+	Stack->AddChildToVerticalBox(KeySize)->SetHorizontalAlignment(HAlign_Center);
 	UBorder* Keycap = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("Keycap"));
 	Keycap->SetPadding(FMargin(FMKUILayout::SpaceXS));
-	RootSize->SetContent(Keycap);
+	KeySize->SetContent(Keycap);
 
 	UTextBlock* KeyText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("KeyText"));
 	KeyText->SetText(FText::FromString(TEXT("F")));
 	KeyText->SetJustification(ETextJustify::Center);
 	ApplyTextRole(KeyText, EMKTextRole::Button);
 	Keycap->SetContent(KeyText);
+	RecoveryHint = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecoveryHint"));
+	ApplyTextRole(RecoveryHint, EMKTextRole::Caption);
+	FSlateFontInfo Font = RecoveryHint->GetFont();
+	Font.Size = 10;
+	RecoveryHint->SetFont(Font);
+	RecoveryHint->SetJustification(ETextJustify::Center);
+	RecoveryHint->SetShadowOffset(FVector2D(1.f, 1.f));
+	RecoveryHint->SetShadowColorAndOpacity(FLinearColor::Black);
+	RecoveryHint->SetVisibility(ESlateVisibility::Collapsed);
+	Stack->AddChildToVerticalBox(RecoveryHint)->SetHorizontalAlignment(HAlign_Center);
 }

@@ -100,8 +100,8 @@ AMKCharacter::AMKCharacter()
 	InteractionPromptComponent->SetupAttachment(GetRootComponent());
 	InteractionPromptComponent->SetWidgetClass(UInteractionPromptWidget::StaticClass());
 	InteractionPromptComponent->SetWidgetSpace(EWidgetSpace::Screen);
-	InteractionPromptComponent->SetDrawSize(FIntPoint(36, 36));
-	InteractionPromptComponent->SetPivot(FVector2D(0.5f, 1.f));
+	InteractionPromptComponent->SetDrawSize(FIntPoint(144, 56));
+	InteractionPromptComponent->SetPivot(FVector2D(0.5f, 36.f / 56.f));
 	InteractionPromptComponent->SetRelativeLocation(FVector(0.f, 0.f, 16.f));
 	InteractionPromptComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	InteractionPromptComponent->SetVisibility(false);
@@ -172,6 +172,7 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Fly", IE_Pressed, this, &AMKCharacter::OnFly);
 	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMKCharacter::OnInteract);
+	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMKCharacter::OnFinishInteract);
 
 	for (int32 SlotIndex = 0; SlotIndex < QuickSlotInputCount; ++SlotIndex)
 	{
@@ -369,6 +370,7 @@ bool AMKCharacter::TrySaveGame()
 	{
 		SaveGame->InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
 		SaveGame->QuickSlotDataList = InventoryComponent->GetItemSlots(EItemContainer::QuickSlot);
+		SaveGame->DiscoveredItemKeys = InventoryComponent->GetDiscoveredItemKeys();
 		SaveGame->SaveVersion = 3;
 	}
 
@@ -399,6 +401,7 @@ void AMKCharacter::SetMenuInputBlocked(bool bBlocked)
 	APlayerController* PlayerController = Cast<APlayerController>(GetController());
 	if (bBlocked)
 	{
+		ClearInteractionHold();
 		CharacterDir = FVector::ZeroVector;
 		TryDrill();
 		OnFinishFly();
@@ -626,15 +629,40 @@ bool AMKCharacter::TryInteractNearby()
 
 void AMKCharacter::UpdateInteractionPrompt()
 {
-	if (::IsValid(InteractionPromptComponent))
+	IInteractable* Target = bIsMenuInputBlocked == false ? FindNearestInteractable() : nullptr;
+	float Progress = 0.f;
+	if (HeldInteractionActor.IsValid() && bInteractionHoldConsumed == false)
 	{
-		const bool bShowPrompt = bIsMenuInputBlocked == false && FindNearestInteractable() != nullptr;
-		InteractionPromptComponent->SetVisibility(bShowPrompt);
-		if (UUserWidget* PromptWidget = InteractionPromptComponent->GetUserWidgetObject())
+		if (Target == nullptr || Cast<AActor>(Target) != HeldInteractionActor.Get()) { ClearInteractionHold(); }
+		else
 		{
-			PromptWidget->SetVisibility(bShowPrompt ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+			Progress = FMath::Clamp((GetWorld()->GetTimeSeconds() - InteractionHoldStartedAt) / GetGameSettings()->StructureRecoveryHoldDuration, 0.f, 1.f);
+			if (Progress >= 1.f)
+			{
+				bInteractionHoldConsumed = true;
+				if (Target->TryRecover(this) == false) { USoundManager::TryPlaySFX(this, ESFXType::Item_UseFailed); }
+				Target = FindNearestInteractable();
+			}
 		}
 	}
+	if (::IsValid(InteractionPromptComponent))
+	{
+		const bool bShowPrompt = Target != nullptr;
+		InteractionPromptComponent->SetVisibility(bShowPrompt);
+		if (UInteractionPromptWidget* Prompt = Cast<UInteractionPromptWidget>(InteractionPromptComponent->GetUserWidgetObject()))
+		{
+			Prompt->SetVisibility(bShowPrompt ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+			const bool bRecoverable = Target != nullptr && Target->GetRecoveryItemKey().IsNone() == false;
+			Prompt->SetRecoveryState(Progress, bRecoverable, bRecoverable ? Target->GetRecoveryBlockedReason(this) : FText::GetEmpty());
+		}
+	}
+}
+
+void AMKCharacter::ClearInteractionHold()
+{
+	HeldInteractionActor.Reset();
+	InteractionHoldStartedAt = 0.f;
+	bInteractionHoldConsumed = false;
 }
 
 void AMKCharacter::UpdateHorizontalMovement()
@@ -912,6 +940,7 @@ void AMKCharacter::ApplySaveGame()
 
 	if (::IsValid(InventoryComponent))
 	{
+		InventoryComponent->ApplyDiscoveredItemKeys(SaveGame->DiscoveredItemKeys);
 		InventoryComponent->ApplySavedInventorySlots(SaveGame->InventorySlotDataList);
 		InventoryComponent->ApplySavedQuickSlots(SaveGame->QuickSlotDataList);
 	}
@@ -1135,7 +1164,23 @@ void AMKCharacter::OnFinishFly()
 
 void AMKCharacter::OnInteract()
 {
-	TryInteractNearby();
+	ClearInteractionHold();
+	IInteractable* Target = bIsMenuInputBlocked == false ? FindNearestInteractable() : nullptr;
+	if (Target == nullptr) { return; }
+	if (Target->GetRecoveryItemKey().IsNone()) { Target->TryInteract(this); return; }
+	HeldInteractionActor = Cast<AActor>(Target);
+	InteractionHoldStartedAt = GetWorld()->GetTimeSeconds();
+}
+
+void AMKCharacter::OnFinishInteract()
+{
+	IInteractable* Target = Cast<IInteractable>(HeldInteractionActor.Get());
+	const float Elapsed = GetWorld()->GetTimeSeconds() - InteractionHoldStartedAt;
+	const bool bConsumed = bInteractionHoldConsumed;
+	ClearInteractionHold();
+	if (Target == nullptr || bConsumed || bIsMenuInputBlocked) { return; }
+	if (Elapsed < GetGameSettings()->StructureRecoveryHoldDuration) { Target->TryInteract(this); }
+	else { Target->TryRecover(this); }
 }
 
 void AMKCharacter::OnQuickSlot(int32 SlotIndex)

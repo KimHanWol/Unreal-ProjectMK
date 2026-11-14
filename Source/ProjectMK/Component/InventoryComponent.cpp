@@ -214,12 +214,14 @@ void UInventoryComponent::RemoveAllOreItems()
 void UInventoryComponent::ApplySavedInventorySlots(const TArray<FInventorySlotData>& SavedSlotDataList)
 {
 	InventorySlotDataList = SavedSlotDataList;
+	for (const auto& Slot : InventorySlotDataList) { if (Slot.IsEmpty() == false) { DiscoveredItemKeys.Add(Slot.ItemUID); } }
 	OnInventoryUpdated();
 }
 
 void UInventoryComponent::ApplySavedQuickSlots(const TArray<FInventorySlotData>& SavedSlots)
 {
 	QuickSlotDataList = SavedSlots;
+	for (const auto& Slot : QuickSlotDataList) { if (Slot.IsEmpty() == false) { DiscoveredItemKeys.Add(Slot.ItemUID); } }
 	OnInventoryUpdated();
 }
 
@@ -310,8 +312,8 @@ bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlo
 		if (Source.ItemCount <= 0) { Source.Clear(); }
 	}
 	else { Swap(Source, Target); }
-	if (SourceContainer == EItemContainer::Storage && TargetContainer != EItemContainer::Storage) { Target.bIsNew = true; }
-	if (bSwap && TargetContainer == EItemContainer::Storage && SourceContainer != EItemContainer::Storage) { Source.bIsNew = true; }
+	if (SourceContainer == EItemContainer::Storage && TargetContainer != EItemContainer::Storage) { Target.bIsNew |= RegisterItemDiscovery(Target.ItemUID); }
+	if (bSwap && TargetContainer == EItemContainer::Storage && SourceContainer != EItemContainer::Storage) { Source.bIsNew |= RegisterItemDiscovery(Source.ItemUID); }
 	if (SourceContainer == EItemContainer::Storage) { Source.bIsNew = false; }
 	if (TargetContainer == EItemContainer::Storage) { Target.bIsNew = false; }
 	if (SourceContainer == EItemContainer::Storage) { SourceStorage->NotifyContentsChanged(); }
@@ -370,10 +372,25 @@ void UInventoryComponent::MarkItemSlotSeen(EItemContainer Container, int32 Index
 	if (Container == EItemContainer::Storage) { return; }
 	TArray<FInventorySlotData>* Slots = GetMutableItemSlots(Container, nullptr);
 	if (Slots == nullptr || Slots->IsValidIndex(Index) == false || (*Slots)[Index].bIsNew == false) { return; }
-	(*Slots)[Index].bIsNew = false;
-	OnItemSlotSeenDelegate.Broadcast(Container, Index);
+	const FName Key = (*Slots)[Index].ItemUID;
+	for (EItemContainer Address : { EItemContainer::Inventory, EItemContainer::QuickSlot })
+	{
+		TArray<FInventorySlotData>* Entries = GetMutableItemSlots(Address, nullptr);
+		for (int32 SlotIndex = 0; SlotIndex < Entries->Num(); ++SlotIndex)
+		{
+			FInventorySlotData& Slot = (*Entries)[SlotIndex];
+			if (Slot.ItemUID == Key && Slot.bIsNew)
+			{
+				Slot.bIsNew = false;
+				OnItemSlotSeenDelegate.Broadcast(Address, SlotIndex);
+			}
+		}
+	}
 	if (AMKCharacter* Player = Cast<AMKCharacter>(GetOwner())) { Player->TrySaveGame(); }
 }
+
+void UInventoryComponent::ApplyDiscoveredItemKeys(const TSet<FName>& Keys) { DiscoveredItemKeys = Keys; }
+const TSet<FName>& UInventoryComponent::GetDiscoveredItemKeys() const { return DiscoveredItemKeys; }
 
 const TArray<FInventorySlotData>& UInventoryComponent::GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage)
 {
@@ -523,6 +540,13 @@ const TArray<FInventorySlotData>& UInventoryComponent::GetInventorySlotDataList(
 	return InventorySlotDataList;
 }
 
+bool UInventoryComponent::RegisterItemDiscovery(FName ItemKey)
+{
+	if (ItemKey.IsNone() || DiscoveredItemKeys.Contains(ItemKey)) { return false; }
+	DiscoveredItemKeys.Add(ItemKey);
+	return true;
+}
+
 void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 {
 	if (CanGainItem(ItemUID, ItemCount) == false)
@@ -533,6 +557,7 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 
 	UpdateInventorySlotDataList();
 
+	const bool bFirstDiscovery = RegisterItemDiscovery(ItemUID);
 	int32 RemainingItemCount = ItemCount;
 	const int32 MaxStackCount = GetItemMaxStackCount(ItemUID);
 
@@ -544,7 +569,7 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 			FInventorySlotData& StackableSlotData = InventorySlotDataList[StackableSlotIndex];
 			const int32 AddedItemCount = FMath::Min(RemainingItemCount, MaxStackCount - StackableSlotData.ItemCount);
 			StackableSlotData.ItemCount += AddedItemCount;
-			StackableSlotData.bIsNew = true;
+			StackableSlotData.bIsNew |= bFirstDiscovery;
 			RemainingItemCount -= AddedItemCount;
 			continue;
 		}
@@ -557,7 +582,7 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 
 		FInventorySlotData& EmptySlotData = InventorySlotDataList[EmptySlotIndex];
 		EmptySlotData.ItemUID = ItemUID;
-		EmptySlotData.bIsNew = true;
+		EmptySlotData.bIsNew = bFirstDiscovery;
 		EmptySlotData.ItemCount = FMath::Min(RemainingItemCount, MaxStackCount);
 		RemainingItemCount -= EmptySlotData.ItemCount;
 	}

@@ -12,8 +12,12 @@ class PROJECTMK_API AWorkbenchActor : public AShopActor
 	GENERATED_BODY()
 
 public:
-	void InitializeWorkbench(UPaperSprite* Sprite);
+	virtual FName GetRecoveryItemKey() const override;
+	void InitializeWorkbench(UPaperSprite* Sprite, FName ItemKey = TEXT("Workbench"));
 
 protected:
 	virtual bool OnInteract(AActor* Interactor) override;
+
+private:
+	FName WorkbenchItemKey = TEXT("Workbench");
 };

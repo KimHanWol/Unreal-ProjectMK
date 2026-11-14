@@ -27,6 +27,9 @@ public:
 	UPROPERTY()
 	TArray<FInventorySlotData> QuickSlotDataList;
 
+	UPROPERTY()
+	TSet<FName> DiscoveredItemKeys;
+
 	/** INDEX_NONE 이면 저장된 지형이 없어 새 시드로 생성한다 */
 	UPROPERTY()
 	int32 GenerationSeed = INDEX_NONE;

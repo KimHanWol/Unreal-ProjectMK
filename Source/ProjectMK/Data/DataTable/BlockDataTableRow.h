@@ -59,6 +59,9 @@ struct FBlockDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bFallsWhenUnmineable = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))
+	FName RecoveryItemKey = NAME_None;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 

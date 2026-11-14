@@ -3,9 +3,9 @@ import json
 import unreal
 
 from pathlib import Path
-folder = '/Game/Asset/StorageChestV2'
+folder = '/Game/Asset/StorageChestV3'
 task = unreal.AssetImportTask()
-for key, value in dict(filename=str(Path(unreal.Paths.project_dir()) / 'Content/Asset/StorageChestV2/Source/StorageChest.png'), destination_path=folder,
+for key, value in dict(filename=str(Path(unreal.Paths.project_dir()) / 'Content/Asset/StorageChestV3/Source/StorageChest.png'), destination_path=folder,
     destination_name='T_StorageChest', automated=True, replace_existing=True, save=True).items():
     task.set_editor_property(key, value)
 unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
@@ -86,3 +86,8 @@ assert unreal.EditorAssetLibrary.save_loaded_asset(style, False)
 settings.set_editor_property('oxygen_pickup_arc_height', 14.0)
 settings.set_editor_property('oxygen_pickup_display_size', 8.0)
 assert unreal.EditorAssetLibrary.save_loaded_asset(settings, False)
+
+beam = next(entry for entry in rows if entry['Name'] == 'SupportBeam')
+beam['RecoveryItemKey'] = 'SupportBeam'
+assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(blocks, json.dumps(rows, ensure_ascii=False))
+assert unreal.EditorAssetLibrary.save_loaded_asset(blocks, False)

@@ -6,6 +6,7 @@
 #include "GameplayEffectTypes.h"
 #include "GameplayTagContainer.h"
 #include "ProjectMK/Interface/Damageable.h"
+#include "ProjectMK/Interface/Interactable.h"
 
 #include "BlockBase.generated.h"
 
@@ -49,13 +50,15 @@ struct FSelectedBlockItemData
 };
 
 UCLASS()
-class PROJECTMK_API ABlockBase : public AActor, public IDamageable, public IAbilitySystemInterface
+class PROJECTMK_API ABlockBase : public AActor, public IDamageable, public IAbilitySystemInterface, public IInteractable
 {
 	GENERATED_BODY()
 
 public:
 	ABlockBase();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
+	virtual bool CanInteract(AActor* Interactor) override;
+	virtual FName GetRecoveryItemKey() const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -98,6 +101,7 @@ public:
 	void BP_EnableDebugState(int32 Count);
 
 private:
+	virtual void OnRecovered() override;
 	virtual void OnPreDestroy();
 	void PlayDestroyFlipbook();
 	void DestroyBlockActor();

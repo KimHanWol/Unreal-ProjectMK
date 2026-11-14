@@ -2129,7 +2129,7 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		if (Feature.Value >= Settings.StartColumn + 2 && Feature.Value < End - 2) { Place(Feature.Key, FIntPoint(Feature.Value, GetSurfaceRow(Feature.Value))); }
 	}
 	FRandomStream Random(LastGenerationSeed ^ 0x4d494e45);
-	const FName Kinds[] = { TEXT("MineEntrance"), TEXT("Minecart"), TEXT("SupplyCrates"), TEXT("LanternPost"), TEXT("ToolRack"), TEXT("RailSegment") };
+	const FName Kinds[] = { TEXT("MineEntrance"), TEXT("Minecart"), TEXT("SupplyCrates"), TEXT("LanternPost"), TEXT("ToolRack") };
 	int32 Index = 0;
 	for (int32 X = Settings.StartColumn + 5; X < End - 4; X += FMath::Max(6, Settings.SurfaceDecorationSpacing))
 	{
@@ -2237,15 +2237,13 @@ void ULevelManagerSubsystem::ProtectSurfaceFoundation(const FIntPoint& Floor, in
 	if (Floor.Y > Surface || Row == nullptr) { return; }
 	for (int32 X = Floor.X - HalfWidth; X <= Floor.X + HalfWidth; ++X)
 	{
-		for (int32 Y = Floor.Y; Y <= Floor.Y + 1; ++Y)
-		{
-			ABlockBase* Existing = GetBlockAtPosition(FVector2D(X, Y));
-			if (Existing == nullptr || Existing->GetTileIndex() == Row->TileIndex) { continue; }
-			Existing->Destroy();
-			BlockList.Remove(Existing);
-			BlockActorMap.Remove(FVector2D(X, Y));
-			SpawnTileActor(FIntPoint(X, Y), Row->TileIndex, Data->GetBlueprintClass(EBlueprintClassType::BlockBase));
-		}
+		const int32 Y = Floor.Y;
+		ABlockBase* Existing = GetBlockAtPosition(FVector2D(X, Y));
+		if (Existing == nullptr || Existing->GetTileIndex() == Row->TileIndex) { continue; }
+		Existing->Destroy();
+		BlockList.Remove(Existing);
+		BlockActorMap.Remove(FVector2D(X, Y));
+		SpawnTileActor(FIntPoint(X, Y), Row->TileIndex, Data->GetBlueprintClass(EBlueprintClassType::BlockBase));
 	}
 }
 
@@ -3579,7 +3577,7 @@ bool ULevelManagerSubsystem::TryPlaceWorkbench(FName ItemKey, const FVector& Wor
 	if (Sprite == nullptr || Item->ConsumableEffect != EConsumableEffectType::PlaceWorkbench) { return false; }
 	AWorkbenchActor* Bench = GetWorld()->SpawnActor<AWorkbenchActor>(AWorkbenchActor::StaticClass(), Center, FRotator::ZeroRotator);
 	if (Bench == nullptr) { return false; }
-	Bench->InitializeWorkbench(Sprite);
+	Bench->InitializeWorkbench(Sprite, ItemKey);
 	PlacedWorkbenches.Add(Bench);
 	return true;
 }

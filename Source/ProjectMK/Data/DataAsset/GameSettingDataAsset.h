@@ -262,6 +262,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Ice", meta = (ClampMin = "1.0"))
 	float IceAcceleration = 320.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction", meta = (ClampMin = "0.2"))
+	float StructureRecoveryHoldDuration = 0.8f;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1.0"))
 	float ShopBuybackLifetime = 300.f;
 

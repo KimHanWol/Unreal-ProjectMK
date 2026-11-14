@@ -21,6 +21,9 @@ public:
 	virtual bool CanInteract(AActor* Interactor);
 	virtual bool TryInteract(AActor* Interactor);
 	virtual void EndInteract() {}
+	virtual FName GetRecoveryItemKey() const { return NAME_None; }
+	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const;
+	virtual bool TryRecover(AActor* Interactor);
 
 protected:
 	/** 0 이하이면 거리 제한 없이 상호작용한다 */
@@ -31,6 +34,7 @@ protected:
 
 	/** 이벤트 태그가 없을 때 액터가 직접 처리하는 상호작용 */
 	virtual bool OnInteract(AActor* Interactor) { return false; }
+	virtual void OnRecovered() {}
 
 	bool IsInInteractRange(const AActor* Interactor) const;
 };

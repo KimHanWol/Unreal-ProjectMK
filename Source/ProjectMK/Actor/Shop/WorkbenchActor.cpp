@@ -6,8 +6,11 @@
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Controller/MKPlayerController.h"
 
-void AWorkbenchActor::InitializeWorkbench(UPaperSprite* Sprite)
+FName AWorkbenchActor::GetRecoveryItemKey() const { return WorkbenchItemKey; }
+
+void AWorkbenchActor::InitializeWorkbench(UPaperSprite* Sprite, FName ItemKey)
 {
+	WorkbenchItemKey = ItemKey;
 	ShopSprite->SetSprite(Sprite);
 	const FVector2D Source = Sprite->GetSourceSize();
 	const float Scale = 28.f / FMath::Max(Source.X, Source.Y);

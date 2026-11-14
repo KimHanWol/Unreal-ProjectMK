@@ -18,6 +18,14 @@ bool AStorageChestActor::CanInteract(AActor* Interactor)
 	return bIsBuried == false && bIsBreaking == false && PhysicsBlock.IsValid() && PhysicsBlock->IsFalling() == false && Super::CanInteract(Interactor);
 }
 
+FName AStorageChestActor::GetRecoveryItemKey() const { return ChestItemKey; }
+
+FText AStorageChestActor::GetRecoveryBlockedReason(AActor* Interactor) const
+{
+	if (ItemSlots.ContainsByPredicate([](const FInventorySlotData& Slot) { return Slot.IsEmpty() == false; })) { return NSLOCTEXT("Interaction", "EmptyChestBeforeRecovery", "상자를 먼저 비워주세요"); }
+	return IInteractable::GetRecoveryBlockedReason(Interactor);
+}
+
 void AStorageChestActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CoverTimer);
@@ -135,6 +143,11 @@ void AStorageChestActor::SetPhysicsBlock(ABlockBase* Block)
 		AttachToActor(Block, FAttachmentTransformRules::KeepWorldTransform);
 		Block->AActor::OnDestroyed.AddUniqueDynamic(this, &AStorageChestActor::OnPhysicsBlockDestroyed);
 		ShopSprite->SetVisibility(false);
+		if (UPaperSpriteComponent* Render = Block->FindComponentByClass<UPaperSpriteComponent>())
+		{
+			Render->SetRelativeLocation(FVector(0.f, -12.f, 0.f));
+			Render->SetTranslucentSortPriority(-4);
+		}
 	}
 }
 

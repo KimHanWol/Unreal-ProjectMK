@@ -2,24 +2,28 @@
 
 #include "CoreMinimal.h"
 #include "GameFramework/Actor.h"
+#include "ProjectMK/Interface/Interactable.h"
 
 #include "BlastChargeActor.generated.h"
 
 class UAbilitySystemComponent;
+class UBoxComponent;
 class UPaperSprite;
 class UPaperSpriteComponent;
 
 /** 발파 폭약. 설치 후 지연 시간이 지나면 주변 블록을 파괴한다. 캐릭터에게는 대미지를 주지 않는다 */
 UCLASS()
-class PROJECTMK_API ABlastChargeActor : public AActor
+class PROJECTMK_API ABlastChargeActor : public AActor, public IInteractable
 {
 	GENERATED_BODY()
 
 public:
 	ABlastChargeActor();
+	virtual FName GetRecoveryItemKey() const override;
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
+	virtual float GetInteractRange() const override;
 
 public:
 	void InitializeBlastCharge(float InDelay, int32 InRadius, UAbilitySystemComponent* InInstigatorASC, UPaperSprite* InSprite);
@@ -31,6 +35,9 @@ private:
 protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
+
+	UPROPERTY(VisibleAnywhere, Category = "Components")
+	TObjectPtr<UBoxComponent> InteractionBox;
 
 	/** 폭발 직전 이 시간 동안 깜빡임이 빨라진다 */
 	UPROPERTY(EditDefaultsOnly, Category = "Blast", meta = (ClampMin = "0.0"))

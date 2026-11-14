@@ -4,6 +4,8 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameFramework/Character.h"
+#include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Component/InventoryComponent.h"
 
 bool IInteractable::CanInteract(AActor* Interactor)
 {
@@ -51,6 +53,25 @@ bool IInteractable::TryInteract(AActor* Interactor)
 	EventData.EventTag = InteractEventTag;
 
 	return InteractorASC->HandleGameplayEvent(EventData.EventTag, &EventData) > 0;
+}
+
+FText IInteractable::GetRecoveryBlockedReason(AActor* Interactor) const
+{
+	UInventoryComponent* Inventory = Interactor != nullptr ? Interactor->FindComponentByClass<UInventoryComponent>() : nullptr;
+	return Inventory != nullptr && Inventory->CanGainItem(GetRecoveryItemKey(), 1) ? FText::GetEmpty() : NSLOCTEXT("Interaction", "RecoveryInventoryFull", "인벤토리 공간 부족");
+}
+
+bool IInteractable::TryRecover(AActor* Interactor)
+{
+	AActor* Actor = Cast<AActor>(this);
+	UInventoryComponent* Inventory = Interactor != nullptr ? Interactor->FindComponentByClass<UInventoryComponent>() : nullptr;
+	const FName Key = GetRecoveryItemKey();
+	if (Actor == nullptr || Inventory == nullptr || Key.IsNone() || CanInteract(Interactor) == false || GetRecoveryBlockedReason(Interactor).IsEmpty() == false) { return false; }
+	if (Inventory->AddItem(Key, 1) == false) { return false; }
+	OnRecovered();
+	Actor->Destroy();
+	if (AMKCharacter* Player = Cast<AMKCharacter>(Interactor)) { Player->TrySaveGame(); }
+	return true;
 }
 
 bool IInteractable::IsInInteractRange(const AActor* Interactor) const

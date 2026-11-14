@@ -75,6 +75,7 @@ private:
 	IInteractable* FindNearestInteractable();
 	bool TryInteractNearby();
 	void UpdateInteractionPrompt();
+	void ClearInteractionHold();
 
 	void UpdateHorizontalMovement();
 	void UpdateGroundTraction();
@@ -112,6 +113,7 @@ private:
 	void OnFly();
 	void OnFinishFly();
 	void OnInteract();
+	void OnFinishInteract();
 	void OnQuickSlot(int32 SlotIndex);
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
@@ -175,6 +177,9 @@ protected:
 	float InteractSearchRadius = 200.f;
 
 	bool bIsFlying = false;
+	TWeakObjectPtr<AActor> HeldInteractionActor;
+	float InteractionHoldStartedAt = 0.f;
+	bool bInteractionHoldConsumed = false;
 
 private:
 	FVector CharacterDir;

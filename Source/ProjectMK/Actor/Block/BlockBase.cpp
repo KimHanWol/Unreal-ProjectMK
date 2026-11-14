@@ -89,6 +89,17 @@ UAbilitySystemComponent* ABlockBase::GetAbilitySystemComponent() const
 	return AbilitySystemComponent;
 }
 
+bool ABlockBase::CanInteract(AActor* Interactor)
+{
+	return Interactor != nullptr && GetRecoveryItemKey().IsNone() == false && bIsMineableState && bIsDestroying == false && FVector::DistSquared(Interactor->GetActorLocation(), GetActorLocation()) <= FMath::Square(32.f);
+}
+
+FName ABlockBase::GetRecoveryItemKey() const
+{
+	const auto* Row = UDataManager::Get(const_cast<ABlockBase*>(this))->GetBlockDataTableRow(BlockTileData.TileSetIndex);
+	return Row != nullptr ? Row->RecoveryItemKey : NAME_None;
+}
+
 void ABlockBase::SetLastDamageInstigatorASC(UAbilitySystemComponent* InInstigatorASC)
 {
 	LastDamageInstigatorASC = InInstigatorASC;
@@ -333,7 +344,11 @@ void ABlockBase::ApplyTerrainEdges(uint8 ExposedEdges)
 	TerrainExposedEdges = ExposedEdges & 15;
 	UDataManager* DataManager = UDataManager::Get(this);
 	const FBlockDataTableRow* Grass = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Dirt_Grass"))) : nullptr;
-	if (Grass != nullptr && BlockTileData.TileSetIndex == Grass->TileIndex)
+	const FBlockDataTableRow* Foundation = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(TEXT("SurfaceFoundation")) : nullptr;
+	const FVector2D Cell = UMKBlueprintFunctionLibrary::GetBlockPosition(this);
+	const bool bSurfaceFoundation = Foundation != nullptr && BlockTileData.TileSetIndex == Foundation->TileIndex &&
+		FMath::RoundToInt(Cell.Y) == GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(FMath::RoundToInt(Cell.X));
+	if ((Grass != nullptr && BlockTileData.TileSetIndex == Grass->TileIndex) || bSurfaceFoundation)
 	{
 		TerrainExposedEdges &= ~uint8(4);
 	}
@@ -621,7 +636,14 @@ bool ABlockBase::IsSupportAnchor()
 	return BlockDataTableRow != nullptr && BlockDataTableRow->bIsSupportAnchor && bIsMineableState;
 }
 
-	void ABlockBase::OnPreDestroy()
+void ABlockBase::OnRecovered()
+{
+	SetItemDropEnabled(false);
+	SetLastDamageInstigatorASC(nullptr);
+	OnPreDestroy();
+}
+
+void ABlockBase::OnPreDestroy()
 	{
 	BlockTileData.OnBlockDestroyedDelegate.Broadcast(this);
 	MK_SKILL_DEBUG_LOG(Warning, TEXT("[SkillDebug][Block] Destroyed block %s SpawnItemTypeCount=%d InstigatorASC=%s"),

@@ -15,6 +15,8 @@ class PROJECTMK_API AStorageChestActor : public AShopActor
 
 public:
 	virtual bool CanInteract(AActor* Interactor) override;
+	virtual FName GetRecoveryItemKey() const override;
+	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

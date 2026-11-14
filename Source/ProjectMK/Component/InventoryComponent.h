@@ -76,6 +76,8 @@ public:
 	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
 	bool CanEquipQuickSlot(FName ItemKey) const;
 	void MarkItemSlotSeen(EItemContainer Container, int32 Index);
+	void ApplyDiscoveredItemKeys(const TSet<FName>& Keys);
+	const TSet<FName>& GetDiscoveredItemKeys() const;
 	const TArray<FInventorySlotData>& GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage = nullptr);
 	static constexpr int32 QuickSlotCount = 8;
 	void SetGainRadius(float NewRadius);
@@ -91,6 +93,7 @@ public:
 	const TArray<FInventorySlotData>& GetInventorySlotDataList();
 
 private:
+	bool RegisterItemDiscovery(FName ItemKey);
 	void GainItem(FName ItemUID, int32 ItemCount);
 	void SpendItem(FName ItemUID, int32 ItemCount);
 	void OnInventoryUpdated();
@@ -130,6 +133,9 @@ private:
 
 	UPROPERTY(Transient)
 	TMap<FName, int32> InventoryItemMap;
+
+	UPROPERTY(Transient)
+	TSet<FName> DiscoveredItemKeys;
 
 	UPROPERTY(EditDefaultsOnly)
 	float ItemGainRange = 5.f;

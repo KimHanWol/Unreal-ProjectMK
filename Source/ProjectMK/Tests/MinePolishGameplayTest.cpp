@@ -95,7 +95,7 @@ namespace
 				Test->TestTrue(TEXT("Chest can be interacted with after landing"), Chest->CanInteract(Player) && Chest->TryInteract(Player));
 			}
 			UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
-			Inventory->ApplySavedInventorySlots({}); Inventory->ApplySavedQuickSlots({});
+			Inventory->ApplySavedInventorySlots({}); Inventory->ApplySavedQuickSlots({}); Inventory->ApplyDiscoveredItemKeys({});
 			Inventory->AddItem(TEXT("Ore_Coal"), 3);
 			Test->TestTrue(TEXT("A newly collected item is unread"), Inventory->GetItemSlots(EItemContainer::Inventory)[0].bIsNew);
 			TArray<UUserWidget*> HUDs;
@@ -110,8 +110,10 @@ namespace
 			Test->TestFalse(TEXT("Hover marks the actual inventory slot as read"), Inventory->GetItemSlots(EItemContainer::Inventory)[0].bIsNew);
 			Test->TestFalse(TEXT("Hover removes the red indicator"), Dot->IsVisible());
 			Inventory->AddItem(TEXT("Ore_Coal"), 1);
-			Test->TestTrue(TEXT("Collecting more into a seen stack makes it unread again"), Inventory->GetItemSlots(EItemContainer::Inventory)[0].bIsNew);
-			Inventory->TryMoveItemSlot(0, 7);
+			Test->TestFalse(TEXT("Collecting an already discovered item never creates another red indicator"), Inventory->GetItemSlots(EItemContainer::Inventory)[0].bIsNew);
+			Inventory->AddItem(TEXT("Ore_Copper"), 1);
+			Test->TestTrue(TEXT("A different item type receives its own first discovery"), Inventory->GetItemSlots(EItemContainer::Inventory)[1].bIsNew);
+			Inventory->TryMoveItemSlot(1, 7);
 			Test->TestTrue(TEXT("Rearranging a stack preserves its unread state"), Inventory->GetItemSlots(EItemContainer::Inventory)[7].bIsNew);
 			TArray<FInventorySlotData> MergeSlots;
 			MergeSlots.SetNum(8);
@@ -239,6 +241,11 @@ namespace
 					++ProtectedCount;
 					Test->TestFalse(TEXT("Landmark foundations cannot be drilled"), Block->IsMineable());
 					Test->TestFalse(TEXT("Landmark foundations cannot be blasted"), Block->TryDestroyByExplosion());
+					if (Level->GetSurfaceRow(X) == Settings->SurfaceBlockPositionY)
+					{
+						ABlockBase* Below = Level->GetBlockAtPosition(FVector2D(X, Settings->SurfaceBlockPositionY + 1));
+						Test->TestTrue(TEXT("Flat landmark foundations occupy only one protected stone layer"), Below != nullptr && Below->GetTileIndex() != Foundation);
+					}
 				}
 				else { ++OrdinaryCount; }
 			}
