@@ -6,6 +6,7 @@
 #include "Components/CanvasPanel.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Components/TextBlock.h"
@@ -128,6 +129,7 @@ bool UMKMenuBase::OpenMenu(EMenuContentsType InMenuContentsType)
 	}
 
 	CurrentMenuContentsType = InMenuContentsType;
+	UpdateFrameSize(InMenuContentsType);
 	if (UHUDWidget* HUD = GetHUDWidget())
 	{
 		HUD->SetHoveredSlot(nullptr);
@@ -263,4 +265,25 @@ bool UMKMenuBase::UpdateMenuContents(EMenuContentsType InMenuContentsType)
 		MenuTitle->SetText(Title);
 	}
 	return true;
+}
+
+void UMKMenuBase::UpdateFrameSize(EMenuContentsType InMenuContentsType)
+{
+	UWidget* Frame = MenuContentsCanvasPanel != nullptr ? MenuContentsCanvasPanel->GetParent() : nullptr;
+	while (Frame != nullptr)
+	{
+		if (UCanvasPanelSlot* Layout = Cast<UCanvasPanelSlot>(Frame->Slot))
+		{
+			const float Scale = FMath::Max(0.1f, UWidgetLayoutLibrary::GetViewportScale(this));
+			const FVector2D Available = UWidgetLayoutLibrary::GetViewportSize(this) / Scale;
+			const FVector2D Preferred(InMenuContentsType == EMenuContentsType::Shop ? 1100.f : 1000.f, 820.f);
+			Layout->SetAnchors(FAnchors(0.5f));
+			Layout->SetAlignment(FVector2D(0.5f));
+			Layout->SetAutoSize(false);
+			Layout->SetPosition(FVector2D::ZeroVector);
+			Layout->SetSize(FVector2D(FMath::Min(Preferred.X, Available.X * 0.94f), FMath::Min(Preferred.Y, Available.Y * 0.92f)));
+			break;
+		}
+		Frame = Frame->GetParent();
+	}
 }

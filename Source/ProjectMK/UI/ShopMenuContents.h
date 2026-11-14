@@ -30,11 +30,13 @@ protected:
 public:
 	bool TryUnlockRecipe(FName RecipeKey);
 	void SetMerchantDialogue(const FText& Dialogue);
+	void RequestPurchase(FName RecipeKey, FGuid BuybackId);
 
 private:
 	void BuildDefaultWidgetTree();
 	void RefreshRecipeSlotList();
 	void OnItemSaleRequested(EItemContainer Container, int32 Index, FName ItemKey);
+	void OnSellStack(EItemContainer Container, int32 Index, FName ItemKey);
 	void OnSaleConfirmed(FName ItemKey, int32 Count);
 	void OnCoinChanged(const FOnAttributeChangeData& Data);
 	void OnRecipeUnlocked(FName RecipeKey);
@@ -44,6 +46,10 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPanelWidget> RecipeSlotListPanel;
 	UPROPERTY(Transient)
+	TObjectPtr<UPanelWidget> BuybackPanel;
+	UPROPERTY(Transient)
+	TObjectPtr<UWidget> BuybackHeading;
+	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> MerchantColumn;
 	UPROPERTY(Transient)
 	TObjectPtr<UItemQuantityDialog> QuantityDialog;
@@ -51,4 +57,5 @@ private:
 	TObjectPtr<UTextBlock> MerchantDialogue;
 	EItemContainer PendingSaleContainer = EItemContainer::Inventory;
 	int32 PendingSaleIndex = INDEX_NONE;
+	FGuid PendingBuybackId;
 };

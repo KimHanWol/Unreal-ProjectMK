@@ -42,6 +42,7 @@ private:
 
 	void CacheMenuContents();
 	bool UpdateMenuContents(EMenuContentsType InMenuContentsType);
+	void UpdateFrameSize(EMenuContentsType InMenuContentsType);
 
 protected:
 	UPROPERTY(meta = (BindWidget))

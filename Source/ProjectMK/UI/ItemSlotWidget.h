@@ -40,7 +40,6 @@ protected:
 	bool bShowKeyGuide = true;
 
 private:
-	UWidget* CreateDragVisualWidget() const;
 	bool HasItem() const;
 
 private:

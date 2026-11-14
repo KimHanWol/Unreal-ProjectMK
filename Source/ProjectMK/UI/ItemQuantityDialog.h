@@ -9,6 +9,8 @@ class UTextBlock;
 class UImage;
 class UHorizontalBox;
 
+enum class EItemQuantityAction : uint8 { Sell, Buy, Drop };
+
 UCLASS()
 class PROJECTMK_API UItemQuantityDialog : public UMKUserWidget
 {
@@ -18,6 +20,7 @@ public:
 	virtual FReply NativeOnKeyDown(const FGeometry& Geometry, const FKeyEvent& Event) override;
 	UFUNCTION(BlueprintCallable)
 	void ShowQuantity(FName InItemKey, int32 InMaximumCount, bool bDrop = false);
+	void ShowPurchase(FName InItemKey, int32 InMaximumCount, int32 InUnitPrice);
 	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnQuantityConfirmed, FName, int32);
 	FOnQuantityConfirmed OnQuantityConfirmed;
 	DECLARE_MULTICAST_DELEGATE(FOnQuantityCancelled);
@@ -26,6 +29,7 @@ protected:
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;
 private:
+	void ShowDialog(FName InItemKey, int32 InMaximumCount, EItemQuantityAction InAction, int32 InUnitPrice);
 	void SetQuantity(int32 Count);
 	UFUNCTION()
 	void OnConfirm();
@@ -48,6 +52,7 @@ private:
 	FName ItemKey;
 	int32 MaximumCount = 1;
 	int32 UnitPrice = 0;
+	EItemQuantityAction Action = EItemQuantityAction::Sell;
 	UPROPERTY(Transient)
 	TObjectPtr<USpinBox> QuantityInput;
 	UPROPERTY(Transient)
@@ -65,9 +70,7 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> OwnedText;
 	UPROPERTY(Transient)
-	TObjectPtr<UTextBlock> TotalPrice;
-	UPROPERTY(Transient)
-	TObjectPtr<UHorizontalBox> PriceRow;
+	TObjectPtr<UWidget> ConfirmCurrencyIcon;
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> OneButton;
 	UPROPERTY(Transient)

@@ -85,22 +85,13 @@ TSharedRef<SWidget> UItemQuantityDialog::RebuildWidget()
 		Presets->AddChildToHorizontalBox(BuildActionButton(Button, Label, NSLOCTEXT("Quantity", "All", "전체"), 72.f, 36.f, TEXT("QuantityPreset")));
 		AllButton = Button;
 		AllButton->Rename(TEXT("QuantityAll"));
-		PriceRow = WidgetTree->ConstructWidget<UHorizontalBox>(UHorizontalBox::StaticClass(), TEXT("QuantityPriceRow"));
-		UBorder* PriceFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("SaleTotal"));
-		PriceFrame->SetPadding(FMargin(12.f, 10.f));
-		PriceFrame->SetContent(PriceRow);
-		Column->AddChildToVerticalBox(PriceFrame)->SetPadding(FMargin(0.f, 0.f, 0.f, 20.f));
-		UTextBlock* PriceCaption = BuildSectionLabel(NSLOCTEXT("Quantity", "SaleTotal", "판매 금액"));
-		ApplyTextRole(PriceCaption, EMKTextRole::Body);
-		PriceRow->AddChildToHorizontalBox(PriceCaption)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		UTextBlock* Price = nullptr;
-		PriceRow->AddChildToHorizontalBox(BuildCurrencyAmount(Price, FText::GetEmpty()));
-		TotalPrice = Price;
 		UHorizontalBox* Actions = WidgetTree->ConstructWidget<UHorizontalBox>();
 		Column->AddChildToVerticalBox(Actions)->SetHorizontalAlignment(HAlign_Center);
 		UButton* Confirm = nullptr;
-		Actions->AddChildToHorizontalBox(BuildActionButton(Confirm, Label, NSLOCTEXT("Sale", "Sell", "판매"), 160.f))->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
+		Actions->AddChildToHorizontalBox(BuildCurrencyButton(Confirm, Label, FText::GetEmpty(), 160.f))->SetPadding(FMargin(0.f, 0.f, 12.f, 0.f));
 		ConfirmButton = Confirm;
+		ConfirmCurrencyIcon = CastChecked<UHorizontalBox>(Confirm->GetContent())->GetChildAt(0);
+		ConfirmCurrencyIcon->Rename(TEXT("QuantityConfirmCurrency"));
 		ConfirmButton->Rename(TEXT("QuantityConfirm"));
 		ConfirmLabel = Label;
 		UButton* Cancel = nullptr;
@@ -120,27 +111,14 @@ FReply UItemQuantityDialog::NativeOnKeyDown(const FGeometry& Geometry, const FKe
 
 void UItemQuantityDialog::ShowQuantity(FName InItemKey, int32 InMaximumCount, bool bDrop)
 {
-	ItemKey = InItemKey;
-	MaximumCount = FMath::Max(1, InMaximumCount);
-	TakeWidget();
-	ActionTitle->SetText(bDrop ? NSLOCTEXT("Item", "DropQuantity", "버릴 수량") : NSLOCTEXT("Sale", "Quantity", "판매 수량"));
-	ConfirmLabel->SetText(bDrop ? NSLOCTEXT("Item", "Drop", "버리기") : NSLOCTEXT("Sale", "Sell", "판매"));
-	CastChecked<UMKMockupButton>(ConfirmButton)->SetVisualRole(bDrop ? TEXT("ActionDanger") : TEXT("ActionPrimary"));
-	QuantityInput->SetMaxValue(MaximumCount);
-	QuantityInput->SetMaxSliderValue(MaximumCount);
-	QuantityInput->SetValue(bDrop ? 1 : MaximumCount);
-	const UDataManager* Data = UDataManager::Get(this);
-	ItemTitle->SetText(::IsValid(Data) ? Data->GetItemDisplayName(ItemKey) : FText::FromName(ItemKey));
-	const FItemDataTableRow* Item = ::IsValid(Data) ? Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey) : nullptr;
-	if (Item != nullptr) { ItemIcon->SetBrushResourceObject(Item->ItemIcon.LoadSynchronous()); }
-	OwnedText->SetText(FText::Format(NSLOCTEXT("Quantity", "Owned", "보유 {0}개"), FText::AsNumber(MaximumCount)));
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
-	UnitPrice = ::IsValid(Inventory) ? Inventory->CalculateSellPrice(ItemKey, 1) : 0;
-	PriceRow->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
-	PriceRow->GetParent()->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
-	OnQuantityChanged(QuantityInput->GetValue());
-	SetVisibility(ESlateVisibility::Visible);
-	QuantityInput->SetKeyboardFocus();
+	const int32 Price = ::IsValid(Inventory) && bDrop == false ? Inventory->CalculateSellPrice(InItemKey, 1) : 0;
+	ShowDialog(InItemKey, InMaximumCount, bDrop ? EItemQuantityAction::Drop : EItemQuantityAction::Sell, Price);
+}
+
+void UItemQuantityDialog::ShowPurchase(FName InItemKey, int32 InMaximumCount, int32 InUnitPrice)
+{
+	ShowDialog(InItemKey, InMaximumCount, EItemQuantityAction::Buy, InUnitPrice);
 }
 
 void UItemQuantityDialog::BindEvents()
@@ -171,6 +149,33 @@ void UItemQuantityDialog::UnbindEvents()
 	QuantityInput->OnValueCommitted.RemoveAll(this);
 }
 
+void UItemQuantityDialog::ShowDialog(FName InItemKey, int32 InMaximumCount, EItemQuantityAction InAction, int32 InUnitPrice)
+{
+	TakeWidget();
+	if (InMaximumCount <= 0) { SetVisibility(ESlateVisibility::Collapsed); return; }
+	ItemKey = InItemKey;
+	MaximumCount = InMaximumCount;
+	Action = InAction;
+	UnitPrice = FMath::Max(0, InUnitPrice);
+	const bool bDrop = Action == EItemQuantityAction::Drop;
+	const bool bBuy = Action == EItemQuantityAction::Buy;
+	ActionTitle->SetText(bDrop ? NSLOCTEXT("Item", "DropQuantity", "버릴 수량")
+		: (bBuy ? NSLOCTEXT("Quantity", "BuyQuantity", "구매 수량") : NSLOCTEXT("Sale", "Quantity", "판매 수량")));
+	CastChecked<UMKMockupButton>(ConfirmButton)->SetVisualRole(bDrop ? TEXT("ActionDanger") : TEXT("ActionPrimary"));
+	ConfirmCurrencyIcon->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	QuantityInput->SetMaxValue(MaximumCount);
+	QuantityInput->SetMaxSliderValue(MaximumCount);
+	QuantityInput->SetValue(bDrop || bBuy ? 1 : MaximumCount);
+	const UDataManager* Data = UDataManager::Get(this);
+	ItemTitle->SetText(::IsValid(Data) ? Data->GetItemDisplayName(ItemKey) : FText::FromName(ItemKey));
+	const FItemDataTableRow* Item = ::IsValid(Data) ? Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey) : nullptr;
+	if (Item != nullptr) { ItemIcon->SetBrushResourceObject(Item->ItemIcon.LoadSynchronous()); }
+	OwnedText->SetText(FText::Format(bBuy ? NSLOCTEXT("Quantity", "Available", "구매 가능 {0}개") : NSLOCTEXT("Quantity", "Owned", "보유 {0}개"), FText::AsNumber(MaximumCount)));
+	OnQuantityChanged(QuantityInput->GetValue());
+	SetVisibility(ESlateVisibility::Visible);
+	QuantityInput->SetKeyboardFocus();
+}
+
 void UItemQuantityDialog::SetQuantity(int32 Count)
 {
 	QuantityInput->SetValue(FMath::Clamp(Count, 1, MaximumCount));
@@ -193,7 +198,9 @@ void UItemQuantityDialog::OnCancel()
 void UItemQuantityDialog::OnQuantityChanged(float Value)
 {
 	const int32 Count = FMath::Clamp(FMath::RoundToInt(Value), 1, MaximumCount);
-	TotalPrice->SetText(FText::AsNumber(static_cast<int64>(UnitPrice) * Count));
+	const FText Total = FText::AsNumber(static_cast<int64>(UnitPrice) * Count);
+	ConfirmLabel->SetText(Action == EItemQuantityAction::Drop ? NSLOCTEXT("Item", "Drop", "버리기")
+		: FText::Format(Action == EItemQuantityAction::Buy ? NSLOCTEXT("Quantity", "BuyAction", "{0} 구매") : NSLOCTEXT("Quantity", "SellAction", "{0} 판매"), Total));
 	DecreaseButton->SetIsEnabled(Count > 1);
 	IncreaseButton->SetIsEnabled(Count < MaximumCount);
 	CastChecked<UMKMockupButton>(OneButton)->SetVisualRole(Count == 1 ? TEXT("QuantityPresetSelected") : TEXT("QuantityPreset"));

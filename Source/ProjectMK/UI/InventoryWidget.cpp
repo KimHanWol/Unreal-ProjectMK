@@ -16,6 +16,7 @@
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/UI/ShopStockEntryWidget.h"
 #include "ProjectMK/Data/DataTable/SkillDataTableRow.h"
 #include "Brushes/SlateNoResource.h"
 
@@ -43,6 +44,11 @@ void UInventoryWidget::NativeConstruct()
 
 bool UInventoryWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
 {
+	if (UShopStockDragDropOperation* Stock = Cast<UShopStockDragDropOperation>(Operation))
+	{
+		if (Stock->SourceEntry.IsValid()) { Stock->SourceEntry->RequestPurchase(); }
+		return true;
+	}
 	return Cast<UItemSlotDragDropOperation>(Operation) != nullptr || Super::NativeOnDrop(Geometry, Event, Operation);
 }
 
@@ -103,10 +109,10 @@ void UInventoryWidget::BuildDefaultWidgetTree()
 	if (bShowQuickSlots)
 	{
 		QuickSlotPanel = WidgetTree->ConstructWidget<UGridPanel>();
-		Column->AddChildToVerticalBox(BuildSection(QuickSlotPanel, FMargin(12.f, 24.f, 12.f, 20.f)))->SetPadding(FMargin(0.f, 0.f, 0.f, 16.f));
+		Column->AddChildToVerticalBox(BuildSection(QuickSlotPanel, FMargin(10.f, 20.f, 10.f, 16.f)))->SetPadding(FMargin(0.f, 0.f, 0.f, 12.f));
 	}
 	ItemSlotPanel = WidgetTree->ConstructWidget<UGridPanel>(UGridPanel::StaticClass(), TEXT("ItemSlotPanel"));
-	Column->AddChildToVerticalBox(BuildSection(ItemSlotPanel, FMargin(12.f, 24.f, 12.f, 20.f)));
+	Column->AddChildToVerticalBox(BuildSection(ItemSlotPanel, FMargin(10.f, 20.f, 10.f, 16.f)));
 }
 
 void UInventoryWidget::UpdateItemSlotPanel()
@@ -118,7 +124,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 	{
 		UItemSlotWidget* ItemWidget = CreateWidget<UItemSlotWidget>(this);
 		UGridSlot* Layout = ItemSlotPanel->AddChildToGrid(ItemWidget, Index / InventoryColumnCount, Index % InventoryColumnCount);
-		Layout->SetPadding(FMargin(4.f));
+		Layout->SetPadding(FMargin(2.f));
 		Layout->SetHorizontalAlignment(HAlign_Center);
 		Layout->SetVerticalAlignment(VAlign_Center);
 		ItemWidget->SetSlotAddress(EItemContainer::Inventory, Index);
@@ -133,7 +139,7 @@ void UInventoryWidget::UpdateItemSlotPanel()
 		{
 			UItemSlotWidget* ItemWidget = CreateWidget<UItemSlotWidget>(this);
 			UGridSlot* Layout = QuickSlotPanel->AddChildToGrid(ItemWidget, Index / 4, Index % 4);
-			Layout->SetPadding(FMargin(4.f, 4.f, 4.f, 12.f));
+			Layout->SetPadding(FMargin(2.f, 2.f, 2.f, 10.f));
 			ItemWidget->SetSlotAddress(EItemContainer::QuickSlot, Index);
 			ItemWidget->OnSecondaryAction.AddUObject(this, &UInventoryWidget::OnSlotSecondaryAction);
 			QuickSlotList.Add(ItemWidget);

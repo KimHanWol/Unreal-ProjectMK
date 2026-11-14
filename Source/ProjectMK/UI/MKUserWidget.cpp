@@ -3,6 +3,7 @@
 #include "ProjectMK/UI/MKUserWidget.h"
 
 #include "AbilitySystemComponent.h"
+#include "ProjectMK/UI/RecipeInfoWidget.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Blueprint/WidgetTree.h"
 #include "Components/Border.h"
@@ -347,12 +348,16 @@ USizeBox* UMKUserWidget::BuildRecipeEntry(UImage*& OutIcon, UTextBlock*& OutName
 	Size->SetContent(Card);
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
 	Card->SetContent(Row);
+	URecipeInfoWidget* Info = CreateWidget<URecipeInfoWidget>(this, URecipeInfoWidget::StaticClass(), TEXT("RecipeInfo"));
+	Row->AddChildToHorizontalBox(Info)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UHorizontalBox* InfoRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+	Info->SetInfoContent(InfoRow);
 	UBorder* IconFrame = BuildItemIconFrame(OutIcon, 32.f);
-	UHorizontalBoxSlot* IconSlot = Row->AddChildToHorizontalBox(IconFrame);
+	UHorizontalBoxSlot* IconSlot = InfoRow->AddChildToHorizontalBox(IconFrame);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 	IconSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
 	UVerticalBox* Copy = WidgetTree->ConstructWidget<UVerticalBox>();
-	UHorizontalBoxSlot* CopySlot = Row->AddChildToHorizontalBox(Copy);
+	UHorizontalBoxSlot* CopySlot = InfoRow->AddChildToHorizontalBox(Copy);
 	CopySlot->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	CopySlot->SetVerticalAlignment(VAlign_Center);
 	OutName = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("RecipeNameText"));

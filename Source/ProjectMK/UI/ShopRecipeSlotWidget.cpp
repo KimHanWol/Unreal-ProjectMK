@@ -1,7 +1,7 @@
 ﻿#include "ProjectMK/UI/ShopRecipeSlotWidget.h"
 
 #include "Blueprint/WidgetTree.h"
-#include "ProjectMK/UI/HUDWidget.h"
+#include "ProjectMK/UI/RecipeInfoWidget.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
@@ -22,18 +22,6 @@ TSharedRef<SWidget> UShopRecipeSlotWidget::RebuildWidget()
 	return Super::RebuildWidget();
 }
 
-void UShopRecipeSlotWidget::NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event)
-{
-	Super::NativeOnMouseEnter(Geometry, Event);
-	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey, true); }
-}
-
-void UShopRecipeSlotWidget::NativeOnMouseLeave(const FPointerEvent& Event)
-{
-	Super::NativeOnMouseLeave(Event);
-	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ClearTooltipSource(this); }
-}
-
 void UShopRecipeSlotWidget::BindEvents()
 {
 	if (::IsValid(UnlockButton))
@@ -52,6 +40,7 @@ void UShopRecipeSlotWidget::UnbindEvents()
 
 void UShopRecipeSlotWidget::UpdateWidget()
 {
+	if (URecipeInfoWidget* Info = Cast<URecipeInfoWidget>(WidgetTree->FindWidget(TEXT("RecipeInfo")))) { Info->SetRecipe(RecipeKey, true); }
 	// NativeConstruct 에서 InitializeRecipeSlot 이전에 먼저 호출된다.
 	const UDataManager* DataManager = UDataManager::Get(this);
 	const FShopRecipeDataTableRow* RecipeDataTableRow = RecipeKey.IsNone() == false && ::IsValid(DataManager) ? DataManager->GetShopRecipeDataTableRow(RecipeKey) : nullptr;

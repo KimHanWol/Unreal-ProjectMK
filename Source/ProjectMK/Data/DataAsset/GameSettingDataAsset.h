@@ -193,6 +193,12 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "1.0"))
 	float OxygenPickupDisplaySize = 18.f;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1.0"))
+	float ShopBuybackLifetime = 300.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1"))
+	int32 ShopBuybackMaxEntries = 24;
+
 	/** 강제 지정된 캐릭터 시각 방향 반전 여부 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Character")
 	bool bReverseOverrideVisualFacingDirection = false;

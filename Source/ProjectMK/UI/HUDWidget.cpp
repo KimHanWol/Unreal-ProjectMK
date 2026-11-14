@@ -9,6 +9,7 @@
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/UI/ShopStockEntryWidget.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
@@ -71,6 +72,7 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 
 bool UHUDWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
 {
+	if (Cast<UShopStockDragDropOperation>(Operation)) { return true; }
 	const UItemSlotDragDropOperation* Item = Cast<UItemSlotDragDropOperation>(Operation);
 	UInventoryComponent* Items = GetLocalInventoryComponent();
 	if (::IsValid(Item) == false || ::IsValid(Items) == false) { return Super::NativeOnDrop(Geometry, Event, Operation); }
@@ -185,6 +187,13 @@ void UHUDWidget::ShowRecipeTooltip(UWidget* Source, FName RecipeKey, bool bBluep
 	HoveredSlot = nullptr;
 	HoveredTooltipSource = Source;
 	if (::IsValid(Tooltip)) { Tooltip->ShowRecipeTooltip(RecipeKey, bBlueprint); UpdateTooltipPosition(); }
+}
+
+void UHUDWidget::ShowItemTooltip(UWidget* Source, FName ItemKey)
+{
+	HoveredSlot = nullptr;
+	HoveredTooltipSource = Source;
+	if (::IsValid(Tooltip)) { Tooltip->ShowItemTooltip(ItemKey); UpdateTooltipPosition(); }
 }
 
 void UHUDWidget::ClearTooltipSource(UWidget* Source)

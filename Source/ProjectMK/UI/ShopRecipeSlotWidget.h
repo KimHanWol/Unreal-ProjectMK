@@ -17,8 +17,6 @@ class PROJECTMK_API UShopRecipeSlotWidget : public UMKUserWidget
 
 protected:
 	virtual TSharedRef<SWidget> RebuildWidget() override;
-	virtual void NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event) override;
-	virtual void NativeOnMouseLeave(const FPointerEvent& Event) override;
 
 	virtual void BindEvents() override;
 	virtual void UnbindEvents() override;

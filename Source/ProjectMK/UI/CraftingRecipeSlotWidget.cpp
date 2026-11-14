@@ -1,7 +1,7 @@
 ﻿#include "ProjectMK/UI/CraftingRecipeSlotWidget.h"
 
 #include "Blueprint/WidgetTree.h"
-#include "ProjectMK/UI/HUDWidget.h"
+#include "ProjectMK/UI/RecipeInfoWidget.h"
 #include "Components/Button.h"
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
@@ -22,18 +22,6 @@ TSharedRef<SWidget> UCraftingRecipeSlotWidget::RebuildWidget()
 	return Super::RebuildWidget();
 }
 
-void UCraftingRecipeSlotWidget::NativeOnMouseEnter(const FGeometry& Geometry, const FPointerEvent& Event)
-{
-	Super::NativeOnMouseEnter(Geometry, Event);
-	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ShowRecipeTooltip(this, RecipeKey); }
-}
-
-void UCraftingRecipeSlotWidget::NativeOnMouseLeave(const FPointerEvent& Event)
-{
-	Super::NativeOnMouseLeave(Event);
-	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->ClearTooltipSource(this); }
-}
-
 void UCraftingRecipeSlotWidget::BindEvents()
 {
 	if (::IsValid(CraftButton))
@@ -52,6 +40,7 @@ void UCraftingRecipeSlotWidget::UnbindEvents()
 
 void UCraftingRecipeSlotWidget::UpdateWidget()
 {
+	if (URecipeInfoWidget* Info = Cast<URecipeInfoWidget>(WidgetTree->FindWidget(TEXT("RecipeInfo")))) { Info->SetRecipe(RecipeKey, false); }
 	const UDataManager* DataManager = UDataManager::Get(this);
 	const FShopRecipeDataTableRow* Recipe = ::IsValid(DataManager) && RecipeKey.IsNone() == false
 		? DataManager->GetShopRecipeDataTableRow(RecipeKey) : nullptr;

@@ -18,6 +18,7 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/UI/PlaytestQuickSlotWidget.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
+#include "ProjectMK/UI/ShopStockEntryWidget.h"
 
 UQuickInventoryWidget::UQuickInventoryWidget(const FObjectInitializer& ObjectInitializer)
 	: Super(ObjectInitializer)
@@ -52,6 +53,7 @@ void UQuickInventoryWidget::NativeDestruct()
 
 bool UQuickInventoryWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& Event, UDragDropOperation* Operation)
 {
+	if (Cast<UShopStockDragDropOperation>(Operation)) { return true; }
 	return Cast<UItemSlotDragDropOperation>(Operation) != nullptr || Super::NativeOnDrop(Geometry, Event, Operation);
 }
 

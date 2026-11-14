@@ -51,6 +51,8 @@ public:
 
 protected:
 	void BuildDefaultWidgetTree();
+	UWidget* CreateDragVisualWidget() const;
+	bool bShowSlotTooltip = true;
 
 private:
 	void UpdateFocusImageVisibility();

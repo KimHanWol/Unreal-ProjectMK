@@ -123,7 +123,7 @@ void UCraftingMenuContents::BuildDefaultWidgetTree()
 
 	UVerticalBox* InventoryColumn = WidgetTree->ConstructWidget<UVerticalBox>();
 	USizeBox* InventoryWidth = WidgetTree->ConstructWidget<USizeBox>();
-	InventoryWidth->SetWidthOverride(336.f);
+	InventoryWidth->SetWidthOverride(304.f);
 	InventoryWidth->SetContent(InventoryColumn);
 	Columns->AddChildToHorizontalBox(InventoryWidth);
 	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);

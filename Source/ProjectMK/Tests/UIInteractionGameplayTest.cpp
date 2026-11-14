@@ -20,12 +20,15 @@
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
+#include "ProjectMK/Core/Subsystem/ShopTradeSubsystem.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/HUDWidget.h"
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/ItemSlotWidget.h"
 #include "ProjectMK/UI/ShopMenuContents.h"
-#include "ProjectMK/UI/ShopRecipeSlotWidget.h"
+#include "ProjectMK/UI/ShopStockEntryWidget.h"
+#include "ProjectMK/UI/RecipeInfoWidget.h"
+#include "ProjectMK/UI/PlaytestWidget.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
 #include "ProjectMK/UI/MKMenuBase.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
@@ -73,11 +76,11 @@ namespace
 				TArray<UWidget*> ShopWidgets;
 				Shop->WidgetTree->GetAllWidgets(ShopWidgets);
 				UInventoryWidget* InventoryWidget = nullptr;
-				UShopRecipeSlotWidget* RecipeEntry = nullptr;
+				UShopStockEntryWidget* RecipeEntry = nullptr;
 				for (UWidget* Widget : ShopWidgets)
 				{
 					if (UInventoryWidget* Candidate = Cast<UInventoryWidget>(Widget)) { InventoryWidget = Candidate; }
-					if (UShopRecipeSlotWidget* Candidate = Cast<UShopRecipeSlotWidget>(Widget)) { RecipeEntry = Candidate; }
+					if (UShopStockEntryWidget* Candidate = Cast<UShopStockEntryWidget>(Widget)) { RecipeEntry = Candidate; }
 				}
 				UItemSlotWidget* Source = nullptr;
 				if (::IsValid(InventoryWidget))
@@ -92,7 +95,10 @@ namespace
 				const FPointerEvent Pointer(0, Position, Position, TSet<FKey>{ EKeys::LeftMouseButton }, EKeys::LeftMouseButton, 0.f, FModifierKeysState());
 				if (::IsValid(RecipeEntry))
 				{
-					RecipeEntry->TakeWidget()->OnMouseEnter(RecipeEntry->GetCachedGeometry(), Pointer);
+					URecipeInfoWidget* Info = nullptr;
+					RecipeEntry->WidgetTree->ForEachWidget([&Info](UWidget* Widget) { if (URecipeInfoWidget* Region = Cast<URecipeInfoWidget>(Widget)) { Info = Region; } });
+					if (Test->TestNotNull(TEXT("Shop stock has a separate tooltip info region"), Info) == false) { return Finish(); }
+					Info->TakeWidget()->OnMouseEnter(Info->GetCachedGeometry(), Pointer);
 					TArray<UUserWidget*> FoundHUDs;
 					UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), FoundHUDs, UHUDWidget::StaticClass(), false);
 					UMKTooltipBase* RecipeTooltip = CastChecked<UHUDWidget>(FoundHUDs[0])->GetTooltipWidget();
@@ -102,7 +108,8 @@ namespace
 					UTextBlock* RecipeDescription = Cast<UTextBlock>(RecipeTooltip->WidgetTree->FindWidget(TEXT("RuntimeTooltipDescription")));
 					Test->TestTrue(TEXT("Shop tooltip names the blueprint instead of its crafted result"), RecipeTitle->GetText().ToString().EndsWith(TEXT(" 설계도")));
 					Test->TestTrue(TEXT("Shop tooltip explains recipe unlocking"), RecipeDescription->GetText().ToString().Contains(TEXT("레시피를 해금")));
-					RecipeEntry->TakeWidget()->OnMouseLeave(Pointer);
+					Info->TakeWidget()->OnMouseLeave(Pointer);
+					Test->TestFalse(TEXT("Leaving stock info hides the tooltip before its buy button"), RecipeTooltip->IsVisible());
 				}
 				FReply DragReply = Source->TakeWidget()->OnDragDetected(Geometry, Pointer);
 				const TSharedPtr<FDragDropOperation> Operation = DragReply.GetDragDropContent();
@@ -146,10 +153,30 @@ namespace
 				Test->TestEqual(TEXT("Sale adds the correct currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), InitialCoin + SalePrice);
 				Test->TestFalse(TEXT("Confirmation closes the modal"), Dialog->IsVisible());
 				const FPointerEvent SecondaryPointer(0, Position, Position, TSet<FKey>{ EKeys::RightMouseButton }, EKeys::RightMouseButton, 0.f, FModifierKeysState());
-				Test->TestTrue(TEXT("Right click opens the same sale flow"), Source->TakeWidget()->OnPreviewMouseButtonDown(Geometry, SecondaryPointer).IsEventHandled());
-				Test->TestTrue(TEXT("Right click shows the sale quantity modal"), Dialog->IsVisible());
-				CastChecked<UButton>(Dialog->WidgetTree->FindWidget(TEXT("QuantityCancel")))->OnClicked.Broadcast();
-				Test->TestEqual(TEXT("Cancelling secondary sale preserves the items"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 3);
+				UShopTradeSubsystem* Trade = Player->GetWorld()->GetSubsystem<UShopTradeSubsystem>();
+				Test->TestEqual(TEXT("Sold items appear as buyback stock"), Trade->GetBuybackEntries()[0].Count, 2);
+				const FGuid PartialSaleId = Trade->GetBuybackEntries()[0].Id;
+				Test->TestTrue(TEXT("Buying back restores sold items"), Trade->TryBuyback(Player.Get(), PartialSaleId, 2));
+				Test->TestEqual(TEXT("Selling and buying back conserve currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), InitialCoin);
+				Test->TestTrue(TEXT("Right click sells the entire stack"), Source->TakeWidget()->OnPreviewMouseButtonDown(Geometry, SecondaryPointer).IsEventHandled());
+				Test->TestFalse(TEXT("Right click never opens the quantity modal"), Dialog->IsVisible());
+				Test->TestEqual(TEXT("Right click removes all five items"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 0);
+				const FGuid WholeSaleId = Trade->GetBuybackEntries()[0].Id;
+				Shop->RequestPurchase(NAME_None, WholeSaleId);
+				Test->TestTrue(TEXT("Stack purchase opens the same quantity modal"), Dialog->IsVisible());
+				Quantity->SetValue(3.f);
+				Confirm->OnClicked.Broadcast();
+				Test->TestEqual(TEXT("Buying a partial stack returns only the requested quantity"), Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(ItemKey), 3);
+				Test->TestEqual(TEXT("Remaining buyback stock is retained"), Trade->FindBuyback(WholeSaleId)->Count, 2);
+				Test->TestFalse(TEXT("Already exhausted buyback cannot be purchased again"), Trade->TryBuyback(Player.Get(), PartialSaleId, 1));
+				TArray<UUserWidget*> Panels;
+				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), Panels, UPlaytestWidget::StaticClass(), false);
+				if (Panels.Num() > 0)
+				{
+					UButton* Delete = Cast<UButton>(Panels[0]->WidgetTree->FindWidget(TEXT("DeleteSaveButton")));
+					if (Test->TestNotNull(TEXT("Test panel contains the save deletion action"), Delete)) { Delete->OnClicked.Broadcast(); }
+					Test->TestNotNull(TEXT("Arming delete keeps the current save in memory"), USaveGameSubsystem::Get(Player.Get())->GetSaveGame());
+				}
 				Shop->RemoveFromParent();
 				TArray<UUserWidget*> HUDs;
 				UWidgetBlueprintLibrary::GetAllWidgetsOfClass(Player.Get(), HUDs, UHUDWidget::StaticClass(), false);
@@ -168,7 +195,7 @@ namespace
 				for (UUserWidget* Candidate : Dialogs) { if (Candidate->IsVisible()) { DropDialog = Cast<UItemQuantityDialog>(Candidate); break; } }
 				if (Test->TestNotNull(TEXT("World drop quantity dialog is visible"), DropDialog) == false) { return Finish(); }
 				UButton* DropConfirm = Cast<UButton>(DropDialog->WidgetTree->FindWidget(TEXT("QuantityConfirm")));
-				Test->TestFalse(TEXT("Drop quantity does not show a money amount"), DropDialog->WidgetTree->FindWidget(TEXT("QuantityPriceRow"))->IsVisible());
+				Test->TestFalse(TEXT("Drop quantity does not show a money amount"), DropDialog->WidgetTree->FindWidget(TEXT("QuantityConfirmCurrency"))->IsVisible());
 				DropDialog->WidgetTree->ForEachWidget([](UWidget* Widget)
 				{
 					if (USpinBox* Input = Cast<USpinBox>(Widget)) { Input->SetValue(1.f); }

@@ -3,6 +3,7 @@
 #include "ProjectMK/UI/MKSlotBase.h"
 
 #include "Blueprint/WidgetTree.h"
+#include "Blueprint/WidgetLayoutLibrary.h"
 #include "Brushes/SlateColorBrush.h"
 #include "Components/Border.h"
 #include "Components/Image.h"
@@ -83,7 +84,7 @@ void UMKSlotBase::OnSlotHovered()
 {
 	UpdateFocusImageVisibility();
 
-	if (UHUDWidget* HUDWidget = GetHUDWidget())
+	if (UHUDWidget* HUDWidget = bShowSlotTooltip ? GetHUDWidget() : nullptr)
 	{
 		HUDWidget->SetHoveredSlot(this);
 	}
@@ -93,7 +94,7 @@ void UMKSlotBase::OnSlotUnhovered()
 {
 	UpdateFocusImageVisibility();
 
-	if (UHUDWidget* HUDWidget = GetHUDWidget())
+	if (UHUDWidget* HUDWidget = bShowSlotTooltip ? GetHUDWidget() : nullptr)
 	{
 		HUDWidget->ClearHoveredSlot(this);
 	}
@@ -290,6 +291,36 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	AcquiredSeal->SetVisibility(ESlateVisibility::Collapsed);
 	UOverlaySlot* SealSlot = Overlay->AddChildToOverlay(AcquiredSeal);
 	SealSlot->SetPadding(FMargin(4.f));
+}
+
+UWidget* UMKSlotBase::CreateDragVisualWidget() const
+{
+	if (::IsValid(IconImage) == false)
+	{
+		return nullptr;
+	}
+
+	UImage* DragVisualImage = NewObject<UImage>(GetTransientPackage());
+	if (::IsValid(DragVisualImage) == false)
+	{
+		return nullptr;
+	}
+
+	DragVisualImage->SetBrush(IconImage->GetBrush());
+	DragVisualImage->SetRenderOpacity(0.6f);
+	DragVisualImage->SetVisibility(ESlateVisibility::HitTestInvisible);
+	USizeBox* Size = NewObject<USizeBox>(GetTransientPackage());
+	const FGeometry& Geometry = IconImage->GetCachedGeometry();
+	FVector2D IconSize = Geometry.GetLocalSize();
+	if (IconSize.X > 0.f && IconSize.Y > 0.f)
+	{
+		IconSize = (Geometry.LocalToAbsolute(IconSize) - Geometry.LocalToAbsolute(FVector2D::ZeroVector)) / FMath::Max(0.01f, UWidgetLayoutLibrary::GetViewportScale(this));
+	}
+	Size->SetWidthOverride(IconSize.X > 0.f ? IconSize.X : DefaultSlotSize.X * 0.625f);
+	Size->SetHeightOverride(IconSize.Y > 0.f ? IconSize.Y : DefaultSlotSize.Y * 0.625f);
+	Size->SetContent(DragVisualImage);
+	Size->SetVisibility(ESlateVisibility::HitTestInvisible);
+	return Size;
 }
 
 void UMKSlotBase::UpdateFocusImageVisibility()
