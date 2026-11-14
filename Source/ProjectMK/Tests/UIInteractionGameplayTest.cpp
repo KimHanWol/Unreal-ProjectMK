@@ -80,7 +80,11 @@ namespace
 				for (UWidget* Widget : ShopWidgets)
 				{
 					if (UInventoryWidget* Candidate = Cast<UInventoryWidget>(Widget)) { InventoryWidget = Candidate; }
-					if (UShopStockEntryWidget* Candidate = Cast<UShopStockEntryWidget>(Widget)) { RecipeEntry = Candidate; }
+					if (UShopStockEntryWidget* Candidate = Cast<UShopStockEntryWidget>(Widget))
+					{
+						UTextBlock* Name = Cast<UTextBlock>(Candidate->WidgetTree->FindWidget(TEXT("RecipeNameText")));
+						if (Name != nullptr && Name->GetText().ToString().EndsWith(TEXT(" 설계도"))) { RecipeEntry = Candidate; }
+					}
 				}
 				UItemSlotWidget* Source = nullptr;
 				if (::IsValid(InventoryWidget))
@@ -110,6 +114,10 @@ namespace
 					Test->TestTrue(TEXT("Shop tooltip explains recipe unlocking"), RecipeDescription->GetText().ToString().Contains(TEXT("레시피를 해금")));
 					Info->TakeWidget()->OnMouseLeave(Pointer);
 					Test->TestFalse(TEXT("Leaving stock info hides the tooltip before its buy button"), RecipeTooltip->IsVisible());
+					Test->TestTrue(TEXT("Purchase tooltip is confined to the reusable item slot"), Info->GetCachedGeometry().GetLocalSize().X <= 80.f);
+					UWidget* Name = RecipeEntry->WidgetTree->FindWidget(TEXT("RecipeNameText"));
+					const FGeometry& NameGeometry = Name->GetCachedGeometry();
+					Test->TestFalse(TEXT("The purchase name area is outside the slot tooltip region"), Info->GetCachedGeometry().IsUnderLocation(NameGeometry.LocalToAbsolute(NameGeometry.GetLocalSize() * 0.5f)));
 				}
 				FReply DragReply = Source->TakeWidget()->OnDragDetected(Geometry, Pointer);
 				const TSharedPtr<FDragDropOperation> Operation = DragReply.GetDragDropContent();
@@ -155,6 +163,10 @@ namespace
 				const FPointerEvent SecondaryPointer(0, Position, Position, TSet<FKey>{ EKeys::RightMouseButton }, EKeys::RightMouseButton, 0.f, FModifierKeysState());
 				UShopTradeSubsystem* Trade = Player->GetWorld()->GetSubsystem<UShopTradeSubsystem>();
 				Test->TestEqual(TEXT("Sold items appear as buyback stock"), Trade->GetBuybackEntries()[0].Count, 2);
+				UVerticalBox* Catalog = Cast<UVerticalBox>(Shop->WidgetTree->FindWidget(TEXT("ShopCatalogList")));
+				Test->TestNotNull(TEXT("The shop keeps a visible framed purchase list"), Shop->WidgetTree->FindWidget(TEXT("ShopCatalogFrame")));
+				Test->TestTrue(TEXT("Resold items append to the same purchase list"), Catalog != nullptr && Cast<UShopStockEntryWidget>(Catalog->GetChildAt(Catalog->GetChildrenCount() - 1)) != nullptr);
+				Test->TestNull(TEXT("No separate buyback heading splits the shop inventory"), Shop->WidgetTree->FindWidget(TEXT("BuybackHeading")));
 				const FGuid PartialSaleId = Trade->GetBuybackEntries()[0].Id;
 				Test->TestTrue(TEXT("Buying back restores sold items"), Trade->TryBuyback(Player.Get(), PartialSaleId, 2));
 				Test->TestEqual(TEXT("Selling and buying back conserve currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), InitialCoin);

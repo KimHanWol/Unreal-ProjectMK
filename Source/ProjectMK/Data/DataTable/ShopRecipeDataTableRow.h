@@ -21,10 +21,26 @@ struct FShopRecipeItem
 	}
 };
 
+UENUM(BlueprintType)
+enum class EShopOfferType : uint8
+{
+	Recipe,
+	Item,
+};
+
 USTRUCT(BlueprintType)
 struct FShopRecipeDataTableRow : public FTableRowBase
 {
 	GENERATED_BODY()
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	EShopOfferType OfferType = EShopOfferType::Recipe;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "0", EditCondition = "OfferType == EShopOfferType::Item"))
+	int32 PurchasePrice = 0;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1", EditCondition = "OfferType == EShopOfferType::Item"))
+	int32 PurchaseLimit = 10;
 
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	FText DisplayName;

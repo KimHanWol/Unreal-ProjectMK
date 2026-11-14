@@ -66,6 +66,25 @@ bool UShopTradeSubsystem::TryBuyback(AMKCharacter* Player, FGuid Id, int32 Count
 	return true;
 }
 
+bool UShopTradeSubsystem::TryPurchaseItem(AMKCharacter* Player, FName OfferKey, int32 Count)
+{
+	if (bTransactionActive || Count <= 0 || Count > GetMaximumPurchaseCount(Player, OfferKey)) { return false; }
+	const FShopRecipeDataTableRow* Offer = UDataManager::Get(this)->GetShopRecipeDataTableRow(OfferKey);
+	UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
+	UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent();
+	const float Before = ASC->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute());
+	TGuardValue<bool> Guard(bTransactionActive, true);
+	if (Offer->PurchasePrice > 0) { ASC->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), Before - Offer->PurchasePrice * Count); }
+	if (Inventory->AddItem(Offer->ResultItemKey, Count) == false)
+	{
+		if (Offer->PurchasePrice > 0) { ASC->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), Before); }
+		return false;
+	}
+	OnStockChanged.Broadcast();
+	Player->TrySaveGame();
+	return true;
+}
+
 const TArray<FShopBuybackEntry>& UShopTradeSubsystem::GetBuybackEntries() const
 {
 	return Entries;
@@ -84,6 +103,20 @@ int32 UShopTradeSubsystem::GetMaximumBuybackCount(AMKCharacter* Player, FGuid Id
 	const float Coin = Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute());
 	int32 Count = FMath::Min(Entry->Count, FMath::FloorToInt(Coin / Entry->UnitPrice));
 	while (Count > 0 && Inventory->CanGainItem(Entry->ItemKey, Count) == false) { --Count; }
+	return Count;
+}
+
+int32 UShopTradeSubsystem::GetMaximumPurchaseCount(AMKCharacter* Player, FName OfferKey) const
+{
+	const FShopRecipeDataTableRow* Offer = UDataManager::Get(const_cast<UShopTradeSubsystem*>(this))->GetShopRecipeDataTableRow(OfferKey);
+	if (::IsValid(Player) == false || Offer == nullptr || Offer->OfferType != EShopOfferType::Item || Offer->PurchasePrice < 0) { return 0; }
+	UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
+	UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent();
+	if (Inventory == nullptr || ASC == nullptr) { return 0; }
+	int32 Count = FMath::Clamp(Offer->PurchaseLimit, 1, 999);
+	if (Offer->PurchasePrice > 0) { Count = FMath::Min(Count, FMath::FloorToInt(ASC->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()) / Offer->PurchasePrice)); }
+	Count = FMath::Min(Count, Offer->PurchasePrice > 0 ? MAX_int32 / Offer->PurchasePrice : Count);
+	while (Count > 0 && Inventory->CanGainItem(Offer->ResultItemKey, Count) == false) { --Count; }
 	return Count;
 }
 

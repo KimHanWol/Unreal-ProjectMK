@@ -141,7 +141,8 @@ const FShopRecipeDataTableRow* UCraftingComponent::GetRecipeDataTableRow(FName R
 	}
 
 	const UDataManager* DataManager = UDataManager::Get(const_cast<UCraftingComponent*>(this));
-	return ::IsValid(DataManager) ? DataManager->GetShopRecipeDataTableRow(RecipeKey) : nullptr;
+	const FShopRecipeDataTableRow* Row = ::IsValid(DataManager) ? DataManager->GetShopRecipeDataTableRow(RecipeKey) : nullptr;
+	return Row != nullptr && Row->OfferType == EShopOfferType::Recipe ? Row : nullptr;
 }
 
 UAbilitySystemComponent* UCraftingComponent::GetOwnerAbilitySystemComponent() const

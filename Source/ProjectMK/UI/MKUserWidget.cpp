@@ -338,7 +338,7 @@ UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSiz
 }
 
 USizeBox* UMKUserWidget::BuildRecipeEntry(UImage*& OutIcon, UTextBlock*& OutName, UTextBlock*& OutSummary,
-	UButton*& OutButton, UTextBlock*& OutButtonText, bool bCurrencyButton)
+	UButton*& OutButton, UTextBlock*& OutButtonText, bool bCurrencyButton, UWidget* IconContent, bool bTooltipOnIconOnly)
 {
 	USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
 	Size->SetMinDesiredHeight(100.f);
@@ -349,11 +349,13 @@ USizeBox* UMKUserWidget::BuildRecipeEntry(UImage*& OutIcon, UTextBlock*& OutName
 	UHorizontalBox* Row = WidgetTree->ConstructWidget<UHorizontalBox>();
 	Card->SetContent(Row);
 	URecipeInfoWidget* Info = CreateWidget<URecipeInfoWidget>(this, URecipeInfoWidget::StaticClass(), TEXT("RecipeInfo"));
-	Row->AddChildToHorizontalBox(Info)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	if (bTooltipOnIconOnly == false) { Row->AddChildToHorizontalBox(Info)->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); }
 	UHorizontalBox* InfoRow = WidgetTree->ConstructWidget<UHorizontalBox>();
-	Info->SetInfoContent(InfoRow);
-	UBorder* IconFrame = BuildItemIconFrame(OutIcon, 32.f);
-	UHorizontalBoxSlot* IconSlot = InfoRow->AddChildToHorizontalBox(IconFrame);
+	if (bTooltipOnIconOnly == false) { Info->SetInfoContent(InfoRow); }
+	else { Row->AddChildToHorizontalBox(InfoRow)->SetSize(FSlateChildSize(ESlateSizeRule::Fill)); }
+	UWidget* IconFrame = IconContent != nullptr ? IconContent : BuildItemIconFrame(OutIcon, 32.f);
+	if (bTooltipOnIconOnly) { Info->SetInfoContent(IconFrame); }
+	UHorizontalBoxSlot* IconSlot = InfoRow->AddChildToHorizontalBox(bTooltipOnIconOnly ? static_cast<UWidget*>(Info) : IconFrame);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
 	IconSlot->SetPadding(FMargin(0.f, 0.f, 16.f, 0.f));
 	UVerticalBox* Copy = WidgetTree->ConstructWidget<UVerticalBox>();

@@ -12,8 +12,6 @@
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
-#include "Components/WrapBox.h"
-#include "Components/WrapBoxSlot.h"
 #include "Components/VerticalBoxSlot.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
@@ -28,6 +26,7 @@
 #include "ProjectMK/Core/Subsystem/ShopTradeSubsystem.h"
 #include "Engine/World.h"
 #include "ProjectMK/UI/HUDWidget.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 
 UShopMenuContents::UShopMenuContents(const FObjectInitializer& ObjectInitializer) : Super(ObjectInitializer)
 {
@@ -121,9 +120,22 @@ void UShopMenuContents::SetMerchantDialogue(const FText& Dialogue)
 void UShopMenuContents::RequestPurchase(FName RecipeKey, FGuid BuybackId)
 {
 	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(nullptr); }
+	PendingBuybackId.Invalidate();
+	PendingCatalogKey = NAME_None;
 	if (RecipeKey.IsNone() == false)
 	{
-		if (TryUnlockRecipe(RecipeKey)) { GetLocalPlayerCharacter()->TrySaveGame(); }
+		const FShopRecipeDataTableRow* Offer = UDataManager::Get(this)->GetShopRecipeDataTableRow(RecipeKey);
+		if (Offer == nullptr) { return; }
+		if (Offer->OfferType == EShopOfferType::Recipe)
+		{
+			if (TryUnlockRecipe(RecipeKey)) { GetLocalPlayerCharacter()->TrySaveGame(); }
+			return;
+		}
+		const int32 Maximum = GetWorld()->GetSubsystem<UShopTradeSubsystem>()->GetMaximumPurchaseCount(GetLocalPlayerCharacter(), RecipeKey);
+		if (Maximum <= 0) { return; }
+		PendingCatalogKey = RecipeKey;
+		if (Maximum == 1) { OnSaleConfirmed(Offer->ResultItemKey, 1); }
+		else { QuantityDialog->ShowPurchase(Offer->ResultItemKey, Maximum, Offer->PurchasePrice); }
 		return;
 	}
 	UShopTradeSubsystem* Trade = GetWorld()->GetSubsystem<UShopTradeSubsystem>();
@@ -167,21 +179,16 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	DialogueSize->SetMinDesiredHeight(112.f);
 	DialogueSize->SetContent(SaleMat);
 	MerchantColumn->AddChildToVerticalBox(DialogueSize)->SetPadding(FMargin(0.f, 8.f, 0.f, 12.f));
-	MerchantColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Purchase", "구매")))->SetPadding(FMargin(8.f, 8.f, 8.f, 16.f));
-	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>();
-	MerchantColumn->AddChildToVerticalBox(Recipes)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-	UVerticalBox* StockColumn = WidgetTree->ConstructWidget<UVerticalBox>();
-	Recipes->AddChild(StockColumn);
-	UWrapBox* Catalog = WidgetTree->ConstructWidget<UWrapBox>();
-	Catalog->SetInnerSlotPadding(FVector2D(8.f));
+	UBorder* CatalogFrame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("ShopCatalogFrame"));
+	ApplyBorderStyle(CatalogFrame, TEXT("InventoryDrawer"));
+	CatalogFrame->SetPadding(FMargin(12.f, 24.f, 12.f, 20.f));
+	MerchantColumn->AddChildToVerticalBox(CatalogFrame)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	UScrollBox* Recipes = WidgetTree->ConstructWidget<UScrollBox>(UScrollBox::StaticClass(), TEXT("ShopCatalogScroll"));
+	Recipes->SetClipping(EWidgetClipping::ClipToBounds);
+	CatalogFrame->SetContent(Recipes);
+	UVerticalBox* Catalog = WidgetTree->ConstructWidget<UVerticalBox>(UVerticalBox::StaticClass(), TEXT("ShopCatalogList"));
 	RecipeSlotListPanel = Catalog;
-	StockColumn->AddChildToVerticalBox(Catalog);
-	BuybackHeading = BuildSectionLabel(NSLOCTEXT("Shop", "Buyback", "재구매"));
-	StockColumn->AddChildToVerticalBox(BuybackHeading)->SetPadding(FMargin(8.f, 20.f, 8.f, 12.f));
-	UWrapBox* Recent = WidgetTree->ConstructWidget<UWrapBox>();
-	Recent->SetInnerSlotPadding(FVector2D(8.f));
-	BuybackPanel = Recent;
-	StockColumn->AddChildToVerticalBox(Recent);
+	Recipes->AddChild(Catalog);
 	UVerticalBox* PlayerColumn = WidgetTree->ConstructWidget<UVerticalBox>();
 	USizeBox* InventoryWidth = WidgetTree->ConstructWidget<USizeBox>();
 	InventoryWidth->SetWidthOverride(304.f);
@@ -191,7 +198,6 @@ void UShopMenuContents::BuildDefaultWidgetTree()
 	Player->SetDisplayRole(TEXT("Player"));
 	PlayerColumn->AddChildToVerticalBox(Player);
 	PlayerColumn->AddChildToVerticalBox(BuildSectionDivider());
-	PlayerColumn->AddChildToVerticalBox(BuildSectionLabel(NSLOCTEXT("Shop", "Sale", "판매")))->SetPadding(FMargin(8.f, 8.f, 8.f, 16.f));
 	UScrollBox* Items = WidgetTree->ConstructWidget<UScrollBox>();
 	PlayerColumn->AddChildToVerticalBox(Items)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
 	UInventoryWidget* PlayerInventory = CreateWidget<UInventoryWidget>(this);
@@ -207,14 +213,21 @@ void UShopMenuContents::RefreshRecipeSlotList()
 	AMKCharacter* Character = GetLocalPlayerCharacter();
 	if (::IsValid(RecipeSlotListPanel) == false || ::IsValid(Character) == false) { return; }
 	RecipeSlotListPanel->ClearChildren();
-	BuybackPanel->ClearChildren();
 	UCraftingComponent* Crafting = Character->GetCraftingComponent();
 	TArray<FName> Keys = Crafting->GetLockedRecipeKeys();
 	Keys.Sort(FNameLexicalLess());
 	for (const FName Key : Keys)
 	{
 		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
-		RecipeSlotListPanel->AddChild(Entry);
+		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
+		Entry->InitializeRecipe(this, Key);
+	}
+	TArray<FName> Offers = UDataManager::Get(this)->GetShopItemOfferRowNames();
+	Offers.Sort(FNameLexicalLess());
+	for (FName Key : Offers)
+	{
+		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
+		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeRecipe(this, Key);
 	}
 	const UShopTradeSubsystem* Trade = GetWorld()->GetSubsystem<UShopTradeSubsystem>();
@@ -222,10 +235,9 @@ void UShopMenuContents::RefreshRecipeSlotList()
 	{
 		if (Trade->FindBuyback(Stock.Id) == nullptr) { continue; }
 		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
-		BuybackPanel->AddChild(Entry);
+		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeBuyback(this, Stock.Id);
 	}
-	BuybackHeading->SetVisibility(BuybackPanel->GetChildrenCount() > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
 }
 
 void UShopMenuContents::OnItemSaleRequested(EItemContainer Container, int32 Index, FName ItemKey)
@@ -235,6 +247,7 @@ void UShopMenuContents::OnItemSaleRequested(EItemContainer Container, int32 Inde
 	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(Container);
 	if (Slots.IsValidIndex(Index) == false || Slots[Index].ItemUID != ItemKey || Inventory->CalculateSellPrice(ItemKey, 1) <= 0) { return; }
 	PendingBuybackId.Invalidate();
+	PendingCatalogKey = NAME_None;
 	PendingSaleContainer = Container;
 	PendingSaleIndex = Index;
 	QuantityDialog->ShowQuantity(ItemKey, Slots[Index].ItemCount);
@@ -257,13 +270,15 @@ void UShopMenuContents::OnSaleConfirmed(FName ItemKey, int32 Count)
 {
 	UShopTradeSubsystem* Trade = GetWorld()->GetSubsystem<UShopTradeSubsystem>();
 	bool bSucceeded = false;
-	if (PendingBuybackId.IsValid()) { bSucceeded = Trade->TryBuyback(GetLocalPlayerCharacter(), PendingBuybackId, Count); }
+	if (PendingCatalogKey.IsNone() == false) { bSucceeded = Trade->TryPurchaseItem(GetLocalPlayerCharacter(), PendingCatalogKey, Count); }
+	else if (PendingBuybackId.IsValid()) { bSucceeded = Trade->TryBuyback(GetLocalPlayerCharacter(), PendingBuybackId, Count); }
 	else
 	{
 		const TArray<FInventorySlotData>& Slots = GetLocalInventoryComponent()->GetItemSlots(PendingSaleContainer);
 		if (Slots.IsValidIndex(PendingSaleIndex) && Slots[PendingSaleIndex].ItemUID == ItemKey) { bSucceeded = Trade->TrySell(GetLocalPlayerCharacter(), PendingSaleContainer, PendingSaleIndex, Count); }
 	}
 	PendingBuybackId.Invalidate();
+	PendingCatalogKey = NAME_None;
 	if (bSucceeded) { USoundManager::TryPlaySFX(this, ESFXType::Shop_Sell); }
 	else { SetMerchantDialogue(NSLOCTEXT("Shop", "TransactionUnavailable", "거래할 수 없습니다. 재화·가방 공간·남은 재고를 확인해주세요.")); }
 }
@@ -275,6 +290,7 @@ void UShopMenuContents::OnMenuVisibilityChanged(ESlateVisibility InVisibility)
 {
 	QuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
 	PendingBuybackId.Invalidate();
+	PendingCatalogKey = NAME_None;
 	if (InVisibility != ESlateVisibility::Collapsed && InVisibility != ESlateVisibility::Hidden)
 	{
 		RefreshRecipeSlotList();

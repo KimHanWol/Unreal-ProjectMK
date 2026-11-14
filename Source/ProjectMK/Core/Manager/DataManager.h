@@ -61,6 +61,7 @@ public:
 	FText GetItemDisplayName(FName RowName) const;
 	TArray<FName> GetSkillRowNames() const;
 	TArray<FName> GetShopRecipeRowNames() const;
+	TArray<FName> GetShopItemOfferRowNames() const;
 	const FShopRecipeDataTableRow* GetShopRecipeDataTableRow(FName RowName) const;
 	FText GetRecipeDisplayName(FName RecipeKey, bool bBlueprint = false) const;
 	FText GetRecipeDescription(FName RecipeKey, bool bBlueprint = false) const;

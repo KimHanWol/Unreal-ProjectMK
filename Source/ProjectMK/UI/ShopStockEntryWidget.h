@@ -62,7 +62,11 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> NameText;
 	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> SummaryText;
+	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> PriceText;
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> BuyButton;
+	UPROPERTY(Transient)
+	TObjectPtr<UWidget> CurrencyIcon;
 };

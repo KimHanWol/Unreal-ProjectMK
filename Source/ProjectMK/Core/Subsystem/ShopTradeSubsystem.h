@@ -34,9 +34,11 @@ public:
 	virtual void Deinitialize() override;
 	bool TrySell(AMKCharacter* Player, EItemContainer Container, int32 SlotIndex, int32 Count);
 	bool TryBuyback(AMKCharacter* Player, FGuid Id, int32 Count);
+	bool TryPurchaseItem(AMKCharacter* Player, FName OfferKey, int32 Count);
 	const TArray<FShopBuybackEntry>& GetBuybackEntries() const;
 	const FShopBuybackEntry* FindBuyback(FGuid Id) const;
 	int32 GetMaximumBuybackCount(AMKCharacter* Player, FGuid Id) const;
+	int32 GetMaximumPurchaseCount(AMKCharacter* Player, FName OfferKey) const;
 	DECLARE_MULTICAST_DELEGATE(FOnStockChanged);
 	FOnStockChanged OnStockChanged;
 

@@ -27,7 +27,7 @@ if row is None:
     row = dict(next(entry for entry in rows if entry['Name'] == 'SupportBeam'))
     rows.append(row)
 row.update(Name='Workbench', DisplayName='작업대', Description='바닥 위에 작업대를 설치합니다. 가까이에서 F를 눌러 제작할 수 있습니다.',
-    bIsOre=False, bIsInventoryItem=True, bIsSplitDrop=False, SellPrice=20, MaxStackCount=10,
+    bIsOre=False, bIsInventoryItem=True, bIsSplitDrop=False, SellPrice=0, MaxStackCount=10,
     ItemIcon=sprite.get_path_name(), BlockOverlaySprite='None', ConsumableEffect='PlaceWorkbench',
     EffectValue=0, EffectDuration=0, PlaceBlockKey='None')
 assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(table, json.dumps(rows, ensure_ascii=False))
@@ -39,10 +39,10 @@ row = next((entry for entry in rows if entry['Name'] == 'Workbench'), None)
 if row is None:
     row = dict(next(entry for entry in rows if entry['ResultItemKey'] == 'SupportBeam'))
     rows.append(row)
-row.update(Name='Workbench', DisplayName='작업대', Description='설치한 작업대 근처에서 제작 메뉴를 열 수 있습니다.',
+row.update(Name='Workbench', DisplayName='작업대', Description='바닥 위에 설치하고 가까이에서 F를 눌러 제작할 수 있습니다.',
     ShortDescription='바닥에 설치 · F 제작', BlueprintItemKey='Blueprint',
-    RequiredItems=[dict(ItemKey='Ore_Copper', ItemCount=3), dict(ItemKey='Ore_Iron', ItemCount=2)],
+    RequiredItems=[], OfferType='Item', PurchasePrice=0, PurchaseLimit=10,
     ResultItemKey='Workbench', ResultItemCount=1, UnlockPrice=0)
 assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(table, json.dumps(rows, ensure_ascii=False))
 assert unreal.EditorAssetLibrary.save_loaded_asset(table, False)
-print('Applied Workbench item, unlocked recipe, and reusable pixel sprite')
+print('Applied a free shop Workbench offer and reusable pixel sprite; crafting is disabled for item offers')

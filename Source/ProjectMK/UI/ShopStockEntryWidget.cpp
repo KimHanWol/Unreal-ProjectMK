@@ -3,6 +3,8 @@
 #include "Blueprint/WidgetTree.h"
 #include "Blueprint/WidgetBlueprintLibrary.h"
 #include "Components/Border.h"
+#include "Components/Image.h"
+#include "Components/HorizontalBox.h"
 #include "Components/Button.h"
 #include "Components/SizeBox.h"
 #include "Components/TextBlock.h"
@@ -57,32 +59,20 @@ TSharedRef<SWidget> UShopStockEntryWidget::RebuildWidget()
 {
 	if (WidgetTree->RootWidget == nullptr)
 	{
-		USizeBox* Size = WidgetTree->ConstructWidget<USizeBox>();
-		Size->SetWidthOverride(132.f);
-		Size->SetHeightOverride(174.f);
-		WidgetTree->RootWidget = Size;
-		UBorder* Frame = WidgetTree->ConstructWidget<UBorder>();
-		ApplyBorderStyle(Frame, TEXT("RecipeCard"));
-		Frame->SetPadding(FMargin(10.f));
-		Size->SetContent(Frame);
-		UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
-		Frame->SetContent(Column);
-		Info = CreateWidget<URecipeInfoWidget>(this);
-		Column->AddChildToVerticalBox(Info)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
-		UVerticalBox* Description = WidgetTree->ConstructWidget<UVerticalBox>();
-		Info->SetInfoContent(Description);
 		StockSlot = CreateWidget<UShopStockSlotWidget>(this);
 		StockSlot->SetEntry(this);
-		Description->AddChildToVerticalBox(StockSlot)->SetHorizontalAlignment(HAlign_Center);
-		NameText = WidgetTree->ConstructWidget<UTextBlock>();
-		ApplyTextRole(NameText, EMKTextRole::Caption, true);
-		NameText->SetJustification(ETextJustify::Center);
-		Description->AddChildToVerticalBox(NameText)->SetPadding(FMargin(0.f, 6.f, 0.f, 6.f));
+		UImage* Icon = nullptr;
+		UTextBlock* Name = nullptr;
+		UTextBlock* Summary = nullptr;
 		UButton* Button = nullptr;
 		UTextBlock* Label = nullptr;
-		Column->AddChildToVerticalBox(BuildCurrencyButton(Button, Label, FText::GetEmpty(), 108.f, 32.f));
+		WidgetTree->RootWidget = BuildRecipeEntry(Icon, Name, Summary, Button, Label, true, StockSlot, true);
+		NameText = Name;
+		SummaryText = Summary;
 		BuyButton = Button;
 		PriceText = Label;
+		Info = CastChecked<URecipeInfoWidget>(WidgetTree->FindWidget(TEXT("RecipeInfo")));
+		CurrencyIcon = CastChecked<UHorizontalBox>(Button->GetContent())->GetChildAt(0);
 	}
 	return Super::RebuildWidget();
 }
@@ -132,11 +122,15 @@ void UShopStockEntryWidget::RefreshStock()
 	{
 		const FShopRecipeDataTableRow* Recipe = Data->GetShopRecipeDataTableRow(RecipeKey);
 		if (Recipe == nullptr) { return; }
-		Item = Data->GetRecipeItemData(RecipeKey, true);
-		NameText->SetText(Data->GetRecipeDisplayName(RecipeKey, true));
-		Info->SetRecipe(RecipeKey, true);
-		Price = Recipe->UnlockPrice;
-		bCanBuy = GetLocalPlayerCharacter()->GetCraftingComponent()->CanUnlockRecipe(RecipeKey);
+		const bool bItemOffer = Recipe->OfferType == EShopOfferType::Item;
+		Item = Data->GetRecipeItemData(RecipeKey, bItemOffer == false);
+		NameText->SetText(bItemOffer ? Data->GetItemDisplayName(Recipe->ResultItemKey) : Data->GetRecipeDisplayName(RecipeKey, true));
+		SummaryText->SetText(Recipe->ShortDescription);
+		if (bItemOffer) { Info->SetItem(Recipe->ResultItemKey); }
+		else { Info->SetRecipe(RecipeKey, true); }
+		Price = bItemOffer ? Recipe->PurchasePrice : Recipe->UnlockPrice;
+		bCanBuy = bItemOffer ? GetWorld()->GetSubsystem<UShopTradeSubsystem>()->GetMaximumPurchaseCount(GetLocalPlayerCharacter(), RecipeKey) > 0
+			: GetLocalPlayerCharacter()->GetCraftingComponent()->CanUnlockRecipe(RecipeKey);
 	}
 	else
 	{
@@ -146,12 +140,14 @@ void UShopStockEntryWidget::RefreshStock()
 		Item = Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Entry->ItemKey);
 		NameText->SetText(Data->GetItemDisplayName(Entry->ItemKey));
 		Info->SetItem(Entry->ItemKey);
+		SummaryText->SetText(FText::Format(NSLOCTEXT("Shop", "StockCount", "보유 재고 {0}개"), FText::AsNumber(Entry->Count)));
 		Price = Entry->UnitPrice;
 		Count = Entry->Count;
 		bCanBuy = Trade->GetMaximumBuybackCount(GetLocalPlayerCharacter(), BuybackId) > 0;
 	}
 	StockSlot->SetSlotIcon(Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr);
-	StockSlot->SetSlotCount(Count, BuybackId.IsValid());
-	PriceText->SetText(FText::Format(NSLOCTEXT("Shop", "PriceBuy", "{0} 구매"), FText::AsNumber(Price)));
+	StockSlot->SetSlotCount(Count, BuybackId.IsValid() && Count > 1);
+	CurrencyIcon->SetVisibility(Price > 0 ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+	PriceText->SetText(Price > 0 ? FText::Format(NSLOCTEXT("Shop", "PriceBuy", "{0} 구매"), FText::AsNumber(Price)) : NSLOCTEXT("Shop", "FreePurchase", "무료 구매"));
 	BuyButton->SetIsEnabled(bCanBuy);
 }

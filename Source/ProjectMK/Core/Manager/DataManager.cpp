@@ -177,7 +177,17 @@ TArray<FName> UDataManager::GetShopRecipeRowNames() const
 		return {};
 	}
 
-	return ShopRecipeDataTable->GetRowNames();
+	TArray<FName> Keys = ShopRecipeDataTable->GetRowNames();
+	Keys.RemoveAll([this](FName Key) { return GetShopRecipeDataTableRow(Key)->OfferType != EShopOfferType::Recipe; });
+	return Keys;
+}
+
+TArray<FName> UDataManager::GetShopItemOfferRowNames() const
+{
+	const UDataTable* Table = GetDataTable(EDataTableType::ShopRecipe);
+	TArray<FName> Keys = Table != nullptr ? Table->GetRowNames() : TArray<FName>();
+	Keys.RemoveAll([this](FName Key) { return GetShopRecipeDataTableRow(Key)->OfferType != EShopOfferType::Item; });
+	return Keys;
 }
 
 const FShopRecipeDataTableRow* UDataManager::GetShopRecipeDataTableRow(FName RowName) const

@@ -46,10 +46,6 @@ private:
 	UPROPERTY(Transient)
 	TObjectPtr<UPanelWidget> RecipeSlotListPanel;
 	UPROPERTY(Transient)
-	TObjectPtr<UPanelWidget> BuybackPanel;
-	UPROPERTY(Transient)
-	TObjectPtr<UWidget> BuybackHeading;
-	UPROPERTY(Transient)
 	TObjectPtr<UVerticalBox> MerchantColumn;
 	UPROPERTY(Transient)
 	TObjectPtr<UItemQuantityDialog> QuantityDialog;
@@ -58,4 +54,5 @@ private:
 	EItemContainer PendingSaleContainer = EItemContainer::Inventory;
 	int32 PendingSaleIndex = INDEX_NONE;
 	FGuid PendingBuybackId;
+	FName PendingCatalogKey;
 };

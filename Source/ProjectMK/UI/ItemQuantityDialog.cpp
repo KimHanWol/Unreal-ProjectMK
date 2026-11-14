@@ -162,7 +162,7 @@ void UItemQuantityDialog::ShowDialog(FName InItemKey, int32 InMaximumCount, EIte
 	ActionTitle->SetText(bDrop ? NSLOCTEXT("Item", "DropQuantity", "버릴 수량")
 		: (bBuy ? NSLOCTEXT("Quantity", "BuyQuantity", "구매 수량") : NSLOCTEXT("Sale", "Quantity", "판매 수량")));
 	CastChecked<UMKMockupButton>(ConfirmButton)->SetVisualRole(bDrop ? TEXT("ActionDanger") : TEXT("ActionPrimary"));
-	ConfirmCurrencyIcon->SetVisibility(bDrop ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
+	ConfirmCurrencyIcon->SetVisibility(bDrop || UnitPrice == 0 ? ESlateVisibility::Collapsed : ESlateVisibility::HitTestInvisible);
 	QuantityInput->SetMaxValue(MaximumCount);
 	QuantityInput->SetMaxSliderValue(MaximumCount);
 	QuantityInput->SetValue(bDrop || bBuy ? 1 : MaximumCount);
@@ -199,7 +199,7 @@ void UItemQuantityDialog::OnQuantityChanged(float Value)
 {
 	const int32 Count = FMath::Clamp(FMath::RoundToInt(Value), 1, MaximumCount);
 	const FText Total = FText::AsNumber(static_cast<int64>(UnitPrice) * Count);
-	ConfirmLabel->SetText(Action == EItemQuantityAction::Drop ? NSLOCTEXT("Item", "Drop", "버리기")
+	ConfirmLabel->SetText(Action == EItemQuantityAction::Buy && UnitPrice == 0 ? NSLOCTEXT("Shop", "FreePurchase", "무료 구매") : Action == EItemQuantityAction::Drop ? NSLOCTEXT("Item", "Drop", "버리기")
 		: FText::Format(Action == EItemQuantityAction::Buy ? NSLOCTEXT("Quantity", "BuyAction", "{0} 구매") : NSLOCTEXT("Quantity", "SellAction", "{0} 판매"), Total));
 	DecreaseButton->SetIsEnabled(Count > 1);
 	IncreaseButton->SetIsEnabled(Count < MaximumCount);

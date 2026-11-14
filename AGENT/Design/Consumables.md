@@ -103,8 +103,9 @@
 ## 2026-11-14 설치형 작업대
 
 - `ItemDataTable.Workbench`: 사용 효과 PlaceWorkbench, 최대 중첩 10개. 기존 T_IconWorkbench 픽셀 자원을 S_Workbench로 재사용한다.
-- `ShopRecipeDataTable.Workbench`: 처음부터 해금, 구리 3개·철 2개로 작업대 1개 제작. 설명과 재료는 기존 레시피 툴팁을 사용한다.
+- `ShopRecipeDataTable.Workbench`: OfferType=Item, PurchasePrice=0, PurchaseLimit=10. 상점에서 무료로 받으며 작업대 제작 목록에는 나오지 않는다. ItemDataTable의 판매 가격은 0이다.
 - 아이템을 퀵슬롯으로 옮기고 숫자 키를 누르면 캐릭터가 서 있는 바닥 위에 설치한다. 설치 성공 시에만 1개 소모한다. 공중·바닥 없음·같은 위치 중복 설치는 실패한다.
 - 설치된 작업대는 캐릭터와 충돌하지 않는다. 가까이 가면 기존 공통 F 가이드가 표시되고 F 상호작용으로 기존 제작 팝업을 연다.
+- 발파 폭약은 범위 안의 설치 작업대와 버팀목도 제거한다. 작업대와 버팀목이 같은 칸에 있어도 각각 제거한다.
 - 현재 다른 설치 블록과 마찬가지로 월드 재생성 시 배치가 초기화된다. 저장 파일에는 지형 시드와 플레이어 진행이 저장되며 설치 지형의 영속 저장은 포함하지 않는다.
 - 재적용: 에디터에서 AGENT/Scripts/ApplyWorkbenchData.py를 실행한다. 기존 다른 아이템과 레시피 행은 보존한다.

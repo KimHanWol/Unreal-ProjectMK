@@ -67,7 +67,7 @@ protected:
 	UBorder* BuildModalBackdrop();
 	UBorder* BuildItemIconFrame(UImage*& OutIcon, float IconSize = FMKUILayout::ItemIconSize, FName BrushName = TEXT("Slot"));
 	USizeBox* BuildRecipeEntry(UImage*& OutIcon, UTextBlock*& OutName, UTextBlock*& OutSummary,
-		UButton*& OutButton, UTextBlock*& OutButtonText, bool bCurrencyButton);
+		UButton*& OutButton, UTextBlock*& OutButtonText, bool bCurrencyButton, UWidget* IconContent = nullptr, bool bTooltipOnIconOnly = false);
 	USizeBox* BuildStatusGauge(UProgressBar*& OutBar, FName RootName, FName FrameName, const FText& Label, const FLinearColor& FillColor);
 	USizeBox* BuildActionButton(UButton*& OutButton, UTextBlock*& OutLabel, const FText& Label,
 		float MinWidth = FMKUILayout::CompactButtonWidth, float MinHeight = FMKUILayout::ButtonHeight, FName VisualRole = TEXT("ActionPrimary"));
