@@ -23,33 +23,21 @@ int32 USkillConnectionWidget::NativePaint(const FPaintArgs& Args, const FGeometr
 	for (FVector2D& Point : ShadowPoints) { Point += FVector2D(1.f, 2.f); }
 	const FLinearColor Tint = Style.GetColorAndOpacityTint();
 	FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), ShadowPoints,
-		ESlateDrawEffect::None, FLinearColor(0.01f, 0.015f, 0.02f, 0.85f) * Tint, false, 12.f);
+		ESlateDrawEffect::None, FLinearColor(0.01f, 0.015f, 0.02f, 0.75f) * Tint, true, 9.f);
 	FSlateDrawElement::MakeLines(DrawElements, Layer + 2, Geometry.ToPaintGeometry(), LinePoints,
-		ESlateDrawEffect::None, FLinearColor(0.035f, 0.05f, 0.06f) * Tint, false, 10.f);
+		ESlateDrawEffect::None, FLinearColor(0.035f, 0.05f, 0.06f) * Tint, true, 7.f);
 	FSlateDrawElement::MakeLines(DrawElements, Layer + 3, Geometry.ToPaintGeometry(), LinePoints,
-		ESlateDrawEffect::None, LineColor * Tint, false, 6.f);
+		ESlateDrawEffect::None, LineColor * Tint, true, 4.f);
 	const float HighlightStrength = FMath::Max3(LineColor.R, LineColor.G, LineColor.B) > 0.3f ? 0.25f : 0.06f;
 	const FLinearColor Highlight = FMath::Lerp(LineColor, FLinearColor(0.9f, 0.94f, 0.85f), HighlightStrength);
 	FSlateDrawElement::MakeLines(DrawElements, Layer + 4, Geometry.ToPaintGeometry(), LinePoints,
-		ESlateDrawEffect::None, Highlight * Tint, false, 2.f);
+		ESlateDrawEffect::None, Highlight * Tint, true, 1.f);
 	return Layer + 4;
 }
 
 void USkillConnectionWidget::InitializePath(const TArray<FVector2D>& Points)
 {
-	LinePoints.Reset();
-	for (int32 Index = 0; Index < Points.Num(); ++Index)
-	{
-		if (Index == 0 || Index == Points.Num() - 1) { LinePoints.Add(Points[Index]); continue; }
-		const FVector2D Before = Points[Index] - Points[Index - 1];
-		const FVector2D After = Points[Index + 1] - Points[Index];
-		const FVector2D BeforeDirection = Before.GetSafeNormal();
-		const FVector2D AfterDirection = After.GetSafeNormal();
-		if (FMath::Abs(FVector2D::DotProduct(BeforeDirection, AfterDirection)) > 0.99f) { continue; }
-		const float Cut = FMath::Min(6.f, FMath::Min(Before.Size(), After.Size()) * 0.25f);
-		LinePoints.Add(Points[Index] - BeforeDirection * Cut);
-		LinePoints.Add(Points[Index] + AfterDirection * Cut);
-	}
+	LinePoints = Points;
 	InvalidateLayoutAndVolatility();
 }
 

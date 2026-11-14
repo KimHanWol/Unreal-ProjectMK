@@ -25,6 +25,7 @@
 #include "ProjectMK/UI/SkillSlotWidget.h"
 #include "ProjectMK/UI/SkillTreeMenuContents.h"
 #include "ProjectMK/UI/SkillConnectionWidget.h"
+#include "ProjectMK/UI/MenuDisplayCardWidget.h"
 #include "Widgets/SWidget.h"
 
 namespace
@@ -181,6 +182,65 @@ namespace
 						}
 					}
 					Test->TestTrue(TEXT("The central character connects to first skills"), RootConnections > 0);
+					int32 ExpectedConnections = 0;
+					for (FName Key : UDataManager::Get(World)->GetSkillRowNames())
+					{
+						const FSkillDataTableRow* Row = UDataManager::Get(World)->GetSkillDataTableRow(Key);
+						if (Row != nullptr && Row->AcquisitionType == ESkillAcquisitionType::SkillTree && Row->DisplayName.IsEmpty() == false)
+						{
+							ExpectedConnections += FMath::Max(1, Row->RequiredSkill.Num());
+						}
+					}
+					Test->TestEqual(TEXT("Every prerequisite and root connection is routed"), Connections.Num(), ExpectedConnections);
+					bool bCrossing = false;
+					for (int32 A = 0; A < Connections.Num() && bCrossing == false; ++A)
+					{
+						for (int32 B = A + 1; B < Connections.Num() && bCrossing == false; ++B)
+						{
+							const TArray<FVector2D>& First = Connections[A].RoutePoints;
+							const TArray<FVector2D>& Second = Connections[B].RoutePoints;
+							for (int32 I = 1; I < First.Num() && bCrossing == false; ++I)
+							{
+								FBox2D FirstSegment(ForceInit); FirstSegment += First[I - 1]; FirstSegment += First[I];
+								for (int32 J = 1; J < Second.Num(); ++J)
+								{
+									FBox2D SecondSegment(ForceInit); SecondSegment += Second[J - 1]; SecondSegment += Second[J];
+									if (FirstSegment.ExpandBy(10.f).Intersect(SecondSegment) == false) { continue; }
+									FVector OnFirst, OnSecond;
+									FMath::SegmentDistToSegmentSafe(FVector(First[I - 1], 0.f), FVector(First[I], 0.f),
+										FVector(Second[J - 1], 0.f), FVector(Second[J], 0.f), OnFirst, OnSecond);
+									if (FVector::DistSquared(OnFirst, OnSecond) < 100.f) { bCrossing = true; break; }
+								}
+							}
+						}
+					}
+					Test->TestFalse(TEXT("Connections never cross, share trunks, or form false junctions"), bCrossing);
+					bool bSharpElbow = false;
+					for (const FSkillConnectionVisual& Connection : Connections)
+					{
+						for (int32 Index = 1; Index + 1 < Connection.RoutePoints.Num(); ++Index)
+						{
+							const FVector2D Before = (Connection.RoutePoints[Index] - Connection.RoutePoints[Index - 1]).GetSafeNormal();
+							const FVector2D After = (Connection.RoutePoints[Index + 1] - Connection.RoutePoints[Index]).GetSafeNormal();
+							if (Before.IsNearlyZero() == false && After.IsNearlyZero() == false && FVector2D::DotProduct(Before, After) < 0.819) { bSharpElbow = true; }
+						}
+					}
+					Test->TestFalse(TEXT("Rendered curves have no abrupt pipe elbows"), bSharpElbow);
+					bool bNodeOverlap = false;
+					for (int32 A = 0; A < Nodes.Num(); ++A)
+					{
+						if (Nodes[A]->GetTypedOuter<USkillTreeMenuContents>() != Tree) { continue; }
+						const UCanvasPanelSlot* First = Cast<UCanvasPanelSlot>(Nodes[A]->Slot);
+						if (First == nullptr) { continue; }
+						const FBox2D FirstBox(First->GetPosition() - FVector2D(12.f), First->GetPosition() + First->GetSize() + FVector2D(12.f));
+						for (int32 B = A + 1; B < Nodes.Num(); ++B)
+						{
+							if (Nodes[B]->GetTypedOuter<USkillTreeMenuContents>() != Tree) { continue; }
+							const UCanvasPanelSlot* Second = Cast<UCanvasPanelSlot>(Nodes[B]->Slot);
+							if (Second != nullptr && FirstBox.Intersect(FBox2D(Second->GetPosition(), Second->GetPosition() + Second->GetSize()))) { bNodeOverlap = true; }
+						}
+					}
+					Test->TestFalse(TEXT("Skill nodes keep a visible gap between frames"), bNodeOverlap);
 					if (PurchaseKey.IsNone() == false)
 					{
 						Player->GetSkillComponent()->TryAddCoin(UDataManager::Get(World)->GetSkillDataTableRow(PurchaseKey)->Price, false);
@@ -209,6 +269,15 @@ namespace
 				{
 					UCanvasPanel* View = CastChecked<UCanvasPanel>(Tree->WidgetTree->FindWidget(TEXT("RuntimeSkillTreeViewport")));
 					UCanvasPanel* Canvas = CastChecked<UCanvasPanel>(View->GetChildAt(0));
+					for (UWidget* Child : Canvas->GetAllChildren())
+					{
+						if (Cast<UMenuDisplayCardWidget>(Child) != nullptr)
+						{
+							const FGeometry& Geometry = Child->GetCachedGeometry();
+							const FVector2D Center = View->GetCachedGeometry().AbsoluteToLocal(Geometry.LocalToAbsolute(Geometry.GetLocalSize() * 0.5f));
+							Test->TestTrue(TEXT("Initial tree view centers the player despite unequal branch lengths"), Center.Equals(View->GetCachedGeometry().GetLocalSize() * 0.5f, 2.f));
+						}
+					}
 					UCanvasPanelSlot* CanvasLayout = CastChecked<UCanvasPanelSlot>(Canvas->Slot);
 					Player->GetSkillComponent()->TryAddCoin(5000, false);
 					USkillSlotWidget* DragSlot = nullptr;

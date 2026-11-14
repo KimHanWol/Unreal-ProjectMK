@@ -55,9 +55,8 @@ public:
 private:
 	void BuildDefaultWidgetTree();
 	void RefreshSkillTree();
-	void AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName SourceSkillKey, FName TargetSkillKey, const TMap<FName, FVector2D>& NodePositions);
+	void AddSkillConnection(const TArray<FVector2D>& RoutePoints, FName SourceSkillKey, FName TargetSkillKey);
 	void UpdateConnectionStates();
-	TArray<FVector2D> CalculateConnectionPath(const FVector2D& FromPosition, const FVector2D& ToPosition, const TMap<FName, FVector2D>& NodePositions);
 	bool UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, float WheelDelta);
 	float CalculateMinimumZoomScale() const;
 	FVector2D CalculateClampedCanvasPosition(const FVector2D& TargetPosition, float ContentScale) const;
@@ -81,10 +80,10 @@ protected:
 private:
 	UPROPERTY(Transient)
 	TArray<FSkillConnectionVisual> Connections;
-	TSet<FIntPoint> OccupiedConnectionCells;
 
 	bool bNeedsCentering = true;
 	FVector2D CentralPlayerPosition;
+	FVector2D LastViewportSize = FVector2D::ZeroVector;
 
 	UPROPERTY(Transient)
 	float CurrentZoomScale = 1.f;

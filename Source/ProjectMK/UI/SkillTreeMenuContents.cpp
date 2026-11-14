@@ -18,58 +18,13 @@
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/UI/SkillSlotWidget.h"
 #include "ProjectMK/UI/SkillConnectionWidget.h"
+#include "ProjectMK/UI/SkillTreeLayout.h"
 
 namespace
 {
 	constexpr float SkillNodeSize = 84.f;
 	constexpr float SkillTreePadding = 128.f;
-	constexpr float SkillGridStepX = 84.f;
-	constexpr float SkillGridStepY = 84.f;
 
-	TMap<FName, FIntPoint> CreateSkillGridPositions()
-	{
-		TMap<FName, FIntPoint> Positions;
-		Positions.Emplace(TEXT("Skill_DrillPower_1"), FIntPoint(12, 10));
-		Positions.Emplace(TEXT("Skill_DrillPower_2"), FIntPoint(14, 10));
-		Positions.Emplace(TEXT("Skill_DrillPower_3"), FIntPoint(16, 10));
-		Positions.Emplace(TEXT("Skill_DrillSpeed_1"), FIntPoint(14, 12));
-		Positions.Emplace(TEXT("Skill_DrillSpeed_2"), FIntPoint(16, 12));
-		Positions.Emplace(TEXT("Skill_DrillSpeed_3"), FIntPoint(18, 12));
-		Positions.Emplace(TEXT("Skill_DrillRange_1"), FIntPoint(14, 8));
-		Positions.Emplace(TEXT("Skill_DrillRange_2"), FIntPoint(16, 8));
-		Positions.Emplace(TEXT("Skill_ChainBreak_1"), FIntPoint(18, 8));
-		Positions.Emplace(TEXT("Skill_ChainBreak_2"), FIntPoint(18, 10));
-		Positions.Emplace(TEXT("Skill_Recycler"), FIntPoint(10, 12));
-		Positions.Emplace(TEXT("Skill_LuckyStrike"), FIntPoint(12, 12));
-		Positions.Emplace(TEXT("Skill_Scavenger"), FIntPoint(10, 14));
-		Positions.Emplace(TEXT("Skill_CoinMaster"), FIntPoint(10, 16));
-
-		Positions.Emplace(TEXT("Skill_OxygenTank_1"), FIntPoint(10, 8));
-		Positions.Emplace(TEXT("Skill_OxygenTank_2"), FIntPoint(10, 6));
-		Positions.Emplace(TEXT("Skill_OxygenTank_3"), FIntPoint(10, 4));
-		Positions.Emplace(TEXT("Skill_LastOxygen"), FIntPoint(12, 6));
-		Positions.Emplace(TEXT("Skill_AirPocket"), FIntPoint(14, 6));
-		Positions.Emplace(TEXT("Skill_HealthBoost_1"), FIntPoint(8, 8));
-		Positions.Emplace(TEXT("Skill_HealthBoost_2"), FIntPoint(6, 4));
-		Positions.Emplace(TEXT("Skill_HealthRegen_1"), FIntPoint(6, 8));
-		Positions.Emplace(TEXT("Skill_HealthRegen_2"), FIntPoint(6, 6));
-		Positions.Emplace(TEXT("Skill_HealthRegen_3"), FIntPoint(6, 2));
-		Positions.Emplace(TEXT("Skill_Insurance"), FIntPoint(4, 8));
-
-		Positions.Emplace(TEXT("Skill_Magnet_1"), FIntPoint(8, 10));
-		Positions.Emplace(TEXT("Skill_Magnet_2"), FIntPoint(4, 10));
-		Positions.Emplace(TEXT("Skill_BagUpgrade_1"), FIntPoint(6, 10));
-		Positions.Emplace(TEXT("Skill_BagUpgrade_2"), FIntPoint(2, 10));
-		Positions.Emplace(TEXT("Skill_FieldRepair"), FIntPoint(6, 12));
-
-		Positions.Emplace(TEXT("Skill_MoveSpeed_1"), FIntPoint(4, 14));
-		Positions.Emplace(TEXT("Skill_MoveSpeed_2"), FIntPoint(4, 16));
-		Positions.Emplace(TEXT("Skill_FlyingSpeed_1"), FIntPoint(6, 14));
-		Positions.Emplace(TEXT("Skill_FlyingSpeed_2"), FIntPoint(6, 16));
-		return Positions;
-	}
-
-	const TMap<FName, FIntPoint> SkillGridPositions = CreateSkillGridPositions();
 }
 
 USkillTreeMenuContents::USkillTreeMenuContents(const FObjectInitializer& ObjectInitializer)
@@ -98,15 +53,16 @@ void USkillTreeMenuContents::NativeConstruct()
 void USkillTreeMenuContents::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
-	if (bNeedsCentering && ::IsValid(SkillTreeViewportPanel))
+	if (::IsValid(SkillTreeViewportPanel))
 	{
 		const FVector2D ViewSize = SkillTreeViewportPanel->GetCachedGeometry().GetLocalSize();
-		if (ViewSize.X > 100.f && ViewSize.Y > 100.f)
+		if (ViewSize.X > 100.f && ViewSize.Y > 100.f && (bNeedsCentering || ViewSize.Equals(LastViewportSize) == false))
 		{
 			SkillTreeCanvasPanel->SetRenderTransformPivot(FVector2D::ZeroVector);
 			SkillTreeCanvasPanel->SetRenderScale(FVector2D(CurrentZoomScale));
 			CastChecked<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot)->SetPosition(CalculateClampedCanvasPosition(ViewSize * 0.5f - CentralPlayerPosition * CurrentZoomScale, CurrentZoomScale));
 			bNeedsCentering = false;
+			LastViewportSize = ViewSize;
 		}
 	}
 }
@@ -243,63 +199,41 @@ void USkillTreeMenuContents::RefreshSkillTree()
 
 	SkillTreeCanvasPanel->ClearChildren();
 	Connections.Reset();
-	OccupiedConnectionCells.Reset();
 	TArray<FName> SkillKeys = DataManager->GetSkillRowNames();
 	SkillKeys.RemoveAll([DataManager](const FName SkillKey)
 	{
 		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
 		return SkillData == nullptr || SkillData->AcquisitionType != ESkillAcquisitionType::SkillTree
-			|| SkillData->DisplayName.IsEmpty() || SkillGridPositions.Contains(SkillKey) == false;
+			|| SkillData->DisplayName.IsEmpty();
 	});
 	SkillKeys.Sort(FNameLexicalLess());
 
-	FIntPoint MinimumGrid(MAX_int32, MAX_int32);
-	FIntPoint MaximumGrid(MIN_int32, MIN_int32);
-	for (const FName SkillKey : SkillKeys)
+	TMap<FName, TArray<FName>> Prerequisites;
+	for (FName Key : SkillKeys) { Prerequisites.Add(Key, DataManager->GetSkillDataTableRow(Key)->RequiredSkill); }
+	FSkillTreeLayout Layout;
+	if (FSkillTreeLayout::Calculate(Prerequisites, Layout) == false)
 	{
-		const FIntPoint GridPosition = SkillGridPositions.FindChecked(SkillKey);
-		MinimumGrid.X = FMath::Min(MinimumGrid.X, GridPosition.X);
-		MinimumGrid.Y = FMath::Min(MinimumGrid.Y, GridPosition.Y);
-		MaximumGrid.X = FMath::Max(MaximumGrid.X, GridPosition.X);
-		MaximumGrid.Y = FMath::Max(MaximumGrid.Y, GridPosition.Y);
+		UE_LOG(LogTemp, Error, TEXT("Unable to lay out skill prerequisites without overlapping nodes or connections."));
+		return;
 	}
-
-	const float ContentWidth = ((MaximumGrid.X - MinimumGrid.X) * SkillGridStepX) + SkillNodeSize + (SkillTreePadding * 2.f);
-	const float ContentHeight = ((MaximumGrid.Y - MinimumGrid.Y) * SkillGridStepY) + SkillNodeSize + (SkillTreePadding * 2.f);
+	// Keep enough room on both sides of the player for the initial centered view.
+	const FVector2D Extent(FMath::Max(FMath::Abs(Layout.Bounds.Min.X), FMath::Abs(Layout.Bounds.Max.X)),
+		FMath::Max(FMath::Abs(Layout.Bounds.Min.Y), FMath::Abs(Layout.Bounds.Max.Y)));
+	Layout.Bounds = FBox2D(-Extent, Extent);
+	const FVector2D Offset = FVector2D(SkillTreePadding) - Layout.Bounds.Min;
+	const FVector2D ContentSize = Layout.Bounds.GetSize() + FVector2D(SkillTreePadding * 2.f);
 	if (UCanvasPanelSlot* TreeSlot = Cast<UCanvasPanelSlot>(SkillTreeCanvasPanel->Slot))
 	{
 		TreeSlot->SetPosition(FVector2D::ZeroVector);
-		TreeSlot->SetSize(FVector2D(ContentWidth, ContentHeight));
+		TreeSlot->SetSize(ContentSize);
 	}
-
-	TMap<FName, FVector2D> NodePositions;
-	for (const FName SkillKey : SkillKeys)
+	TMap<FName, FVector2D> NodePositions = Layout.Positions;
+	for (auto& Pair : NodePositions) { Pair.Value += Offset; }
+	const FVector2D PlayerNodePosition = NodePositions.FindChecked(NAME_None);
+	for (FSkillTreeLayoutEdge& Edge : Layout.Edges)
 	{
-		const FIntPoint GridPosition = SkillGridPositions.FindChecked(SkillKey);
-		NodePositions.Add(SkillKey, FVector2D(
-			SkillTreePadding + ((GridPosition.X - MinimumGrid.X) * SkillGridStepX),
-			SkillTreePadding + ((GridPosition.Y - MinimumGrid.Y) * SkillGridStepY)));
-	}
-
-	const FVector2D PlayerNodePosition(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX,
-		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY);
-	NodePositions.Add(NAME_None, PlayerNodePosition);
-	for (const FName& SkillKey : SkillKeys)
-	{
-		const FSkillDataTableRow* SkillData = DataManager->GetSkillDataTableRow(SkillKey);
-		const FVector2D* TargetPosition = NodePositions.Find(SkillKey);
-		if (SkillData == nullptr || TargetPosition == nullptr)
-		{
-			continue;
-		}
-		if (SkillData->RequiredSkill.IsEmpty()) { AddSkillConnection(PlayerNodePosition, *TargetPosition, NAME_None, SkillKey, NodePositions); }
-		for (const FName& RequiredSkillKey : SkillData->RequiredSkill)
-		{
-			if (const FVector2D* RequiredPosition = NodePositions.Find(RequiredSkillKey))
-			{
-				AddSkillConnection(*RequiredPosition, *TargetPosition, RequiredSkillKey, SkillKey, NodePositions);
-			}
-		}
+		for (FVector2D& Point : Edge.Points) { Point += Offset; }
+		AddSkillConnection(Edge.Points, Edge.Source, Edge.Target);
 	}
 	UpdateConnectionStates();
 
@@ -321,19 +255,18 @@ void USkillTreeMenuContents::RefreshSkillTree()
 	UMenuDisplayCardWidget* PlayerCard = CreateWidget<UMenuDisplayCardWidget>(this);
 	PlayerCard->SetDisplayRole(TEXT("Player"));
 	UCanvasPanelSlot* PlayerSlot = SkillTreeCanvasPanel->AddChildToCanvas(PlayerCard);
-	PlayerSlot->SetPosition(FVector2D(SkillTreePadding + (10 - MinimumGrid.X) * SkillGridStepX + SkillNodeSize * 0.5f - 60.f,
-		SkillTreePadding + (10 - MinimumGrid.Y) * SkillGridStepY + SkillNodeSize * 0.5f - 84.f));
+	PlayerSlot->SetPosition(PlayerNodePosition + FVector2D(SkillNodeSize * 0.5f) - FVector2D(60.f, 84.f));
 	PlayerSlot->SetSize(FVector2D(120.f, 168.f));
 	PlayerSlot->SetZOrder(10);
 	CentralPlayerPosition = PlayerSlot->GetPosition() + FVector2D(60.f, 84.f);
 	bNeedsCentering = true;
-	CurrentZoomScale = 0.85f;
+	CurrentZoomScale = 0.75f;
 	SkillTreeCanvasPanel->SetRenderScale(FVector2D(CurrentZoomScale));
 }
 
-void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, const FVector2D& ToPosition, FName SourceSkillKey, FName TargetSkillKey, const TMap<FName, FVector2D>& NodePositions)
+void USkillTreeMenuContents::AddSkillConnection(const TArray<FVector2D>& RoutePoints, FName SourceSkillKey, FName TargetSkillKey)
 {
-	TArray<FVector2D> Points = CalculateConnectionPath(FromPosition, ToPosition, NodePositions);
+	TArray<FVector2D> Points = RoutePoints;
 	if (Points.Num() < 2) { return; }
 	FBox2D Bounds(ForceInit);
 	float PathLength = 0.f;
@@ -371,8 +304,8 @@ void USkillTreeMenuContents::AddSkillConnection(const FVector2D& FromPosition, c
 	Arrow->SetVisibility(ESlateVisibility::HitTestInvisible);
 	Arrow->SetRenderTransformAngle(FMath::RadiansToDegrees(FMath::Atan2(ArrowDirection.Y, ArrowDirection.X)));
 	UCanvasPanelSlot* ArrowSlot = SkillTreeCanvasPanel->AddChildToCanvas(Arrow);
-	ArrowSlot->SetSize(FVector2D(24.f));
-	ArrowSlot->SetPosition(ArrowPosition - FVector2D(12.f));
+	ArrowSlot->SetSize(FVector2D(18.f));
+	ArrowSlot->SetPosition(ArrowPosition - FVector2D(9.f));
 	USkillConnectionWidget* Rail = CreateWidget<USkillConnectionWidget>(this);
 	Connection.Elements.Add(Rail);
 	const FVector2D Origin = Bounds.Min - FVector2D(8.f);
@@ -415,76 +348,6 @@ void USkillTreeMenuContents::UpdateConnectionStates()
 			}
 		}
 	}
-}
-
-TArray<FVector2D> USkillTreeMenuContents::CalculateConnectionPath(const FVector2D& FromPosition, const FVector2D& ToPosition, const TMap<FName, FVector2D>& NodePositions)
-{
-	constexpr float Step = SkillNodeSize * 0.25f;
-	const FVector2D Origin(SkillTreePadding + SkillNodeSize * 0.5f);
-	const FVector2D From = FromPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D To = ToPosition + FVector2D(SkillNodeSize * 0.5f);
-	const FVector2D Delta = To - From;
-	const FVector2D Direction = FMath::Abs(Delta.X) > FMath::Abs(Delta.Y)
-		? FVector2D(FMath::Sign(Delta.X), 0.f) : FVector2D(0.f, FMath::Sign(Delta.Y));
-	auto ToCell = [Origin](const FVector2D& Point) { return FIntPoint(FMath::RoundToInt((Point.X - Origin.X) / Step), FMath::RoundToInt((Point.Y - Origin.Y) / Step)); };
-	const FIntPoint Start = ToCell(From + Direction * (Step * 3.f));
-	const FIntPoint Goal = ToCell(To - Direction * (Step * 3.f));
-	TSet<FIntPoint> Blocked;
-	FIntPoint Minimum(MAX_int32, MAX_int32), Maximum(MIN_int32, MIN_int32);
-	for (const TPair<FName, FVector2D>& Pair : NodePositions)
-	{
-		const FIntPoint Center = ToCell(Pair.Value + FVector2D(SkillNodeSize * 0.5f));
-		Minimum.X = FMath::Min(Minimum.X, Center.X - 6); Minimum.Y = FMath::Min(Minimum.Y, Center.Y - 6);
-		Maximum.X = FMath::Max(Maximum.X, Center.X + 6); Maximum.Y = FMath::Max(Maximum.Y, Center.Y + 6);
-		for (int32 Y = -2; Y <= 2; ++Y) { for (int32 X = -2; X <= 2; ++X) { Blocked.Add(Center + FIntPoint(X, Y)); } }
-	}
-	TArray<FIntPoint> Open = { Start };
-	TMap<FIntPoint, FIntPoint> Parent;
-	TMap<FIntPoint, int32> Cost;
-	TSet<FIntPoint> Closed;
-	Cost.Add(Start, 0);
-	const FIntPoint Directions[] = { FIntPoint(1, 0), FIntPoint(0, 1), FIntPoint(-1, 0), FIntPoint(0, -1) };
-	while (Open.IsEmpty() == false)
-	{
-		int32 BestIndex = 0, BestScore = MAX_int32;
-		for (int32 Index = 0; Index < Open.Num(); ++Index)
-		{
-			const FIntPoint Cell = Open[Index];
-			const int32 Score = Cost.FindChecked(Cell) + (FMath::Abs(Cell.X - Goal.X) + FMath::Abs(Cell.Y - Goal.Y)) * 10;
-			if (Score < BestScore) { BestScore = Score; BestIndex = Index; }
-		}
-		const FIntPoint Current = Open[BestIndex];
-		Open.RemoveAtSwap(BestIndex);
-		if (Current == Goal)
-		{
-			TArray<FIntPoint> Cells = { Goal };
-			while (Cells.Last() != Start) { Cells.Add(Parent.FindChecked(Cells.Last())); }
-			TArray<FVector2D> Points = { From + Direction * SkillNodeSize * 0.5f };
-			for (int32 Index = Cells.Num() - 1; Index >= 0; --Index)
-			{
-				Points.Add(Origin + FVector2D(Cells[Index]) * Step);
-				OccupiedConnectionCells.Add(Cells[Index]);
-			}
-			Points.Add(To - Direction * SkillNodeSize * 0.5f);
-			return Points;
-		}
-		Closed.Add(Current);
-		for (const FIntPoint& Offset : Directions)
-		{
-			const FIntPoint Next = Current + Offset;
-			if (Next.X < Minimum.X || Next.Y < Minimum.Y || Next.X > Maximum.X || Next.Y > Maximum.Y || Blocked.Contains(Next) || Closed.Contains(Next)) { continue; }
-			const FIntPoint* Previous = Parent.Find(Current);
-			const bool bTurn = Previous != nullptr && Current - *Previous != Offset;
-			const int32 NewCost = Cost.FindChecked(Current) + 10 + (bTurn ? 4 : 0) + (OccupiedConnectionCells.Contains(Next) ? 12 : 0);
-			const int32* Existing = Cost.Find(Next);
-			if (Existing == nullptr || NewCost < *Existing)
-			{
-				Cost.Add(Next, NewCost); Parent.Add(Next, Current); Open.AddUnique(Next);
-			}
-		}
-	}
-	ensureMsgf(false, TEXT("Skill connection could not route around nodes."));
-	return {};
 }
 
 bool USkillTreeMenuContents::UpdateSkillTreeZoom(const FGeometry& InGeometry, const FVector2D& ScreenSpacePosition, const float WheelDelta)
