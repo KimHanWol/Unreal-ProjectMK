@@ -18,6 +18,7 @@ public:
 
 	bool TrySaveGameToSlot();
 	bool StartPlaytestSession();
+	bool DeleteSavedProgress();
 
 	UMKSaveGame* GetSaveGame() const;
 	bool IsPlaytestSession() const;

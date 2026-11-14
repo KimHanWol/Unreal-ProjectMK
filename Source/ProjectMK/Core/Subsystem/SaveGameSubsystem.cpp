@@ -70,6 +70,22 @@ bool USaveGameSubsystem::StartPlaytestSession()
 	return false;
 }
 
+bool USaveGameSubsystem::DeleteSavedProgress()
+{
+	// Do not let the still-running character recreate the deleted save on EndPlay.
+	bIsPlaytestSession = true;
+	bool bDeleted = true;
+	for (const FString& Slot : { SaveSlotName, BackupSaveSlotName })
+	{
+		if (UGameplayStatics::DoesSaveGameExist(Slot, SaveUserIndex))
+		{
+			bDeleted &= UGameplayStatics::DeleteGameInSlot(Slot, SaveUserIndex);
+		}
+	}
+	if (bDeleted) { SaveGame = NewObject<UMKSaveGame>(this); }
+	return bDeleted;
+}
+
 UMKSaveGame* USaveGameSubsystem::GetSaveGame() const
 {
 	return SaveGame;

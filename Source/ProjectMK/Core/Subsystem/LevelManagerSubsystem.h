@@ -141,6 +141,7 @@ private:
 	friend struct FFallingBlockGroupData;
 
 	void BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed);
+	void UpdateWorldBackgrounds(const FMineableLevelGenerationSettings& Settings);
 	void UpdateBlockVisibility();
 	void ClearGeneratedBlocks();
 	void ClearWorldItems();

@@ -5,6 +5,10 @@
 #include "AbilitySystemComponent.h"
 #include "EngineUtils.h"
 #include "PaperTileMapActor.h"
+#include "PaperTileMap.h"
+#include "PaperTileMapComponent.h"
+#include "PaperTileLayer.h"
+#include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
@@ -1811,6 +1815,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	LastGenerationSeed = GenerationSeed == INDEX_NONE ? FMath::Rand() : GenerationSeed;
 	FRandomStream RandomStream(LastGenerationSeed);
 	BuildTerrainLayout(DataManager, GenerationSettings, LastGenerationSeed);
+	UpdateWorldBackgrounds(GenerationSettings);
 
 	const FBlockDataTableRow* SandBlockData = DataManager->GetBlockDataTableRow(FName(TEXT("Sand")));
 	const int32 SandTileIndex = SandBlockData != nullptr ? SandBlockData->TileIndex : INDEX_NONE;
@@ -1971,6 +1976,44 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 	{
 		const int32 Column = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, Settings.StartColumn + Width - 5);
 		BoundaryTerrainLayout.Add(FIntPoint(Column, Surface - 1), Shop->TileIndex);
+	}
+}
+
+void ULevelManagerSubsystem::UpdateWorldBackgrounds(const FMineableLevelGenerationSettings& Settings)
+{
+	const UGameSettingDataAsset* GameSettings = UDataManager::Get(this)->GetGameSettingDataAsset();
+	const float GroundZ = -GameSettings->SurfaceBlockPositionY * BLOCK_SIZE;
+	const float Padding = 256.f;
+	const float Edge = FMath::Clamp(Settings.OuterRockThickness, 1, 16) * BLOCK_SIZE;
+	const float Left = Settings.StartColumn * BLOCK_SIZE - Edge - Padding;
+	const float Width = FMath::Clamp(Settings.WidthInBlocks, 16, 512) * BLOCK_SIZE + (Edge + Padding) * 2.f;
+	const float Depth = FMath::Clamp(Settings.DepthInBlocks, 16, 512) * BLOCK_SIZE + Edge + Padding;
+	for (TActorIterator<APaperTileMapActor> It(GetWorld()); It; ++It)
+	{
+		if (It->ActorHasTag(TEXT("ArtBackground")) == false) { continue; }
+		UPaperTileMapComponent* Component = It->GetRenderComponent();
+		UPaperTileMap* Map = Component->TileMap;
+		FPaperTileInfo Tile = Component->GetTile(0, 0, 0);
+		if (::IsValid(Map) == false || ::IsValid(Tile.TileSet) == false) { continue; }
+		const bool bSurface = Tile.TileSet->GetName().Contains(TEXT("Surface"));
+		const int32 PixelWidth = Map->TileWidth, PixelHeight = Map->TileHeight;
+		const float PixelsPerUnit = Map->GetPixelsPerUnrealUnit();
+		const float TileWidth = PixelWidth / PixelsPerUnit, TileHeight = PixelHeight / PixelsPerUnit;
+		const int32 Columns = FMath::CeilToInt(Width / TileWidth);
+		const int32 Rows = bSurface ? 1 : FMath::CeilToInt(Depth / TileHeight);
+		Component->CreateNewTileMap(Columns, Rows, PixelWidth, PixelHeight, PixelsPerUnit, true);
+		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		It->SetActorScale3D(FVector::OneVector);
+		const FVector RelativeCenter = Component->GetTileCenterPosition(0, 0, 0, false);
+		It->SetActorLocation(FVector(Left + TileWidth * 0.5f, -100.f, GroundZ + (bSurface ? 0.5f : -0.5f) * TileHeight) - RelativeCenter);
+		for (int32 Y = 0; Y < Rows; ++Y)
+		{
+			for (int32 X = 0; X < Columns; ++X)
+			{
+				Tile.PackedTileIndex = static_cast<int32>((X % 2 ? 1u << 31 : 0u) | (bSurface == false && Y % 2 ? 1u << 30 : 0u));
+				Component->SetTile(X, Y, 0, Tile);
+			}
+		}
 	}
 }
 

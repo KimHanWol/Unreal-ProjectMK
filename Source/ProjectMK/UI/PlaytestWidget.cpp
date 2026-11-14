@@ -67,6 +67,7 @@ void UPlaytestWidget::BindEvents()
 	ReturnButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnReturnClicked);
 	SpawnMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnSpawnMonsterClicked);
 	HitMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnHitMonsterClicked);
+	DeleteSaveButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnDeleteSaveClicked);
 }
 
 void UPlaytestWidget::UnbindEvents()
@@ -84,6 +85,7 @@ void UPlaytestWidget::UnbindEvents()
 	ReturnButton->OnClicked.RemoveAll(this);
 	SpawnMonsterButton->OnClicked.RemoveAll(this);
 	HitMonsterButton->OnClicked.RemoveAll(this);
+	DeleteSaveButton->OnClicked.RemoveAll(this);
 }
 
 void UPlaytestWidget::UpdateWidget()
@@ -151,6 +153,15 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	DetailsPanel->AddChildToVerticalBox(MonsterRow);
 	SpawnMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "SpawnMonster", "몬스터 소환"), NSLOCTEXT("Playtest", "SpawnMonsterHint", "이번 플레이 저장 중단 · 주변에 DataTable 몬스터 1마리 소환"));
 	HitMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "HitMonster", "몬스터 자극"), NSLOCTEXT("Playtest", "HitMonsterHint", "소환한 몬스터에게 10 피해 · 분노 드릴링 확인"));
+	UHorizontalBox* SaveRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+	DetailsPanel->AddChildToVerticalBox(SaveRow)->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
+	UButton* SaveButton = nullptr;
+	UTextBlock* SaveLabel = nullptr;
+	USizeBox* DeleteSize = BuildActionButton(SaveButton, SaveLabel, NSLOCTEXT("Playtest", "DeleteSave", "저장 삭제"), 0.f, 36.f, TEXT("ActionDanger"));
+	DeleteSaveButton = SaveButton;
+	DeleteSaveLabel = SaveLabel;
+	SaveRow->AddChildToHorizontalBox(DeleteSize)->SetSize(FSlateChildSize(ESlateSizeRule::Fill));
+	DeleteSaveButton->Rename(TEXT("DeleteSaveButton"));
 	FeedbackText = WidgetTree->ConstructWidget<UTextBlock>();
 	ApplyTextRole(FeedbackText, EMKTextRole::Body, true);
 	FeedbackText->SetText(NSLOCTEXT("Playtest", "TestGuide", "추천: 재료 세트 → 재화 지급 → 상점에서 설계도 해금 → C 제작 → 지하에서 사용\n세트 버튼은 이번 플레이의 인벤토리를 교체합니다. 테스트 조작 후에는 종료까지 파일에 저장하지 않습니다."));
@@ -172,6 +183,11 @@ UButton* UPlaytestWidget::AddActionButton(UHorizontalBox* Row, const FText& Labe
 
 void UPlaytestWidget::UpdateStatus()
 {
+	if (::IsValid(DeleteSaveLabel) && DeleteSaveConfirmUntil > 0.0 && FPlatformTime::Seconds() > DeleteSaveConfirmUntil)
+	{
+		DeleteSaveConfirmUntil = 0.0;
+		DeleteSaveLabel->SetText(NSLOCTEXT("Playtest", "DeleteSave", "저장 삭제"));
+	}
 	const UAttributeSet_Character* Attributes = GetCharacterAttributeSet();
 	const USaveGameSubsystem* Saves = USaveGameSubsystem::Get(this);
 	const ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
@@ -382,4 +398,24 @@ void UPlaytestWidget::OnHitMonsterClicked()
 		FGameplayAbilityUtils::ApplyDamage(TestMonster->GetAbilitySystemComponent(), GetOwnerAbilitySystemComponent(), 10.f);
 		FeedbackText->SetText(NSLOCTEXT("Playtest", "MonsterHit", "몬스터에게 10 피해를 줬습니다. 분노 상태에서는 주변을 무작위로 드릴링합니다."));
 	}
+}
+
+void UPlaytestWidget::OnDeleteSaveClicked()
+{
+	const double Now = FPlatformTime::Seconds();
+	if (DeleteSaveConfirmUntil <= Now)
+	{
+		DeleteSaveConfirmUntil = Now + 5.0;
+		DeleteSaveLabel->SetText(NSLOCTEXT("Playtest", "ConfirmDeleteSave", "다시 눌러 삭제"));
+		FeedbackText->SetText(NSLOCTEXT("Playtest", "DeleteSaveWarning", "저장된 재화·기술·아이템과 백업을 삭제합니다. 취소하려면 잠시 기다리세요."));
+		return;
+	}
+	DeleteSaveConfirmUntil = 0.0;
+	USaveGameSubsystem* Saves = USaveGameSubsystem::Get(this);
+	const bool bDeleted = ::IsValid(Saves) && Saves->DeleteSavedProgress();
+	DeleteSaveLabel->SetText(NSLOCTEXT("Playtest", "DeleteSave", "저장 삭제"));
+	FeedbackText->SetText(bDeleted
+		? NSLOCTEXT("Playtest", "SaveDeleted", "저장을 삭제했습니다. 플레이를 다시 시작하면 새 게임으로 시작합니다.")
+		: NSLOCTEXT("Playtest", "SaveDeleteFailed", "저장을 삭제하지 못했습니다. 이번 플레이의 자동 저장은 중지했습니다."));
+	UpdateStatus();
 }

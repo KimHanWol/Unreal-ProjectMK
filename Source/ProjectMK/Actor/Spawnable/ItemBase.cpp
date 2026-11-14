@@ -208,6 +208,8 @@ void AItemBase::InitializeOxygenVisuals()
 	UPaperFlipbook* Effect = ::IsValid(Style) ? Style->Effects.FindRef(TEXT("Pickup")) : nullptr;
 	if (::IsValid(Effect) == false) { return; }
 	PaperSpriteComponent->SetVisibility(false);
+	// The side-view camera faces -Y; positive Y puts oxygen ahead of depth-writing terrain.
+	BaseSpriteRelativeLocation.Y = 30.f;
 	OxygenFlightDuration = ::IsValid(Settings) ? Settings->OxygenPickupFlightDuration : 0.85f;
 	OxygenArcHeight = ::IsValid(Settings) ? Settings->OxygenPickupArcHeight : 64.f;
 	const float Size = ::IsValid(Settings) ? Settings->OxygenPickupDisplaySize : 18.f;

@@ -73,6 +73,9 @@ private:
 	UFUNCTION()
 	void OnHitMonsterClicked();
 
+	UFUNCTION()
+	void OnDeleteSaveClicked();
+
 	UPROPERTY(EditDefaultsOnly, Category = "Playtest", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetMonsterRowNames"))
 	FName MonsterRowKey = TEXT("DrillCrawler");
 
@@ -123,6 +126,12 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> HitMonsterButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> DeleteSaveButton;
+	UPROPERTY(Transient)
+	TObjectPtr<UTextBlock> DeleteSaveLabel;
+	double DeleteSaveConfirmUntil = 0.0;
 
 	TWeakObjectPtr<AMKMonster> TestMonster;
 

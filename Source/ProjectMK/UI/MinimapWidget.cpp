@@ -12,6 +12,9 @@
 #include "Components/Overlay.h"
 #include "Components/OverlaySlot.h"
 #include "Engine/World.h"
+#include "Engine/LocalPlayer.h"
+#include "Engine/GameViewportClient.h"
+#include "SceneView.h"
 #include "GameFramework/PlayerController.h"
 #include "Rendering/DrawElementTypes.h"
 #include "TimerManager.h"
@@ -114,12 +117,19 @@ void UMinimapWidget::UpdateMinimap()
 	Tiles.Reset();
 	ShopPositions.Reset();
 	MapBounds = FBox2D(ForceInit);
-	if (CalculateCameraBounds(MapBounds) == false)
+	if (CalculateCameraBounds(CameraBounds) == false)
 	{
 		if (::IsValid(TerrainWidget)) { TerrainWidget->InvalidateLayoutAndVolatility(); }
 		InvalidateLayoutAndVolatility();
 		return;
 	}
+	FVector2D Extent = CameraBounds.GetExtent() * FMath::Max(1.f, CameraRangeMultiplier);
+	const FVector2D Area = ::IsValid(MapArea) && MapArea->GetCachedGeometry().GetLocalSize().X > 8.f
+		? MapArea->GetCachedGeometry().GetLocalSize() : MinimapSize;
+	const double Aspect = Area.X / FMath::Max(1.0, Area.Y);
+	if (Extent.X / Extent.Y < Aspect) { Extent.X = Extent.Y * Aspect; }
+	else { Extent.Y = Extent.X / Aspect; }
+	MapBounds = FBox2D(CameraBounds.GetCenter() - Extent, CameraBounds.GetCenter() + Extent);
 	TileWorldSize = FMath::Max(1, Level->GetTileSize());
 	const FBox2D TileBounds = MapBounds.ExpandBy(TileWorldSize * 0.5f);
 	const FBlockDataTableRow* ShopRow = Data->GetBlockDataTableRow(FName(TEXT("Shop")));
@@ -199,11 +209,19 @@ bool UMinimapWidget::CalculateCameraBounds(FBox2D& OutBounds) const
 	{
 		return false;
 	}
+	FIntRect ViewRect(0, 0, ViewportWidth, ViewportHeight);
+	const ULocalPlayer* LocalPlayer = Controller->GetLocalPlayer();
+	FSceneViewProjectionData Projection;
+	if (::IsValid(LocalPlayer) && LocalPlayer->ViewportClient != nullptr
+		&& LocalPlayer->GetProjectionData(LocalPlayer->ViewportClient->Viewport, Projection))
+	{
+		ViewRect = Projection.GetConstrainedViewRect();
+	}
 	const FVector2D ScreenCorners[] = {
-		FVector2D::ZeroVector, FVector2D(ViewportWidth, 0),
-		FVector2D(0, ViewportHeight), FVector2D(ViewportWidth, ViewportHeight)
+		FVector2D(ViewRect.Min), FVector2D(ViewRect.Max.X, ViewRect.Min.Y),
+		FVector2D(ViewRect.Min.X, ViewRect.Max.Y), FVector2D(ViewRect.Max)
 	};
-	FBox2D CameraBounds(ForceInit);
+	FBox2D ProjectedBounds(ForceInit);
 	const double GameplayPlaneY = Character->GetActorLocation().Y;
 	for (const FVector2D& Corner : ScreenCorners)
 	{
@@ -220,14 +238,13 @@ bool UMinimapWidget::CalculateCameraBounds(FBox2D& OutBounds) const
 			return false;
 		}
 		const FVector Position = RayOrigin + RayDirection * Distance;
-		CameraBounds += FVector2D(Position.X, -Position.Z);
+		ProjectedBounds += FVector2D(Position.X, -Position.Z);
 	}
-	const FVector2D Extent = CameraBounds.GetExtent() * FMath::Max(1.f, CameraRangeMultiplier);
-	if (Extent.X <= 0.0 || Extent.Y <= 0.0)
+	if (ProjectedBounds.GetExtent().X <= 0.0 || ProjectedBounds.GetExtent().Y <= 0.0)
 	{
 		return false;
 	}
-	OutBounds = FBox2D(CameraBounds.GetCenter() - Extent, CameraBounds.GetCenter() + Extent);
+	OutBounds = ProjectedBounds;
 	return true;
 }
 
@@ -246,7 +263,7 @@ int32 UMinimapWidget::PaintTerrain(const FPaintArgs& Args, const FGeometry& Allo
 	{
 		return BaseLayer;
 	}
-	const double Scale = FMath::Max(AreaSize.X / BoundsSize.X, AreaSize.Y / BoundsSize.Y);
+	const double Scale = FMath::Min(AreaSize.X / BoundsSize.X, AreaSize.Y / BoundsSize.Y);
 	const FVector2D Origin = (AreaSize - BoundsSize * Scale) * 0.5f;
 	const FVector2D CellSize(FMath::Max(1.0, TileWorldSize * Scale));
 	static const FSlateColorBrush PixelBrush(FLinearColor::White);
@@ -259,6 +276,14 @@ int32 UMinimapWidget::PaintTerrain(const FPaintArgs& Args, const FGeometry& Allo
 		const FVector2D Position = Origin + (Tile.Position - MapBounds.Min - FVector2D(TileWorldSize * 0.5f)) * Scale;
 		FSlateDrawElement::MakeBox(OutDrawElements, BaseLayer + 1,
 			MapGeometry.ToPaintGeometry(CellSize, FSlateLayoutTransform(Position)), &PixelBrush, ESlateDrawEffect::None, Tile.Color * Tint);
+	}
+	if (CameraBounds.bIsValid)
+	{
+		const FVector2D Min = Origin + (CameraBounds.Min - MapBounds.Min) * Scale;
+		const FVector2D Max = Origin + (CameraBounds.Max - MapBounds.Min) * Scale;
+		const TArray<FVector2D> Frame = { Min, FVector2D(Max.X, Min.Y), Max, FVector2D(Min.X, Max.Y), Min };
+		FSlateDrawElement::MakeLines(OutDrawElements, BaseLayer + 2, MapGeometry.ToPaintGeometry(), Frame,
+			ESlateDrawEffect::None, FLinearColor(0.6f, 0.88f, 0.83f, 0.7f) * Tint, false, 1.f);
 	}
 	for (const FVector2D& ShopPosition : ShopPositions)
 	{

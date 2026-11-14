@@ -66,7 +66,10 @@ private:
 
 	TArray<FMinimapTile> Tiles;
 	TArray<FVector2D> ShopPositions;
+	UPROPERTY(Transient)
 	FBox2D MapBounds = FBox2D(ForceInit);
+	UPROPERTY(Transient)
+	FBox2D CameraBounds = FBox2D(ForceInit);
 	FVector2D PlayerPosition = FVector2D::ZeroVector;
 	float TileWorldSize = 16.f;
 	bool bHasPlayer = false;
