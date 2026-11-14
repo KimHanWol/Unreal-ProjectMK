@@ -15,6 +15,7 @@ public class ProjectMK : ModuleRules
 		if (Target.bBuildEditor)
 		{
 			PrivateDependencyModuleNames.Add("UnrealEd");
+			PrivateDependencyModuleNames.Add("TypedElementFramework");
 		}
 
 		// Uncomment if you are using online features

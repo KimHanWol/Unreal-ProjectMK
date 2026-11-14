@@ -247,6 +247,7 @@ private:
 	TArray<TWeakObjectPtr<AStorageChestActor>> StorageChests;
 	TArray<FGuid> DestroyedStorageChestIds;
 	bool bClearingGeneratedBlocks = false;
+	bool bDeferringTerrainEdges = false;
 	TArray<FGeneratedOreVein> GeneratedOreVeins;
 	UPROPERTY(Transient)
 	TArray<FGeneratedMineStructure> GeneratedStructures;

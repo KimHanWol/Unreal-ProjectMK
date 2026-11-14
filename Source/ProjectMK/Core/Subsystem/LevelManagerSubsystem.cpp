@@ -4,6 +4,8 @@
 
 #include "AbilitySystemComponent.h"
 #include "EngineUtils.h"
+#include "HAL/IConsoleManager.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
 #include "PaperTileMapActor.h"
 #include "PaperTileMap.h"
 #include "PaperTileMapComponent.h"
@@ -21,6 +23,8 @@
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
 #include "Engine/World.h"
+#include "Engine/AssetManager.h"
+#include "Engine/StreamableManager.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Monster/MKMonster.h"
@@ -41,6 +45,9 @@
 
 namespace
 {
+	TAutoConsoleVariable<int32> BatchTerrainEdges(TEXT("mk.World.BatchTerrainEdges"), 1,
+		TEXT("Update terrain neighbors once after bulk generation instead of after every spawned cell."));
+
 	bool FindNearestFallingBlockHit(
 		ABlockBase* FallingBlock,
 		const TArray<TWeakObjectPtr<ABlockBase>>& IgnoredFallingBlocks,
@@ -1796,6 +1803,8 @@ void ULevelManagerSubsystem::GenerateWorldBlocks()
 
 void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(MK_RegenerateTerrain);
+	TGuardValue<bool> EdgeBatch(bDeferringTerrainEdges, BatchTerrainEdges.GetValueOnGameThread() != 0);
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
 	{
@@ -1845,6 +1854,28 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 		PreDamageTiles);
 
 	ClearGeneratedBlocks();
+	TSharedPtr<FStreamableHandle> TerrainVisuals;
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(MK_PreloadTerrainVisuals);
+		TSet<int32> TileIndices;
+		for (const auto& Tile : BoundaryTerrainLayout) { TileIndices.Add(Tile.Value); }
+		for (const auto& Tile : GeneratedMineableTiles) { TileIndices.Add(Tile.Value); }
+		TArray<FSoftObjectPath> VisualPaths;
+		auto AddSprite = [&VisualPaths](const TSoftObjectPtr<UPaperSprite>& Sprite) { if (Sprite.IsNull() == false) { VisualPaths.AddUnique(Sprite.ToSoftObjectPath()); } };
+		for (int32 TileIndex : TileIndices)
+		{
+			const auto* Row = DataManager->GetBlockDataTableRow(TileIndex);
+			if (Row == nullptr) { continue; }
+			AddSprite(Row->TileSprite);
+			for (const auto& Drop : Row->SpawnableItemDataList)
+			{
+				const auto* Item = DataManager->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Drop.SpawnableItemKey);
+				if (Item != nullptr) { AddSprite(Item->BlockOverlaySprite.IsNull() ? Item->ItemIcon : Item->BlockOverlaySprite); }
+			}
+		}
+		// Keep distinct visual assets resident until every cell has assigned its sprite.
+		TerrainVisuals = UAssetManager::GetStreamableManager().RequestSyncLoad(VisualPaths);
+	}
 
 	TArray<FIntPoint> FixedTileCoordinates;
 	BoundaryTerrainLayout.GenerateKeyArray(FixedTileCoordinates);
@@ -1886,6 +1917,12 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	GenerateMineDecorations(GenerationSettings);
 	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->GenerateFacilities();
 	GenerateBuriedChests(GenerationSettings);
+	if (bDeferringTerrainEdges)
+	{
+		TRACE_CPUPROFILER_EVENT_SCOPE(MK_FinalizeTerrainEdges);
+		const TMap<FIntPoint, ABlockBase*> MovingBlocks;
+		for (ABlockBase* Block : BlockList) { UpdateTerrainEdges(Block, MovingBlocks); }
+	}
 }
 
 void ULevelManagerSubsystem::ResetMineableLevel(int32 GenerationSeed)
@@ -2925,6 +2962,7 @@ ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
 	int32 TileIndex,
 	TSubclassOf<AActor> BlockClass)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(MK_SpawnTerrainCell);
 	UWorld* World = GetWorld();
 	if (::IsValid(World) == false || BlockClass.Get() == nullptr)
 	{
@@ -3036,6 +3074,7 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 
 void ULevelManagerSubsystem::UpdateTerrainEdgesAroundPosition(const FVector2D& BlockPosition)
 {
+	if (bDeferringTerrainEdges) { return; }
 	const FVector2D Offsets[] = { FVector2D::ZeroVector, FVector2D(-1, 0), FVector2D(1, 0), FVector2D(0, -1), FVector2D(0, 1) };
 	const TMap<FIntPoint, ABlockBase*> MovingBlocks;
 	for (const FVector2D& Offset : Offsets)

@@ -5,6 +5,7 @@
 #include "AbilitySystemComponent.h"
 #include "Components/BoxComponent.h"
 #include "DrawDebugHelpers.h"
+#include "ProfilingDebugging/CpuProfilerTrace.h"
 #include "Engine/AssetManager.h"
 #include "Engine/StreamableManager.h"
 #include "Engine/Texture2D.h"
@@ -35,15 +36,9 @@
 ABlockBase::ABlockBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
-	SupportTopCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("SupportTopCollision"));
 
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	RootComponent = BoxCollision;
-	SupportTopCollision->SetupAttachment(RootComponent);
-	SupportTopCollision->SetBoxExtent(FVector(8.f, 10.f, 0.5f));
-	SupportTopCollision->SetRelativeLocation(FVector(0.f, 0.f, 7.5f));
-	SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
-	SupportTopCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
@@ -216,6 +211,7 @@ void ABlockBase::OnDestroyed()
 
 void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(MK_InitializeTerrainCell);
 	if (::IsValid(BoxCollision) == false)
 	{
 		return;
@@ -334,6 +330,15 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 
 		if (BlockDataTableRow->RecoveryItemKey == TEXT("SupportBeam"))
 		{
+			if (SupportTopCollision == nullptr)
+			{
+				SupportTopCollision = NewObject<UBoxComponent>(this, TEXT("SupportTopCollision"));
+				SupportTopCollision->SetupAttachment(RootComponent);
+				SupportTopCollision->SetBoxExtent(FVector(8.f, 10.f, 0.5f));
+				SupportTopCollision->SetRelativeLocation(FVector(0.f, 0.f, 7.5f));
+				SupportTopCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
+				SupportTopCollision->RegisterComponent();
+			}
 			PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -40.f, 0.f));
 			PaperSpriteComponent->SetTranslucentSortPriority(-6);
 			SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
@@ -366,6 +371,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 
 void ABlockBase::ApplyTerrainEdges(uint8 ExposedEdges)
 {
+	TRACE_CPUPROFILER_EVENT_SCOPE(MK_ApplyTerrainEdges);
 	TerrainExposedEdges = ExposedEdges & 15;
 	UDataManager* DataManager = UDataManager::Get(this);
 	const FBlockDataTableRow* Grass = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Dirt_Grass"))) : nullptr;
@@ -663,7 +669,7 @@ bool ABlockBase::IsClimbableSupport() const { return GetRecoveryItemKey() == TEX
 
 void ABlockBase::UpdateSupportTopCollision(float FeetHeight, bool bClimbing)
 {
-	if (IsClimbableSupport() == false) { return; }
+	if (IsClimbableSupport() == false || SupportTopCollision == nullptr) { return; }
 	const bool bStandable = bClimbing == false && FeetHeight >= GetActorLocation().Z + 7.5f;
 	SupportTopCollision->SetCollisionResponseToChannel(ECC_Pawn, bStandable ? ECR_Block : ECR_Ignore);
 }
