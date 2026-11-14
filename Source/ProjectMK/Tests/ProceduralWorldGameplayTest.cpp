@@ -144,6 +144,7 @@ namespace
 				Test->TestNotNull(TEXT("Oxygen uses an animated effect"), Glow);
 				const UVisualStyleDataAsset* Style = UDataManager::Get(World)->GetVisualStyleDataAsset();
 				Test->TestTrue(TEXT("Oxygen uses the dedicated cyan material"), Glow != nullptr && Glow->GetMaterial(0) == Style->OxygenPickupMaterial);
+				Test->TestTrue(TEXT("Oxygen effect renders in front of terrain on the side-view camera plane"), Glow != nullptr && Glow->GetComponentLocation().Y > Origin.Y);
 				Started = FPlatformTime::Seconds();
 				FlightStarted = World->GetTimeSeconds();
 				return false;

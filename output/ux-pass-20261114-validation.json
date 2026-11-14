@@ -1,0 +1,92 @@
+﻿{
+  "date_kst": "2026-11-14",
+  "build": {
+    "target": "ProjectMKEditor Win64 Development",
+    "result": "Succeeded",
+    "seconds": 18.06
+  },
+  "tests": {
+    "ProjectMK.PIE.Crafting.PlaceableWorkbench": {
+      "utc": "2026.11.14-12.32.42:583",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.Inventory.SeparateQuickSlotsAndWorldDrop": {
+      "utc": "2026.11.14-12.32.57:177",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.Shop.GroundDrillingAndInteraction": {
+      "utc": "2026.11.14-12.33.13:175",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.UI.DragSaleAndSkillHold": {
+      "utc": "2026.11.14-12.52.56:021",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification": {
+      "utc": "2026.11.14-12.53.10:593",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.World.CameraMinimapAndBackgroundCoverage": {
+      "utc": "2026.11.14-12.33.58:009",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.World.OxygenWispFlight": {
+      "utc": "2026.11.14-12.34.11:876",
+      "result": "Success"
+    },
+    "ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters": {
+      "utc": "2026.11.14-12.34.30:971",
+      "result": "Success"
+    }
+  },
+  "camera_projection_observations": [
+    "Camera aspect 1.333: projected X=146.000 Y=0.000 / X=1389.000 Y=932.000, viewport X=146.000 Y=0.000 / X=1389.000 Y=932.000",
+    "Camera aspect 1.778: projected X=0.000 Y=35.000 / X=1534.000 Y=898.000, viewport X=0.000 Y=35.000 / X=1534.000 Y=898.000",
+    "Camera aspect 2.333: projected X=0.000 Y=138.000 / X=1534.000 Y=795.000, viewport X=0.000 Y=138.000 / X=1534.000 Y=795.000"
+  ],
+  "save_files": {
+    "MKSave.sav": {
+      "sha256": "4450eebbc508d8aa90111c5d781d643a4383fb644aa862b7c44223f3844b78bc",
+      "unchanged": true
+    },
+    "MKSave_Backup.sav": {
+      "sha256": "4450eebbc508d8aa90111c5d781d643a4383fb644aa862b7c44223f3844b78bc",
+      "unchanged": true
+    }
+  },
+  "save_deletion_test": "Only the first confirmation click was exercised; no actual progress was deleted.",
+  "performance_observation": {
+    "before_pie_start_seconds_approx": 8.9,
+    "curved_version_pie_start_seconds": [
+      5.304,
+      4.129,
+      4.181
+    ],
+    "change": "Reuse the layout when prerequisites have not changed; compute family ordering and safe curves once.",
+    "formal_benchmark": false
+  },
+  "workbench": {
+    "item": "Workbench",
+    "recipe": {
+      "Ore_Copper": 3,
+      "Ore_Iron": 2
+    },
+    "effect": "PlaceWorkbench",
+    "world_size_units": 28,
+    "interaction": "Common F prompt and reusable crafting menu",
+    "placement_persistence": "Current world session; terrain/placements reset on regeneration like existing placeable blocks."
+  },
+  "screenshots": [
+    "Saved/AgentLogs/skill-tree-curves-live.png",
+    "Saved/AgentLogs/ui-20261114-215431.png",
+    "Saved/AgentLogs/ui-20261114-213632.png",
+    "Saved/AgentLogs/ui-20261114-210847.png"
+  ],
+  "curve_visual_validation": {
+    "layout": "Dependency families are adjacent; small families have minimum space; child order considers cross-family prerequisites.",
+    "connections": "Single cubic Bezier where clear; visibility shortcuts and rounded curves for necessary detours.",
+    "rendering": "Shared sampled paths drive both rendering and midpoint arrows; abrupt bends and actual segment clearance are tested.",
+    "centered_player": true,
+    "live_screenshot": "Saved/AgentLogs/skill-tree-curves-live.png"
+  }
+}
