@@ -5,6 +5,7 @@
 #include "Blueprint/WidgetTree.h"
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Brushes/SlateColorBrush.h"
+#include "Brushes/SlateRoundedBoxBrush.h"
 #include "Components/Border.h"
 #include "Components/Image.h"
 #include "Components/Overlay.h"
@@ -155,6 +156,11 @@ void UMKSlotBase::SetSelected(const bool bSelected)
 	}
 }
 
+void UMKSlotBase::SetNewIndicator(bool bIsNew)
+{
+	if (::IsValid(NewIndicator)) { NewIndicator->SetVisibility(bIsNew ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed); }
+}
+
 void UMKSlotBase::SetSlotLocked(const bool bLocked)
 {
 	bIsSlotLocked = bLocked;
@@ -231,6 +237,18 @@ void UMKSlotBase::BuildDefaultWidgetTree()
 	UOverlaySlot* IconSlot = Overlay->AddChildToOverlay(IconSize);
 	IconSlot->SetHorizontalAlignment(HAlign_Center);
 	IconSlot->SetVerticalAlignment(VAlign_Center);
+	NewIndicator = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), TEXT("NewItemDot"));
+	NewIndicator->SetBrush(FSlateRoundedBoxBrush(FLinearColor(0.8f, 0.08f, 0.055f), 5.f, FLinearColor(0.2f, 0.025f, 0.02f), 1.f));
+	NewIndicator->SetVisibility(ESlateVisibility::Collapsed);
+	USizeBox* DotSize = WidgetTree->ConstructWidget<USizeBox>();
+	DotSize->SetWidthOverride(10.f);
+	DotSize->SetHeightOverride(10.f);
+	DotSize->SetContent(NewIndicator);
+	DotSize->SetVisibility(ESlateVisibility::SelfHitTestInvisible);
+	UOverlaySlot* DotLayout = Overlay->AddChildToOverlay(DotSize);
+	DotLayout->SetHorizontalAlignment(HAlign_Right);
+	DotLayout->SetVerticalAlignment(VAlign_Top);
+	DotLayout->SetPadding(FMargin(0.f, 3.f, 3.f, 0.f));
 
 	CountText = WidgetTree->ConstructWidget<UTextBlock>(UTextBlock::StaticClass(), TEXT("CountText"));
 	ApplyTextRole(CountText, EMKTextRole::Caption);

@@ -292,6 +292,7 @@ bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlo
 		|| (SourceAddress == TargetAddress && SourceSlotIndex == TargetSlotIndex)) { return false; }
 	FInventorySlotData& Source = SourceSlots[SourceSlotIndex];
 	FInventorySlotData& Target = TargetSlots[TargetSlotIndex];
+	const bool bSwap = Target.IsEmpty() == false && Target.ItemUID != Source.ItemUID;
 	if (Source.IsEmpty() || (TargetContainer == EItemContainer::QuickSlot && CanEquipQuickSlot(Source.ItemUID) == false)
 		|| (SourceContainer == EItemContainer::QuickSlot && Target.IsEmpty() == false && CanEquipQuickSlot(Target.ItemUID) == false)) { return false; }
 	if (Target.IsEmpty())
@@ -304,10 +305,15 @@ bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlo
 		const int32 Count = FMath::Min(Source.ItemCount, GetItemMaxStackCount(Source.ItemUID) - Target.ItemCount);
 		if (Count <= 0) { return false; }
 		Target.ItemCount += Count;
+		Target.bIsNew |= Source.bIsNew;
 		Source.ItemCount -= Count;
 		if (Source.ItemCount <= 0) { Source.Clear(); }
 	}
 	else { Swap(Source, Target); }
+	if (SourceContainer == EItemContainer::Storage && TargetContainer != EItemContainer::Storage) { Target.bIsNew = true; }
+	if (bSwap && TargetContainer == EItemContainer::Storage && SourceContainer != EItemContainer::Storage) { Source.bIsNew = true; }
+	if (SourceContainer == EItemContainer::Storage) { Source.bIsNew = false; }
+	if (TargetContainer == EItemContainer::Storage) { Target.bIsNew = false; }
 	if (SourceContainer == EItemContainer::Storage) { SourceStorage->NotifyContentsChanged(); }
 	if (TargetContainer == EItemContainer::Storage && TargetStorage != SourceStorage) { TargetStorage->NotifyContentsChanged(); }
 	OnInventoryUpdated();
@@ -357,6 +363,16 @@ bool UInventoryComponent::CanEquipQuickSlot(FName ItemKey) const
 		? Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey) : nullptr;
 	return Item != nullptr && Item->bIsInventoryItem && Item->bIsOre == false
 		&& Item->ConsumableEffect != EConsumableEffectType::None && Item->ConsumableEffect != EConsumableEffectType::Insurance;
+}
+
+void UInventoryComponent::MarkItemSlotSeen(EItemContainer Container, int32 Index)
+{
+	if (Container == EItemContainer::Storage) { return; }
+	TArray<FInventorySlotData>* Slots = GetMutableItemSlots(Container, nullptr);
+	if (Slots == nullptr || Slots->IsValidIndex(Index) == false || (*Slots)[Index].bIsNew == false) { return; }
+	(*Slots)[Index].bIsNew = false;
+	OnItemSlotSeenDelegate.Broadcast(Container, Index);
+	if (AMKCharacter* Player = Cast<AMKCharacter>(GetOwner())) { Player->TrySaveGame(); }
 }
 
 const TArray<FInventorySlotData>& UInventoryComponent::GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage)
@@ -528,6 +544,7 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 			FInventorySlotData& StackableSlotData = InventorySlotDataList[StackableSlotIndex];
 			const int32 AddedItemCount = FMath::Min(RemainingItemCount, MaxStackCount - StackableSlotData.ItemCount);
 			StackableSlotData.ItemCount += AddedItemCount;
+			StackableSlotData.bIsNew = true;
 			RemainingItemCount -= AddedItemCount;
 			continue;
 		}
@@ -540,6 +557,7 @@ void UInventoryComponent::GainItem(FName ItemUID, int32 ItemCount)
 
 		FInventorySlotData& EmptySlotData = InventorySlotDataList[EmptySlotIndex];
 		EmptySlotData.ItemUID = ItemUID;
+		EmptySlotData.bIsNew = true;
 		EmptySlotData.ItemCount = FMath::Min(RemainingItemCount, MaxStackCount);
 		RemainingItemCount -= EmptySlotData.ItemCount;
 	}

@@ -44,6 +44,7 @@ public:
 	void SetSlotCount(int32 Count, bool bShowCount = true);
 	void SetKeyGuide(const FText& KeyGuide);
 	void SetSelected(bool bSelected);
+	void SetNewIndicator(bool bIsNew);
 	void SetSlotLocked(bool bLocked);
 	void SetRankBadge(const FText& Rank);
 	void SetAcquired(bool bAcquired);
@@ -60,6 +61,9 @@ private:
 protected:
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> LockImage;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UBorder> NewIndicator;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UBorder> RankBorder;

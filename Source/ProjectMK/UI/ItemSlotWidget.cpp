@@ -27,6 +27,7 @@ void UItemSlotWidget::ClearItem()
 	CurrentItemCount = 0;
 
 	SetSlotCount(0, false);
+	SetNewIndicator(false);
 
 	if (::IsValid(IconImage))
 	{
@@ -35,7 +36,7 @@ void UItemSlotWidget::ClearItem()
 	}
 }
 
-void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
+void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount, bool bIsNew)
 {
 	if (::IsValid(IconImage) == false)
 	{
@@ -45,6 +46,7 @@ void UItemSlotWidget::SetItem(FName ItemKey, int32 ItemCount)
 	ClearItem();
 	CurrentItemKey = ItemKey;
 	CurrentItemCount = ItemCount;
+	SetNewIndicator(bIsNew);
 
 	UDataManager* DataManager = UDataManager::Get(this);
 	if (::IsValid(DataManager) == false)
@@ -97,9 +99,21 @@ void UItemSlotWidget::UpdateWidget()
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
 	if (::IsValid(Inventory) == false || SlotIndex == INDEX_NONE) { return; }
 	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(SlotContainer, StorageChest.Get());
-	if (Slots.IsValidIndex(SlotIndex) && Slots[SlotIndex].IsEmpty() == false) { SetItem(Slots[SlotIndex].ItemUID, Slots[SlotIndex].ItemCount); }
+	if (Slots.IsValidIndex(SlotIndex) && Slots[SlotIndex].IsEmpty() == false) { SetItem(Slots[SlotIndex].ItemUID, Slots[SlotIndex].ItemCount, Slots[SlotIndex].bIsNew); }
 	else { ClearItem(); }
 	SetKeyGuide(SlotContainer == EItemContainer::QuickSlot && bShowKeyGuide ? FText::AsNumber(SlotIndex + 1) : FText::GetEmpty());
+}
+
+void UItemSlotWidget::BindEvents()
+{
+	Super::BindEvents();
+	if (UInventoryComponent* Inventory = GetLocalInventoryComponent()) { Inventory->OnItemSlotSeenDelegate.AddUObject(this, &UItemSlotWidget::OnItemSlotSeen); }
+}
+
+void UItemSlotWidget::UnbindEvents()
+{
+	if (UInventoryComponent* Inventory = GetLocalInventoryComponent()) { Inventory->OnItemSlotSeenDelegate.RemoveAll(this); }
+	Super::UnbindEvents();
 }
 
 FReply UItemSlotWidget::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
@@ -194,6 +208,17 @@ void UItemSlotWidget::OnSlotClicked()
 {
 	AMKCharacter* Character = GetLocalPlayerCharacter();
 	if (SlotContainer == EItemContainer::QuickSlot && ::IsValid(Character)) { Character->GetConsumableComponent()->TryUseQuickSlot(SlotIndex); }
+}
+
+void UItemSlotWidget::OnSlotHovered()
+{
+	if (UInventoryComponent* Inventory = GetLocalInventoryComponent()) { Inventory->MarkItemSlotSeen(SlotContainer, SlotIndex); }
+	Super::OnSlotHovered();
+}
+
+void UItemSlotWidget::OnItemSlotSeen(EItemContainer Container, int32 Index)
+{
+	if (SlotContainer == Container && SlotIndex == Index) { SetNewIndicator(false); }
 }
 
 bool UItemSlotWidget::HasItem() const

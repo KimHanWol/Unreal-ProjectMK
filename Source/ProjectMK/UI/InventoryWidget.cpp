@@ -156,13 +156,13 @@ void UInventoryWidget::RefreshInventory()
 	for (int32 Index = 0; Index < ItemSlotList.Num(); ++Index)
 	{
 		ItemSlotList[Index]->SetSlotLocked(Index >= Inventory->GetMaxInventoryCount());
-		if (Slots.IsValidIndex(Index) && Slots[Index].IsEmpty() == false) { ItemSlotList[Index]->SetItem(Slots[Index].ItemUID, Slots[Index].ItemCount); }
+		if (Slots.IsValidIndex(Index) && Slots[Index].IsEmpty() == false) { ItemSlotList[Index]->SetItem(Slots[Index].ItemUID, Slots[Index].ItemCount, Slots[Index].bIsNew); }
 		else { ItemSlotList[Index]->ClearItem(); }
 	}
 	const TArray<FInventorySlotData>& QuickSlots = Inventory->GetItemSlots(EItemContainer::QuickSlot);
 	for (int32 Index = 0; Index < QuickSlotList.Num(); ++Index)
 	{
-		if (QuickSlots[Index].IsEmpty() == false) { QuickSlotList[Index]->SetItem(QuickSlots[Index].ItemUID, QuickSlots[Index].ItemCount); }
+		if (QuickSlots[Index].IsEmpty() == false) { QuickSlotList[Index]->SetItem(QuickSlots[Index].ItemUID, QuickSlots[Index].ItemCount, QuickSlots[Index].bIsNew); }
 		else { QuickSlotList[Index]->ClearItem(); }
 	}
 }

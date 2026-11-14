@@ -29,6 +29,9 @@ public:
 	UPROPERTY(BlueprintReadWrite)
 	int32 ItemCount = 0;
 
+	UPROPERTY(BlueprintReadOnly)
+	bool bIsNew = false;
+
 	bool IsEmpty() const
 	{
 		return ItemUID.IsNone() || ItemCount <= 0;
@@ -38,6 +41,7 @@ public:
 	{
 		ItemUID = NAME_None;
 		ItemCount = 0;
+		bIsNew = false;
 	}
 };
 
@@ -71,6 +75,7 @@ public:
 	bool TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
 	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
 	bool CanEquipQuickSlot(FName ItemKey) const;
+	void MarkItemSlotSeen(EItemContainer Container, int32 Index);
 	const TArray<FInventorySlotData>& GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage = nullptr);
 	static constexpr int32 QuickSlotCount = 8;
 	void SetGainRadius(float NewRadius);
@@ -113,6 +118,8 @@ private:
 public:
 	DECLARE_MULTICAST_DELEGATE(FOnInventoryChanged);
 	FOnInventoryChanged OnInventoryChangedDelegate;
+	DECLARE_MULTICAST_DELEGATE_TwoParams(FOnItemSlotSeen, EItemContainer, int32);
+	FOnItemSlotSeen OnItemSlotSeenDelegate;
 
 private:
 	UPROPERTY(Transient)

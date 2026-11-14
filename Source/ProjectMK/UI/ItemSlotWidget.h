@@ -16,7 +16,7 @@ class PROJECTMK_API UItemSlotWidget : public UMKSlotBase
 
 public:
 	void ClearItem();
-	void SetItem(FName ItemKey, int32 ItemCount);
+	void SetItem(FName ItemKey, int32 ItemCount, bool bIsNew = false);
 	void SetSlotIndex(int32 InSlotIndex);
 	void SetSlotAddress(EItemContainer Container, int32 InSlotIndex, AStorageChestActor* Storage = nullptr);
 	virtual void UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const override;
@@ -25,12 +25,15 @@ public:
 
 protected:
 	virtual void UpdateWidget() override;
+	virtual void BindEvents() override;
+	virtual void UnbindEvents() override;
 	virtual FReply NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual FReply NativeOnMouseButtonUp(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent) override;
 	virtual void NativeOnDragDetected(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent, UDragDropOperation*& OutOperation) override;
 	virtual bool NativeOnDrop(const FGeometry& InGeometry, const FDragDropEvent& InDragDropEvent, UDragDropOperation* InOperation) override;
 	virtual bool CanClickSlot() const override;
 	virtual void OnSlotClicked() override;
+	virtual void OnSlotHovered() override;
 
 	UPROPERTY(meta = (BindWidgetOptional))
 	class UTextBlock* Text_Count;
@@ -40,6 +43,7 @@ protected:
 	bool bShowKeyGuide = true;
 
 private:
+	void OnItemSlotSeen(EItemContainer Container, int32 Index);
 	bool HasItem() const;
 
 private:
