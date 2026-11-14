@@ -59,6 +59,7 @@ public:
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual bool CanInteract(AActor* Interactor) override;
 	virtual FName GetRecoveryItemKey() const override;
+	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 
 protected:
 	virtual void BeginPlay() override;
@@ -96,6 +97,8 @@ public:
 	void ApplyCushion();
 	bool IsCushioned() const;
 	bool IsSupportAnchor();
+	bool IsClimbableSupport() const;
+	void UpdateSupportTopCollision(float FeetHeight, bool bClimbing);
 
 	UFUNCTION(BlueprintImplementableEvent)
 	void BP_EnableDebugState(int32 Count);
@@ -123,6 +126,9 @@ protected:
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UBoxComponent> BoxCollision;
 
+	UPROPERTY(VisibleAnywhere)
+	TObjectPtr<UBoxComponent> SupportTopCollision;
+
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Components")
 	TObjectPtr<UPaperSpriteComponent> PaperSpriteComponent;
 
@@ -142,6 +148,7 @@ protected:
 	TObjectPtr<UAbilitySystemComponent> AbilitySystemComponent;
 
 	FBlockTileData BlockTileData;
+	FName CachedRecoveryItemKey = NAME_None;
 
 private:
 	UPROPERTY(Transient)

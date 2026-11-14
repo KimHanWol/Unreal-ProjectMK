@@ -21,6 +21,7 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
+#include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
@@ -34,9 +35,15 @@
 ABlockBase::ABlockBase()
 {
 	PrimaryActorTick.bCanEverTick = false;
+	SupportTopCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("SupportTopCollision"));
 
 	BoxCollision = CreateDefaultSubobject<UBoxComponent>(TEXT("BoxCollision"));
 	RootComponent = BoxCollision;
+	SupportTopCollision->SetupAttachment(RootComponent);
+	SupportTopCollision->SetBoxExtent(FVector(8.f, 10.f, 0.5f));
+	SupportTopCollision->SetRelativeLocation(FVector(0.f, 0.f, 7.5f));
+	SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	SupportTopCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
@@ -96,8 +103,19 @@ bool ABlockBase::CanInteract(AActor* Interactor)
 
 FName ABlockBase::GetRecoveryItemKey() const
 {
-	const auto* Row = UDataManager::Get(const_cast<ABlockBase*>(this))->GetBlockDataTableRow(BlockTileData.TileSetIndex);
-	return Row != nullptr ? Row->RecoveryItemKey : NAME_None;
+	return CachedRecoveryItemKey;
+}
+
+FText ABlockBase::GetRecoveryBlockedReason(AActor* Interactor) const
+{
+	if (IsClimbableSupport())
+	{
+		const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
+		ABlockBase* Above = GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetBlockAtPosition(Cell + FVector2D(0.f, -1.f));
+		if (Above != nullptr && Above->IsClimbableSupport()) { return NSLOCTEXT("Support", "UpperSupportFirst", "위 지지대를 먼저 회수하세요"); }
+		if (GetWorld()->GetSubsystem<UMineTransportSubsystem>()->HasRailAtSupport(FIntPoint(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y)))) { return NSLOCTEXT("Support", "RailFirst", "철도를 먼저 회수하세요"); }
+	}
+	return IInteractable::GetRecoveryBlockedReason(Interactor);
 }
 
 void ABlockBase::SetLastDamageInstigatorASC(UAbilitySystemComponent* InInstigatorASC)
@@ -229,6 +247,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 		return;
 	}
 
+	CachedRecoveryItemKey = BlockDataTableRow->RecoveryItemKey;
 	MaxDurability = BlockDataTableRow->BlockDurability;
 	bUseTerrainEdges = BlockDataTableRow->bUseTerrainEdges && BlockDataTableRow->bNeedTobeHide == false;
 	TerrainBlendPriority = BlockDataTableRow->TerrainBlendPriority;
@@ -313,6 +332,12 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 			BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));
 		}
 
+		if (BlockDataTableRow->RecoveryItemKey == TEXT("SupportBeam"))
+		{
+			PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -40.f, 0.f));
+			PaperSpriteComponent->SetTranslucentSortPriority(-6);
+			SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
+		}
 		SetActorLocation(BlockTileData.WorldLocation);
 	}
 	else if (SoftPaperSprite.IsNull() == false)
@@ -345,9 +370,7 @@ void ABlockBase::ApplyTerrainEdges(uint8 ExposedEdges)
 	UDataManager* DataManager = UDataManager::Get(this);
 	const FBlockDataTableRow* Grass = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(FName(TEXT("Dirt_Grass"))) : nullptr;
 	const FBlockDataTableRow* Foundation = ::IsValid(DataManager) ? DataManager->GetBlockDataTableRow(TEXT("SurfaceFoundation")) : nullptr;
-	const FVector2D Cell = UMKBlueprintFunctionLibrary::GetBlockPosition(this);
-	const bool bSurfaceFoundation = Foundation != nullptr && BlockTileData.TileSetIndex == Foundation->TileIndex &&
-		FMath::RoundToInt(Cell.Y) == GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(FMath::RoundToInt(Cell.X));
+	const bool bSurfaceFoundation = Foundation != nullptr && BlockTileData.TileSetIndex == Foundation->TileIndex;
 	if ((Grass != nullptr && BlockTileData.TileSetIndex == Grass->TileIndex) || bSurfaceFoundation)
 	{
 		TerrainExposedEdges &= ~uint8(4);
@@ -636,6 +659,15 @@ bool ABlockBase::IsSupportAnchor()
 	return BlockDataTableRow != nullptr && BlockDataTableRow->bIsSupportAnchor && bIsMineableState;
 }
 
+bool ABlockBase::IsClimbableSupport() const { return GetRecoveryItemKey() == TEXT("SupportBeam") && bIsDestroying == false && bIsMineableState; }
+
+void ABlockBase::UpdateSupportTopCollision(float FeetHeight, bool bClimbing)
+{
+	if (IsClimbableSupport() == false) { return; }
+	const bool bStandable = bClimbing == false && FeetHeight >= GetActorLocation().Z + 7.5f;
+	SupportTopCollision->SetCollisionResponseToChannel(ECC_Pawn, bStandable ? ECR_Block : ECR_Ignore);
+}
+
 void ABlockBase::OnRecovered()
 {
 	SetItemDropEnabled(false);
@@ -671,6 +703,7 @@ void ABlockBase::OnPreDestroy()
 
 void ABlockBase::PlayDestroyFlipbook()
 {
+	if (SupportTopCollision != nullptr) { SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::NoCollision); }
 	if (::IsValid(BoxCollision))
 	{
 		BoxCollision->SetCollisionProfileName(TEXT("NoCollision"));

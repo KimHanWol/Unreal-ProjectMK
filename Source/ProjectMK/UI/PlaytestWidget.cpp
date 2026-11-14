@@ -24,6 +24,9 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
+#include "ProjectMK/Actor/Shop/MineFacilityActor.h"
+#include "GameFramework/CharacterMovementComponent.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/UI/MKMockupButton.h"
 
@@ -68,6 +71,9 @@ void UPlaytestWidget::BindEvents()
 	SpawnMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnSpawnMonsterClicked);
 	HitMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnHitMonsterClicked);
 	SpawnChestButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnSpawnChestClicked);
+	RailKitButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnRailKitClicked);
+	VisitStationButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnVisitStationClicked);
+	QuestReadyButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnQuestReadyClicked);
 	DeleteSaveButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnDeleteSaveClicked);
 }
 
@@ -87,6 +93,9 @@ void UPlaytestWidget::UnbindEvents()
 	SpawnMonsterButton->OnClicked.RemoveAll(this);
 	HitMonsterButton->OnClicked.RemoveAll(this);
 	SpawnChestButton->OnClicked.RemoveAll(this);
+	RailKitButton->OnClicked.RemoveAll(this);
+	VisitStationButton->OnClicked.RemoveAll(this);
+	QuestReadyButton->OnClicked.RemoveAll(this);
 	DeleteSaveButton->OnClicked.RemoveAll(this);
 }
 
@@ -129,7 +138,7 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	Panel->AddChildToVerticalBox(DetailsPanel);
 
 	UTextBlock* Controls = WidgetTree->ConstructWidget<UTextBlock>();
-	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · F 상호작용\nC 제작 · K 스킬 · 1~8 아이템 사용"));
+	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · W 지지대 등반\nF 상호작용 · F 홀드 회수\nC 제작 · K 스킬 · 1~8 아이템 사용"));
 	ApplyTextRole(Controls, EMKTextRole::Body, true);
 	Controls->SetColorAndOpacity(FSlateColor(FLinearColor(0.6f, 0.8f, 0.9f)));
 	DetailsPanel->AddChildToVerticalBox(Controls)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceS));
@@ -158,6 +167,13 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	UHorizontalBox* ChestRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(ChestRow);
 	SpawnChestButton = AddActionButton(ChestRow, NSLOCTEXT("Playtest", "SpawnChest", "상자 설치"), NSLOCTEXT("Playtest", "SpawnChestHint", "주변 빈 바닥에 보관 상자를 설치합니다. 이번 플레이는 저장하지 않습니다."));
+	UHorizontalBox* RailRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+	DetailsPanel->AddChildToVerticalBox(RailRow);
+	RailKitButton = AddActionButton(RailRow, NSLOCTEXT("Playtest", "RailKit", "철도 세트"), NSLOCTEXT("Playtest", "RailKitHint", "인벤토리를 철도·열차·상자·지지대로 교체합니다. 이번 플레이는 저장하지 않습니다."));
+	VisitStationButton = AddActionButton(RailRow, NSLOCTEXT("Playtest", "VisitStation", "72m 방문"), FText::GetEmpty());
+	UHorizontalBox* QuestRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+	DetailsPanel->AddChildToVerticalBox(QuestRow);
+	QuestReadyButton = AddActionButton(QuestRow, NSLOCTEXT("Playtest", "QuestReady", "의뢰 대기 해제"), FText::GetEmpty());
 	UHorizontalBox* SaveRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(SaveRow)->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
 	UButton* SaveButton = nullptr;
@@ -420,6 +436,36 @@ void UPlaytestWidget::OnSpawnChestClicked()
 	}
 	const bool bGiven = GetLocalInventoryComponent()->AddItem(TEXT("StorageChest"), 1);
 	FeedbackText->SetText(bGiven ? NSLOCTEXT("Playtest", "ChestGiven", "빈 바닥이 없어 상자 아이템을 지급했습니다.") : NSLOCTEXT("Playtest", "ChestFull", "상자를 놓을 바닥이나 인벤토리 공간이 필요합니다."));
+}
+
+void UPlaytestWidget::OnRailKitClicked()
+{
+	if (TryStartPlaytestSession() == false) { return; }
+	UInventoryComponent* Inventory = GetLocalInventoryComponent();
+	Inventory->ApplySavedInventorySlots({}); Inventory->ApplySavedQuickSlots({});
+	for (const auto& Entry : { TPair<FName, int32>(TEXT("Rail"), 20), {TEXT("SupportBeam"), 20}, {TEXT("MineCart"), 1}, {TEXT("AutoMineCart"), 1}, {TEXT("StorageChest"), 3} }) { Inventory->AddItem(Entry.Key, Entry.Value); }
+	FeedbackText->SetText(NSLOCTEXT("Playtest", "RailKitReady", "철도 세트 지급 · 퀵슬롯에 장착해 사용하세요. 지지대는 W 등반, 설치물은 F 홀드 회수."));
+}
+
+void UPlaytestWidget::OnVisitStationClicked()
+{
+	if (TryStartPlaytestSession() == false) { return; }
+	AMineFacilityActor* Deepest = nullptr;
+	for (const auto& Facility : GetWorld()->GetSubsystem<UTownProgressSubsystem>()->GetFacilities())
+	{
+		if (Facility.IsValid() && Facility->GetFacilityKind() == EMineFacilityKind::Elevator && (Deepest == nullptr || Facility->GetStationDepth() > Deepest->GetStationDepth())) { Deepest = Facility.Get(); }
+	}
+	if (Deepest != nullptr)
+	{
+		AMKCharacter* Player = GetLocalPlayerCharacter(); Player->GetCharacterMovement()->StopMovementImmediately();
+		Player->SetActorLocation(Deepest->GetActorLocation() + FVector(0.f, 0.f, -2.96f)); Player->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
+		FeedbackText->SetText(NSLOCTEXT("Playtest", "StationVisited", "지하 정거장으로 이동했습니다. F로 지상과 왕복할 수 있습니다."));
+	}
+}
+
+void UPlaytestWidget::OnQuestReadyClicked()
+{
+	if (TryStartPlaytestSession()) { GetWorld()->GetSubsystem<UTownProgressSubsystem>()->ClearQuestCooldownsForPlaytest(); FeedbackText->SetText(NSLOCTEXT("Playtest", "QuestReset", "주민 의뢰 대기 시간이 해제되었습니다.")); }
 }
 
 void UPlaytestWidget::OnDeleteSaveClicked()

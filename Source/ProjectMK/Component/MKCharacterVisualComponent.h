@@ -24,6 +24,7 @@ public:
 
 	void InitializeVisuals();
 	void UpdateVisuals();
+	float GetHorizontalFacingSign() const;
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;

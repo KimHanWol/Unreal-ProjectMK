@@ -12,6 +12,8 @@ class UMKTooltipBase;
 class UItemQuantityDialog;
 class UImage;
 class UStorageChestWidget;
+class AMineFacilityActor;
+class URecipeInfoWidget;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -27,7 +29,9 @@ public:
 	bool ToggleInventoryWidget();
 	bool ToggleSkillTree();
 	bool ToggleCrafting();
-	bool TryOpenShop();
+	bool TryOpenShop(FName CatalogKey = NAME_None);
+	bool OpenFacility(AMineFacilityActor* Facility);
+	void CloseFacility();
 	bool OpenStorageChest(AStorageChestActor* Chest);
 	void CloseStorageChest();
 	bool IsMenuVisible() const;
@@ -40,6 +44,7 @@ public:
 
 private:
 	void UpdatePortraitCapture();
+	void UpdateRelicBadge();
 	void UpdateTooltipWidget();
 	void UpdateTooltipPosition();
 	void OnDropConfirmed(FName ItemKey, int32 Count);
@@ -66,6 +71,10 @@ protected:
 	TObjectPtr<UItemQuantityDialog> DropQuantityDialog;
 	UPROPERTY(Transient)
 	TObjectPtr<UImage> PortraitImage;
+	UPROPERTY(Transient)
+	TObjectPtr<URecipeInfoWidget> RelicBadge;
+	UPROPERTY(Transient)
+	TObjectPtr<UUserWidget> ProfileWidget;
 	EItemContainer PendingDropContainer = EItemContainer::Inventory;
 	int32 PendingDropIndex = INDEX_NONE;
 	FName PendingDropKey;

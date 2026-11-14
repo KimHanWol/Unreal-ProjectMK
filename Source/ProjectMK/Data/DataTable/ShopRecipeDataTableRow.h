@@ -36,6 +36,9 @@ struct FShopRecipeDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
 	EShopOfferType OfferType = EShopOfferType::Recipe;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop")
+	FName CatalogKey = NAME_None;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "0", EditCondition = "OfferType == EShopOfferType::Item"))
 	int32 PurchasePrice = 0;
 

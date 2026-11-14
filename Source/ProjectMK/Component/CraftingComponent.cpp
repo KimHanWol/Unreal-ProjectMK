@@ -1,4 +1,5 @@
 ﻿#include "ProjectMK/Component/CraftingComponent.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 
 #include "AbilitySystemComponent.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
@@ -73,6 +74,7 @@ bool UCraftingComponent::CanUnlockRecipe(FName RecipeKey) const
 		return false;
 	}
 
+	if (RecipeDataTableRow->CatalogKey == TEXT("RailFactory") && GetWorld()->GetSubsystem<UTownProgressSubsystem>()->CanAccessRailFactory(GetOwner()) == false) { return false; }
 	return GetOwnerCoin() >= static_cast<float>(RecipeDataTableRow->UnlockPrice);
 }
 

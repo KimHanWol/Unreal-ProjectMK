@@ -13,6 +13,9 @@ struct FStorageChestSaveData
 	FGuid Id;
 
 	UPROPERTY()
+	FGuid MountedCartId;
+
+	UPROPERTY()
 	FVector Location = FVector::ZeroVector;
 
 	UPROPERTY()

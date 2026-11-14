@@ -1,0 +1,56 @@
+﻿[
+    {
+        "width":  64,
+        "name":  "Elevator",
+        "file":  "Content/Asset/TownArtV1/Source/Elevator.png",
+        "height":  96
+    },
+    {
+        "width":  128,
+        "name":  "RailFactory",
+        "file":  "Content/Asset/TownArtV1/Source/RailFactory.png",
+        "height":  96
+    },
+    {
+        "width":  96,
+        "name":  "HouseA",
+        "file":  "Content/Asset/TownArtV1/Source/HouseA.png",
+        "height":  96
+    },
+    {
+        "width":  96,
+        "name":  "HouseB",
+        "file":  "Content/Asset/TownArtV1/Source/HouseB.png",
+        "height":  96
+    },
+    {
+        "width":  48,
+        "name":  "MineCart",
+        "file":  "Content/Asset/TownArtV1/Source/MineCart.png",
+        "height":  32
+    },
+    {
+        "width":  48,
+        "name":  "AutoMineCart",
+        "file":  "Content/Asset/TownArtV1/Source/AutoMineCart.png",
+        "height":  32
+    },
+    {
+        "width":  32,
+        "name":  "Rail",
+        "file":  "Content/Asset/TownArtV1/Source/Rail.png",
+        "height":  8
+    },
+    {
+        "width":  8,
+        "name":  "RailEnd",
+        "file":  "Content/Asset/TownArtV1/Source/RailEnd.png",
+        "height":  8
+    },
+    {
+        "width":  24,
+        "name":  "SteadyBelt",
+        "file":  "Content/Asset/TownArtV1/Source/SteadyBelt.png",
+        "height":  24
+    }
+]

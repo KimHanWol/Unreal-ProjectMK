@@ -26,12 +26,15 @@
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Component/MagnetRangeComponent.h"
 #include "ProjectMK/Component/MKCharacterVisualComponent.h"
+#include "ProjectMK/Component/MKCharacterMovementComponent.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/MKSaveGame.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
+#include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
@@ -68,7 +71,8 @@ namespace
 	}
 }
 
-AMKCharacter::AMKCharacter()
+AMKCharacter::AMKCharacter(const FObjectInitializer& ObjectInitializer)
+	: Super(ObjectInitializer.SetDefaultSubobjectClass<UMKCharacterMovementComponent>(ACharacter::CharacterMovementComponentName))
 {
 	PrimaryActorTick.bCanEverTick = true;
 
@@ -190,6 +194,7 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
+	UpdateSupportClimbing();
 	UpdateGroundTraction();
 	UpdateInteractionPrompt();
 
@@ -329,6 +334,7 @@ void AMKCharacter::RespawnAtSpawnLocation()
 
 void AMKCharacter::ApplyKnockback(float HorizontalVelocity, float UpwardVelocity, float RecoveryTime)
 {
+	if (GetWorld()->GetSubsystem<UTownProgressSubsystem>()->HasRelic(TEXT("SteadyBelt"))) { return; }
 	if (::IsValid(GetCharacterMovement()) == false || RecoveryTime <= 0.f || FMath::IsNearlyZero(HorizontalVelocity) || bIsRespawning)
 	{
 		return;
@@ -386,8 +392,12 @@ bool AMKCharacter::TrySaveGame()
 		SaveGame->GenerationSeed = LevelManagerSubsystem->GetLastGenerationSeed();
 		SaveGame->StorageChests = LevelManagerSubsystem->GetStorageChestSaveData();
 		SaveGame->DestroyedStorageChestIds = LevelManagerSubsystem->GetDestroyedStorageChestIds();
+		SaveGame->InstalledStructures = LevelManagerSubsystem->GetInstalledStructureSaveData();
 	}
 
+	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->WriteSaveData(SaveGame);
+	SaveGame->Rails = GetWorld()->GetSubsystem<UMineTransportSubsystem>()->GetRailSaveData();
+	SaveGame->MineCarts = GetWorld()->GetSubsystem<UMineTransportSubsystem>()->GetCartSaveData();
 	return SaveGameSubsystem->TrySaveGameToSlot();
 }
 
@@ -428,6 +438,8 @@ FVector AMKCharacter::GetCharacterDirection() const
 {
 	return CharacterDir;
 }
+
+float AMKCharacter::GetHorizontalFacingSign() const { return CharacterVisualComponent != nullptr ? CharacterVisualComponent->GetHorizontalFacingSign() : 1.f; }
 
 FVector AMKCharacter::GetDrillingVector() const
 {
@@ -571,7 +583,8 @@ void AMKCharacter::TryDrill()
 		return;
 	}
 
-	if (CharacterDir != FVector::ZeroVector)
+	const bool bClimbInput = CharacterDir.Z > 0.5f && FindClimbableSupport() != nullptr;
+	if (CharacterDir != FVector::ZeroVector && bClimbInput == false && ClimbingSupport.IsValid() == false)
 	{
 		// TODO: 드릴 어빌리티 선택 방식을 명시적으로 정리
 		AbilitySystemComponent->TryActivateAbilityByClass(PrimaryDrillAbilityClass);
@@ -601,6 +614,7 @@ IInteractable* AMKCharacter::FindNearestInteractable()
 
 	IInteractable* NearestInteractable = nullptr;
 	float NearestDistanceSquared = TNumericLimits<float>::Max();
+	int32 HighestPriority = MIN_int32;
 	for (const FOverlapResult& OverlapResult : OverlapResults)
 	{
 		AActor* OverlapActor = OverlapResult.GetActor();
@@ -611,8 +625,9 @@ IInteractable* AMKCharacter::FindNearestInteractable()
 		}
 
 		const float DistanceSquared = FVector::DistSquared(GetActorLocation(), OverlapActor->GetActorLocation());
-		if (DistanceSquared < NearestDistanceSquared)
+		if (Interactable->GetInteractionPriority() > HighestPriority || (Interactable->GetInteractionPriority() == HighestPriority && DistanceSquared < NearestDistanceSquared))
 		{
+			HighestPriority = Interactable->GetInteractionPriority();
 			NearestDistanceSquared = DistanceSquared;
 			NearestInteractable = Interactable;
 		}
@@ -721,6 +736,74 @@ void AMKCharacter::UpdateGroundTraction()
 		Movement->bUseSeparateBrakingFriction = bSavedSeparateBrakingFriction;
 	}
 	bUsingIceTraction = bOnIce;
+}
+
+void AMKCharacter::UpdateSupportClimbing()
+{
+	UMKCharacterMovementComponent* Movement = Cast<UMKCharacterMovementComponent>(GetCharacterMovement());
+	if (Movement == nullptr) { return; }
+	const float Feet = GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	for (int32 X = -1; X <= 1; ++X)
+	{
+		for (int32 Y = -2; Y <= 2; ++Y)
+		{
+			if (ABlockBase* Block = Level->GetBlockAtPosition(Cell + FVector2D(X, Y))) { Block->UpdateSupportTopCollision(Feet, Movement->MovementMode == MOVE_Custom); }
+		}
+	}
+	const bool bClimbInput = CharacterDir.Z > 0.5f && FMath::Abs(CharacterDir.X) < 0.1f && bIsFlying == false && IsKnockedBack() == false && bIsMenuInputBlocked == false;
+	ABlockBase* Next = bClimbInput ? FindClimbableSupport() : nullptr;
+	if (Next == nullptr)
+	{
+		if (ClimbingSupport.IsValid() && bClimbInput && Feet >= ClimbingSupport->GetActorLocation().Z + 7.5f)
+		{
+			const float Top = ClimbingSupport->GetActorLocation().Z + 8.f;
+			ClearSupportClimbing();
+			SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, Top + GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 0.05f));
+			Movement->SetMovementMode(MOVE_Walking);
+		}
+		else { ClearSupportClimbing(); }
+		return;
+	}
+	if (ClimbingSupport.IsValid() == false)
+	{
+		for (ABlockBase* Block : Level->GetBlocks())
+		{
+			if (::IsValid(Block) && Block->IsClimbableSupport() && FMath::Abs(Block->GetActorLocation().X - Next->GetActorLocation().X) < 0.5f)
+			{
+				GetCapsuleComponent()->IgnoreActorWhenMoving(Block, true); IgnoredClimbSupports.Add(Block);
+			}
+		}
+		SetDrillingVector(FVector::ZeroVector);
+	}
+	ClimbingSupport = Next;
+	SetActorLocation(FVector(Next->GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
+	Movement->SetClimbSpeed(GetGameSettings()->SupportClimbSpeed);
+	Movement->SetMovementMode(MOVE_Custom, UMKCharacterMovementComponent::SupportClimbMode);
+}
+
+void AMKCharacter::ClearSupportClimbing()
+{
+	for (const auto& Block : IgnoredClimbSupports) { if (Block.IsValid()) { GetCapsuleComponent()->IgnoreActorWhenMoving(Block.Get(), false); Block->UpdateSupportTopCollision(GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight(), false); } }
+	IgnoredClimbSupports.Reset(); ClimbingSupport.Reset();
+	if (GetCharacterMovement()->MovementMode == MOVE_Custom) { GetCharacterMovement()->SetMovementMode(MOVE_Falling); }
+}
+
+ABlockBase* AMKCharacter::FindClimbableSupport() const
+{
+	const float Feet = GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
+	const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	for (int32 Y = -1; Y <= 2; ++Y)
+	{
+		for (int32 X = -1; X <= 1; ++X)
+		{
+			ABlockBase* Block = Level->GetBlockAtPosition(Cell + FVector2D(X, Y));
+			if (Block != nullptr && Block->IsClimbableSupport() && FMath::Abs(Block->GetActorLocation().X - GetActorLocation().X) < 11.f && Feet >= Block->GetActorLocation().Z - 10.f && Feet < Block->GetActorLocation().Z + 7.8f) { return Block; }
+		}
+	}
+	return nullptr;
 }
 
 void AMKCharacter::UpdateFlyingVerticalVelocity() const
@@ -1131,6 +1214,7 @@ void AMKCharacter::OnMoveRight(float Value)
 
 void AMKCharacter::OnFly()
 {
+	ClearSupportClimbing();
 	bIsFlying = true;
 	USoundManager::TryPlaySFX(this, ESFXType::Floating);
 	if (IsKnockedBack()) { return; }

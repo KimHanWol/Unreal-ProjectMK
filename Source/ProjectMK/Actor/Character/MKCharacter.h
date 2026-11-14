@@ -24,6 +24,7 @@ class UTexture2D;
 class UGameSettingDataAsset;
 struct FCharacterDataTableRow;
 class IInteractable;
+class ABlockBase;
 
 UCLASS()
 class PROJECTMK_API AMKCharacter : public APaperCharacter, public IAbilitySystemInterface, public IDamageable
@@ -31,7 +32,7 @@ class PROJECTMK_API AMKCharacter : public APaperCharacter, public IAbilitySystem
 	GENERATED_BODY()
 
 public:
-	AMKCharacter();
+	AMKCharacter(const FObjectInitializer& ObjectInitializer = FObjectInitializer::Get());
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 
 protected:
@@ -56,6 +57,7 @@ public:
 	void SetDrillingVector(const FVector& InDrillingVector);
 
 	FVector GetCharacterDirection() const;
+	float GetHorizontalFacingSign() const;
 	FVector GetDrillingVector() const;
 	bool IsKnockedBack() const;
 	bool IsOnGround() const;
@@ -79,6 +81,9 @@ private:
 
 	void UpdateHorizontalMovement();
 	void UpdateGroundTraction();
+	void UpdateSupportClimbing();
+	void ClearSupportClimbing();
+	ABlockBase* FindClimbableSupport() const;
 	void UpdateFlyingVerticalVelocity() const;
 
 	void Apply2DCameraOverrides();
@@ -198,6 +203,8 @@ private:
 	bool bIsApplyingInitialEffects = false;
 	bool bIsMenuInputBlocked = false;
 	bool bUsingIceTraction = false;
+	TWeakObjectPtr<ABlockBase> ClimbingSupport;
+	TArray<TWeakObjectPtr<ABlockBase>> IgnoredClimbSupports;
 	float SavedGroundFriction = 8.f;
 	float SavedBrakingDeceleration = 2048.f;
 	float SavedBrakingFriction = 0.f;

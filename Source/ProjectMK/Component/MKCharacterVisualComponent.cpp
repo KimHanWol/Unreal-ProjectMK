@@ -1,4 +1,4 @@
-#include "ProjectMK/Component/MKCharacterVisualComponent.h"
+﻿#include "ProjectMK/Component/MKCharacterVisualComponent.h"
 
 #include "AbilitySystemComponent.h"
 #include "GameplayTagContainer.h"
@@ -71,6 +71,8 @@ void UMKCharacterVisualComponent::UpdateVisuals()
 	UpdateDrillShakeVisuals();
 	UpdateStateSpriteVisuals();
 }
+
+float UMKCharacterVisualComponent::GetHorizontalFacingSign() const { return bFacingRight ? 1.f : -1.f; }
 
 void UMKCharacterVisualComponent::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {

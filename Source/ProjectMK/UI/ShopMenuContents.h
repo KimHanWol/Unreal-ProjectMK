@@ -30,6 +30,7 @@ protected:
 public:
 	bool TryUnlockRecipe(FName RecipeKey);
 	void SetMerchantDialogue(const FText& Dialogue);
+	void SetCatalogKey(FName Key);
 	void RequestPurchase(FName RecipeKey, FGuid BuybackId);
 
 private:
@@ -51,6 +52,7 @@ private:
 	TObjectPtr<UItemQuantityDialog> QuantityDialog;
 	UPROPERTY(Transient)
 	TObjectPtr<UTextBlock> MerchantDialogue;
+	FName CatalogKey = NAME_None;
 	EItemContainer PendingSaleContainer = EItemContainer::Inventory;
 	int32 PendingSaleIndex = INDEX_NONE;
 	FGuid PendingBuybackId;

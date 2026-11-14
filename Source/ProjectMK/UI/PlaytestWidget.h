@@ -77,6 +77,15 @@ private:
 	void OnSpawnChestClicked();
 
 	UFUNCTION()
+	void OnRailKitClicked();
+
+	UFUNCTION()
+	void OnVisitStationClicked();
+
+	UFUNCTION()
+	void OnQuestReadyClicked();
+
+	UFUNCTION()
 	void OnDeleteSaveClicked();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Playtest", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetMonsterRowNames"))
@@ -132,6 +141,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> SpawnChestButton;
+	UPROPERTY(Transient) TObjectPtr<UButton> RailKitButton;
+	UPROPERTY(Transient) TObjectPtr<UButton> VisitStationButton;
+	UPROPERTY(Transient) TObjectPtr<UButton> QuestReadyButton;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> DeleteSaveButton;

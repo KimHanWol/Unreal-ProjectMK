@@ -117,6 +117,13 @@ void UShopMenuContents::SetMerchantDialogue(const FText& Dialogue)
 	if (::IsValid(MerchantDialogue)) { MerchantDialogue->SetText(Dialogue); }
 }
 
+void UShopMenuContents::SetCatalogKey(FName Key)
+{
+	CatalogKey = Key;
+	SetMerchantDialogue(Key == TEXT("RailFactory") ? NSLOCTEXT("Town", "FactoryStock", "철도와 열차를 준비했습니다. 설계도를 배우면 작업대에서도 제작할 수 있어요.") : NSLOCTEXT("Shop", "SaleHint", "광물을 놓아 판매 · 우클릭으로 전부 판매"));
+	RefreshRecipeSlotList();
+}
+
 void UShopMenuContents::RequestPurchase(FName RecipeKey, FGuid BuybackId)
 {
 	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(nullptr); }
@@ -218,6 +225,7 @@ void UShopMenuContents::RefreshRecipeSlotList()
 	Keys.Sort(FNameLexicalLess());
 	for (const FName Key : Keys)
 	{
+		if (UDataManager::Get(this)->GetShopRecipeDataTableRow(Key)->CatalogKey != CatalogKey) { continue; }
 		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
 		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeRecipe(this, Key);
@@ -226,6 +234,7 @@ void UShopMenuContents::RefreshRecipeSlotList()
 	Offers.Sort(FNameLexicalLess());
 	for (FName Key : Offers)
 	{
+		if (UDataManager::Get(this)->GetShopRecipeDataTableRow(Key)->CatalogKey != CatalogKey) { continue; }
 		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
 		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeRecipe(this, Key);
@@ -233,7 +242,7 @@ void UShopMenuContents::RefreshRecipeSlotList()
 	const UShopTradeSubsystem* Trade = GetWorld()->GetSubsystem<UShopTradeSubsystem>();
 	for (const FShopBuybackEntry& Stock : Trade->GetBuybackEntries())
 	{
-		if (Trade->FindBuyback(Stock.Id) == nullptr) { continue; }
+		if (CatalogKey.IsNone() == false || Trade->FindBuyback(Stock.Id) == nullptr) { continue; }
 		UShopStockEntryWidget* Entry = CreateWidget<UShopStockEntryWidget>(this);
 		CastChecked<UVerticalBoxSlot>(RecipeSlotListPanel->AddChild(Entry))->SetPadding(FMargin(0.f, 0.f, 0.f, 8.f));
 		Entry->InitializeBuyback(this, Stock.Id);

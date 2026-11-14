@@ -1,4 +1,5 @@
 ﻿#include "ProjectMK/Component/ConsumableComponent.h"
+#include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
@@ -156,6 +157,11 @@ bool UConsumableComponent::TryApplyConsumableEffect(FName ItemUID, const FItemDa
 		return TryPlaceBlock(ItemDataTableRow.PlaceBlockKey);
 	case EConsumableEffectType::PlaceWorkbench:
 		return TryPlaceWorkbench(ItemUID);
+	case EConsumableEffectType::PlaceRail:
+		return IsOwnerOnGround() && GetWorld()->GetSubsystem<UMineTransportSubsystem>()->TryPlaceRail(GetOwnerCharacter());
+	case EConsumableEffectType::PlaceMineCart:
+	case EConsumableEffectType::PlaceAutoMineCart:
+		return IsOwnerOnGround() && GetWorld()->GetSubsystem<UMineTransportSubsystem>()->TryPlaceCart(GetOwnerCharacter(), ItemDataTableRow.ConsumableEffect == EConsumableEffectType::PlaceAutoMineCart);
 	case EConsumableEffectType::PlaceStorageChest:
 		return TryPlaceStorageChest(ItemUID);
 	case EConsumableEffectType::ApplyCushion:
@@ -240,7 +246,10 @@ bool UConsumableComponent::TryPlaceStorageChest(FName ItemUID)
 {
 	AMKCharacter* Character = GetOwnerCharacter();
 	ULevelManagerSubsystem* Level = GetWorld() != nullptr ? GetWorld()->GetSubsystem<ULevelManagerSubsystem>() : nullptr;
-	return ::IsValid(Character) && IsOwnerOnGround() && ::IsValid(Level) && Level->TryPlaceStorageChest(ItemUID, Character->GetActorLocation());
+	if (::IsValid(Character) == false || IsOwnerOnGround() == false || Level == nullptr) { return false; }
+	UMineTransportSubsystem* Network = GetWorld()->GetSubsystem<UMineTransportSubsystem>();
+	if (Network->FindNearbyCart(Character->GetActorLocation()) != nullptr) { return Network->TryMountChest(Character, ItemUID); }
+	return Level->TryPlaceStorageChest(ItemUID, Character->GetActorLocation());
 }
 
 bool UConsumableComponent::TryApplyCushion()

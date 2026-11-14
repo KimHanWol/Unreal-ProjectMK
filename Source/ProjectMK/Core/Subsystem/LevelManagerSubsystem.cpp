@@ -9,6 +9,9 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileLayer.h"
 #include "ProjectMK/Actor/Shop/WorkbenchActor.h"
+#include "ProjectMK/Actor/Transport/MineCartActor.h"
+#include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 #include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "PaperSpriteActor.h"
@@ -1788,7 +1791,7 @@ void ULevelManagerSubsystem::GenerateWorldBlocks()
 	const USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
 	const UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
 	RegenerateMineableBlocks(::IsValid(SaveGame) ? SaveGame->GenerationSeed : INDEX_NONE);
-	if (::IsValid(SaveGame)) { RestoreStorageChests(SaveGame->StorageChests, SaveGame->DestroyedStorageChestIds); }
+	if (::IsValid(SaveGame)) { RestoreInstalledStructures(SaveGame->InstalledStructures); GetWorld()->GetSubsystem<UMineTransportSubsystem>()->RestoreNetwork(SaveGame->Rails, SaveGame->MineCarts); RestoreStorageChests(SaveGame->StorageChests, SaveGame->DestroyedStorageChestIds); }
 }
 
 void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
@@ -1881,6 +1884,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 
 	OnGenerateFinished();
 	GenerateMineDecorations(GenerationSettings);
+	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->GenerateFacilities();
 	GenerateBuriedChests(GenerationSettings);
 }
 
@@ -2081,6 +2085,7 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		const FVector2D Source = (*Sprite)->GetSourceSize();
 		const int32 HalfWidth = FMath::CeilToInt((Source.X / 32.f - 1.f) * 0.5f);
 		const int32 Height = FMath::CeilToInt(Source.Y / 32.f);
+		if (Floor.Y == GetSurfaceRow(Floor.X) && GetWorld()->GetSubsystem<UTownProgressSubsystem>()->IsSurfaceSiteReserved(Floor.X, HalfWidth)) { return false; }
 		for (int32 X = -HalfWidth; X <= HalfWidth; ++X)
 		{
 			if (GetBlockAtPosition(FVector2D(Floor.X + X, Floor.Y)) == nullptr) { return false; }
@@ -2218,12 +2223,14 @@ AStorageChestActor* ULevelManagerSubsystem::SpawnStorageChest(const FStorageChes
 	Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
 	AStorageChestActor* Chest = GetWorld()->SpawnActor<AStorageChestActor>(AStorageChestActor::StaticClass(), Data.Location, FRotator::ZeroRotator, Parameters);
 	if (Chest == nullptr) { return nullptr; }
-	if (Data.bBuried == false)
+	AMineCartActor* Cart = Data.MountedCartId.IsValid() ? GetWorld()->GetSubsystem<UMineTransportSubsystem>()->FindCart(Data.MountedCartId) : nullptr;
+	if (Data.bBuried == false && Cart == nullptr)
 	{
 		// 채굴 지형은 시드로 복구하므로, 발견했거나 설치했던 상자 칸은 다시 막히지 않게 비운다.
 		if (ABlockBase* Cover = GetBlockAtWorldLocation(Data.Location)) { Cover->Destroy(); }
 	}
-	Chest->InitializeChest(Data.Id, Data.ItemKey, Data.bBuried);
+	Chest->InitializeChest(Data.Id, Data.ItemKey, Data.bBuried, Cart == nullptr);
+	if (Cart != nullptr) { Chest->SetMountedCart(Cart); }
 	Chest->ApplySavedContents(Data.Slots);
 	StorageChests.Add(Chest);
 	return Chest;
@@ -2349,6 +2356,8 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
 	TGuardValue<bool> ClearingGuard(bClearingGeneratedBlocks, true);
+	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->ClearFacilities();
+	GetWorld()->GetSubsystem<UMineTransportSubsystem>()->ClearNetwork();
 	for (const auto& Chest : StorageChests) { if (Chest.IsValid()) { Chest->Destroy(); } }
 	StorageChests.Reset();
 	DestroyedStorageChestIds.Reset();
@@ -3604,6 +3613,31 @@ bool ULevelManagerSubsystem::TryPlaceStorageChest(FName ItemKey, const FVector& 
 	return SpawnStorageChest(Data) != nullptr;
 }
 
+AStorageChestActor* ULevelManagerSubsystem::SpawnMountedStorageChest(FName ItemKey, AMineCartActor* Cart)
+{
+	if (Cart == nullptr || Cart->GetCargo() != nullptr) { return nullptr; }
+	FStorageChestSaveData Data; Data.Id = FGuid::NewGuid(); Data.ItemKey = ItemKey;
+	Data.MountedCartId = Cart->GetCartId(); Data.Location = Cart->GetActorLocation() + FVector(0.f, 0.f, 12.f);
+	return SpawnStorageChest(Data);
+}
+
+FVector ULevelManagerSubsystem::PrepareFacilitySite(int32 Column, int32 HalfWidth, int32 Height, int32 Depth)
+{
+	UDataManager* Data = UDataManager::Get(this);
+	const int32 Floor = Depth > 0 ? Data->GetGameSettingDataAsset()->SurfaceBlockPositionY + Depth + 1 : GetSurfaceRow(Column);
+	for (int32 X = Column - HalfWidth - 1; X <= Column + HalfWidth + 1; ++X)
+	{
+		for (int32 Y = Floor - Height; Y <= Floor; ++Y)
+		{
+			if (Depth <= 0 && Y < Floor) { continue; }
+			ABlockBase* Existing = GetBlockAtPosition(FVector2D(X, Y));
+			if (Existing != nullptr) { Existing->SetItemDropEnabled(false); Existing->Destroy(); BlockList.Remove(Existing); BlockActorMap.Remove(FVector2D(X, Y)); }
+			if (Y == Floor) { SpawnTileActor(FIntPoint(X, Y), Data->GetBlockDataTableRow(TEXT("SurfaceFoundation"))->TileIndex, Data->GetBlueprintClass(EBlueprintClassType::BlockBase)); }
+		}
+	}
+	return FVector((Column + 0.5f) * BLOCK_SIZE, -20.f, -Floor * BLOCK_SIZE);
+}
+
 void ULevelManagerSubsystem::AttachStorageChestBlock(AStorageChestActor* Chest)
 {
 	const auto* Row = UDataManager::Get(this)->GetBlockDataTableRow(TEXT("StorageChest"));
@@ -3624,6 +3658,8 @@ void ULevelManagerSubsystem::ReleaseStorageChestBlock(ABlockBase* Block)
 	Block->Destroy();
 }
 
+void ULevelManagerSubsystem::MarkStorageChestRemoved(FGuid Id) { DestroyedStorageChestIds.AddUnique(Id); }
+
 void ULevelManagerSubsystem::RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds)
 {
 	DestroyedStorageChestIds = DestroyedIds;
@@ -3639,6 +3675,26 @@ void ULevelManagerSubsystem::RestoreStorageChests(const TArray<FStorageChestSave
 		const auto* Existing = StorageChests.FindByPredicate([&](const TWeakObjectPtr<AStorageChestActor>& Chest) { return Chest.IsValid() && Chest->GetChestId() == Data.Id; });
 		if (Existing != nullptr) { (*Existing)->Destroy(); }
 		SpawnStorageChest(Data);
+	}
+}
+
+TArray<FInstalledStructureSaveData> ULevelManagerSubsystem::GetInstalledStructureSaveData() const
+{
+	TArray<FInstalledStructureSaveData> Result;
+	for (ABlockBase* Block : BlockList) { if (::IsValid(Block) && Block->GetRecoveryItemKey() == TEXT("SupportBeam")) { FInstalledStructureSaveData Entry; Entry.ItemKey = TEXT("SupportBeam"); Entry.Location = Block->GetActorLocation(); Result.Add(Entry); } }
+	for (const auto& Bench : PlacedWorkbenches) { if (Bench.IsValid()) { FInstalledStructureSaveData Entry; Entry.ItemKey = Bench->GetRecoveryItemKey(); Entry.Location = Bench->GetActorLocation(); Result.Add(Entry); } }
+	return Result;
+}
+
+void ULevelManagerSubsystem::RestoreInstalledStructures(const TArray<FInstalledStructureSaveData>& Records)
+{
+	for (const auto& Entry : Records)
+	{
+		const auto* Item = UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Entry.ItemKey);
+		if (Item == nullptr || (Item->ConsumableEffect != EConsumableEffectType::PlaceBlock && Item->ConsumableEffect != EConsumableEffectType::PlaceWorkbench)) { continue; }
+		if (ABlockBase* Cover = GetBlockAtWorldLocation(Entry.Location)) { Cover->SetItemDropEnabled(false); Cover->Destroy(); }
+		if (Item->ConsumableEffect == EConsumableEffectType::PlaceBlock) { TryPlaceBlock(Item->PlaceBlockKey, Entry.Location); }
+		else { TryPlaceWorkbench(Entry.ItemKey, Entry.Location); }
 	}
 }
 

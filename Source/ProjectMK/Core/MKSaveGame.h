@@ -4,6 +4,7 @@
 #include "GameFramework/SaveGame.h"
 #include "ProjectMK/Component/InventoryComponent.h"
 #include "ProjectMK/Data/StorageChestData.h"
+#include "ProjectMK/Data/MineTownData.h"
 #include "MKSaveGame.generated.h"
 
 UCLASS()
@@ -17,6 +18,13 @@ public:
 
 	UPROPERTY()
 	int32 Coin = 0;
+
+	UPROPERTY() int32 MaximumReachedDepth = 0;
+	UPROPERTY() TArray<FTownQuestState> TownQuests;
+	UPROPERTY() TSet<FName> OwnedRelics;
+	UPROPERTY() TArray<FRailSaveData> Rails;
+	UPROPERTY() TArray<FMineCartSaveData> MineCarts;
+	UPROPERTY() TArray<FInstalledStructureSaveData> InstalledStructures;
 
 	UPROPERTY()
 	TArray<FName> PurchasedSkillKeys;

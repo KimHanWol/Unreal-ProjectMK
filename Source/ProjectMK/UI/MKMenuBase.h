@@ -33,6 +33,8 @@ public:
 	UFUNCTION(BlueprintCallable)
 	void CloseMenu();
 
+	UMKMenuContentsBase* GetCurrentContents() const;
+	void SetWindowTitle(const FText& Title);
 	bool IsMenuOpen() const;
 	bool IsMenuOpen(EMenuContentsType InMenuContentsType) const;
 

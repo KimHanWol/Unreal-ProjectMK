@@ -4,12 +4,14 @@
 #include "Subsystems/WorldSubsystem.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 #include "ProjectMK/Data/StorageChestData.h"
+#include "ProjectMK/Data/MineTownData.h"
 #include "LevelManagerSubsystem.generated.h"
 
 class UAbilitySystemComponent;
 class ABlockBase;
 class AWorkbenchActor;
 class AStorageChestActor;
+class AMineCartActor;
 class UDataManager;
 struct FMineableLevelGenerationSettings;
 
@@ -159,9 +161,14 @@ public:
 	bool TryPlaceBlock(FName BlockRowName, const FVector& WorldLocation);
 	bool TryPlaceWorkbench(FName ItemKey, const FVector& WorldLocation);
 	bool TryPlaceStorageChest(FName ItemKey, const FVector& WorldLocation);
+	AStorageChestActor* SpawnMountedStorageChest(FName ItemKey, AMineCartActor* Cart);
+	FVector PrepareFacilitySite(int32 Column, int32 HalfWidth, int32 Height, int32 Depth);
 	void AttachStorageChestBlock(AStorageChestActor* Chest);
 	void ReleaseStorageChestBlock(ABlockBase* Block);
+	void MarkStorageChestRemoved(FGuid Id);
 	void RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds);
+	TArray<FInstalledStructureSaveData> GetInstalledStructureSaveData() const;
+	void RestoreInstalledStructures(const TArray<FInstalledStructureSaveData>& Records);
 	TArray<FStorageChestSaveData> GetStorageChestSaveData() const;
 	const TArray<FGuid>& GetDestroyedStorageChestIds() const;
 	int32 ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC);

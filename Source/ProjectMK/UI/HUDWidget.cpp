@@ -15,6 +15,14 @@
 #include "ProjectMK/UI/ShopStockEntryWidget.h"
 #include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "ProjectMK/UI/StorageChestWidget.h"
+#include "ProjectMK/UI/FacilityMenuContents.h"
+#include "ProjectMK/UI/RecipeInfoWidget.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
+#include "Components/Border.h"
+#include "ProjectMK/UI/ShopMenuContents.h"
+#include "ProjectMK/Actor/Shop/MineFacilityActor.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
@@ -28,7 +36,15 @@ void UHUDWidget::NativeConstruct()
 	if (UUserWidget* Profile = Cast<UUserWidget>(WidgetTree->FindWidget(TEXT("CharacterInfo"))))
 	{
 		PortraitImage = Cast<UImage>(Profile->WidgetTree->FindWidget(TEXT("Image_83")));
+		ProfileWidget = Profile;
 	}
+	RelicBadge = CreateWidget<URecipeInfoWidget>(this);
+	UImage* RelicIcon = nullptr;
+	UBorder* BadgeFrame = BuildItemIconFrame(RelicIcon, 24.f);
+	const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
+	RelicIcon->SetBrushResourceObject(Style != nullptr ? Style->TownSprites.FindRef(TEXT("SteadyBelt")) : nullptr);
+	RelicBadge->SetInfoContent(BadgeFrame); RelicBadge->SetItem(TEXT("Relic_SteadyBelt"));
+	RelicBadge->AddToViewport(2); RelicBadge->SetDesiredSizeInViewport(FVector2D(32.f)); RelicBadge->SetVisibility(ESlateVisibility::Collapsed);
 	SetVisibility(ESlateVisibility::Visible);
 	DropQuantityDialog = CreateWidget<UItemQuantityDialog>(this);
 	DropQuantityDialog->AddToViewport(200);
@@ -59,6 +75,7 @@ void UHUDWidget::NativeConstruct()
 
 void UHUDWidget::NativeDestruct()
 {
+	if (::IsValid(RelicBadge)) { RelicBadge->RemoveFromParent(); }
 	if (::IsValid(StorageChestWindow)) { StorageChestWindow->RemoveFromParent(); }
 	if (::IsValid(Menu)) { Menu->RemoveFromParent(); }
 	if (::IsValid(Tooltip)) { Tooltip->RemoveFromParent(); }
@@ -75,6 +92,7 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	UpdatePortraitCapture();
+	UpdateRelicBadge();
 
 	if (::IsValid(HoveredTooltipSource) == false || ::IsValid(Tooltip) == false || Tooltip->IsVisible() == false)
 	{
@@ -148,15 +166,29 @@ bool UHUDWidget::ToggleCrafting()
 	return Menu->OpenMenu(EMenuContentsType::Crafting);
 }
 
-bool UHUDWidget::TryOpenShop()
+bool UHUDWidget::TryOpenShop(FName CatalogKey)
 {
 	if (::IsValid(Menu) == false)
 	{
 		return false;
 	}
 
-	return Menu->OpenMenu(EMenuContentsType::Shop);
+	if (Menu->OpenMenu(EMenuContentsType::Shop) == false) { return false; }
+	if (UShopMenuContents* Shop = Cast<UShopMenuContents>(Menu->GetCurrentContents())) { Shop->SetCatalogKey(CatalogKey); }
+	if (CatalogKey == TEXT("RailFactory")) { Menu->SetWindowTitle(NSLOCTEXT("Town", "FactoryTitle", "철도 공장")); }
+	return true;
 }
+
+bool UHUDWidget::OpenFacility(AMineFacilityActor* Facility)
+{
+	if (Facility == nullptr || Menu == nullptr || Menu->OpenMenu(EMenuContentsType::Facility) == false) { return false; }
+	if (StorageChestWindow != nullptr) { StorageChestWindow->CloseChest(); }
+	CastChecked<UFacilityMenuContents>(Menu->GetCurrentContents())->SetFacility(Facility);
+	Menu->SetWindowTitle(Facility->GetFacilityName());
+	return true;
+}
+
+void UHUDWidget::CloseFacility() { if (Menu != nullptr) { Menu->CloseMenu(); } }
 
 bool UHUDWidget::OpenStorageChest(AStorageChestActor* Chest)
 {
@@ -251,6 +283,18 @@ void UHUDWidget::UpdatePortraitCapture()
 	Capture->SetWorldLocationAndRotation(Player->GetActorLocation() - View.Rotation.Vector() * 100.f, View.Rotation);
 	Capture->PostProcessSettings = View.PostProcessSettings;
 	Capture->PostProcessBlendWeight = View.PostProcessBlendWeight;
+}
+
+void UHUDWidget::UpdateRelicBadge()
+{
+	if (RelicBadge == nullptr || ProfileWidget == nullptr) { return; }
+	const bool bOwned = GetWorld()->GetSubsystem<UTownProgressSubsystem>()->HasRelic(TEXT("SteadyBelt"));
+	RelicBadge->SetVisibility(bOwned ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
+	if (bOwned)
+	{
+		const FVector2D Screen = ProfileWidget->GetCachedGeometry().LocalToAbsolute(FVector2D(144.f, 16.f));
+		RelicBadge->SetPositionInViewport(UWidgetLayoutLibrary::GetViewportWidgetGeometry(this).AbsoluteToLocal(Screen), false);
+	}
 }
 
 void UHUDWidget::UpdateTooltipWidget()

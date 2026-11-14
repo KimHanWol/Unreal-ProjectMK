@@ -9,14 +9,17 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
+#include "ProjectMK/Actor/Transport/MineCartActor.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/UI/HUDWidget.h"
 
 bool AStorageChestActor::CanInteract(AActor* Interactor)
 {
-	return bIsBuried == false && bIsBreaking == false && PhysicsBlock.IsValid() && PhysicsBlock->IsFalling() == false && Super::CanInteract(Interactor);
+	return bIsBuried == false && bIsBreaking == false && (MountedCart.IsValid() || (PhysicsBlock.IsValid() && PhysicsBlock->IsFalling() == false)) && Super::CanInteract(Interactor);
 }
+
+int32 AStorageChestActor::GetInteractionPriority() const { return MountedCart.IsValid() ? 1 : 0; }
 
 FName AStorageChestActor::GetRecoveryItemKey() const { return ChestItemKey; }
 
@@ -29,6 +32,7 @@ FText AStorageChestActor::GetRecoveryBlockedReason(AActor* Interactor) const
 void AStorageChestActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CoverTimer);
+	if (MountedCart.IsValid()) { MountedCart->SetCargo(nullptr); }
 	if (PhysicsBlock.IsValid())
 	{
 		ABlockBase* Block = PhysicsBlock.Get();
@@ -47,7 +51,9 @@ bool AStorageChestActor::OnInteract(AActor* Interactor)
 	return Widgets.Num() > 0 && CastChecked<UHUDWidget>(Widgets[0])->OpenStorageChest(this);
 }
 
-void AStorageChestActor::InitializeChest(FGuid Id, FName ItemKey, bool bBuried)
+void AStorageChestActor::OnRecovered() { GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->MarkStorageChestRemoved(ChestId); }
+
+void AStorageChestActor::InitializeChest(FGuid Id, FName ItemKey, bool bBuried, bool bUsePhysics)
 {
 	ChestId = Id;
 	GetWorldTimerManager().ClearTimer(CoverTimer);
@@ -61,7 +67,7 @@ void AStorageChestActor::InitializeChest(FGuid Id, FName ItemKey, bool bBuried)
 	bIsBuried = bBuried;
 	SetActorHiddenInGame(bBuried);
 	if (bBuried) { GetWorldTimerManager().SetTimer(CoverTimer, this, &AStorageChestActor::UpdateBuriedCover, 0.2f, true); }
-	else { GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->AttachStorageChestBlock(this); }
+	else if (bUsePhysics) { GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->AttachStorageChestBlock(this); }
 }
 
 void AStorageChestActor::ApplySavedContents(const TArray<FInventorySlotData>& Contents)
@@ -125,6 +131,7 @@ FStorageChestSaveData AStorageChestActor::GetSaveData() const
 {
 	FStorageChestSaveData Data;
 	Data.Id = ChestId;
+	Data.MountedCartId = MountedCart.IsValid() ? MountedCart->GetCartId() : FGuid();
 	Data.Location = GetActorLocation();
 	Data.ItemKey = ChestItemKey;
 	Data.bBuried = bIsBuried;
@@ -148,6 +155,18 @@ void AStorageChestActor::SetPhysicsBlock(ABlockBase* Block)
 			Render->SetRelativeLocation(FVector(0.f, -12.f, 0.f));
 			Render->SetTranslucentSortPriority(-4);
 		}
+	}
+}
+
+void AStorageChestActor::SetMountedCart(AMineCartActor* Cart)
+{
+	MountedCart = Cart;
+	if (Cart != nullptr)
+	{
+		AttachToActor(Cart, FAttachmentTransformRules::KeepWorldTransform);
+		SetActorRelativeLocation(FVector(0.f, 0.f, 12.f));
+		Cart->SetCargo(this);
+		ShopSprite->SetVisibility(true);
 	}
 }
 

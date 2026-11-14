@@ -6,6 +6,7 @@
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
 
+#include "ProjectMK/Data/MineTownData.h"
 #include "GameSettingDataAsset.generated.h"
 
 USTRUCT(BlueprintType)
@@ -182,6 +183,9 @@ class PROJECTMK_API UGameSettingDataAsset : public UMKDataAssetBase
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Town")
+	FTownFacilitySettings TownFacilities;
+
 	/** 산소가 즉시 최대치로 회복되는 지표면 블록 Y 좌표 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen")
 	int32 SurfaceBlockPositionY = 0;
@@ -264,6 +268,9 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction", meta = (ClampMin = "0.2"))
 	float StructureRecoveryHoldDuration = 0.8f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Support", meta = (ClampMin = "1"))
+	float SupportClimbSpeed = 32.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1.0"))
 	float ShopBuybackLifetime = 300.f;

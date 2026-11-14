@@ -21,6 +21,7 @@ public:
 	virtual bool CanInteract(AActor* Interactor);
 	virtual bool TryInteract(AActor* Interactor);
 	virtual void EndInteract() {}
+	virtual int32 GetInteractionPriority() const { return 0; }
 	virtual FName GetRecoveryItemKey() const { return NAME_None; }
 	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const;
 	virtual bool TryRecover(AActor* Interactor);

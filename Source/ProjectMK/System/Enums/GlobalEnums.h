@@ -95,6 +95,7 @@ enum class EMenuContentsType : uint8
 	SkillTree,
 	Shop,
 	Crafting,
+	Facility,
 };
 
 /** 소모품 사용 효과. 수치는 아이템 데이터의 EffectValue / EffectDuration 으로 조정한다 */
@@ -119,6 +120,9 @@ enum class EConsumableEffectType : uint8
 	/** 캐릭터가 서 있는 바닥 위에 상호작용 가능한 제작대를 설치한다 */
 	PlaceWorkbench,
 	PlaceStorageChest,
+	PlaceRail,
+	PlaceMineCart,
+	PlaceAutoMineCart,
 };
 
 UENUM(BlueprintType)

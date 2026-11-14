@@ -55,7 +55,7 @@ namespace
 				Origin = FVector(56.5f * 16.f, -20.f, -Settings->SurfaceBlockPositionY * 16.f + 9.04f);
 				Player->SetActorLocation(Origin); Player->GetCharacterMovement()->StopMovementImmediately(); Player->GetCharacterMovement()->SetMovementMode(MOVE_Walking);
 				Test->TestTrue(TEXT("The empty chest installs at the player"), Level->TryPlaceStorageChest(TEXT("StorageChest"), Origin));
-				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { Chest = *It; break; }
+				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { Chest = *It; FirstChestId = Chest->GetChestId(); break; }
 				Advance(); return false;
 			}
 			const float Elapsed = World->GetTimeSeconds() - ChangedAt;
@@ -72,6 +72,7 @@ namespace
 			{
 				Key(false);
 				Test->TestFalse(TEXT("Holding F removes the actual empty chest"), Chest.IsValid());
+				Test->TestTrue(TEXT("Recovered generated chest identities remain removed after regeneration"), Level->GetDestroyedStorageChestIds().Contains(FirstChestId));
 				Test->TestEqual(TEXT("Recovery grants exactly one chest without requiring a relic"), Inventory->GetItemCount(TEXT("StorageChest")), 1);
 				Test->TestTrue(TEXT("A second chest installs"), Level->TryPlaceStorageChest(TEXT("StorageChest"), Origin));
 				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { Chest = *It; break; }
@@ -145,6 +146,7 @@ namespace
 		int32 Step = 0;
 		float ChangedAt = 0.f;
 		FVector Origin;
+		FGuid FirstChestId;
 		FMineableLevelGenerationSettings Saved;
 		TWeakObjectPtr<AStorageChestActor> Chest;
 		TWeakObjectPtr<AWorkbenchActor> Bench;

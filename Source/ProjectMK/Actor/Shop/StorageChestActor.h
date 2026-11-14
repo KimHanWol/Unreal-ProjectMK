@@ -7,6 +7,7 @@
 
 class AMKCharacter;
 class ABlockBase;
+class AMineCartActor;
 
 UCLASS()
 class PROJECTMK_API AStorageChestActor : public AShopActor
@@ -15,15 +16,17 @@ class PROJECTMK_API AStorageChestActor : public AShopActor
 
 public:
 	virtual bool CanInteract(AActor* Interactor) override;
+	virtual int32 GetInteractionPriority() const override;
 	virtual FName GetRecoveryItemKey() const override;
 	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 
 protected:
 	virtual void EndPlay(const EEndPlayReason::Type EndPlayReason) override;
 	virtual bool OnInteract(AActor* Interactor) override;
+	virtual void OnRecovered() override;
 
 public:
-	void InitializeChest(FGuid Id, FName ItemKey, bool bBuried);
+	void InitializeChest(FGuid Id, FName ItemKey, bool bBuried, bool bUsePhysics = true);
 	void ApplySavedContents(const TArray<FInventorySlotData>& Contents);
 	void RevealChest();
 	bool TryBreakByExplosion();
@@ -33,6 +36,7 @@ public:
 	FGuid GetChestId() const;
 	bool IsBuried() const;
 	void SetPhysicsBlock(ABlockBase* Block);
+	void SetMountedCart(AMineCartActor* Cart);
 	static constexpr int32 SlotCount = 10;
 
 private:
@@ -54,4 +58,5 @@ private:
 	bool bIsBreaking = false;
 	FTimerHandle CoverTimer;
 	TWeakObjectPtr<ABlockBase> PhysicsBlock;
+	TWeakObjectPtr<AMineCartActor> MountedCart;
 };

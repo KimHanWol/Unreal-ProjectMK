@@ -1,4 +1,5 @@
 ﻿#include "ProjectMK/Core/Subsystem/ShopTradeSubsystem.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 
 #include "AbilitySystemComponent.h"
 #include "Engine/World.h"
@@ -110,6 +111,7 @@ int32 UShopTradeSubsystem::GetMaximumPurchaseCount(AMKCharacter* Player, FName O
 {
 	const FShopRecipeDataTableRow* Offer = UDataManager::Get(const_cast<UShopTradeSubsystem*>(this))->GetShopRecipeDataTableRow(OfferKey);
 	if (::IsValid(Player) == false || Offer == nullptr || Offer->OfferType != EShopOfferType::Item || Offer->PurchasePrice < 0) { return 0; }
+	if (Offer->CatalogKey == TEXT("RailFactory") && GetWorld()->GetSubsystem<UTownProgressSubsystem>()->CanAccessRailFactory(Player) == false) { return 0; }
 	UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
 	UAbilitySystemComponent* ASC = Player->GetAbilitySystemComponent();
 	if (Inventory == nullptr || ASC == nullptr) { return 0; }
