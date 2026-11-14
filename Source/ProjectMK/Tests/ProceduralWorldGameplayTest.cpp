@@ -40,6 +40,7 @@ namespace
 			UGameSettingDataAsset* Settings = const_cast<UGameSettingDataAsset*>(Data->GetGameSettingDataAsset());
 			const FMineableLevelGenerationSettings Saved = Settings->MineableLevelGeneration;
 			FMineableLevelGenerationSettings& Generation = Settings->MineableLevelGeneration;
+			Generation.SurfaceReliefHeight = 0;
 			for (TActorIterator<APaperTileMapActor> It(World); It; ++It) { if (It->ActorHasTag(TEXT("ArtBackground")) == false) { It->Destroy(); } }
 			Generation.WidthInBlocks = 32;
 			Generation.DepthInBlocks = 96;

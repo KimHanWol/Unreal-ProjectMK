@@ -1,0 +1,107 @@
+﻿{
+  "checked_at_kst": "2026-11-14T22:59:02",
+  "build": {
+    "result": "Succeeded",
+    "seconds": 4.95,
+    "loaded_in_restarted_editor": true
+  },
+  "automation_tests": [
+    {
+      "time_kst": "2026-11-14 22:55:55",
+      "result": "Success",
+      "test": "ProjectMK.PIE.Crafting.PlaceableWorkbench"
+    },
+    {
+      "time_kst": "2026-11-14 22:56:10",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.DragSaleAndSkillHold"
+    },
+    {
+      "time_kst": "2026-11-14 22:56:25",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification"
+    },
+    {
+      "time_kst": "2026-11-14 22:56:40",
+      "result": "Success",
+      "test": "ProjectMK.PIE.World.CameraMinimapAndBackgroundCoverage"
+    },
+    {
+      "time_kst": "2026-11-14 22:56:57",
+      "result": "Success",
+      "test": "ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters"
+    },
+    {
+      "time_kst": "2026-11-14 22:57:08",
+      "result": "Success",
+      "test": "ProjectMK.PIE.World.SurfaceReliefAndMineDecoration"
+    }
+  ],
+  "runtime_audit": {
+    "section_headings_removed": true,
+    "catalog_layout": "VerticalBox in ScrollBox",
+    "catalog_rows": 5,
+    "workbench_offer": {
+      "Name": "Workbench",
+      "OfferType": "Item",
+      "PurchasePrice": 0,
+      "PurchaseLimit": 10,
+      "RequiredItems": [],
+      "ResultItemKey": "Workbench"
+    },
+    "portrait_projection": "ORTHOGRAPHIC",
+    "portrait_ortho_width": 23.12447166442871,
+    "decorations": 19
+  },
+  "screenshots": {
+    "shop": "Saved/AgentLogs/ui-20261114-225732.png",
+    "free_workbench": "Saved/AgentLogs/ui-20261114-225747.png",
+    "fixed_surface": "Saved/AgentLogs/ui-20261114-225816.png"
+  },
+  "save_files": [
+    {
+      "file": "MKSave.sav",
+      "unchanged": true,
+      "sha256": "19a29da639ad6b18943ae25d59e0a71c111c1a6d32601936503112574a56c642"
+    },
+    {
+      "file": "MKSave_Backup.sav",
+      "unchanged": true,
+      "sha256": "4ff8416a38309569feddaa80c35877d99c3c8288290947c029a9a8950d4ba33c"
+    }
+  ],
+  "save_baseline": "Saved/AgentLogs/BeforeMerchantSurface-20261114-222035",
+  "surface": {
+    "fixed_across_underground_seeds": true,
+    "profiles": [
+      {
+        "start_offset": 8,
+        "width": 18,
+        "height": 2
+      },
+      {
+        "start_offset": 34,
+        "width": 12,
+        "height": 1
+      },
+      {
+        "start_offset": 88,
+        "width": 28,
+        "height": 2
+      }
+    ],
+    "camp_frontage_flat": true
+  },
+  "art_manifest": "Content/Asset/MineDecorV1/Source/manifest.json",
+  "art_guide": "AGENT/Art/MINE_DECOR_V1.md",
+  "portrait": {
+    "previous_projection": "Perspective",
+    "corrected_projection": "Orthographic",
+    "screen_pixel_scale_matches_gameplay": true,
+    "tested_aspects": [
+      "4:3",
+      "16:9",
+      "21:9"
+    ]
+  }
+}

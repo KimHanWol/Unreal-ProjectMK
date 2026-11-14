@@ -9,6 +9,12 @@
 #include "ProjectMK/Actor/Shop/WorkbenchActor.h"
 #include "ProjectMK/Component/ConsumableComponent.h"
 #include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Component/CraftingComponent.h"
+#include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
+#include "AbilitySystemComponent.h"
+#include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
+#include "ProjectMK/Core/Subsystem/ShopTradeSubsystem.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
 #include "ProjectMK/UI/MKMenuBase.h"
@@ -37,7 +43,12 @@ namespace
 			const FName ItemKey(TEXT("Workbench"));
 			const FItemDataTableRow* Data = UDataManager::Get(World)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
 			if (Test->TestTrue(TEXT("Workbench item has a placeable consumable effect"), Data != nullptr && Data->ConsumableEffect == EConsumableEffectType::PlaceWorkbench) == false) { return true; }
-			Inventory->AddItem(ItemKey, 2);
+			UShopTradeSubsystem* Shop = World->GetSubsystem<UShopTradeSubsystem>();
+			const float BeforeCoin = Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute());
+			Test->TestFalse(TEXT("Workbench is not a crafting recipe"), Player->GetCraftingComponent()->CanCraftRecipe(ItemKey));
+			Test->TestTrue(TEXT("A free shop purchase grants the requested workbench quantity"), Shop->TryPurchaseItem(Player, ItemKey, 2));
+			Test->TestEqual(TEXT("Free workbenches never change currency"), Player->GetAbilitySystemComponent()->GetNumericAttribute(UAttributeSet_Character::GetCoinAttribute()), BeforeCoin);
+			Test->TestEqual(TEXT("Free workbenches cannot be resold for currency"), Inventory->CalculateSellPrice(ItemKey, 1), 0);
 			Test->TestTrue(TEXT("Using a workbench places it on the current floor"), Consumables->TryUseItem(ItemKey));
 			Test->TestEqual(TEXT("Successful placement consumes exactly one workbench"), Inventory->GetItemCount(ItemKey), 1);
 			Test->TestFalse(TEXT("Placing a second bench over the first is rejected"), Consumables->TryUseItem(ItemKey));
@@ -57,7 +68,13 @@ namespace
 				Player->SetActorLocation(Origin + FVector(100.f, 0.f, 0.f));
 				Test->TestFalse(TEXT("A distant bench cannot be interacted with"), Bench->TryInteract(Player));
 				Player->SetActorLocation(Origin);
-				Bench->Destroy();
+				ULevelManagerSubsystem* Level = World->GetSubsystem<ULevelManagerSubsystem>();
+				const FVector BlastPosition = Bench->GetActorLocation();
+				Test->TestTrue(TEXT("Support beam fixture can be placed with the workbench"), Level->TryPlaceBlock(TEXT("SupportBeam"), BlastPosition));
+				ABlockBase* Support = Level->GetBlockAtWorldLocation(BlastPosition);
+				Test->TestTrue(TEXT("Explosion demolishes both workbench and support"), Level->ApplyExplosion(BlastPosition, 0, Player->GetAbilitySystemComponent()) >= 2);
+				Test->TestTrue(TEXT("Workbench is destroyed by blast"), Bench->IsActorBeingDestroyed());
+				Test->TestTrue(TEXT("Support beam enters destruction after blast"), Support != nullptr && Support->IsBreaking());
 			}
 			Inventory->ApplySavedInventorySlots(Saved);
 			return true;

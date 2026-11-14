@@ -9,6 +9,10 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileLayer.h"
 #include "ProjectMK/Actor/Shop/WorkbenchActor.h"
+#include "GameFramework/PlayerStart.h"
+#include "PaperSpriteActor.h"
+#include "PaperSpriteComponent.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -1872,6 +1876,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	}
 
 	OnGenerateFinished();
+	GenerateMineDecorations(GenerationSettings);
 }
 
 void ULevelManagerSubsystem::ResetMineableLevel(int32 GenerationSeed)
@@ -1931,6 +1936,12 @@ ABlockBase* ULevelManagerSubsystem::GetBlockBelowWorldLocation(const FVector& Wo
 	return GetBlockAtWorldLocation(TileCenterWorldLocation - FVector(0.f, 0.f, TileHeight));
 }
 
+int32 ULevelManagerSubsystem::GetSurfaceRow(int32 Column) const
+{
+	const int32* Row = SurfaceRows.Find(Column);
+	return Row != nullptr ? *Row : UDataManager::Get(const_cast<ULevelManagerSubsystem*>(this))->GetGameSettingDataAsset()->SurfaceBlockPositionY;
+}
+
 void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed)
 {
 	BaseTerrainLayout.Reset();
@@ -1940,6 +1951,37 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 	const int32 Width = FMath::Clamp(Settings.WidthInBlocks, 16, 512);
 	const int32 Depth = FMath::Clamp(Settings.DepthInBlocks, 16, 512);
 	const int32 Edge = FMath::Clamp(Settings.OuterRockThickness, 1, 16);
+	const int32 ShopColumn = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, Settings.StartColumn + Width - 5);
+	ProtectedSpawnColumn = Settings.StartColumn + Width / 2;
+	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It) { ProtectedSpawnColumn = FMath::FloorToInt(It->GetActorLocation().X / BLOCK_SIZE); break; }
+	SurfaceRows.Reset();
+	const int32 MaximumRise = FMath::Clamp(Settings.SurfaceReliefHeight, 0, 3);
+	for (int32 X = Settings.StartColumn; X < Settings.StartColumn + Width; ++X)
+	{
+		int32 Raise = 0;
+		for (const FMineSurfaceRise& Rise : Settings.SurfaceRises)
+		{
+			const int32 Offset = X - Settings.StartColumn - Rise.StartColumnOffset;
+			const int32 Span = FMath::Max(8, Rise.WidthInBlocks);
+			if (Offset < 0 || Offset >= Span) { continue; }
+			const int32 EdgeDistance = FMath::Min(Offset, Span - 1 - Offset);
+			Raise = FMath::Max(Raise, FMath::Min(FMath::Min(FMath::Clamp(Rise.HeightInBlocks, 1, 3), MaximumRise), 1 + EdgeDistance / 3));
+		}
+		if (MaximumRise == 0 || (X >= FMath::Min(ShopColumn, ProtectedSpawnColumn) - 6 && X <= FMath::Max(ShopColumn, ProtectedSpawnColumn) + 6)) { Raise = 0; }
+		SurfaceRows.Add(X, Surface - Raise);
+	}
+	for (int32 X = Settings.StartColumn + 1; X < Settings.StartColumn + Width; ++X) { SurfaceRows[X] = FMath::Max(SurfaceRows[X], SurfaceRows[X - 1] - 1); }
+	for (int32 X = Settings.StartColumn + Width - 2; X >= Settings.StartColumn; --X) { SurfaceRows[X] = FMath::Max(SurfaceRows[X], SurfaceRows[X + 1] - 1); }
+	for (int32 Height = 1; Height <= MaximumRise; ++Height)
+	{
+		for (int32 X = Settings.StartColumn; X < Settings.StartColumn + Width;)
+		{
+			if (Surface - SurfaceRows[X] < Height) { ++X; continue; }
+			const int32 Begin = X;
+			while (X < Settings.StartColumn + Width && Surface - SurfaceRows[X] >= Height) { ++X; }
+			if (X - Begin < 3) { for (int32 Column = Begin; Column < X; ++Column) { SurfaceRows[Column] = Surface - Height + 1; } }
+		}
+	}
 	const FBlockDataTableRow* Dirt = DataManager->GetBlockDataTableRow(TEXT("Dirt"));
 	const FBlockDataTableRow* Grass = DataManager->GetBlockDataTableRow(Settings.SurfaceBlockKey);
 	const FBlockDataTableRow* Rock = DataManager->GetBlockDataTableRow(TEXT("Rock"));
@@ -1958,7 +2000,7 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 				BoundaryTerrainLayout.Add(Cell, Rock->TileIndex);
 				continue;
 			}
-			if (Y < Surface) { continue; }
+			if (Y < GetSurfaceRow(X)) { continue; }
 			int32 TileIndex = Dirt->TileIndex;
 			FRandomStream CellRandom(HashCombine(HashCombine(GetTypeHash(X / 2), GetTypeHash((Y - Surface) / 2)), GetTypeHash(Seed)));
 			const float Sample = CellRandom.FRand();
@@ -1970,7 +2012,7 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 					: FMath::Clamp((Y - Surface - Boundary + Blend * 0.5f) / Blend, 0.f, 1.f);
 				if (Sample <= FMath::SmoothStep(0.f, 1.f, Alpha)) { TileIndex = DataManager->GetBlockDataTableRow(Layer.BlockKey)->TileIndex; }
 			}
-			BaseTerrainLayout.Add(Cell, Y == Surface && Grass != nullptr ? Grass->TileIndex : TileIndex);
+			BaseTerrainLayout.Add(Cell, Y == GetSurfaceRow(X) && Grass != nullptr ? Grass->TileIndex : TileIndex);
 		}
 	}
 	if (Shop != nullptr)
@@ -2018,6 +2060,80 @@ void ULevelManagerSubsystem::UpdateWorldBackgrounds(const FMineableLevelGenerati
 	}
 }
 
+void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerationSettings& Settings)
+{
+	const UVisualStyleDataAsset* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
+	if (Settings.bGenerateDecorations == false || Style == nullptr || Style->MineDecorations.IsEmpty()) { return; }
+	auto Place = [&](FName Kind, const FIntPoint& Floor)
+	{
+		const TObjectPtr<UPaperSprite>* Sprite = Style->MineDecorations.Find(Kind);
+		ABlockBase* Ground = GetBlockAtPosition(FVector2D(Floor));
+		if (Sprite == nullptr || *Sprite == nullptr || Ground == nullptr || Ground->IsBreaking()) { return false; }
+		const FVector2D Source = (*Sprite)->GetSourceSize();
+		const int32 HalfWidth = FMath::CeilToInt((Source.X / 32.f - 1.f) * 0.5f);
+		const int32 Height = FMath::CeilToInt(Source.Y / 32.f);
+		for (int32 X = -HalfWidth; X <= HalfWidth; ++X)
+		{
+			if (GetBlockAtPosition(FVector2D(Floor.X + X, Floor.Y)) == nullptr) { return false; }
+			for (int32 Y = 1; Y <= Height; ++Y)
+			{
+				if (GetBlockAtPosition(FVector2D(Floor.X + X, Floor.Y - Y)) != nullptr) { return false; }
+			}
+		}
+		for (const auto& Existing : MineDecorationActors)
+		{
+			if (FMath::Abs(Existing.Key.X - Floor.X) < 3 && FMath::Abs(Existing.Key.Y - Floor.Y) < 3) { return false; }
+		}
+		const FVector Location((Floor.X + 0.5f) * BLOCK_SIZE, -32.f, -Floor.Y * BLOCK_SIZE + Source.Y * 0.25f);
+		APaperSpriteActor* Decoration = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
+		if (Decoration == nullptr) { return false; }
+		Decoration->Tags.Add(TEXT("MineDecoration"));
+		Decoration->SetActorEnableCollision(false);
+		Decoration->SetActorTickEnabled(false);
+		UPaperSpriteComponent* Render = Decoration->GetRenderComponent();
+		Render->SetMobility(EComponentMobility::Movable);
+		Render->SetSprite(*Sprite);
+		Render->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+		Render->SetTranslucentSortPriority(-4);
+		Render->SetComponentTickEnabled(false);
+		Decoration->AttachToActor(Ground, FAttachmentTransformRules::KeepWorldTransform);
+		MineDecorationActors.Add(Floor, Decoration);
+		return true;
+	};
+	const int32 End = Settings.StartColumn + FMath::Clamp(Settings.WidthInBlocks, 16, 512);
+	const int32 ShopColumn = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, End - 5);
+	for (const auto& Feature : { TPair<FName, int32>(TEXT("LanternPost"), ProtectedSpawnColumn - 3),
+		TPair<FName, int32>(TEXT("Minecart"), ProtectedSpawnColumn + 4), TPair<FName, int32>(TEXT("SupplyCrates"), ShopColumn + 5),
+		TPair<FName, int32>(TEXT("MineEntrance"), ProtectedSpawnColumn - 8) })
+	{
+		if (Feature.Value >= Settings.StartColumn + 2 && Feature.Value < End - 2) { Place(Feature.Key, FIntPoint(Feature.Value, GetSurfaceRow(Feature.Value))); }
+	}
+	FRandomStream Random(LastGenerationSeed ^ 0x4d494e45);
+	const FName Kinds[] = { TEXT("MineEntrance"), TEXT("Minecart"), TEXT("SupplyCrates"), TEXT("LanternPost"), TEXT("ToolRack"), TEXT("RailSegment") };
+	int32 Index = 0;
+	for (int32 X = Settings.StartColumn + 5; X < End - 4; X += FMath::Max(6, Settings.SurfaceDecorationSpacing))
+	{
+		const int32 Column = X + Random.RandRange(-2, 2);
+		if (FMath::Abs(Column - ShopColumn) <= 4 || FMath::Abs(Column - ProtectedSpawnColumn) <= 2) { continue; }
+		const FIntPoint Floor(Column, GetSurfaceRow(Column));
+		if (Place(Kinds[Index++ % UE_ARRAY_COUNT(Kinds)], Floor) == false) { Place(TEXT("LanternPost"), Floor); }
+	}
+	int32 UndergroundCount = 0;
+	for (const FGeneratedMineStructure& Structure : GeneratedStructures)
+	{
+		if (UndergroundCount >= Settings.UndergroundDecorationCount) { break; }
+		bool bPlaced = false;
+		for (int32 Y = 1; Y <= 6 && bPlaced == false; ++Y)
+		{
+			for (int32 X = -4; X <= 4 && bPlaced == false; ++X)
+			{
+				bPlaced = Place(UndergroundCount % 2 == 0 ? TEXT("LanternPost") : TEXT("SupplyCrates"), Structure.GoalCell + FIntPoint(X, Y));
+			}
+		}
+		UndergroundCount += bPlaced ? 1 : 0;
+	}
+}
+
 void ULevelManagerSubsystem::UpdateBlockVisibility()
 {
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -2037,6 +2153,8 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
+	for (const auto& Decoration : MineDecorationActors) { if (Decoration.Value.IsValid()) { Decoration.Value->Destroy(); } }
+	MineDecorationActors.Reset();
 	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches) { if (Bench.IsValid()) { Bench->Destroy(); } }
 	PlacedWorkbenches.Reset();
 	for (const TWeakObjectPtr<AMKMonster>& Monster : GeneratedMonsters) { if (Monster.IsValid()) { Monster->Destroy(); } }
@@ -2104,7 +2222,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 
 	const int32 MaxPlacementAttempts = PlacementAttemptLimit;
 	GeneratedStructures.Reset();
-	const int32 SurfaceY = TemplateCoordinates[0].Y;
+	const int32 SurfaceY = UDataManager::Get(this)->GetGameSettingDataAsset()->SurfaceBlockPositionY;
 	for (const FIntPoint& Cell : TemplateCoordinates)
 	{
 		if (Cell.Y < SurfaceY + 2) { ReservedCoordinates.Add(Cell); }
@@ -2116,7 +2234,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	bool bCreatedSingleSupportTopHammer = false;
 	const int32 PlacementRetryCount = FMath::Max(1, GenerationSettings.FallingStructurePlacementRetryCount);
 	// TemplateCoordinates 는 Y 오름차순이라 첫 칸이 채굴 영역 맨 윗줄(지표면)이다.
-	const int32 MinimumStructureY = TemplateCoordinates[0].Y + FMath::Max(0, GenerationSettings.FallingStructureSurfaceMargin);
+	const int32 MinimumStructureY = SurfaceY + FMath::Max(0, GenerationSettings.FallingStructureSurfaceMargin);
 	TArray<EFallingPatternType> PatternBag;
 	TArray<int32> PlacedPatternCounts;
 	PlacedPatternCounts.Init(0, static_cast<int32>(EFallingPatternType::Count));
@@ -2652,6 +2770,13 @@ void ULevelManagerSubsystem::OnBlockDestroyed(ABlockBase* DestroyedBlock)
 	if (::IsValid(DestroyedBlock) == false)
 	{
 		return;
+	}
+	const FVector2D Position = UMKBlueprintFunctionLibrary::GetBlockPosition(DestroyedBlock);
+	const FIntPoint Floor(FMath::RoundToInt(Position.X), FMath::RoundToInt(Position.Y));
+	if (const TWeakObjectPtr<APaperSpriteActor>* Decoration = MineDecorationActors.Find(Floor))
+	{
+		if (Decoration->IsValid()) { (*Decoration)->Destroy(); }
+		MineDecorationActors.Remove(Floor);
 	}
 
 	for (auto BlockActorIterator = BlockActorMap.CreateIterator(); BlockActorIterator; ++BlockActorIterator)
@@ -3261,6 +3386,18 @@ int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32
 	}
 
 	int32 DestroyedBlockCount = 0;
+	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches)
+	{
+		if (Bench.IsValid())
+		{
+			const FVector2D Position = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Bench->GetActorLocation());
+			if (FMath::Abs(Position.X - CenterPosition.X) <= Radius && FMath::Abs(Position.Y - CenterPosition.Y) <= Radius)
+			{
+				Bench->Destroy();
+				++DestroyedBlockCount;
+			}
+		}
+	}
 	for (const TWeakObjectPtr<ABlockBase>& TargetBlock : TargetBlocks)
 	{
 		if (TargetBlock.IsValid() && TargetBlock->TryDestroyByExplosion())

@@ -1,0 +1,38 @@
+﻿[
+    {
+        "width":  96,
+        "name":  "MineEntrance",
+        "file":  "Content/Asset/MineDecorV1/Source/MineEntrance.png",
+        "height":  96
+    },
+    {
+        "width":  64,
+        "name":  "Minecart",
+        "file":  "Content/Asset/MineDecorV1/Source/Minecart.png",
+        "height":  48
+    },
+    {
+        "width":  64,
+        "name":  "SupplyCrates",
+        "file":  "Content/Asset/MineDecorV1/Source/SupplyCrates.png",
+        "height":  48
+    },
+    {
+        "width":  32,
+        "name":  "LanternPost",
+        "file":  "Content/Asset/MineDecorV1/Source/LanternPost.png",
+        "height":  80
+    },
+    {
+        "width":  64,
+        "name":  "ToolRack",
+        "file":  "Content/Asset/MineDecorV1/Source/ToolRack.png",
+        "height":  64
+    },
+    {
+        "width":  96,
+        "name":  "RailSegment",
+        "file":  "Content/Asset/MineDecorV1/Source/RailSegment.png",
+        "height":  32
+    }
+]

@@ -21,6 +21,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World")
 	TObjectPtr<UPaperSprite> CushionOverlay;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World")
+	TMap<FName, TObjectPtr<UPaperSprite>> MineDecorations;
+
 	/** Index bits: Left=1, Right=2, Top=4, Bottom=8. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "World")
 	TArray<TObjectPtr<UMaterialInterface>> TerrainEdgeMaterials;

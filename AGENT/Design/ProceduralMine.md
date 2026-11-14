@@ -40,6 +40,14 @@
 
 회귀 테스트: `ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters`, `FallingBlockStaysAtHeadContact`, `OxygenWispFlight`. 지형 테스트는 전경 타일맵을 삭제한 PIE에서 경계·각 지층·혼합·시드 재현·구조물 보상·몬스터 생성을 검증한다. 테스트는 저장 방지 세션에서 실행한다.
 
+## 고정 지상 높낮이와 광산 장식
+
+지상 높낮이는 지하 생성 시드와 무관한 고정 프로필이다. MineableLevelGeneration.SurfaceRises의 StartColumnOffset은 StartColumn 기준이며 WidthInBlocks와 HeightInBlocks로 이어진 언덕을 조절한다. 기본값은 (8,18,2), (34,12,1), (88,28,2)이고 SurfaceReliefHeight=2가 최대 높이를 제한한다. 3칸씩 이어진 어깨와 넓은 단차를 만들며 한 칸짜리 돌출은 제거한다. 시작 지점부터 상점까지와 양쪽 6칸은 평지로 유지한다. 각 열의 잔디 아래는 빈틈 없이 채운다.
+
+장식은 VisualStyleDataAsset.MineDecorations의 스프라이트를 사용한다. bGenerateDecorations, SurfaceDecorationSpacing, UndergroundDecorationCount로 배치를 조절한다. 광산 입구·광차·상자·등불·도구대·레일은 충돌 없이 실제 지지 블록에 부착된다. 캠프에는 고정 장식을, 나머지 지상과 보상 방에는 드문 장식을 배치한다. 원본과 재적용 절차는 [MINE_DECOR_V1.md](../Art/MINE_DECOR_V1.md)를 따른다.
+
+SurfaceReliefAndMineDecoration 테스트는 서로 다른 지하 시드에서 지상 높이가 동일한지, 높이별 연결과 잔디·하부 채움, 장식의 지지·무충돌·픽셀 밀도를 확인한다.
+
 ## 산소 보상 표시
 
 산소는 인벤토리 아이콘을 숨기고, 32단계 픽셀 좌표로 그린 밝은 중심광과 기존 Pickup 입자를 함께 사용한다. `M_OxygenWispCore`는 흰 중심·하늘색 몸체·옅은 테두리를 그리고 `S_OxygenWispCore`의 전체 사각형 기하에 적용한다. 입자는 전용 `M_OxygenWisp` 머티리얼로 밝은 하늘색으로 표시한다. 세 개의 작아지는 중심광 잔상이 뒤따른다. 금색 원본 텍스처의 RGB는 사용하지 않아 녹색으로 물들지 않는다. 새로운 비트맵은 생성하지 않는다.

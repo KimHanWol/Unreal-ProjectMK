@@ -127,6 +127,7 @@ public:
 	ABlockBase* GetBlockAtWorldLocation(const FVector& WorldLocation) const;
 	/** WorldLocation 이 속한 칸 바로 아래 칸의 블록 (캐릭터가 밟고 있는 블록) */
 	ABlockBase* GetBlockBelowWorldLocation(const FVector& WorldLocation) const;
+	int32 GetSurfaceRow(int32 Column) const;
 
 	UFUNCTION(BlueprintPure, Category = "Level Generation")
 	int32 GetLastGenerationSeed() const { return LastGenerationSeed; }
@@ -144,6 +145,7 @@ private:
 
 	void BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed);
 	void UpdateWorldBackgrounds(const FMineableLevelGenerationSettings& Settings);
+	void GenerateMineDecorations(const FMineableLevelGenerationSettings& Settings);
 	void UpdateBlockVisibility();
 	void ClearGeneratedBlocks();
 	void ClearWorldItems();
@@ -201,6 +203,9 @@ private:
 	TMap<FVector2D, TWeakObjectPtr<ABlockBase>> BlockActorMap;
 	TMap<FIntPoint, int32> BoundaryTerrainLayout;
 	TMap<FIntPoint, int32> BaseTerrainLayout;
+	TMap<int32, int32> SurfaceRows;
+	TMap<FIntPoint, TWeakObjectPtr<class APaperSpriteActor>> MineDecorationActors;
+	int32 ProtectedSpawnColumn = 0;
 	UPROPERTY(Transient)
 	TArray<FGeneratedMineStructure> GeneratedStructures;
 	TArray<TWeakObjectPtr<class AMKMonster>> GeneratedMonsters;

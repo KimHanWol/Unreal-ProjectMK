@@ -22,6 +22,24 @@ struct FMineDepthLayer
 	int32 TransitionDepth = 12;
 };
 
+USTRUCT(BlueprintType)
+struct FMineSurfaceRise
+{
+	GENERATED_BODY()
+
+	FMineSurfaceRise() = default;
+	FMineSurfaceRise(int32 InStart, int32 InWidth, int32 InHeight) : StartColumnOffset(InStart), WidthInBlocks(InWidth), HeightInBlocks(InHeight) {}
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly)
+	int32 StartColumnOffset = 8;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "8"))
+	int32 WidthInBlocks = 18;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, meta = (ClampMin = "1", ClampMax = "3"))
+	int32 HeightInBlocks = 2;
+};
+
 /** 절차형 채굴 지형 생성 조정값 */
 USTRUCT(BlueprintType)
 struct FMineableLevelGenerationSettings
@@ -48,6 +66,21 @@ struct FMineableLevelGenerationSettings
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Depth Layers", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetBlockRowNames"))
 	FName SurfaceBlockKey = TEXT("Dirt_Grass");
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Surface", meta = (ClampMin = "0", ClampMax = "3"))
+	int32 SurfaceReliefHeight = 2;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Surface")
+	TArray<FMineSurfaceRise> SurfaceRises = { FMineSurfaceRise(8, 18, 2), FMineSurfaceRise(34, 12, 1), FMineSurfaceRise(88, 28, 2) };
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Decoration")
+	bool bGenerateDecorations = true;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Decoration", meta = (ClampMin = "6", ClampMax = "64"))
+	int32 SurfaceDecorationSpacing = 12;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Decoration", meta = (ClampMin = "0", ClampMax = "32"))
+	int32 UndergroundDecorationCount = 8;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose")
 	bool bGenerateOrePuzzles = true;
