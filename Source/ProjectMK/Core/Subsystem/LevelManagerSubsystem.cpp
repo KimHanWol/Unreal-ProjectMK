@@ -8,6 +8,7 @@
 #include "PaperTileMap.h"
 #include "PaperTileMapComponent.h"
 #include "PaperTileLayer.h"
+#include "ProjectMK/Actor/Shop/WorkbenchActor.h"
 #include "PaperTileSet.h"
 #include "Components/BoxComponent.h"
 #include "Components/CapsuleComponent.h"
@@ -2036,6 +2037,8 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
+	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches) { if (Bench.IsValid()) { Bench->Destroy(); } }
+	PlacedWorkbenches.Reset();
 	for (const TWeakObjectPtr<AMKMonster>& Monster : GeneratedMonsters) { if (Monster.IsValid()) { Monster->Destroy(); } }
 	GeneratedMonsters.Reset();
 	for (ABlockBase* Block : BlockList)
@@ -3209,6 +3212,28 @@ bool ULevelManagerSubsystem::TryPlaceBlock(FName BlockRowName, const FVector& Wo
 	}
 
 	return ::IsValid(SpawnTileActor(TileCoordinate, BlockData->TileIndex, BlockClass));
+}
+
+bool ULevelManagerSubsystem::TryPlaceWorkbench(FName ItemKey, const FVector& WorldLocation)
+{
+	FIntPoint Cell;
+	FVector Center;
+	if (TryGetTileCenterWorldLocation(WorldLocation, Cell, Center) == false || IsBlockCellEmpty(Center) == false) { return false; }
+	ABlockBase* Ground = GetBlockBelowWorldLocation(Center);
+	if (::IsValid(Ground) == false || Ground->IsBreaking()) { return false; }
+	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches)
+	{
+		if (Bench.IsValid() && FVector::DistSquared2D(Bench->GetActorLocation(), Center) < FMath::Square(28.f)
+			&& FMath::Abs(Bench->GetActorLocation().Z - Center.Z) < 24.f) { return false; }
+	}
+	const FItemDataTableRow* Item = UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
+	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
+	if (Sprite == nullptr || Item->ConsumableEffect != EConsumableEffectType::PlaceWorkbench) { return false; }
+	AWorkbenchActor* Bench = GetWorld()->SpawnActor<AWorkbenchActor>(AWorkbenchActor::StaticClass(), Center, FRotator::ZeroRotator);
+	if (Bench == nullptr) { return false; }
+	Bench->InitializeWorkbench(Sprite);
+	PlacedWorkbenches.Add(Bench);
+	return true;
 }
 
 int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC)

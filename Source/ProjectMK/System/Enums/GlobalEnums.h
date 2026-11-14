@@ -116,4 +116,6 @@ enum class EConsumableEffectType : uint8
 	PlaceBlastCharge,
 	/** 소지하고 있으면 다음 사망 1회의 페널티를 막고 소모된다 */
 	Insurance,
+	/** 캐릭터가 서 있는 바닥 위에 상호작용 가능한 제작대를 설치한다 */
+	PlaceWorkbench,
 };

@@ -7,6 +7,7 @@
 
 class UAbilitySystemComponent;
 class ABlockBase;
+class AWorkbenchActor;
 class UDataManager;
 struct FMineableLevelGenerationSettings;
 
@@ -134,6 +135,7 @@ public:
 
 	void AddPendingBlockBreak(ABlockBase* BreakingBlock);
 	bool TryPlaceBlock(FName BlockRowName, const FVector& WorldLocation);
+	bool TryPlaceWorkbench(FName ItemKey, const FVector& WorldLocation);
 	int32 ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC);
 	bool IsBlockCellEmpty(const FVector& WorldLocation) const;
 
@@ -187,6 +189,9 @@ private:
 
 	UPROPERTY(Transient)
 	TArray<TObjectPtr<ABlockBase>> BlockList;
+
+	UPROPERTY(Transient)
+	TArray<TWeakObjectPtr<AWorkbenchActor>> PlacedWorkbenches;
 
 	UPROPERTY(Transient)
 	TArray<FFallingBlockGroupData> FallingBlockGroupList;

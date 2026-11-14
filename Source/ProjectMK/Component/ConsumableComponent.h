@@ -40,6 +40,7 @@ private:
 	bool TryRestoreHealth(float RestoreAmount);
 	bool TryStartRecall(FName ItemUID, float RecallDuration);
 	bool TryPlaceBlock(FName BlockRowName);
+	bool TryPlaceWorkbench(FName ItemUID);
 	bool TryApplyCushion();
 	bool TryPlaceBlastCharge(const FItemDataTableRow& ItemDataTableRow);
 	void UpdateRecall();

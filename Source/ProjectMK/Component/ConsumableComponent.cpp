@@ -154,6 +154,8 @@ bool UConsumableComponent::TryApplyConsumableEffect(FName ItemUID, const FItemDa
 		return TryStartRecall(ItemUID, ItemDataTableRow.EffectDuration);
 	case EConsumableEffectType::PlaceBlock:
 		return TryPlaceBlock(ItemDataTableRow.PlaceBlockKey);
+	case EConsumableEffectType::PlaceWorkbench:
+		return TryPlaceWorkbench(ItemUID);
 	case EConsumableEffectType::ApplyCushion:
 		return TryApplyCushion();
 	case EConsumableEffectType::PlaceBlastCharge:
@@ -223,6 +225,13 @@ bool UConsumableComponent::TryPlaceBlock(FName BlockRowName)
 
 	// 캐릭터가 서 있는 칸에 설치한다.
 	return LevelManagerSubsystem->TryPlaceBlock(BlockRowName, OwnerCharacter->GetActorLocation());
+}
+
+bool UConsumableComponent::TryPlaceWorkbench(FName ItemUID)
+{
+	const AMKCharacter* Character = GetOwnerCharacter();
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	return ::IsValid(Character) && IsOwnerOnGround() && ::IsValid(Level) && Level->TryPlaceWorkbench(ItemUID, Character->GetActorLocation());
 }
 
 bool UConsumableComponent::TryApplyCushion()
