@@ -9,6 +9,8 @@ UCLASS()
 class PROJECTMK_API AMineFacilityActor : public AShopActor
 {
 	GENERATED_BODY()
+public:
+	virtual bool CanInteract(AActor* Interactor) override;
 protected:
 	virtual bool OnInteract(AActor* Interactor) override;
 public:

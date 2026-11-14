@@ -10,6 +10,14 @@
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "ProjectMK/UI/HUDWidget.h"
 
+bool AMineFacilityActor::CanInteract(AActor* Interactor)
+{
+	if (Interactor == nullptr || ShopSprite->GetSprite() == nullptr) { return false; }
+	const FVector Local = Interactor->GetActorLocation() - GetActorLocation();
+	const FVector2D Size = ShopSprite->GetSprite()->GetSourceSize() / ShopSprite->GetSprite()->GetPixelsPerUnrealUnit();
+	return FMath::Abs(Local.X) <= Size.X * 0.5f && FMath::Abs(Local.Y) <= 36.f && Local.Z >= -12.f && Local.Z <= Size.Y - 12.f;
+}
+
 bool AMineFacilityActor::OnInteract(AActor* Interactor)
 {
 	TArray<UUserWidget*> Widgets;
@@ -17,6 +25,7 @@ bool AMineFacilityActor::OnInteract(AActor* Interactor)
 	if (Widgets.IsEmpty()) { return false; }
 	UHUDWidget* HUD = CastChecked<UHUDWidget>(Widgets[0]);
 	if (FacilityKind == EMineFacilityKind::RailFactory && GetWorld()->GetSubsystem<UTownProgressSubsystem>()->IsRailFactoryUnlocked()) { return HUD->TryOpenShop(TEXT("RailFactory")); }
+	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->BeginResidentConversation(Cast<AMKCharacter>(Interactor), this);
 	return HUD->OpenFacility(this);
 }
 
@@ -29,7 +38,8 @@ void AMineFacilityActor::InitializeFacility(EMineFacilityKind Kind, int32 Depth,
 	SetActorLocation(FloorLocation + FVector(0.f, 0.f, 12.f));
 	ShopSprite->SetSprite(Sprite);
 	ShopSprite->SetRelativeLocation(FVector(0.f, -14.f, HalfHeight - 12.f));
-	InteractionBox->SetBoxExtent(FVector(Kind == EMineFacilityKind::Elevator ? 28.f : (Kind == EMineFacilityKind::RailFactory ? 26.f : 20.f), 36.f, 26.f));
+	const float HalfWidth = Sprite != nullptr ? Sprite->GetSourceSize().X / Sprite->GetPixelsPerUnrealUnit() * 0.5f : 24.f;
+	InteractionBox->SetBoxExtent(FVector(FMath::Max(16.f, HalfWidth), 36.f, FMath::Max(24.f, HalfHeight * 2.f)));
 	Tags.Add(TEXT("MineFacility"));
 }
 

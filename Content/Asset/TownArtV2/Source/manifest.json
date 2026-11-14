@@ -1,0 +1,38 @@
+﻿[
+    {
+        "width":  192,
+        "name":  "Elevator",
+        "file":  "Content/Asset/TownArtV2/Source/Elevator.png",
+        "height":  224
+    },
+    {
+        "width":  288,
+        "name":  "RailFactory",
+        "file":  "Content/Asset/TownArtV2/Source/RailFactory.png",
+        "height":  192
+    },
+    {
+        "width":  160,
+        "name":  "HouseA",
+        "file":  "Content/Asset/TownArtV2/Source/HouseA.png",
+        "height":  128
+    },
+    {
+        "width":  160,
+        "name":  "HouseB",
+        "file":  "Content/Asset/TownArtV2/Source/HouseB.png",
+        "height":  128
+    },
+    {
+        "width":  288,
+        "name":  "VillageBackdrop",
+        "file":  "Content/Asset/TownArtV2/Source/VillageBackdrop.png",
+        "height":  160
+    },
+    {
+        "width":  96,
+        "name":  "VillageNotice",
+        "file":  "Content/Asset/TownArtV2/Source/VillageNotice.png",
+        "height":  96
+    }
+]

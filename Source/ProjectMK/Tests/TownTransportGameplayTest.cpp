@@ -6,6 +6,8 @@
 #include "UnrealClient.h"
 #include "Misc/Paths.h"
 #include "EngineUtils.h"
+#include "PaperSpriteActor.h"
+#include "PaperSpriteComponent.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "GameFramework/PlayerController.h"
 #include "Kismet/GameplayStatics.h"
@@ -92,6 +94,15 @@ namespace
 					if (Actor->GetFacilityKind() == EMineFacilityKind::HouseA) { House = Actor; }
 				}
 				if (Test->TestTrue(TEXT("Two houses, factory and all three elevator stations exist"), Town->GetFacilities().Num() == 6 && Surface.IsValid() && Deep.IsValid() && Factory.IsValid() && House.IsValid()) == false) { Fixture.Restore(); return true; }
+				int32 VillageCount = 0;
+				for (TActorIterator<APaperSpriteActor> It(Fixture.World); It; ++It)
+				{
+					if (It->ActorHasTag(TEXT("VillageScenery")) == false) { continue; }
+					++VillageCount;
+					Test->TestTrue(TEXT("Village scenery has a real sprite at its authored position"), It->GetActorLocation().X > 100.f && It->GetRenderComponent()->GetSprite() != nullptr);
+					Test->TestFalse(TEXT("Background houses never collide with the player"), It->GetActorEnableCollision());
+				}
+				Test->TestEqual(TEXT("The village has two background house groups and a notice post"), VillageCount, 3);
 				Test->TestFalse(TEXT("Unvisited elevator depths stay locked"), Town->CanTravelToDepth(32));
 				Test->TestTrue(TEXT("The surface station explains construction before unlock"), Town->GetDialogue(Surface.Get(), Fixture.Player).ToString().Contains(TEXT("공사 중")));
 				Fixture.Player->GetAbilitySystemComponent()->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), 1000.f);
@@ -112,8 +123,21 @@ namespace
 			Fixture.Player->SetActorLocation(House->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
 			UInventoryComponent* Inventory = Fixture.Player->FindComponentByClass<UInventoryComponent>();
 			for (const FName Key : { TEXT("Ore_Coal"), TEXT("Ore_Copper"), TEXT("Ore_Iron") }) { Inventory->AddItem(Key, 30); }
+			Fixture.Settings->TownFacilities.QuestOfferChance = 1.f;
+			Town->BeginResidentConversation(Fixture.Player, House.Get());
+			Test->TestTrue(TEXT("The first visit is small talk without a quest button"), Town->GetQuestActionLabel(House.Get()).IsEmpty());
+			Town->BeginResidentConversation(Fixture.Player, House.Get());
+			Test->TestTrue(TEXT("Residents keep chatting for the configured warm-up visits"), Town->GetQuestActionLabel(House.Get()).IsEmpty());
+			Fixture.Settings->TownFacilities.QuestOfferChance = 0.f;
+			Town->BeginResidentConversation(Fixture.Player, House.Get());
+			Test->TestTrue(TEXT("An unsuccessful random offer keeps the visit as small talk"), Town->GetQuestActionLabel(House.Get()).IsEmpty());
+			Fixture.Settings->TownFacilities.QuestOfferChance = 1.f;
+			Town->BeginResidentConversation(Fixture.Player, House.Get());
+			Test->TestTrue(TEXT("Reopening a conversation cannot reroll during its cooldown"), Town->GetQuestActionLabel(House.Get()).IsEmpty());
 			for (int32 Quest = 0; Quest < 3; ++Quest)
 			{
+				Town->ClearQuestCooldownsForPlaytest();
+				Town->BeginResidentConversation(Fixture.Player, House.Get());
 				Test->TestTrue(TEXT("Resident offers can be accepted"), Town->TryQuestAction(Fixture.Player, House.Get()));
 				Test->TestTrue(TEXT("Accepted quests consume the requested ore and grant rewards"), Town->TryQuestAction(Fixture.Player, House.Get()));
 			}

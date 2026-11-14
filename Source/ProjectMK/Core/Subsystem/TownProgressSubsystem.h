@@ -26,6 +26,7 @@ public:
 	bool CanAccessRailFactory(const AActor* Player) const;
 	bool CanTravelToDepth(int32 Depth) const;
 	bool TryTravel(AMKCharacter* Player, AMineFacilityActor* Source, int32 Depth);
+	void BeginResidentConversation(AMKCharacter* Player, AMineFacilityActor* Resident);
 	bool TryQuestAction(AMKCharacter* Player, AMineFacilityActor* Resident);
 	int32 GetMaximumDepth() const;
 	bool HasRelic(FName Key) const;
@@ -37,8 +38,10 @@ public:
 	FOnTownProgressChanged OnTownProgressChanged;
 private:
 	void LoadProgress();
+	void GenerateVillageBackdrop();
 	const FTownQuestDefinition* GetQuestDefinition(int32 Resident) const;
 	TArray<TWeakObjectPtr<AMineFacilityActor>> Facilities;
+	TArray<TWeakObjectPtr<AActor>> VillageScenery;
 	TArray<FTownQuestState> Quests;
 	TSet<FName> OwnedRelics;
 	int32 MaximumDepth = 0;

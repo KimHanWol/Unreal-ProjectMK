@@ -72,7 +72,7 @@ void UFacilityMenuContents::UpdateWidget()
 	}
 	else if (Facility->GetFacilityKind() == EMineFacilityKind::HouseA || Facility->GetFacilityKind() == EMineFacilityKind::HouseB)
 	{
-		ActionFrames[0]->SetVisibility(ESlateVisibility::Visible);
+		ActionFrames[0]->SetVisibility(Town->GetQuestActionLabel(Facility.Get()).IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		Actions[0]->SetIsEnabled(Town->CanUseQuestAction(Facility.Get(), GetLocalPlayerCharacter()));
 		Labels[0]->SetText(Town->GetQuestActionLabel(Facility.Get()));
 	}
