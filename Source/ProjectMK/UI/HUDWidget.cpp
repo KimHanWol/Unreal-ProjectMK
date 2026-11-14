@@ -5,6 +5,9 @@
 #include "Blueprint/WidgetLayoutLibrary.h"
 #include "Components/CanvasPanelSlot.h"
 #include "Components/Widget.h"
+#include "Components/Image.h"
+#include "Components/SceneCaptureComponent2D.h"
+#include "Camera/PlayerCameraManager.h"
 #include "Blueprint/WidgetTree.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/UI/ItemQuantityDialog.h"
@@ -20,6 +23,10 @@
 void UHUDWidget::NativeConstruct()
 {
 	Super::NativeConstruct();
+	if (UUserWidget* Profile = Cast<UUserWidget>(WidgetTree->FindWidget(TEXT("CharacterInfo"))))
+	{
+		PortraitImage = Cast<UImage>(Profile->WidgetTree->FindWidget(TEXT("Image_83")));
+	}
 	SetVisibility(ESlateVisibility::Visible);
 	DropQuantityDialog = CreateWidget<UItemQuantityDialog>(this);
 	DropQuantityDialog->AddToViewport(200);
@@ -61,6 +68,7 @@ void UHUDWidget::NativeDestruct()
 void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 {
 	Super::NativeTick(MyGeometry, InDeltaTime);
+	UpdatePortraitCapture();
 
 	if (::IsValid(HoveredTooltipSource) == false || ::IsValid(Tooltip) == false || Tooltip->IsVisible() == false)
 	{
@@ -199,6 +207,35 @@ void UHUDWidget::ShowItemTooltip(UWidget* Source, FName ItemKey)
 void UHUDWidget::ClearTooltipSource(UWidget* Source)
 {
 	if (HoveredTooltipSource == Source) { HoveredTooltipSource = nullptr; HoveredSlot = nullptr; if (::IsValid(Tooltip)) { Tooltip->HideTooltip(); } }
+}
+
+void UHUDWidget::UpdatePortraitCapture()
+{
+	AMKCharacter* Player = GetLocalPlayerCharacter();
+	APlayerController* Controller = GetOwningPlayer();
+	USceneCaptureComponent2D* Capture = Player != nullptr ? Player->FindComponentByClass<USceneCaptureComponent2D>() : nullptr;
+	if (PortraitImage == nullptr || Capture == nullptr || Controller == nullptr || Controller->PlayerCameraManager == nullptr) { return; }
+	const FGeometry& Geometry = PortraitImage->GetCachedGeometry();
+	const FVector2D PixelSize = Geometry.LocalToAbsolute(Geometry.GetLocalSize()) - Geometry.LocalToAbsolute(FVector2D::ZeroVector);
+	if (PixelSize.X < 8.f || PixelSize.Y < 8.f) { return; }
+	int32 Width = 0, Height = 0;
+	Controller->GetViewportSize(Width, Height);
+	FVector FirstOrigin, FirstDirection, SecondOrigin, SecondDirection;
+	if (Controller->DeprojectScreenPositionToWorld(Width * 0.5f, Height * 0.5f, FirstOrigin, FirstDirection) == false
+		|| Controller->DeprojectScreenPositionToWorld(Width * 0.5f + 1.f, Height * 0.5f, SecondOrigin, SecondDirection) == false
+		|| FMath::Abs(FirstDirection.Y) < 0.001f || FMath::Abs(SecondDirection.Y) < 0.001f) { return; }
+	const double Plane = Player->GetActorLocation().Y;
+	const FVector First = FirstOrigin + FirstDirection * ((Plane - FirstOrigin.Y) / FirstDirection.Y);
+	const FVector Second = SecondOrigin + SecondDirection * ((Plane - SecondOrigin.Y) / SecondDirection.Y);
+	const FMinimalViewInfo& View = Controller->PlayerCameraManager->GetCameraCacheView();
+	Capture->ProjectionType = ECameraProjectionMode::Orthographic;
+	Capture->bUseCustomProjectionMatrix = false;
+	Capture->bAutoCalculateOrthoPlanes = false;
+	Capture->bUpdateOrthoPlanes = false;
+	Capture->OrthoWidth = FVector::Distance(First, Second) * PixelSize.X;
+	Capture->SetWorldLocationAndRotation(Player->GetActorLocation() - View.Rotation.Vector() * 100.f, View.Rotation);
+	Capture->PostProcessSettings = View.PostProcessSettings;
+	Capture->PostProcessBlendWeight = View.PostProcessBlendWeight;
 }
 
 void UHUDWidget::UpdateTooltipWidget()

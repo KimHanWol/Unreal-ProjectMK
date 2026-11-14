@@ -15,6 +15,9 @@
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
 #include "ProjectMK/UI/MinimapWidget.h"
+#include "ProjectMK/UI/HUDWidget.h"
+#include "Components/Image.h"
+#include "Components/SceneCaptureComponent2D.h"
 
 namespace
 {
@@ -76,6 +79,24 @@ namespace
 			Test->TestTrue(TEXT("Expanded minimap contains the entire gameplay view"), MapBounds.IsInside(CameraBounds.Min) && MapBounds.IsInside(CameraBounds.Max));
 			const FVector2D Area = Map->WidgetTree->FindWidget(TEXT("MapArea"))->GetCachedGeometry().GetLocalSize();
 			Test->TestTrue(TEXT("Terrain bounds have the same aspect as the minimap without cropping"), FMath::IsNearlyEqual(MapBounds.GetSize().X / MapBounds.GetSize().Y, Area.X / Area.Y, 0.01));
+			USceneCaptureComponent2D* Capture = Player->FindComponentByClass<USceneCaptureComponent2D>();
+			Test->TestTrue(TEXT("HUD portrait uses the game's orthographic projection instead of perspective parallax"), Capture != nullptr && Capture->ProjectionType == ECameraProjectionMode::Orthographic);
+			TArray<UUserWidget*> HUDs;
+			UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World, HUDs, UHUDWidget::StaticClass(), false);
+			if (HUDs.Num() > 0 && Capture != nullptr)
+			{
+				UUserWidget* Profile = Cast<UUserWidget>(HUDs[0]->WidgetTree->FindWidget(TEXT("CharacterInfo")));
+				UImage* Image = Profile != nullptr ? Cast<UImage>(Profile->WidgetTree->FindWidget(TEXT("Image_83"))) : nullptr;
+				if (Test->TestNotNull(TEXT("The HUD portrait image is available for scale comparison"), Image))
+				{
+					const FGeometry& Geometry = Image->GetCachedGeometry();
+					const double Pixels = (Geometry.LocalToAbsolute(Geometry.GetLocalSize()) - Geometry.LocalToAbsolute(FVector2D::ZeroVector)).X;
+					FVector2D First, Second;
+					Controller->ProjectWorldLocationToScreen(Player->GetActorLocation(), First);
+					Controller->ProjectWorldLocationToScreen(Player->GetActorLocation() + FVector(16.f, 0.f, 0.f), Second);
+					Test->TestTrue(TEXT("A terrain block has the same screen pixel size in the portrait and gameplay"), FMath::IsNearlyEqual(Pixels * 16.0 / Capture->OrthoWidth, FVector2D::Distance(First, Second), 1.0));
+				}
+			}
 			if (Step < 3)
 			{
 				Camera->SetAspectRatio(Step == 1 ? 16.f / 9.f : 21.f / 9.f);

@@ -10,6 +10,7 @@ class UMKMenuBase;
 class UMKSlotBase;
 class UMKTooltipBase;
 class UItemQuantityDialog;
+class UImage;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -35,6 +36,7 @@ public:
 	void ClearTooltipSource(UWidget* Source);
 
 private:
+	void UpdatePortraitCapture();
 	void UpdateTooltipWidget();
 	void UpdateTooltipPosition();
 	void OnDropConfirmed(FName ItemKey, int32 Count);
@@ -59,6 +61,8 @@ protected:
 	TObjectPtr<UWidget> HoveredTooltipSource;
 	UPROPERTY(Transient)
 	TObjectPtr<UItemQuantityDialog> DropQuantityDialog;
+	UPROPERTY(Transient)
+	TObjectPtr<UImage> PortraitImage;
 	EItemContainer PendingDropContainer = EItemContainer::Inventory;
 	int32 PendingDropIndex = INDEX_NONE;
 	FName PendingDropKey;
