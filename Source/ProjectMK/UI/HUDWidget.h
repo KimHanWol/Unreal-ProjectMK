@@ -11,6 +11,7 @@ class UMKSlotBase;
 class UMKTooltipBase;
 class UItemQuantityDialog;
 class UImage;
+class UStorageChestWidget;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -27,6 +28,8 @@ public:
 	bool ToggleSkillTree();
 	bool ToggleCrafting();
 	bool TryOpenShop();
+	bool OpenStorageChest(AStorageChestActor* Chest);
+	void CloseStorageChest();
 	bool IsMenuVisible() const;
 	UMKTooltipBase* GetTooltipWidget() const;
 	void SetHoveredSlot(UMKSlotBase* HoveredSlot);
@@ -66,4 +69,7 @@ protected:
 	EItemContainer PendingDropContainer = EItemContainer::Inventory;
 	int32 PendingDropIndex = INDEX_NONE;
 	FName PendingDropKey;
+	TWeakObjectPtr<AStorageChestActor> PendingDropStorage;
+	UPROPERTY(Transient)
+	TObjectPtr<UStorageChestWidget> StorageChestWindow;
 };

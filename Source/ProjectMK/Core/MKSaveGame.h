@@ -3,6 +3,7 @@
 #include "CoreMinimal.h"
 #include "GameFramework/SaveGame.h"
 #include "ProjectMK/Component/InventoryComponent.h"
+#include "ProjectMK/Data/StorageChestData.h"
 #include "MKSaveGame.generated.h"
 
 UCLASS()
@@ -12,7 +13,7 @@ class PROJECTMK_API UMKSaveGame : public USaveGame
 
 public:
 	UPROPERTY()
-	int32 SaveVersion = 2;
+	int32 SaveVersion = 3;
 
 	UPROPERTY()
 	int32 Coin = 0;
@@ -32,4 +33,10 @@ public:
 
 	UPROPERTY()
 	TArray<FName> UnlockedRecipeKeys;
+
+	UPROPERTY()
+	TArray<FStorageChestSaveData> StorageChests;
+
+	UPROPERTY()
+	TArray<FGuid> DestroyedStorageChestIds;
 };

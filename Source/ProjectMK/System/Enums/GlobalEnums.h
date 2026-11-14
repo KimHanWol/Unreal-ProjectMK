@@ -118,4 +118,13 @@ enum class EConsumableEffectType : uint8
 	Insurance,
 	/** 캐릭터가 서 있는 바닥 위에 상호작용 가능한 제작대를 설치한다 */
 	PlaceWorkbench,
+	PlaceStorageChest,
+};
+
+UENUM(BlueprintType)
+enum class EMineStructurePattern : uint8
+{
+	OreVault,
+	HarvestSlab,
+	BaitTrap,
 };

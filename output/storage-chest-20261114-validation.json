@@ -1,0 +1,111 @@
+﻿{
+  "checked_at_kst": "2026-11-14T23:51:21",
+  "build": {
+    "result": "Succeeded",
+    "seconds": 5.39,
+    "loaded_in_restarted_editor": true
+  },
+  "automation_tests": [
+    {
+      "time_kst": "2026-11-14 23:47:03",
+      "result": "Success",
+      "test": "ProjectMK.PIE.Crafting.PlaceableWorkbench"
+    },
+    {
+      "time_kst": "2026-11-14 23:47:17",
+      "result": "Success",
+      "test": "ProjectMK.PIE.Inventory.SeparateQuickSlotsAndWorldDrop"
+    },
+    {
+      "time_kst": "2026-11-14 23:47:42",
+      "result": "Success",
+      "test": "ProjectMK.PIE.Storage.BuriedLootAndGuaranteedPatterns"
+    },
+    {
+      "time_kst": "2026-11-14 23:47:56",
+      "result": "Success",
+      "test": "ProjectMK.PIE.Storage.PlacementTransferExplosionAndPersistence"
+    },
+    {
+      "time_kst": "2026-11-14 23:48:11",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.DragSaleAndSkillHold"
+    },
+    {
+      "time_kst": "2026-11-14 23:48:26",
+      "result": "Success",
+      "test": "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification"
+    },
+    {
+      "time_kst": "2026-11-14 23:48:43",
+      "result": "Success",
+      "test": "ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters"
+    },
+    {
+      "time_kst": "2026-11-14 23:48:54",
+      "result": "Success",
+      "test": "ProjectMK.PIE.World.SurfaceReliefAndMineDecoration"
+    }
+  ],
+  "runtime_audit": {
+    "storage_popup_visible": true,
+    "left_slot_count": 10,
+    "total_generated_chests": 6,
+    "discovery_input": "Removed the actual covering block in a save-protected PIE, then opened the chest with native F input.",
+    "chance_per_candidate": 0.0006000000284984708,
+    "minimum_depth": 6,
+    "minimum_spacing": 8,
+    "maximum_chests": 16,
+    "guaranteed_patterns": [
+      "ORE_VAULT",
+      "HARVEST_SLAB",
+      "BAIT_TRAP"
+    ],
+    "loot_pool": [
+      "Ore_Coal",
+      "Ore_Copper",
+      "Ore_Iron",
+      "OxygenCapsule",
+      "RepairKit",
+      "SupportBeam",
+      "RecallFlare"
+    ],
+    "no_shop_recipe_or_offer": true,
+    "sprite": "/Game/Asset/WidgetArtV2/UI/S_StorageChest.S_StorageChest",
+    "pixels_per_world_unit": 2.0,
+    "modeless": true,
+    "duplicated_player_inventory": false
+  },
+  "screenshot": "Saved/AgentLogs/ui-20261114-235021.png",
+  "save_files": [
+    {
+      "file": "MKSave.sav",
+      "unchanged": true,
+      "sha256": "19a29da639ad6b18943ae25d59e0a71c111c1a6d32601936503112574a56c642"
+    },
+    {
+      "file": "MKSave_Backup.sav",
+      "unchanged": true,
+      "sha256": "4ff8416a38309569feddaa80c35877d99c3c8288290947c029a9a8950d4ba33c"
+    }
+  ],
+  "save_baseline": "Saved\\AgentLogs\\BeforeStorageChest-20261114-231624",
+  "coverage": [
+    "Ten shared storage slots in a modeless viewport window without a duplicate player inventory or backdrop",
+    "Actual UMG drags between storage and the existing HUD inventory in both directions, and storage to HUD quickbar",
+    "Quick-slot item restrictions, right-click withdrawal, distance checks and automatic window closure",
+    "Actual save-format memory serialization and restoration of location, identity and stored quantities",
+    "Explosion drops an empty chest and every stored stack separately; repeated explosions do not duplicate drops",
+    "Destroyed identity tombstones prevent saved chest and loot restoration; recovered empty chest can be installed again",
+    "Cover removal reveals a buried chest; location and random loot repeat with the same seed",
+    "All three configured guaranteed patterns appear with seeds 731, 732 and 733 even with a zero random-density quota"
+  ],
+  "design": "AGENT/Design/StorageChest.md",
+  "relic_plan": "AGENT/Design/Relics.md",
+  "relic_implementation_started": false,
+  "limitations": [
+    "Existing world item drops are session-only and follow normal pickup, blink and expiry rules.",
+    "Guaranteed pattern placement requires enough world space; impossible configurations issue a warning.",
+    "Relic rewards are not attached to the guaranteed patterns yet."
+  ]
+}

@@ -9,6 +9,7 @@
 #include "PaperTileMapComponent.h"
 #include "PaperTileLayer.h"
 #include "ProjectMK/Actor/Shop/WorkbenchActor.h"
+#include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "PaperSpriteActor.h"
 #include "PaperSpriteComponent.h"
@@ -1785,6 +1786,7 @@ void ULevelManagerSubsystem::GenerateWorldBlocks()
 	const USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
 	const UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
 	RegenerateMineableBlocks(::IsValid(SaveGame) ? SaveGame->GenerationSeed : INDEX_NONE);
+	if (::IsValid(SaveGame)) { RestoreStorageChests(SaveGame->StorageChests, SaveGame->DestroyedStorageChestIds); }
 }
 
 void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
@@ -1877,6 +1879,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 
 	OnGenerateFinished();
 	GenerateMineDecorations(GenerationSettings);
+	GenerateBuriedChests(GenerationSettings);
 }
 
 void ULevelManagerSubsystem::ResetMineableLevel(int32 GenerationSeed)
@@ -2134,6 +2137,81 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 	}
 }
 
+void ULevelManagerSubsystem::GenerateBuriedChests(const FMineableLevelGenerationSettings& Settings)
+{
+	UDataManager* Data = UDataManager::Get(this);
+	if (Settings.BuriedChestChancePerBlock <= 0.f || Settings.BuriedChestMaxCount <= 0 || Settings.ChestLootTable.IsEmpty()
+		|| Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, TEXT("StorageChest")) == nullptr) { return; }
+	TArray<const FBlockSpawnableItemData*> Loot;
+	float TotalWeight = 0.f;
+	for (const auto& Entry : Settings.ChestLootTable)
+	{
+		const FItemDataTableRow* Item = Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Entry.SpawnableItemKey);
+		if (Item != nullptr && Item->bIsInventoryItem && Entry.OreSpawnWeight > 0.f && Entry.MaxSpawnItemCount > 0)
+		{
+			Loot.Add(&Entry);
+			TotalWeight += Entry.OreSpawnWeight;
+		}
+	}
+	if (Loot.IsEmpty()) { return; }
+	TArray<FIntPoint> Cells;
+	BaseTerrainLayout.GenerateKeyArray(Cells);
+	SortTileCoordinates(Cells);
+	FRandomStream Random(LastGenerationSeed ^ 0x43485354);
+	TArray<FIntPoint> Placed;
+	const int32 Surface = Data->GetGameSettingDataAsset()->SurfaceBlockPositionY;
+	for (const FIntPoint& Cell : Cells)
+	{
+		if (Placed.Num() >= Settings.BuriedChestMaxCount) { break; }
+		if (Cell.Y < Surface + FMath::Max(2, Settings.BuriedChestMinimumDepth) || Random.FRand() >= Settings.BuriedChestChancePerBlock) { continue; }
+		ABlockBase* Cover = GetBlockAtPosition(FVector2D(Cell));
+		const FBlockDataTableRow* Block = Cover != nullptr ? Data->GetBlockDataTableRow(Cover->GetTileIndex()) : nullptr;
+		if (Block == nullptr || Block->bIsMineable == false || Block->bHasCollision == false || Block->bIsSupportAnchor) { continue; }
+		if (Placed.ContainsByPredicate([&](const FIntPoint& Other) { return FMath::Abs(Other.X - Cell.X) + FMath::Abs(Other.Y - Cell.Y) < FMath::Max(2, Settings.BuriedChestMinimumSpacing); })) { continue; }
+		FStorageChestSaveData Chest;
+		Chest.Id = FGuid(static_cast<uint32>(LastGenerationSeed), static_cast<uint32>(Cell.X), static_cast<uint32>(Cell.Y), 0x43485354);
+		Chest.Location = Cover->GetActorLocation();
+		Chest.bBuried = true;
+		Chest.Slots.SetNum(AStorageChestActor::SlotCount);
+		const int32 Minimum = FMath::Clamp(Settings.ChestLootRollCount.Min, 1, AStorageChestActor::SlotCount);
+		const int32 Rolls = Random.RandRange(Minimum, FMath::Clamp(Settings.ChestLootRollCount.Max, Minimum, AStorageChestActor::SlotCount));
+		for (int32 Roll = 0; Roll < Rolls; ++Roll)
+		{
+			float Weight = Random.FRand() * TotalWeight;
+			const FBlockSpawnableItemData* Choice = Loot.Last();
+			for (const auto* Entry : Loot) { Weight -= Entry->OreSpawnWeight; if (Weight <= 0.f) { Choice = Entry; break; } }
+			const int32 Maximum = FMath::Max(1, Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Choice->SpawnableItemKey)->MaxStackCount);
+			FInventorySlotData* Slot = Chest.Slots.FindByPredicate([&](const FInventorySlotData& Candidate) { return Candidate.ItemUID == Choice->SpawnableItemKey && Candidate.ItemCount < Maximum; });
+			if (Slot == nullptr) { Slot = Chest.Slots.FindByPredicate([](const FInventorySlotData& Candidate) { return Candidate.IsEmpty(); }); }
+			if (Slot != nullptr)
+			{
+				Slot->ItemUID = Choice->SpawnableItemKey;
+				Slot->ItemCount = FMath::Min(Maximum, Slot->ItemCount + Random.RandRange(FMath::Max(1, Choice->MinSpawnItemCount), FMath::Max(1, Choice->MaxSpawnItemCount)));
+			}
+		}
+		if (SpawnStorageChest(Chest) != nullptr) { Placed.Add(Cell); }
+	}
+}
+
+AStorageChestActor* ULevelManagerSubsystem::SpawnStorageChest(const FStorageChestSaveData& Data)
+{
+	const FItemDataTableRow* Item = UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Data.ItemKey);
+	if (Data.Id.IsValid() == false || Item == nullptr || Item->ConsumableEffect != EConsumableEffectType::PlaceStorageChest || Item->ItemIcon.LoadSynchronous() == nullptr) { return nullptr; }
+	FActorSpawnParameters Parameters;
+	Parameters.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AStorageChestActor* Chest = GetWorld()->SpawnActor<AStorageChestActor>(AStorageChestActor::StaticClass(), Data.Location, FRotator::ZeroRotator, Parameters);
+	if (Chest == nullptr) { return nullptr; }
+	if (Data.bBuried == false)
+	{
+		// 채굴 지형은 시드로 복구하므로, 발견했거나 설치했던 상자 칸은 다시 막히지 않게 비운다.
+		if (ABlockBase* Cover = GetBlockAtWorldLocation(Data.Location)) { Cover->Destroy(); }
+	}
+	Chest->InitializeChest(Data.Id, Data.ItemKey, Data.bBuried);
+	Chest->ApplySavedContents(Data.Slots);
+	StorageChests.Add(Chest);
+	return Chest;
+}
+
 void ULevelManagerSubsystem::UpdateBlockVisibility()
 {
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -2153,6 +2231,9 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
+	for (const auto& Chest : StorageChests) { if (Chest.IsValid()) { Chest->Destroy(); } }
+	StorageChests.Reset();
+	DestroyedStorageChestIds.Reset();
 	for (const auto& Decoration : MineDecorationActors) { if (Decoration.Value.IsValid()) { Decoration.Value->Destroy(); } }
 	MineDecorationActors.Reset();
 	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches) { if (Bench.IsValid()) { Bench->Destroy(); } }
@@ -2242,13 +2323,23 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	TArray<bool> ExhaustedPatterns;
 	ExhaustedPatterns.Init(false, static_cast<int32>(EFallingPatternType::Count));
 	const int32 MaxStructureAttempts = PlacementRetryCount * static_cast<int32>(EFallingPatternType::Count) * 8;
-	const int32 TargetFallingStructureCount = FMath::Min(
-		FMath::Max(0, GenerationSettings.FallingStructureCount),
-		FMath::RoundToInt(static_cast<float>(TemplateCoordinates.Num()) * FMath::Max(0.f, GenerationSettings.FallingStructuresPerThousandTiles) / 1000.f));
-	for (int32 Attempt = 0;
-		Attempt < MaxStructureAttempts && CreatedFallingStructureCount < TargetFallingStructureCount;)
+	TArray<EFallingPatternType> RequiredPatterns;
+	if (GenerationSettings.FallingStructureCount > 0)
 	{
-		if (PatternBag.IsEmpty())
+		for (const EMineStructurePattern Required : GenerationSettings.GuaranteedStructurePatterns)
+		{
+			if (Required == EMineStructurePattern::OreVault && GenerationSettings.bGenerateOrePuzzles) { RequiredPatterns.AddUnique(EFallingPatternType::OreVault); }
+			if (Required == EMineStructurePattern::HarvestSlab && GenerationSettings.bGenerateShortcuts) { RequiredPatterns.AddUnique(EFallingPatternType::HarvestSlab); }
+			if (Required == EMineStructurePattern::BaitTrap && GenerationSettings.bGenerateCombatTraps) { RequiredPatterns.AddUnique(EFallingPatternType::BaitTrap); }
+		}
+	}
+	const int32 TargetFallingStructureCount = FMath::Max(RequiredPatterns.Num(), FMath::Min(
+		FMath::Max(0, GenerationSettings.FallingStructureCount),
+		FMath::RoundToInt(static_cast<float>(TemplateCoordinates.Num()) * FMath::Max(0.f, GenerationSettings.FallingStructuresPerThousandTiles) / 1000.f)));
+	for (int32 Attempt = 0;
+		(RequiredPatterns.IsEmpty() == false || Attempt < MaxStructureAttempts) && CreatedFallingStructureCount < TargetFallingStructureCount;)
+	{
+		if (RequiredPatterns.IsEmpty() && PatternBag.IsEmpty())
 		{
 			for (int32 PatternIndex = 0; PatternIndex < static_cast<int32>(EFallingPatternType::Count); ++PatternIndex)
 			{
@@ -2274,11 +2365,13 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 			});
 		}
 
-		const EFallingPatternType PatternType = PatternBag.Pop(EAllowShrinking::No);
+		const bool bRequired = RequiredPatterns.IsEmpty() == false;
+		const EFallingPatternType PatternType = bRequired ? RequiredPatterns.Pop(EAllowShrinking::No) : PatternBag.Pop(EAllowShrinking::No);
 		bool bPlacedPattern = false;
-		for (int32 RetryIndex = 0; RetryIndex < PlacementRetryCount; ++RetryIndex, ++Attempt)
+		const int32 RetryLimit = PlacementRetryCount + (bRequired ? TemplateCoordinates.Num() : 0);
+		for (int32 RetryIndex = 0; RetryIndex < RetryLimit; ++RetryIndex, ++Attempt)
 		{
-			const FIntPoint CenterCoordinate = TemplateCoordinates[RandomStream.RandRange(0, TemplateCoordinates.Num() - 1)];
+			const FIntPoint CenterCoordinate = RetryIndex < PlacementRetryCount ? TemplateCoordinates[RandomStream.RandRange(0, TemplateCoordinates.Num() - 1)] : TemplateCoordinates[RetryIndex - PlacementRetryCount];
 			const int32 MinStructureWidth = FMath::Max(4, GenerationSettings.FallingStructureWidthRange.Min);
 			const int32 MaxStructureWidth = FMath::Max(MinStructureWidth, GenerationSettings.FallingStructureWidthRange.Max);
 			const int32 MinStructureHeight = FMath::Max(2, GenerationSettings.FallingStructureHeightRange.Min);
@@ -2290,7 +2383,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 
 			// 재시도할수록 1.0 에서 0.4 까지 크기를 줄인다.
 			const float SizeScale = PlacementRetryCount > 1
-				? 1.f - (0.6f * static_cast<float>(RetryIndex) / static_cast<float>(PlacementRetryCount - 1))
+				? 1.f - (0.6f * static_cast<float>(FMath::Min(RetryIndex, PlacementRetryCount - 1)) / static_cast<float>(PlacementRetryCount - 1))
 				: 1.f;
 			auto ScaleSize = [SizeScale](int32 Size, int32 MinimumSize)
 			{
@@ -2469,6 +2562,9 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 			FGeneratedMineStructure Encounter;
 			Encounter.Purpose = PatternType == EFallingPatternType::BaitTrap ? EMineStructurePurpose::CombatTrap
 				: (PatternType == EFallingPatternType::HarvestSlab ? EMineStructurePurpose::Shortcut : EMineStructurePurpose::OrePuzzle);
+			Encounter.Pattern = PatternType == EFallingPatternType::BaitTrap ? EMineStructurePattern::BaitTrap
+				: (PatternType == EFallingPatternType::HarvestSlab ? EMineStructurePattern::HarvestSlab : EMineStructurePattern::OreVault);
+			Encounter.bGuaranteed = bRequired;
 			Encounter.RewardCells = PatternStamp.RewardCells.Array();
 			SortTileCoordinates(Encounter.RewardCells);
 			Encounter.GoalCell = Encounter.RewardCells[0];
@@ -2516,6 +2612,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 
 		if (bPlacedPattern == false)
 		{
+			if (bRequired) { UE_LOG(LogTemp, Warning, TEXT("[LevelGen] Guaranteed structure %d does not fit the configured world."), static_cast<int32>(PatternType)); }
 			ExhaustedPatterns[static_cast<int32>(PatternType)] = true;
 		}
 	}
@@ -3351,6 +3448,10 @@ bool ULevelManagerSubsystem::TryPlaceWorkbench(FName ItemKey, const FVector& Wor
 		if (Bench.IsValid() && FVector::DistSquared2D(Bench->GetActorLocation(), Center) < FMath::Square(28.f)
 			&& FMath::Abs(Bench->GetActorLocation().Z - Center.Z) < 24.f) { return false; }
 	}
+	for (const auto& Chest : StorageChests)
+	{
+		if (Chest.IsValid() && FMath::Abs(Chest->GetActorLocation().X - Center.X) < 28.f && FMath::Abs(Chest->GetActorLocation().Z - Center.Z) < 24.f) { return false; }
+	}
 	const FItemDataTableRow* Item = UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
 	if (Sprite == nullptr || Item->ConsumableEffect != EConsumableEffectType::PlaceWorkbench) { return false; }
@@ -3360,6 +3461,55 @@ bool ULevelManagerSubsystem::TryPlaceWorkbench(FName ItemKey, const FVector& Wor
 	PlacedWorkbenches.Add(Bench);
 	return true;
 }
+
+bool ULevelManagerSubsystem::TryPlaceStorageChest(FName ItemKey, const FVector& WorldLocation)
+{
+	FIntPoint Cell;
+	FVector Center;
+	if (TryGetTileCenterWorldLocation(WorldLocation, Cell, Center) == false || IsBlockCellEmpty(Center) == false) { return false; }
+	ABlockBase* Ground = GetBlockBelowWorldLocation(Center);
+	if (Ground == nullptr || Ground->IsBreaking()) { return false; }
+	for (const auto& Bench : PlacedWorkbenches)
+	{
+		if (Bench.IsValid() && FMath::Abs(Bench->GetActorLocation().X - Center.X) < 28.f && FMath::Abs(Bench->GetActorLocation().Z - Center.Z) < 24.f) { return false; }
+	}
+	for (const auto& Chest : StorageChests)
+	{
+		if (Chest.IsValid() && FMath::Abs(Chest->GetActorLocation().X - Center.X) < 28.f && FMath::Abs(Chest->GetActorLocation().Z - Center.Z) < 24.f) { return false; }
+	}
+	FStorageChestSaveData Data;
+	Data.Id = FGuid::NewGuid();
+	Data.ItemKey = ItemKey;
+	Data.Location = Center;
+	return SpawnStorageChest(Data) != nullptr;
+}
+
+void ULevelManagerSubsystem::RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds)
+{
+	DestroyedStorageChestIds = DestroyedIds;
+	for (const auto& Chest : StorageChests)
+	{
+		if (Chest.IsValid() && DestroyedIds.Contains(Chest->GetChestId())) { Chest->Destroy(); }
+	}
+	TSet<FGuid> Restored;
+	for (const auto& Data : SavedChests)
+	{
+		if (Data.Id.IsValid() == false || DestroyedIds.Contains(Data.Id) || Restored.Contains(Data.Id)) { continue; }
+		Restored.Add(Data.Id);
+		const auto* Existing = StorageChests.FindByPredicate([&](const TWeakObjectPtr<AStorageChestActor>& Chest) { return Chest.IsValid() && Chest->GetChestId() == Data.Id; });
+		if (Existing != nullptr) { (*Existing)->Destroy(); }
+		SpawnStorageChest(Data);
+	}
+}
+
+TArray<FStorageChestSaveData> ULevelManagerSubsystem::GetStorageChestSaveData() const
+{
+	TArray<FStorageChestSaveData> Records;
+	for (const auto& Chest : StorageChests) { if (Chest.IsValid()) { Records.Add(Chest->GetSaveData()); } }
+	return Records;
+}
+
+const TArray<FGuid>& ULevelManagerSubsystem::GetDestroyedStorageChestIds() const { return DestroyedStorageChestIds; }
 
 int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC)
 {
@@ -3386,6 +3536,19 @@ int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32
 	}
 
 	int32 DestroyedBlockCount = 0;
+	bool bDestroyedChest = false;
+	for (const auto& Chest : StorageChests)
+	{
+		if (Chest.IsValid())
+		{
+			const FVector2D Position = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Chest->GetActorLocation());
+			if (FMath::Abs(Position.X - CenterPosition.X) <= Radius && FMath::Abs(Position.Y - CenterPosition.Y) <= Radius)
+			{
+				const FGuid Id = Chest->GetChestId();
+				if (Chest->TryBreakByExplosion()) { DestroyedStorageChestIds.AddUnique(Id); ++DestroyedBlockCount; bDestroyedChest = true; }
+			}
+		}
+	}
 	for (const TWeakObjectPtr<AWorkbenchActor>& Bench : PlacedWorkbenches)
 	{
 		if (Bench.IsValid())
@@ -3407,6 +3570,10 @@ int32 ULevelManagerSubsystem::ApplyExplosion(const FVector& WorldLocation, int32
 	}
 
 	USoundManager::TryPlaySFX(this, ESFXType::Blast_Explode);
+	if (bDestroyedChest)
+	{
+		if (AMKCharacter* Player = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0))) { Player->TrySaveGame(); }
+	}
 	return DestroyedBlockCount;
 }
 

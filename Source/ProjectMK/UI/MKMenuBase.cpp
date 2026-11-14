@@ -132,6 +132,7 @@ bool UMKMenuBase::OpenMenu(EMenuContentsType InMenuContentsType)
 	UpdateFrameSize(InMenuContentsType);
 	if (UHUDWidget* HUD = GetHUDWidget())
 	{
+		HUD->CloseStorageChest();
 		HUD->SetHoveredSlot(nullptr);
 	}
 	if (AMKCharacter* Character = GetLocalPlayerCharacter())

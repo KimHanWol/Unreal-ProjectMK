@@ -7,6 +7,7 @@
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Spawnable/ItemBase.h"
+#include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "ProjectMK/Component/SkillComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
@@ -279,13 +280,16 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	return true;
 }
 
-bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer)
+bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer, AStorageChestActor* SourceStorage, AStorageChestActor* TargetStorage)
 {
 	UpdateInventorySlotDataList();
-	TArray<FInventorySlotData>& SourceSlots = SourceContainer == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
-	TArray<FInventorySlotData>& TargetSlots = TargetContainer == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
+	TArray<FInventorySlotData>* SourceAddress = GetMutableItemSlots(SourceContainer, SourceStorage);
+	TArray<FInventorySlotData>* TargetAddress = GetMutableItemSlots(TargetContainer, TargetStorage);
+	if (SourceAddress == nullptr || TargetAddress == nullptr) { return false; }
+	TArray<FInventorySlotData>& SourceSlots = *SourceAddress;
+	TArray<FInventorySlotData>& TargetSlots = *TargetAddress;
 	if (SourceSlots.IsValidIndex(SourceSlotIndex) == false || TargetSlots.IsValidIndex(TargetSlotIndex) == false
-		|| (SourceContainer == TargetContainer && SourceSlotIndex == TargetSlotIndex)) { return false; }
+		|| (SourceAddress == TargetAddress && SourceSlotIndex == TargetSlotIndex)) { return false; }
 	FInventorySlotData& Source = SourceSlots[SourceSlotIndex];
 	FInventorySlotData& Target = TargetSlots[TargetSlotIndex];
 	if (Source.IsEmpty() || (TargetContainer == EItemContainer::QuickSlot && CanEquipQuickSlot(Source.ItemUID) == false)
@@ -304,24 +308,29 @@ bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlo
 		if (Source.ItemCount <= 0) { Source.Clear(); }
 	}
 	else { Swap(Source, Target); }
+	if (SourceContainer == EItemContainer::Storage) { SourceStorage->NotifyContentsChanged(); }
+	if (TargetContainer == EItemContainer::Storage && TargetStorage != SourceStorage) { TargetStorage->NotifyContentsChanged(); }
 	OnInventoryUpdated();
 	return true;
 }
 
-bool UInventoryComponent::TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count)
+bool UInventoryComponent::TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage)
 {
 	UpdateInventorySlotDataList();
-	TArray<FInventorySlotData>& Slots = Container == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
+	TArray<FInventorySlotData>* Address = GetMutableItemSlots(Container, Storage);
+	if (Address == nullptr) { return false; }
+	TArray<FInventorySlotData>& Slots = *Address;
 	if (Slots.IsValidIndex(SlotIndex) == false || Count <= 0 || Slots[SlotIndex].ItemCount < Count) { return false; }
 	Slots[SlotIndex].ItemCount -= Count;
 	if (Slots[SlotIndex].ItemCount <= 0) { Slots[SlotIndex].Clear(); }
+	if (Container == EItemContainer::Storage) { Storage->NotifyContentsChanged(); }
 	OnInventoryUpdated();
 	return true;
 }
 
-bool UInventoryComponent::TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count)
+bool UInventoryComponent::TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage)
 {
-	const TArray<FInventorySlotData>& Slots = GetItemSlots(Container);
+	const TArray<FInventorySlotData>& Slots = GetItemSlots(Container, Storage);
 	AMKCharacter* Character = Cast<AMKCharacter>(GetOwner());
 	if (::IsValid(Character) == false || Slots.IsValidIndex(SlotIndex) == false || Slots[SlotIndex].IsEmpty()
 		|| Count <= 0 || Count > Slots[SlotIndex].ItemCount) { return false; }
@@ -332,7 +341,7 @@ bool UInventoryComponent::TryDropItemSlot(EItemContainer Container, int32 SlotIn
 	if (::IsValid(Item) == false) { return false; }
 	Item->InitializeItemBase(Key, Count);
 	Item->SetDropOwner(Character);
-	if (Item->IsInitialized() == false || TryRemoveItemFromSlot(Container, SlotIndex, Count) == false)
+	if (Item->IsInitialized() == false || TryRemoveItemFromSlot(Container, SlotIndex, Count, Storage) == false)
 	{
 		Item->Destroy();
 		return false;
@@ -350,9 +359,14 @@ bool UInventoryComponent::CanEquipQuickSlot(FName ItemKey) const
 		&& Item->ConsumableEffect != EConsumableEffectType::None && Item->ConsumableEffect != EConsumableEffectType::Insurance;
 }
 
-const TArray<FInventorySlotData>& UInventoryComponent::GetItemSlots(EItemContainer Container)
+const TArray<FInventorySlotData>& UInventoryComponent::GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage)
 {
 	UpdateInventorySlotDataList();
+	if (Container == EItemContainer::Storage)
+	{
+		static const TArray<FInventorySlotData> Empty;
+		return ::IsValid(Storage) ? Storage->GetItemSlots() : Empty;
+	}
 	return Container == EItemContainer::QuickSlot ? QuickSlotDataList : InventorySlotDataList;
 }
 
@@ -601,6 +615,12 @@ void UInventoryComponent::NormalizeInventorySlotDataList()
 			if (Slot.IsEmpty()) { Slot.Clear(); }
 		}
 	}
+}
+
+TArray<FInventorySlotData>* UInventoryComponent::GetMutableItemSlots(EItemContainer Container, AStorageChestActor* Storage)
+{
+	if (Container == EItemContainer::Storage) { return ::IsValid(Storage) && Storage->CanInteract(GetOwner()) ? &Storage->ItemSlots : nullptr; }
+	return Container == EItemContainer::QuickSlot ? &QuickSlotDataList : &InventorySlotDataList;
 }
 
 const UAttributeSet_Character* UInventoryComponent::GetCharacterAttributeSet() const

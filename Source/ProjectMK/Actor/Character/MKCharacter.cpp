@@ -367,7 +367,7 @@ bool AMKCharacter::TrySaveGame()
 	{
 		SaveGame->InventorySlotDataList = InventoryComponent->GetInventorySlotDataList();
 		SaveGame->QuickSlotDataList = InventoryComponent->GetItemSlots(EItemContainer::QuickSlot);
-		SaveGame->SaveVersion = 2;
+		SaveGame->SaveVersion = 3;
 	}
 
 	if (::IsValid(CraftingComponent))
@@ -380,6 +380,8 @@ bool AMKCharacter::TrySaveGame()
 	if (::IsValid(LevelManagerSubsystem))
 	{
 		SaveGame->GenerationSeed = LevelManagerSubsystem->GetLastGenerationSeed();
+		SaveGame->StorageChests = LevelManagerSubsystem->GetStorageChestSaveData();
+		SaveGame->DestroyedStorageChestIds = LevelManagerSubsystem->GetDestroyedStorageChestIds();
 	}
 
 	return SaveGameSubsystem->TrySaveGameToSlot();

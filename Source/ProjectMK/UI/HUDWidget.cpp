@@ -13,6 +13,8 @@
 #include "ProjectMK/UI/ItemQuantityDialog.h"
 #include "ProjectMK/UI/ItemSlotDragDropOperation.h"
 #include "ProjectMK/UI/ShopStockEntryWidget.h"
+#include "ProjectMK/Actor/Shop/StorageChestActor.h"
+#include "ProjectMK/UI/StorageChestWidget.h"
 #include "ProjectMK/Core/Manager/SoundManager.h"
 #include "ProjectMK/UI/InventoryWidget.h"
 #include "ProjectMK/UI/MKMenuBase.h"
@@ -33,6 +35,9 @@ void UHUDWidget::NativeConstruct()
 	DropQuantityDialog->SetVisibility(ESlateVisibility::Collapsed);
 	DropQuantityDialog->OnQuantityConfirmed.AddUObject(this, &UHUDWidget::OnDropConfirmed);
 	DropQuantityDialog->OnQuantityCancelled.AddUObject(this, &UHUDWidget::OnDropCancelled);
+	StorageChestWindow = CreateWidget<UStorageChestWidget>(this);
+	StorageChestWindow->AddToViewport(30);
+	StorageChestWindow->SetVisibility(ESlateVisibility::Collapsed);
 	if (::IsValid(Menu))
 	{
 		Menu->RemoveFromParent();
@@ -54,6 +59,7 @@ void UHUDWidget::NativeConstruct()
 
 void UHUDWidget::NativeDestruct()
 {
+	if (::IsValid(StorageChestWindow)) { StorageChestWindow->RemoveFromParent(); }
 	if (::IsValid(Menu)) { Menu->RemoveFromParent(); }
 	if (::IsValid(Tooltip)) { Tooltip->RemoveFromParent(); }
 	if (::IsValid(DropQuantityDialog))
@@ -87,11 +93,12 @@ bool UHUDWidget::NativeOnDrop(const FGeometry& Geometry, const FDragDropEvent& E
 	if (::IsValid(Inventory) && Inventory->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition())) { return true; }
 	UWidget* MenuFrame = ::IsValid(Menu) ? Menu->WidgetTree->FindWidget(TEXT("BG")) : nullptr;
 	if (IsMenuVisible() && ::IsValid(MenuFrame) && MenuFrame->GetCachedGeometry().IsUnderLocation(Event.GetScreenSpacePosition())) { return true; }
-	const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(Item->SourceContainer);
+	const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(Item->SourceContainer, Item->SourceStorage.Get());
 	if (Slots.IsValidIndex(Item->SourceSlotIndex) == false || Slots[Item->SourceSlotIndex].ItemUID != Item->ItemKey) { return true; }
 	PendingDropContainer = Item->SourceContainer;
 	PendingDropIndex = Item->SourceSlotIndex;
 	PendingDropKey = Item->ItemKey;
+	PendingDropStorage = Item->SourceStorage;
 	DropQuantityDialog->ShowQuantity(Item->ItemKey, Slots[Item->SourceSlotIndex].ItemCount, true);
 	SetHoveredSlot(nullptr);
 	if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->SetMenuInputBlocked(true); }
@@ -150,6 +157,14 @@ bool UHUDWidget::TryOpenShop()
 
 	return Menu->OpenMenu(EMenuContentsType::Shop);
 }
+
+bool UHUDWidget::OpenStorageChest(AStorageChestActor* Chest)
+{
+	if (::IsValid(Menu) && Menu->IsMenuOpen()) { Menu->CloseMenu(); }
+	return ::IsValid(StorageChestWindow) && StorageChestWindow->OpenChest(Chest);
+}
+
+void UHUDWidget::CloseStorageChest() { if (::IsValid(StorageChestWindow)) { StorageChestWindow->CloseChest(); } }
 
 bool UHUDWidget::IsMenuVisible() const
 {
@@ -324,10 +339,10 @@ void UHUDWidget::OnDropConfirmed(FName ItemKey, int32 Count)
 	UInventoryComponent* Items = GetLocalInventoryComponent();
 	if (::IsValid(Items))
 	{
-		const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(PendingDropContainer);
+		const TArray<FInventorySlotData>& Slots = Items->GetItemSlots(PendingDropContainer, PendingDropStorage.Get());
 		if (Slots.IsValidIndex(PendingDropIndex) && Slots[PendingDropIndex].ItemUID == ItemKey && ItemKey == PendingDropKey)
 		{
-			Items->TryDropItemSlot(PendingDropContainer, PendingDropIndex, Count);
+			Items->TryDropItemSlot(PendingDropContainer, PendingDropIndex, Count, PendingDropStorage.Get());
 		}
 	}
 	OnDropCancelled();
@@ -337,5 +352,6 @@ void UHUDWidget::OnDropCancelled()
 {
 	PendingDropIndex = INDEX_NONE;
 	PendingDropKey = NAME_None;
+	PendingDropStorage.Reset();
 	if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->SetMenuInputBlocked(IsMenuVisible()); }
 }

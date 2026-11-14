@@ -4,6 +4,7 @@
 #include "Math/Interval.h"
 #include "ProjectMK/Data/DataAsset/MKDataAssetBase.h"
 #include "ProjectMK/Data/DataTable/BlockDataTableRow.h"
+#include "ProjectMK/System/Enums/GlobalEnums.h"
 
 #include "GameSettingDataAsset.generated.h"
 
@@ -81,6 +82,28 @@ struct FMineableLevelGenerationSettings
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Decoration", meta = (ClampMin = "0", ClampMax = "32"))
 	int32 UndergroundDecorationCount = 8;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest", meta = (ClampMin = "0.0", ClampMax = "1.0"))
+	float BuriedChestChancePerBlock = 0.0006f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest", meta = (ClampMin = "0"))
+	int32 BuriedChestMaxCount = 16;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest", meta = (ClampMin = "2"))
+	int32 BuriedChestMinimumDepth = 6;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest", meta = (ClampMin = "2"))
+	int32 BuriedChestMinimumSpacing = 8;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest")
+	FInt32Interval ChestLootRollCount = FInt32Interval(2, 4);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest")
+	TArray<FBlockSpawnableItemData> ChestLootTable;
+
+	/** 지정한 기존 패턴은 무작위 패턴보다 먼저 배치한다. 구조물 개수가 0이면 비활성이다. */
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
+	TArray<EMineStructurePattern> GuaranteedStructurePatterns = { EMineStructurePattern::OreVault, EMineStructurePattern::HarvestSlab, EMineStructurePattern::BaitTrap };
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Structure Purpose")
 	bool bGenerateOrePuzzles = true;

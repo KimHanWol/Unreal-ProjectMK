@@ -156,6 +156,8 @@ bool UConsumableComponent::TryApplyConsumableEffect(FName ItemUID, const FItemDa
 		return TryPlaceBlock(ItemDataTableRow.PlaceBlockKey);
 	case EConsumableEffectType::PlaceWorkbench:
 		return TryPlaceWorkbench(ItemUID);
+	case EConsumableEffectType::PlaceStorageChest:
+		return TryPlaceStorageChest(ItemUID);
 	case EConsumableEffectType::ApplyCushion:
 		return TryApplyCushion();
 	case EConsumableEffectType::PlaceBlastCharge:
@@ -232,6 +234,13 @@ bool UConsumableComponent::TryPlaceWorkbench(FName ItemUID)
 	const AMKCharacter* Character = GetOwnerCharacter();
 	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
 	return ::IsValid(Character) && IsOwnerOnGround() && ::IsValid(Level) && Level->TryPlaceWorkbench(ItemUID, Character->GetActorLocation());
+}
+
+bool UConsumableComponent::TryPlaceStorageChest(FName ItemUID)
+{
+	AMKCharacter* Character = GetOwnerCharacter();
+	ULevelManagerSubsystem* Level = GetWorld() != nullptr ? GetWorld()->GetSubsystem<ULevelManagerSubsystem>() : nullptr;
+	return ::IsValid(Character) && IsOwnerOnGround() && ::IsValid(Level) && Level->TryPlaceStorageChest(ItemUID, Character->GetActorLocation());
 }
 
 bool UConsumableComponent::TryApplyCushion()

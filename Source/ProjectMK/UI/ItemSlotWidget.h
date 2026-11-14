@@ -18,7 +18,7 @@ public:
 	void ClearItem();
 	void SetItem(FName ItemKey, int32 ItemCount);
 	void SetSlotIndex(int32 InSlotIndex);
-	void SetSlotAddress(EItemContainer Container, int32 InSlotIndex);
+	void SetSlotAddress(EItemContainer Container, int32 InSlotIndex, AStorageChestActor* Storage = nullptr);
 	virtual void UpdateTooltipWidget(UMKTooltipBase* TooltipWidget) const override;
 	DECLARE_MULTICAST_DELEGATE_ThreeParams(FOnSecondaryAction, EItemContainer, int32, FName);
 	FOnSecondaryAction OnSecondaryAction;
@@ -52,4 +52,5 @@ private:
 	UPROPERTY(Transient)
 	int32 CurrentItemCount = 0;
 	bool bPendingUseClick = false;
+	TWeakObjectPtr<AStorageChestActor> StorageChest;
 };

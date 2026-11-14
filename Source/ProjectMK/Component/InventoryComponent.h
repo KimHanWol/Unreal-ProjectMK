@@ -7,12 +7,14 @@
 struct FShopRecipeDataTableRow;
 struct FItemDataTableRow;
 class AItemBase;
+class AStorageChestActor;
 
 UENUM(BlueprintType)
 enum class EItemContainer : uint8
 {
 	Inventory,
 	QuickSlot,
+	Storage,
 };
 
 USTRUCT(BlueprintType)
@@ -65,11 +67,11 @@ public:
 	void ApplySavedQuickSlots(const TArray<FInventorySlotData>& SavedSlots);
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	bool TryCollectWorldItem(AItemBase* ItemActor);
-	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer = EItemContainer::Inventory, EItemContainer TargetContainer = EItemContainer::Inventory);
-	bool TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count);
-	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count);
+	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer = EItemContainer::Inventory, EItemContainer TargetContainer = EItemContainer::Inventory, AStorageChestActor* SourceStorage = nullptr, AStorageChestActor* TargetStorage = nullptr);
+	bool TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
+	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
 	bool CanEquipQuickSlot(FName ItemKey) const;
-	const TArray<FInventorySlotData>& GetItemSlots(EItemContainer Container);
+	const TArray<FInventorySlotData>& GetItemSlots(EItemContainer Container, const AStorageChestActor* Storage = nullptr);
 	static constexpr int32 QuickSlotCount = 8;
 	void SetGainRadius(float NewRadius);
 	void SetItemCollectionActive(bool bActive);
@@ -91,6 +93,7 @@ private:
 	void UpdateInventoryItemMap();
 	void NormalizeInventorySlotDataList();
 
+	TArray<FInventorySlotData>* GetMutableItemSlots(EItemContainer Container, AStorageChestActor* Storage);
 	const class UAttributeSet_Character* GetCharacterAttributeSet() const;
 	int32 GetItemMaxStackCount(FName ItemUID) const;
 	int32 FindEmptySlotIndex() const;

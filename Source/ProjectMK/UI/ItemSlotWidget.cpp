@@ -19,6 +19,7 @@
 #include "ProjectMK/UI/ShopStockEntryWidget.h"
 #include "ProjectMK/UI/MKTooltipBase.h"
 #include "ProjectMK/UI/HUDWidget.h"
+#include "ProjectMK/Actor/Shop/StorageChestActor.h"
 
 void UItemSlotWidget::ClearItem()
 {
@@ -71,9 +72,10 @@ void UItemSlotWidget::SetSlotIndex(int32 InSlotIndex)
 	UpdateWidget();
 }
 
-void UItemSlotWidget::SetSlotAddress(EItemContainer Container, int32 InSlotIndex)
+void UItemSlotWidget::SetSlotAddress(EItemContainer Container, int32 InSlotIndex, AStorageChestActor* Storage)
 {
 	SlotContainer = Container;
+	StorageChest = Storage;
 	SetSlotIndex(InSlotIndex);
 }
 
@@ -94,7 +96,7 @@ void UItemSlotWidget::UpdateWidget()
 	Super::UpdateWidget();
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
 	if (::IsValid(Inventory) == false || SlotIndex == INDEX_NONE) { return; }
-	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(SlotContainer);
+	const TArray<FInventorySlotData>& Slots = Inventory->GetItemSlots(SlotContainer, StorageChest.Get());
 	if (Slots.IsValidIndex(SlotIndex) && Slots[SlotIndex].IsEmpty() == false) { SetItem(Slots[SlotIndex].ItemUID, Slots[SlotIndex].ItemCount); }
 	else { ClearItem(); }
 	SetKeyGuide(SlotContainer == EItemContainer::QuickSlot && bShowKeyGuide ? FText::AsNumber(SlotIndex + 1) : FText::GetEmpty());
@@ -146,6 +148,7 @@ void UItemSlotWidget::NativeOnDragDetected(const FGeometry& InGeometry, const FP
 
 	DragDropOperation->SourceSlotIndex = SlotIndex;
 	DragDropOperation->SourceContainer = SlotContainer;
+	DragDropOperation->SourceStorage = StorageChest;
 	DragDropOperation->ItemKey = CurrentItemKey;
 	DragDropOperation->ItemCount = CurrentItemCount;
 	DragDropOperation->Payload = this;
@@ -173,9 +176,9 @@ bool UItemSlotWidget::NativeOnDrop(const FGeometry& InGeometry, const FDragDropE
 		return Super::NativeOnDrop(InGeometry, InDragDropEvent, InOperation);
 	}
 
-	const TArray<FInventorySlotData>& Sources = InventoryComponent->GetItemSlots(DragDropOperation->SourceContainer);
+	const TArray<FInventorySlotData>& Sources = InventoryComponent->GetItemSlots(DragDropOperation->SourceContainer, DragDropOperation->SourceStorage.Get());
 	if (Sources.IsValidIndex(DragDropOperation->SourceSlotIndex) == false || Sources[DragDropOperation->SourceSlotIndex].ItemUID != DragDropOperation->ItemKey) { return true; }
-	if (InventoryComponent->TryMoveItemSlot(DragDropOperation->SourceSlotIndex, SlotIndex, DragDropOperation->SourceContainer, SlotContainer))
+	if (InventoryComponent->TryMoveItemSlot(DragDropOperation->SourceSlotIndex, SlotIndex, DragDropOperation->SourceContainer, SlotContainer, DragDropOperation->SourceStorage.Get(), StorageChest.Get()))
 	{
 		if (AMKCharacter* Character = GetLocalPlayerCharacter()) { Character->TrySaveGame(); }
 	}

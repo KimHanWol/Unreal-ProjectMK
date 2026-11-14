@@ -18,6 +18,9 @@ public:
 	EItemContainer SourceContainer = EItemContainer::Inventory;
 
 	UPROPERTY(Transient)
+	TWeakObjectPtr<AStorageChestActor> SourceStorage;
+
+	UPROPERTY(Transient)
 	FName ItemKey = NAME_None;
 
 	UPROPERTY(Transient)

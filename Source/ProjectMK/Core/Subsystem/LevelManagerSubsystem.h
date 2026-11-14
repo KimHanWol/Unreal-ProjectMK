@@ -3,11 +3,13 @@
 #include "CoreMinimal.h"
 #include "Subsystems/WorldSubsystem.h"
 #include "ProjectMK/System/Enums/GlobalEnums.h"
+#include "ProjectMK/Data/StorageChestData.h"
 #include "LevelManagerSubsystem.generated.h"
 
 class UAbilitySystemComponent;
 class ABlockBase;
 class AWorkbenchActor;
+class AStorageChestActor;
 class UDataManager;
 struct FMineableLevelGenerationSettings;
 
@@ -26,6 +28,12 @@ struct FGeneratedMineStructure
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	EMineStructurePurpose Purpose = EMineStructurePurpose::OrePuzzle;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EMineStructurePattern Pattern = EMineStructurePattern::OreVault;
+
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	bool bGuaranteed = false;
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
 	FIntPoint GoalCell = FIntPoint::ZeroValue;
@@ -137,6 +145,10 @@ public:
 	void AddPendingBlockBreak(ABlockBase* BreakingBlock);
 	bool TryPlaceBlock(FName BlockRowName, const FVector& WorldLocation);
 	bool TryPlaceWorkbench(FName ItemKey, const FVector& WorldLocation);
+	bool TryPlaceStorageChest(FName ItemKey, const FVector& WorldLocation);
+	void RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds);
+	TArray<FStorageChestSaveData> GetStorageChestSaveData() const;
+	const TArray<FGuid>& GetDestroyedStorageChestIds() const;
 	int32 ApplyExplosion(const FVector& WorldLocation, int32 Radius, UAbilitySystemComponent* InstigatorASC);
 	bool IsBlockCellEmpty(const FVector& WorldLocation) const;
 
@@ -146,6 +158,8 @@ private:
 	void BuildTerrainLayout(UDataManager* DataManager, const FMineableLevelGenerationSettings& Settings, int32 Seed);
 	void UpdateWorldBackgrounds(const FMineableLevelGenerationSettings& Settings);
 	void GenerateMineDecorations(const FMineableLevelGenerationSettings& Settings);
+	void GenerateBuriedChests(const FMineableLevelGenerationSettings& Settings);
+	AStorageChestActor* SpawnStorageChest(const FStorageChestSaveData& Data);
 	void UpdateBlockVisibility();
 	void ClearGeneratedBlocks();
 	void ClearWorldItems();
@@ -206,6 +220,8 @@ private:
 	TMap<int32, int32> SurfaceRows;
 	TMap<FIntPoint, TWeakObjectPtr<class APaperSpriteActor>> MineDecorationActors;
 	int32 ProtectedSpawnColumn = 0;
+	TArray<TWeakObjectPtr<AStorageChestActor>> StorageChests;
+	TArray<FGuid> DestroyedStorageChestIds;
 	UPROPERTY(Transient)
 	TArray<FGeneratedMineStructure> GeneratedStructures;
 	TArray<TWeakObjectPtr<class AMKMonster>> GeneratedMonsters;
