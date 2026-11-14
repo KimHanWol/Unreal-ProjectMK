@@ -62,7 +62,7 @@ namespace
 			Test->TestTrue(TEXT("World generation works after deleting the foreground tile map"), Level->GetBlocks().Num() > 3000);
 			for (int32 X = 48; X < 80; ++X)
 			{
-				Test->TestEqual(TEXT("Surface remains a complete grass row"), TileAt(X, Surface), Data->GetBlockDataTableRow(TEXT("Dirt_Grass"))->TileIndex);
+				Test->TestTrue(TEXT("Surface remains complete around protected mining landmarks"), TileAt(X, Surface) == Data->GetBlockDataTableRow(TEXT("Dirt_Grass"))->TileIndex || TileAt(X, Surface) == Data->GetBlockDataTableRow(TEXT("SurfaceFoundation"))->TileIndex);
 				Test->TestEqual(TEXT("Shallow band uses dirt"), TileAt(X, Surface + 10), Dirt);
 				Test->TestEqual(TEXT("Middle band uses sand"), TileAt(X, Surface + 48), Sand);
 				Test->TestEqual(TEXT("Deep band uses ice"), TileAt(X, Surface + 90), Ice);
@@ -140,7 +140,7 @@ namespace
 				Oxygen->TryLoot(Player);
 				TArray<UPaperSpriteComponent*> Sprites;
 				Oxygen->GetComponents(Sprites);
-				Test->TestEqual(TEXT("Oxygen uses a core, three trails, and a hidden item sprite"), Sprites.Num(), 5);
+				Test->TestEqual(TEXT("Oxygen uses a core, two trails, and a hidden item sprite"), Sprites.Num(), 4);
 				UPaperFlipbookComponent* Glow = Oxygen->FindComponentByClass<UPaperFlipbookComponent>();
 				Test->TestNotNull(TEXT("Oxygen uses an animated effect"), Glow);
 				const UVisualStyleDataAsset* Style = UDataManager::Get(World)->GetVisualStyleDataAsset();
@@ -160,7 +160,7 @@ namespace
 				bSawTrail |= VisibleSprites >= 3;
 			}
 			if (Player->GetWorld()->GetTimeSeconds() - FlightStarted < 1.5f && FPlatformTime::Seconds() - Started < 30.0) { return false; }
-			Test->TestTrue(TEXT("Oxygen follows a high arc distinct from ordinary loot"), MaxHeight > 40.f);
+			Test->TestTrue(TEXT("Oxygen uses a restrained curve instead of a large launch arc"), MaxHeight >= 0.f && MaxHeight < 25.f);
 			Test->TestTrue(TEXT("Visible afterimages follow the oxygen core during flight"), bSawTrail);
 			Test->TestFalse(TEXT("Oxygen is collected at the end of its flight"), Oxygen.IsValid());
 			if (Oxygen.IsValid()) { Oxygen->Destroy(); }

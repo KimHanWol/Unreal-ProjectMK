@@ -49,6 +49,18 @@ struct FGeneratedMineStructure
 };
 
 USTRUCT(BlueprintType)
+struct FGeneratedOreVein
+{
+	GENERATED_BODY()
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	FName ItemKey = NAME_None;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	EOreVeinShape Shape = EOreVeinShape::Branch;
+	UPROPERTY(VisibleAnywhere, BlueprintReadOnly)
+	TArray<FIntPoint> Cells;
+};
+
+USTRUCT(BlueprintType)
 struct FFallingVerticalBlocksData
 {
 	GENERATED_BODY()
@@ -130,6 +142,7 @@ public:
 	int32 GetTileSize();
 	const TArray<TObjectPtr<ABlockBase>>& GetBlocks() const;
 	const TArray<FGeneratedMineStructure>& GetGeneratedStructures() const;
+	const TArray<FGeneratedOreVein>& GetGeneratedOreVeins() const;
 	ABlockBase* GetBlockAtPosition(const FVector2D& BlockPosition) const;
 	/** 월드 위치가 속한 타일 칸의 블록. 캐릭터처럼 칸 중심에 있지 않은 위치에 쓴다 */
 	ABlockBase* GetBlockAtWorldLocation(const FVector& WorldLocation) const;
@@ -146,6 +159,8 @@ public:
 	bool TryPlaceBlock(FName BlockRowName, const FVector& WorldLocation);
 	bool TryPlaceWorkbench(FName ItemKey, const FVector& WorldLocation);
 	bool TryPlaceStorageChest(FName ItemKey, const FVector& WorldLocation);
+	void AttachStorageChestBlock(AStorageChestActor* Chest);
+	void ReleaseStorageChestBlock(ABlockBase* Block);
 	void RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds);
 	TArray<FStorageChestSaveData> GetStorageChestSaveData() const;
 	const TArray<FGuid>& GetDestroyedStorageChestIds() const;
@@ -160,6 +175,8 @@ private:
 	void GenerateMineDecorations(const FMineableLevelGenerationSettings& Settings);
 	void GenerateBuriedChests(const FMineableLevelGenerationSettings& Settings);
 	AStorageChestActor* SpawnStorageChest(const FStorageChestSaveData& Data);
+	void ProtectSurfaceFoundation(const FIntPoint& Floor, int32 HalfWidth);
+	void GenerateOreVeins(const FMineableLevelGenerationSettings& Settings, const TMap<FIntPoint, int32>& Tiles, const TSet<FIntPoint>& Reserved, TMap<FIntPoint, TPair<FName, int32>>& Rewards);
 	void UpdateBlockVisibility();
 	void ClearGeneratedBlocks();
 	void ClearWorldItems();
@@ -222,6 +239,8 @@ private:
 	int32 ProtectedSpawnColumn = 0;
 	TArray<TWeakObjectPtr<AStorageChestActor>> StorageChests;
 	TArray<FGuid> DestroyedStorageChestIds;
+	bool bClearingGeneratedBlocks = false;
+	TArray<FGeneratedOreVein> GeneratedOreVeins;
 	UPROPERTY(Transient)
 	TArray<FGeneratedMineStructure> GeneratedStructures;
 	TArray<TWeakObjectPtr<class AMKMonster>> GeneratedMonsters;

@@ -49,7 +49,7 @@ namespace
 				if (Top < Surface) { Test->TestTrue(TEXT("Every raised tier joins neighboring terrain instead of a single pillar"), (X > 16 && Level->GetSurfaceRow(X - 1) <= Top) || (X < 111 && Level->GetSurfaceRow(X + 1) <= Top)); }
 				if (X > 16) { Test->TestTrue(TEXT("Adjacent surface columns change by at most one block"), FMath::Abs(Top - Level->GetSurfaceRow(X - 1)) <= 1); }
 				ABlockBase* TopBlock = Level->GetBlockAtPosition(FVector2D(X, Top));
-				Test->TestTrue(TEXT("Each surface column has a complete grass top"), TopBlock != nullptr && TopBlock->GetTileIndex() == Grass);
+				Test->TestTrue(TEXT("Each surface column has grass or a protected stone foundation"), TopBlock != nullptr && (TopBlock->GetTileIndex() == Grass || TopBlock->GetTileIndex() == Data->GetBlockDataTableRow(TEXT("SurfaceFoundation"))->TileIndex));
 				for (int32 Y = Top; Y <= Surface + 1; ++Y) { Test->TestNotNull(TEXT("Surface relief never leaves holes in its supporting ground"), Level->GetBlockAtPosition(FVector2D(X, Y))); }
 			}
 			Test->TestEqual(TEXT("The authored surface includes broad one-block and two-block rises"), Heights.Num(), 3);

@@ -77,6 +77,7 @@ private:
 	void UpdateInteractionPrompt();
 
 	void UpdateHorizontalMovement();
+	void UpdateGroundTraction();
 	void UpdateFlyingVerticalVelocity() const;
 
 	void Apply2DCameraOverrides();
@@ -191,6 +192,12 @@ private:
 	bool bHasAppliedSaveGame = false;
 	bool bIsApplyingInitialEffects = false;
 	bool bIsMenuInputBlocked = false;
+	bool bUsingIceTraction = false;
+	float SavedGroundFriction = 8.f;
+	float SavedBrakingDeceleration = 2048.f;
+	float SavedBrakingFriction = 0.f;
+	float SavedAcceleration = 2048.f;
+	bool bSavedSeparateBrakingFriction = false;
 
 	mutable FCharacterDataTableRow CharacterDataCompatibilityCache;
 };

@@ -58,7 +58,7 @@ namespace
 				Test->TestTrue(TEXT("Chest item installs on a floor"), Player->GetConsumableComponent()->TryUseItem(TEXT("StorageChest")));
 				Test->TestEqual(TEXT("Placement consumes one chest"), Inventory->GetItemCount(TEXT("StorageChest")), 1);
 				Test->TestFalse(TEXT("Duplicate chest placement is rejected"), Player->GetConsumableComponent()->TryUseItem(TEXT("StorageChest")));
-				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { if (It->IsBuried() == false) { Chest = *It; break; } }
+				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { if (It->IsBuried() == false && FVector::DistSquared(It->GetActorLocation(), Player->GetActorLocation()) < FMath::Square(16.f)) { Chest = *It; break; } }
 				if (Test->TestNotNull(TEXT("An installed chest exists"), Chest.Get()) == false) { return true; }
 				Test->TestEqual(TEXT("Chest exposes exactly ten slots"), Chest->GetItemSlots().Num(), 10);
 				Test->TestTrue(TEXT("F interaction opens chest"), Chest->TryInteract(Player));
@@ -193,7 +193,7 @@ namespace
 			Test->TestTrue(TEXT("Recovered chest item can be installed again"), Player->GetConsumableComponent()->TryUseItem(TEXT("StorageChest")));
 			for (TActorIterator<AStorageChestActor> It(World); It; ++It)
 			{
-				if (It->IsBuried() == false)
+				if (It->IsBuried() == false && FVector::DistSquared(It->GetActorLocation(), Player->GetActorLocation()) < FMath::Square(16.f))
 				{
 					Test->TestFalse(TEXT("Reinstalled chest is empty instead of carrying or duplicating contents"), It->GetItemSlots().ContainsByPredicate([](const auto& Slot) { return Slot.IsEmpty() == false; }));
 					It->TryInteract(Player);
@@ -234,6 +234,7 @@ namespace
 				Generation.WidthInBlocks = 96;
 				Generation.DepthInBlocks = 64;
 				Generation.BuriedChestChancePerBlock = 1.f;
+				Generation.bGenerateDecorations = false;
 				Generation.BuriedChestMaxCount = 4;
 				Generation.FallingStructureCount = 1;
 				Generation.FallingStructuresPerThousandTiles = 0.f;

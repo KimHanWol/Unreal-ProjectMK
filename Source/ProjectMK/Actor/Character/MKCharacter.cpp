@@ -1,6 +1,7 @@
 ﻿// LINK
 
 #include "ProjectMK/Actor/Character/MKCharacter.h"
+#include "ProjectMK/Actor/Block/BlockBase.h"
 
 #include "AbilitySystemComponent.h"
 #include "Camera/CameraComponent.h"
@@ -188,6 +189,7 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
+	UpdateGroundTraction();
 	UpdateInteractionPrompt();
 
 	if (::IsValid(CharacterVisualComponent))
@@ -657,6 +659,40 @@ void AMKCharacter::UpdateHorizontalMovement()
 	{
 		AddMovementInput(FVector::ForwardVector, CharacterDir.X);
 	}
+}
+
+void AMKCharacter::UpdateGroundTraction()
+{
+	UCharacterMovementComponent* Movement = GetCharacterMovement();
+	if (Movement == nullptr) { return; }
+	const UDataManager* Data = UDataManager::Get(this);
+	ABlockBase* Floor = GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetBlockBelowWorldLocation(GetActorLocation());
+	const auto* Ice = Data->GetBlockDataTableRow(TEXT("Ice"));
+	const bool bOnIce = Movement->IsMovingOnGround() && Floor != nullptr && Ice != nullptr && Floor->GetTileIndex() == Ice->TileIndex;
+	if (bOnIce == bUsingIceTraction) { return; }
+	if (bOnIce)
+	{
+		SavedGroundFriction = Movement->GroundFriction;
+		SavedBrakingDeceleration = Movement->BrakingDecelerationWalking;
+		SavedBrakingFriction = Movement->BrakingFriction;
+		SavedAcceleration = Movement->MaxAcceleration;
+		bSavedSeparateBrakingFriction = Movement->bUseSeparateBrakingFriction;
+		const auto* Settings = Data->GetGameSettingDataAsset();
+		Movement->GroundFriction = Settings->IceGroundFriction;
+		Movement->BrakingDecelerationWalking = Settings->IceBrakingDeceleration;
+		Movement->BrakingFriction = Settings->IceGroundFriction * 0.5f;
+		Movement->MaxAcceleration = Settings->IceAcceleration;
+		Movement->bUseSeparateBrakingFriction = true;
+	}
+	else
+	{
+		Movement->GroundFriction = SavedGroundFriction;
+		Movement->BrakingDecelerationWalking = SavedBrakingDeceleration;
+		Movement->BrakingFriction = SavedBrakingFriction;
+		Movement->MaxAcceleration = SavedAcceleration;
+		Movement->bUseSeparateBrakingFriction = bSavedSeparateBrakingFriction;
+	}
+	bUsingIceTraction = bOnIce;
 }
 
 void AMKCharacter::UpdateFlyingVerticalVelocity() const

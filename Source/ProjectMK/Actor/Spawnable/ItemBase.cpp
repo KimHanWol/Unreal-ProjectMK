@@ -140,8 +140,6 @@ void AItemBase::TryLoot(TWeakObjectPtr<AMKCharacter> InLooter)
 	}
 
 	Looter = InLooter;
-	OxygenFlightStart = GetActorLocation();
-	OxygenFlightTime = 0.f;
 	OxygenTrailPositions.Reset();
 	CurrentLootingSpeed = InitialLootingSpeed;
 	FallingVelocity = 0.f;
@@ -210,9 +208,8 @@ void AItemBase::InitializeOxygenVisuals()
 	PaperSpriteComponent->SetVisibility(false);
 	// The side-view camera faces -Y; positive Y puts oxygen ahead of depth-writing terrain.
 	BaseSpriteRelativeLocation.Y = 30.f;
-	OxygenFlightDuration = ::IsValid(Settings) ? Settings->OxygenPickupFlightDuration : 0.85f;
-	OxygenArcHeight = ::IsValid(Settings) ? Settings->OxygenPickupArcHeight : 64.f;
-	const float Size = ::IsValid(Settings) ? Settings->OxygenPickupDisplaySize : 18.f;
+	OxygenArcHeight = ::IsValid(Settings) ? Settings->OxygenPickupArcHeight : 14.f;
+	const float Size = ::IsValid(Settings) ? Settings->OxygenPickupDisplaySize : 8.f;
 	const UPaperSprite* Frame = Effect->GetSpriteAtFrame(1);
 	const float Scale = ::IsValid(Frame) ? Size * Frame->GetPixelsPerUnrealUnit() / FMath::Max(1.f, static_cast<float>(Frame->GetSourceSize().GetMax())) : 1.f;
 	OxygenGlow = NewObject<UPaperFlipbookComponent>(this);
@@ -221,7 +218,8 @@ void AItemBase::InitializeOxygenVisuals()
 	OxygenGlow->SetLooping(true);
 	OxygenGlow->SetSpriteColor(FLinearColor(0.35f, 0.8f, 0.95f, 0.95f));
 	OxygenGlow->SetRelativeLocation(BaseSpriteRelativeLocation);
-	OxygenGlow->SetRelativeScale3D(FVector(Scale, 1.f, Scale));
+	OxygenGlow->SetRelativeScale3D(FVector(Scale * 0.4f, 1.f, Scale * 0.4f));
+	OxygenGlow->SetSpriteColor(FLinearColor(0.35f, 0.8f, 0.95f, 0.18f));
 	OxygenGlow->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	OxygenGlow->SetTranslucentSortPriority(12);
 	if (::IsValid(Style->OxygenPickupMaterial)) { OxygenGlow->SetMaterial(0, Style->OxygenPickupMaterial); }
@@ -240,7 +238,7 @@ void AItemBase::InitializeOxygenVisuals()
 		OxygenCore->SetTranslucentSortPriority(13);
 		OxygenCore->RegisterComponent();
 	}
-	for (int32 Index = 0; Index < 3; ++Index)
+	for (int32 Index = 0; Index < 2; ++Index)
 	{
 		UPaperSpriteComponent* Trail = NewObject<UPaperSpriteComponent>(this);
 		Trail->SetupAttachment(RootComponent);
@@ -260,19 +258,14 @@ void AItemBase::InitializeOxygenVisuals()
 
 void AItemBase::UpdateOxygenTrail()
 {
-	OxygenTrailPositions.SetNum(10);
-	const FVector Target = Looter->GetActorLocation();
-	const FVector Arc(FMath::Sign(LootLateralOffsetScale) * OxygenArcHeight * 0.45f, 0.f, OxygenArcHeight);
-	for (int32 Sample = 0; Sample < OxygenTrailPositions.Num(); ++Sample)
-	{
-		const float Alpha = FMath::Clamp((OxygenFlightTime - Sample * 0.0225f) / FMath::Max(0.1f, OxygenFlightDuration), 0.f, 1.f);
-		OxygenTrailPositions[Sample] = FMath::Lerp(OxygenFlightStart, Target, Alpha) + Arc * (4.f * Alpha * (1.f - Alpha))
-			+ BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f);
-	}
+	const FVector Head = GetActorLocation() + BaseSpriteRelativeLocation + FVector(0.f, VisualYOffset, 0.f);
+	if (OxygenTrailPositions.IsEmpty()) { OxygenTrailPositions.Init(Head, 8); }
+	OxygenTrailPositions.Insert(Head, 0);
+	OxygenTrailPositions.SetNum(8);
 	for (int32 Index = 0; Index < OxygenTrail.Num(); ++Index)
 	{
 		const int32 Sample = (Index + 1) * 2;
-		OxygenTrail[Index]->SetVisibility(OxygenFlightTime >= Sample * 0.0225f);
+		OxygenTrail[Index]->SetVisibility(FVector::DistSquared(Head, OxygenTrailPositions[Sample]) > 0.25f);
 		OxygenTrail[Index]->SetWorldLocation(OxygenTrailPositions[Sample]);
 	}
 }
@@ -315,24 +308,22 @@ void AItemBase::UpdatePosition(float DeltaTime)
 
 		FVector ItemLocation = GetActorLocation();
 		FVector PlayerLocation = Looter->GetActorLocation();
-		if (ItemKey == TEXT("Oxygen"))
-		{
-			OxygenFlightTime += DeltaTime;
-			const float Alpha = FMath::Clamp(OxygenFlightTime / FMath::Max(0.1f, OxygenFlightDuration), 0.f, 1.f);
-			const FVector Arc(FMath::Sign(LootLateralOffsetScale) * OxygenArcHeight * 0.45f, 0.f, OxygenArcHeight);
-			SetActorLocation(FMath::Lerp(OxygenFlightStart, PlayerLocation, Alpha) + Arc * (4.f * Alpha * (1.f - Alpha)));
-			UpdateOxygenTrail();
-			if (Alpha >= 1.f && InventoryComponent->TryCollectWorldItem(this) == false) { ClearLooting(); }
-			return;
-		}
 		CurrentLootingSpeed += GetWorld()->GetDeltaSeconds() * LootingAccelerationRate;
 
 		const FVector ToPlayer = PlayerLocation - ItemLocation;
 		const float DistanceToPlayer = ToPlayer.Size();
 		const float LateralOffsetAlpha = FMath::Clamp(DistanceToPlayer / 140.f, 0.f, 1.f);
-		const FVector CurvedTargetLocation = PlayerLocation + (LootLateralDirection * LootLateralOffsetScale * LateralOffsetAlpha);
+		FVector Curve = LootLateralDirection * LootLateralOffsetScale * LateralOffsetAlpha;
+		if (ItemKey == TEXT("Oxygen"))
+		{
+			FVector Perpendicular(-ToPlayer.Z, 0.f, ToPlayer.X);
+			if (Perpendicular.Z < 0.f) { Perpendicular *= -1.f; }
+			Curve = Perpendicular.GetSafeNormal() * FMath::Min(OxygenArcHeight, DistanceToPlayer * 0.35f) * FMath::Clamp(DistanceToPlayer / 40.f, 0.f, 1.f);
+		}
+		const FVector CurvedTargetLocation = PlayerLocation + Curve;
 		FVector NewLocation = FMath::VInterpConstantTo(ItemLocation, CurvedTargetLocation, GetWorld()->GetDeltaSeconds(), CurrentLootingSpeed);
 		SetActorLocation(NewLocation);
+		if (ItemKey == TEXT("Oxygen")) { UpdateOxygenTrail(); }
 
 		if (FVector::DistSquared(NewLocation, PlayerLocation) <= FMath::Square(4.f))
 		{

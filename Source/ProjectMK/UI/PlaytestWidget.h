@@ -74,6 +74,9 @@ private:
 	void OnHitMonsterClicked();
 
 	UFUNCTION()
+	void OnSpawnChestClicked();
+
+	UFUNCTION()
 	void OnDeleteSaveClicked();
 
 	UPROPERTY(EditDefaultsOnly, Category = "Playtest", meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetMonsterRowNames"))
@@ -126,6 +129,9 @@ private:
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> HitMonsterButton;
+
+	UPROPERTY(Transient)
+	TObjectPtr<UButton> SpawnChestButton;
 
 	UPROPERTY(Transient)
 	TObjectPtr<UButton> DeleteSaveButton;

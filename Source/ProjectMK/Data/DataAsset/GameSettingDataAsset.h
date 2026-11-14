@@ -101,6 +101,15 @@ struct FMineableLevelGenerationSettings
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Buried Chest")
 	TArray<FBlockSpawnableItemData> ChestLootTable;
 
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ore Veins", meta = (ClampMin = "0.0"))
+	float OreVeinsPerThousandTiles = 0.6f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ore Veins")
+	FInt32Interval OreVeinSizeRange = FInt32Interval(4, 8);
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Ore Veins")
+	TArray<EOreVeinShape> OreVeinShapes = { EOreVeinShape::Branch, EOreVeinShape::Cluster, EOreVeinShape::Crescent };
+
 	/** 지정한 기존 패턴은 무작위 패턴보다 먼저 배치한다. 구조물 개수가 0이면 비활성이다. */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Falling Structure")
 	TArray<EMineStructurePattern> GuaranteedStructurePatterns = { EMineStructurePattern::OreVault, EMineStructurePattern::HarvestSlab, EMineStructurePattern::BaitTrap };
@@ -240,14 +249,18 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Item", meta = (ClampMin = "0.0"))
 	float WorldItemBlinkDuration = 10.f;
 
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "0.1"))
-	float OxygenPickupFlightDuration = 0.85f;
-
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "0.0"))
-	float OxygenPickupArcHeight = 64.f;
+	float OxygenPickupArcHeight = 14.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen|Pickup", meta = (ClampMin = "1.0"))
-	float OxygenPickupDisplaySize = 18.f;
+	float OxygenPickupDisplaySize = 8.f;
+
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Ice", meta = (ClampMin = "0.0"))
+	float IceGroundFriction = 0.2f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Ice", meta = (ClampMin = "0.0"))
+	float IceBrakingDeceleration = 35.f;
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Ice", meta = (ClampMin = "1.0"))
+	float IceAcceleration = 320.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1.0"))
 	float ShopBuybackLifetime = 300.f;

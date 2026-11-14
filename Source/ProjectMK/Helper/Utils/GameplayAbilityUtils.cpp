@@ -4,6 +4,7 @@
 
 #include "AbilitySystemComponent.h"
 #include "GameplayEffect.h"
+#include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/AbilitySystem/AttributeSet/AttributeSet_Character.h"
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Core/Manager/DataManager.h"

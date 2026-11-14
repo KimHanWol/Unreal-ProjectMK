@@ -2,9 +2,20 @@
 import json
 import unreal
 
-folder = '/Game/Asset/WidgetArtV2/UI'
-texture = unreal.load_asset(folder + '/T_IconStorage')
+from pathlib import Path
+folder = '/Game/Asset/StorageChestV2'
+task = unreal.AssetImportTask()
+for key, value in dict(filename=str(Path(unreal.Paths.project_dir()) / 'Content/Asset/StorageChestV2/Source/StorageChest.png'), destination_path=folder,
+    destination_name='T_StorageChest', automated=True, replace_existing=True, save=True).items():
+    task.set_editor_property(key, value)
+unreal.AssetToolsHelpers.get_asset_tools().import_asset_tasks([task])
+texture = unreal.load_asset(folder + '/T_StorageChest')
 assert texture is not None
+texture.set_editor_property('filter', unreal.TextureFilter.TF_NEAREST)
+texture.set_editor_property('mip_gen_settings', unreal.TextureMipGenSettings.TMGS_NO_MIPMAPS)
+texture.set_editor_property('compression_settings', unreal.TextureCompressionSettings.TC_EDITOR_ICON)
+texture.set_editor_property('lod_group', unreal.TextureGroup.TEXTUREGROUP_PIXELS2D)
+assert unreal.EditorAssetLibrary.save_loaded_asset(texture, False)
 path = folder + '/S_StorageChest'
 tools = unreal.AssetToolsHelpers.get_asset_tools()
 sprite = unreal.load_asset(path) if unreal.EditorAssetLibrary.does_asset_exist(path) else tools.create_asset('S_StorageChest', folder, unreal.PaperSprite, unreal.PaperSpriteFactory())
@@ -49,3 +60,29 @@ generation.set_editor_property('guaranteed_structure_patterns', [unreal.MineStru
 settings.set_editor_property('mineable_level_generation', generation)
 assert unreal.EditorAssetLibrary.save_loaded_asset(settings, False)
 print('Applied storage chest item, native-size sprite, seven existing loot items, and three guaranteed structure patterns. No shop recipe was added.')
+
+blocks = unreal.load_asset('/Game/Data/DataTable/BlockDataTable')
+rows = json.loads(unreal.DataTableFunctionLibrary.export_data_table_to_json_string(blocks))
+rock = next(entry for entry in rows if entry['Name'] == 'Rock')
+for name, index, art, support, falling in [('SurfaceFoundation', 901, rock['TileSprite'], True, False), ('StorageChest', 902, sprite.get_path_name(), False, True)]:
+    row = next((entry for entry in rows if entry['Name'] == name), None)
+    if row is None:
+        row = dict(rock)
+        rows.append(row)
+    row.update(Name=name, TileIndex=index, TileSprite=art, bIsMineable=False, bHasCollision=True,
+        bFallsWhenUnmineable=falling, bIsSupportAnchor=support, bIsExplosionProof=True,
+        bIsPassableByCharacter=falling, bUseTerrainEdges=bool(rock.get('bUseTerrainEdges', False)) if support else False, bNeedTobeHide=False,
+        BlockDurability=1000.0, SpawnableItemDataList=[])
+assert unreal.DataTableFunctionLibrary.fill_data_table_from_json_string(blocks, json.dumps(rows, ensure_ascii=False))
+assert unreal.EditorAssetLibrary.save_loaded_asset(blocks, False)
+style = unreal.load_asset('/Game/Asset/ArtV1/DA_VisualStyle')
+brushes = dict(style.get_editor_property('brushes'))
+storage_key = next(key for key in brushes if str(key) == 'IconStorage')
+brush = brushes[storage_key]
+brush.set_editor_property('resource_object', texture)
+brushes[storage_key] = brush
+style.set_editor_property('brushes', brushes)
+assert unreal.EditorAssetLibrary.save_loaded_asset(style, False)
+settings.set_editor_property('oxygen_pickup_arc_height', 14.0)
+settings.set_editor_property('oxygen_pickup_display_size', 8.0)
+assert unreal.EditorAssetLibrary.save_loaded_asset(settings, False)

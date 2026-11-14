@@ -6,6 +6,7 @@
 #include "StorageChestActor.generated.h"
 
 class AMKCharacter;
+class ABlockBase;
 
 UCLASS()
 class PROJECTMK_API AStorageChestActor : public AShopActor
@@ -29,10 +30,13 @@ public:
 	FStorageChestSaveData GetSaveData() const;
 	FGuid GetChestId() const;
 	bool IsBuried() const;
+	void SetPhysicsBlock(ABlockBase* Block);
 	static constexpr int32 SlotCount = 10;
 
 private:
 	void UpdateBuriedCover();
+	UFUNCTION()
+	void OnPhysicsBlockDestroyed(AActor* Actor);
 
 public:
 	DECLARE_MULTICAST_DELEGATE(FOnContentsChanged);
@@ -47,4 +51,5 @@ private:
 	bool bIsBuried = false;
 	bool bIsBreaking = false;
 	FTimerHandle CoverTimer;
+	TWeakObjectPtr<ABlockBase> PhysicsBlock;
 };

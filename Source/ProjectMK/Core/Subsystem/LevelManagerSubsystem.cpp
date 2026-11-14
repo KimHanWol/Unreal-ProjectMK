@@ -1680,6 +1680,8 @@ bool FFallingBlockGroupData::TryDestroyFallingBlockOnImpact(
 	{
 		return false;
 	}
+	const auto* Row = UDataManager::Get(WorldContextObject)->GetBlockDataTableRow(FallingBlock->GetTileIndex());
+	if (Row != nullptr && Row->bFallsWhenUnmineable && Row->bIsMineable == false) { return false; }
 
 	UAbilitySystemComponent* FallingAbilitySystemComponent = FallingBlock->GetAbilitySystemComponent();
 	const UAttributeSet_Block* BlockAttributeSet = ::IsValid(FallingAbilitySystemComponent)
@@ -1908,6 +1910,8 @@ const TArray<FGeneratedMineStructure>& ULevelManagerSubsystem::GetGeneratedStruc
 	return GeneratedStructures;
 }
 
+const TArray<FGeneratedOreVein>& ULevelManagerSubsystem::GetGeneratedOreVeins() const { return GeneratedOreVeins; }
+
 ABlockBase* ULevelManagerSubsystem::GetBlockAtPosition(const FVector2D& BlockPosition) const
 {
 	const TWeakObjectPtr<ABlockBase>* BlockPtr = BlockActorMap.Find(BlockPosition);
@@ -1989,6 +1993,7 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 	const FBlockDataTableRow* Grass = DataManager->GetBlockDataTableRow(Settings.SurfaceBlockKey);
 	const FBlockDataTableRow* Rock = DataManager->GetBlockDataTableRow(TEXT("Rock"));
 	const FBlockDataTableRow* Shop = DataManager->GetBlockDataTableRow(TEXT("Shop"));
+	const FBlockDataTableRow* Foundation = DataManager->GetBlockDataTableRow(TEXT("SurfaceFoundation"));
 	if (Dirt == nullptr || Rock == nullptr) { return; }
 	TArray<FMineDepthLayer> Layers = Settings.DepthLayers;
 	Layers.RemoveAll([DataManager](const FMineDepthLayer& Layer) { return DataManager->GetBlockDataTableRow(Layer.BlockKey) == nullptr; });
@@ -2015,7 +2020,8 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 					: FMath::Clamp((Y - Surface - Boundary + Blend * 0.5f) / Blend, 0.f, 1.f);
 				if (Sample <= FMath::SmoothStep(0.f, 1.f, Alpha)) { TileIndex = DataManager->GetBlockDataTableRow(Layer.BlockKey)->TileIndex; }
 			}
-			BaseTerrainLayout.Add(Cell, Y == GetSurfaceRow(X) && Grass != nullptr ? Grass->TileIndex : TileIndex);
+			const bool bRaisedFoundation = Foundation != nullptr && GetSurfaceRow(X) < Surface && Y <= Surface + 1;
+			BaseTerrainLayout.Add(Cell, bRaisedFoundation ? Foundation->TileIndex : (Y == GetSurfaceRow(X) && Grass != nullptr ? Grass->TileIndex : TileIndex));
 		}
 	}
 	if (Shop != nullptr)
@@ -2087,6 +2093,16 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		{
 			if (FMath::Abs(Existing.Key.X - Floor.X) < 3 && FMath::Abs(Existing.Key.Y - Floor.Y) < 3) { return false; }
 		}
+		ProtectSurfaceFoundation(Floor, HalfWidth);
+		Ground = GetBlockAtPosition(FVector2D(Floor));
+		if (Ground == nullptr) { return false; }
+		if (Kind == TEXT("SupplyCrates"))
+		{
+			FStorageChestSaveData Chest;
+			Chest.Id = FGuid(static_cast<uint32>(LastGenerationSeed), static_cast<uint32>(Floor.X), static_cast<uint32>(Floor.Y), 0x44454348);
+			Chest.Location = FVector((Floor.X + 0.5f) * BLOCK_SIZE, -20.f, -(Floor.Y - 0.5f) * BLOCK_SIZE);
+			return SpawnStorageChest(Chest) != nullptr;
+		}
 		const FVector Location((Floor.X + 0.5f) * BLOCK_SIZE, -32.f, -Floor.Y * BLOCK_SIZE + Source.Y * 0.25f);
 		APaperSpriteActor* Decoration = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
 		if (Decoration == nullptr) { return false; }
@@ -2105,6 +2121,7 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 	};
 	const int32 End = Settings.StartColumn + FMath::Clamp(Settings.WidthInBlocks, 16, 512);
 	const int32 ShopColumn = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, End - 5);
+	ProtectSurfaceFoundation(FIntPoint(ShopColumn, GetSurfaceRow(ShopColumn)), 2);
 	for (const auto& Feature : { TPair<FName, int32>(TEXT("LanternPost"), ProtectedSpawnColumn - 3),
 		TPair<FName, int32>(TEXT("Minecart"), ProtectedSpawnColumn + 4), TPair<FName, int32>(TEXT("SupplyCrates"), ShopColumn + 5),
 		TPair<FName, int32>(TEXT("MineEntrance"), ProtectedSpawnColumn - 8) })
@@ -2212,6 +2229,108 @@ AStorageChestActor* ULevelManagerSubsystem::SpawnStorageChest(const FStorageChes
 	return Chest;
 }
 
+void ULevelManagerSubsystem::ProtectSurfaceFoundation(const FIntPoint& Floor, int32 HalfWidth)
+{
+	UDataManager* Data = UDataManager::Get(this);
+	const int32 Surface = Data->GetGameSettingDataAsset()->SurfaceBlockPositionY;
+	const auto* Row = Data->GetBlockDataTableRow(TEXT("SurfaceFoundation"));
+	if (Floor.Y > Surface || Row == nullptr) { return; }
+	for (int32 X = Floor.X - HalfWidth; X <= Floor.X + HalfWidth; ++X)
+	{
+		for (int32 Y = Floor.Y; Y <= Floor.Y + 1; ++Y)
+		{
+			ABlockBase* Existing = GetBlockAtPosition(FVector2D(X, Y));
+			if (Existing == nullptr || Existing->GetTileIndex() == Row->TileIndex) { continue; }
+			Existing->Destroy();
+			BlockList.Remove(Existing);
+			BlockActorMap.Remove(FVector2D(X, Y));
+			SpawnTileActor(FIntPoint(X, Y), Row->TileIndex, Data->GetBlueprintClass(EBlueprintClassType::BlockBase));
+		}
+	}
+}
+
+void ULevelManagerSubsystem::GenerateOreVeins(const FMineableLevelGenerationSettings& Settings, const TMap<FIntPoint, int32>& Tiles, const TSet<FIntPoint>& Reserved, TMap<FIntPoint, TPair<FName, int32>>& Rewards)
+{
+	GeneratedOreVeins.Reset();
+	if (Settings.OreVeinShapes.IsEmpty() || Settings.OreVeinsPerThousandTiles <= 0.f) { return; }
+	UDataManager* Data = UDataManager::Get(this);
+	const int32 Surface = Data->GetGameSettingDataAsset()->SurfaceBlockPositionY;
+	TArray<FIntPoint> Candidates;
+	for (const auto& Pair : Tiles)
+	{
+		const auto* Row = Data->GetBlockDataTableRow(Pair.Value);
+		if (Pair.Key.Y > Surface + 3 && Reserved.Contains(Pair.Key) == false && Row != nullptr && Row->bIsMineable && Row->bIsSupportAnchor == false) { Candidates.Add(Pair.Key); }
+	}
+	SortTileCoordinates(Candidates);
+	if (Candidates.IsEmpty()) { return; }
+	FRandomStream Random(LastGenerationSeed ^ 0x5645494e);
+	const int32 TargetCount = FMath::Clamp(FMath::RoundToInt(Tiles.Num() * Settings.OreVeinsPerThousandTiles / 1000.f), 0, 64);
+	const int32 ShapeOffset = Random.RandRange(0, Settings.OreVeinShapes.Num() - 1);
+	const FIntPoint Directions[] = { { 1, 0 }, { -1, 0 }, { 0, 1 }, { 0, -1 } };
+	auto Eligible = [&](const FIntPoint& Cell)
+	{
+		const int32* Tile = Tiles.Find(Cell);
+		const auto* Row = Tile != nullptr ? Data->GetBlockDataTableRow(*Tile) : nullptr;
+		return Cell.Y > Surface + 3 && Reserved.Contains(Cell) == false && Rewards.Contains(Cell) == false && Row != nullptr && Row->bIsMineable && Row->bIsSupportAnchor == false;
+	};
+	for (int32 Attempt = 0; Attempt < TargetCount * 24 && GeneratedOreVeins.Num() < TargetCount; ++Attempt)
+	{
+		const FIntPoint Origin = Candidates[Random.RandRange(0, Candidates.Num() - 1)];
+		if (Eligible(Origin) == false) { continue; }
+		const auto* Source = Data->GetBlockDataTableRow(Tiles[Origin]);
+		float TotalWeight = 0.f;
+		for (const auto& Ore : Source->SpawnableItemDataList)
+		{
+			const auto* Item = Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Ore.SpawnableItemKey);
+			if (Item != nullptr && Item->bIsOre) { TotalWeight += FMath::Max(0.f, Ore.OreSpawnWeight); }
+		}
+		if (TotalWeight <= 0.f) { continue; }
+		float Weight = Random.FRand() * TotalWeight;
+		const FBlockSpawnableItemData* Choice = nullptr;
+		for (const auto& Ore : Source->SpawnableItemDataList)
+		{
+			const auto* Item = Data->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Ore.SpawnableItemKey);
+			if (Item == nullptr || Item->bIsOre == false || Ore.OreSpawnWeight <= 0.f) { continue; }
+			Weight -= Ore.OreSpawnWeight;
+			if (Weight <= 0.f) { Choice = &Ore; break; }
+		}
+		if (Choice == nullptr) { continue; }
+		FGeneratedOreVein Vein;
+		Vein.ItemKey = Choice->SpawnableItemKey;
+		Vein.Shape = Settings.OreVeinShapes[(ShapeOffset + GeneratedOreVeins.Num()) % Settings.OreVeinShapes.Num()];
+		const int32 Minimum = FMath::Clamp(Settings.OreVeinSizeRange.Min, 3, 16);
+		const int32 Count = Random.RandRange(Minimum, FMath::Clamp(Settings.OreVeinSizeRange.Max, Minimum, 16));
+		if (Vein.Shape == EOreVeinShape::Crescent)
+		{
+			const FIntPoint Hook[] = { { -2, 1 }, { -2, 0 }, { -1, 0 }, { 0, 0 }, { 1, 0 }, { 2, 0 }, { 2, 1 } };
+			const int32 Turns = Random.RandRange(0, 3);
+			for (FIntPoint Offset : Hook)
+			{
+				for (int32 Turn = 0; Turn < Turns; ++Turn) { Offset = FIntPoint(-Offset.Y, Offset.X); }
+				if (Eligible(Origin + Offset) == false) { Vein.Cells.Reset(); break; }
+				Vein.Cells.Add(Origin + Offset);
+			}
+		}
+		else
+		{
+			Vein.Cells.Add(Origin);
+			for (int32 Step = 0; Step < Count * 8 && Vein.Cells.Num() < Count; ++Step)
+			{
+				const FIntPoint Previous = Vein.Shape == EOreVeinShape::Cluster ? Vein.Cells[Random.RandRange(0, Vein.Cells.Num() - 1)] : Vein.Cells.Last();
+				const FIntPoint Next = Previous + Directions[Random.RandRange(0, 3)];
+				if (Eligible(Next) && Vein.Cells.Contains(Next) == false) { Vein.Cells.Add(Next); }
+			}
+		}
+		if (Vein.Cells.Num() < 3) { continue; }
+		for (const FIntPoint& Cell : Vein.Cells)
+		{
+			const int32 MinimumCount = FMath::Max(1, Choice->MinSpawnItemCount);
+			Rewards.Add(Cell, { Choice->SpawnableItemKey, Random.RandRange(MinimumCount, FMath::Max(MinimumCount, Choice->MaxSpawnItemCount)) });
+		}
+		GeneratedOreVeins.Add(MoveTemp(Vein));
+	}
+}
+
 void ULevelManagerSubsystem::UpdateBlockVisibility()
 {
 	const APawn* Player = UGameplayStatics::GetPlayerPawn(this, 0);
@@ -2231,6 +2350,7 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
+	TGuardValue<bool> ClearingGuard(bClearingGeneratedBlocks, true);
 	for (const auto& Chest : StorageChests) { if (Chest.IsValid()) { Chest->Destroy(); } }
 	StorageChests.Reset();
 	DestroyedStorageChestIds.Reset();
@@ -2757,6 +2877,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	}
 	if (TotalRewardWeight <= 0.f)
 	{
+		GenerateOreVeins(GenerationSettings, OutGeneratedMineableTiles, ReservedCoordinates, OutRewardTiles);
 		return;
 	}
 
@@ -2789,6 +2910,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 			}
 		}
 	}
+	GenerateOreVeins(GenerationSettings, OutGeneratedMineableTiles, ReservedCoordinates, OutRewardTiles);
 }
 
 ABlockBase* ULevelManagerSubsystem::SpawnTileActor(
@@ -2971,7 +3093,7 @@ bool ULevelManagerSubsystem::CheckBlockIsAllDisconnected(ABlockBase* StartBlock,
 		if (::IsValid(Block) == false || Checked.Contains(Block)) { continue; }
 		Checked.Add(Block);
 		DFSCheckedBlocks.Add(Block);
-		if (Block->IsMineable() == false || Block->IsSupportAnchor()) { return false; }
+		if (Block->CanFall() == false) { return false; }
 		if (bBlockDebugNumbersEnabled) { Block->BP_EnableDebugState(DebugCount++); }
 		OutDisconnectedBlocks.Add(Block);
 		Pending.Append(FBlockUtils::GetSurroundBlocks(this, Block));
@@ -2984,7 +3106,7 @@ void ULevelManagerSubsystem::QueueCollapseBlocks(const TArray<ABlockBase*>& Coll
 	TArray<TWeakObjectPtr<ABlockBase>> PendingCollapsingBlocks;
 	for (ABlockBase* CollapsingBlock : CollapsingBlocks)
 	{
-		if (::IsValid(CollapsingBlock) && CollapsingBlock->IsMineable())
+		if (::IsValid(CollapsingBlock) && CollapsingBlock->CanFall())
 		{
 			PendingCollapsingBlocks.AddUnique(CollapsingBlock);
 		}
@@ -3028,7 +3150,7 @@ void ULevelManagerSubsystem::ProcessPendingCollapseBlocks()
 				}
 			}
 
-			if (PendingBlock.IsValid() && PendingBlock->IsMineable())
+			if (PendingBlock.IsValid() && PendingBlock->CanFall())
 			{
 				CollapsingBlocks.Add(PendingBlock.Get());
 			}
@@ -3047,7 +3169,7 @@ void ULevelManagerSubsystem::CollapseBlocks(const TArray<ABlockBase*>& Collapsin
 	int32 CollapsingBlockCount = 0;
 	for (auto& CollapsingBlock : CollapsingBlocks)
 	{
-		if (::IsValid(CollapsingBlock) == false || CollapsingBlock->IsMineable() == false)
+		if (::IsValid(CollapsingBlock) == false || CollapsingBlock->CanFall() == false)
 		{
 			continue;
 		}
@@ -3482,6 +3604,26 @@ bool ULevelManagerSubsystem::TryPlaceStorageChest(FName ItemKey, const FVector& 
 	Data.ItemKey = ItemKey;
 	Data.Location = Center;
 	return SpawnStorageChest(Data) != nullptr;
+}
+
+void ULevelManagerSubsystem::AttachStorageChestBlock(AStorageChestActor* Chest)
+{
+	const auto* Row = UDataManager::Get(this)->GetBlockDataTableRow(TEXT("StorageChest"));
+	if (Chest == nullptr || Row == nullptr) { return; }
+	const FVector2D Position = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Chest->GetActorLocation());
+	if (GetBlockAtPosition(Position) != nullptr) { return; }
+	ABlockBase* Block = SpawnTileActor(FIntPoint(FMath::RoundToInt(Position.X), FMath::RoundToInt(Position.Y)), Row->TileIndex, UDataManager::Get(this)->GetBlueprintClass(EBlueprintClassType::BlockBase));
+	if (Block == nullptr) { return; }
+	Chest->SetPhysicsBlock(Block);
+	TArray<ABlockBase*> Disconnected, Checked;
+	if (CheckBlockIsAllDisconnected(Block, Disconnected, Checked, 0)) { QueueCollapseBlocks(Disconnected); }
+}
+
+void ULevelManagerSubsystem::ReleaseStorageChestBlock(ABlockBase* Block)
+{
+	if (::IsValid(Block) == false) { return; }
+	if (bClearingGeneratedBlocks == false) { OnBlockDestroyed(Block); }
+	Block->Destroy();
 }
 
 void ULevelManagerSubsystem::RestoreStorageChests(const TArray<FStorageChestSaveData>& SavedChests, const TArray<FGuid>& DestroyedIds)

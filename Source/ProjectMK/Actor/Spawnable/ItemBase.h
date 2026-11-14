@@ -63,10 +63,7 @@ private:
 	TWeakObjectPtr<AMKCharacter> Looter = nullptr;
 	TWeakObjectPtr<AMKCharacter> DropOwner;
 	TArray<FVector> OxygenTrailPositions;
-	FVector OxygenFlightStart;
-	float OxygenFlightTime = 0.f;
-	float OxygenFlightDuration = 0.85f;
-	float OxygenArcHeight = 64.f;
+	float OxygenArcHeight = 14.f;
 	float BlinkDuration = 10.f;
 
 	UPROPERTY(Transient)

@@ -15,12 +15,20 @@
 
 bool AStorageChestActor::CanInteract(AActor* Interactor)
 {
-	return bIsBuried == false && bIsBreaking == false && Super::CanInteract(Interactor);
+	return bIsBuried == false && bIsBreaking == false && PhysicsBlock.IsValid() && PhysicsBlock->IsFalling() == false && Super::CanInteract(Interactor);
 }
 
 void AStorageChestActor::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	GetWorldTimerManager().ClearTimer(CoverTimer);
+	if (PhysicsBlock.IsValid())
+	{
+		ABlockBase* Block = PhysicsBlock.Get();
+		Block->AActor::OnDestroyed.RemoveDynamic(this, &AStorageChestActor::OnPhysicsBlockDestroyed);
+		PhysicsBlock.Reset();
+		DetachFromActor(FDetachmentTransformRules::KeepWorldTransform);
+		if (EndPlayReason == EEndPlayReason::Destroyed) { GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->ReleaseStorageChestBlock(Block); }
+	}
 	Super::EndPlay(EndPlayReason);
 }
 
@@ -45,6 +53,7 @@ void AStorageChestActor::InitializeChest(FGuid Id, FName ItemKey, bool bBuried)
 	bIsBuried = bBuried;
 	SetActorHiddenInGame(bBuried);
 	if (bBuried) { GetWorldTimerManager().SetTimer(CoverTimer, this, &AStorageChestActor::UpdateBuriedCover, 0.2f, true); }
+	else { GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->AttachStorageChestBlock(this); }
 }
 
 void AStorageChestActor::ApplySavedContents(const TArray<FInventorySlotData>& Contents)
@@ -53,6 +62,7 @@ void AStorageChestActor::ApplySavedContents(const TArray<FInventorySlotData>& Co
 	ItemSlots.SetNum(SlotCount);
 	for (FInventorySlotData& Slot : ItemSlots)
 	{
+		Slot.bIsNew = false;
 		const FItemDataTableRow* Item = Slot.IsEmpty() == false ? UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, Slot.ItemUID) : nullptr;
 		if (Item == nullptr || Item->bIsInventoryItem == false) { Slot.Clear(); }
 		else { Slot.ItemCount = FMath::Clamp(Slot.ItemCount, 1, FMath::Max(1, Item->MaxStackCount)); }
@@ -65,6 +75,7 @@ void AStorageChestActor::RevealChest()
 	if (bIsBuried == false) { return; }
 	bIsBuried = false;
 	SetActorHiddenInGame(false);
+	GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->AttachStorageChestBlock(this);
 	GetWorldTimerManager().ClearTimer(CoverTimer);
 	NotifyContentsChanged();
 	if (AMKCharacter* Player = Cast<AMKCharacter>(GetWorld()->GetFirstPlayerController() != nullptr ? GetWorld()->GetFirstPlayerController()->GetPawn() : nullptr)) { Player->TrySaveGame(); }
@@ -116,9 +127,26 @@ FStorageChestSaveData AStorageChestActor::GetSaveData() const
 FGuid AStorageChestActor::GetChestId() const { return ChestId; }
 bool AStorageChestActor::IsBuried() const { return bIsBuried; }
 
+void AStorageChestActor::SetPhysicsBlock(ABlockBase* Block)
+{
+	PhysicsBlock = Block;
+	if (Block != nullptr)
+	{
+		AttachToActor(Block, FAttachmentTransformRules::KeepWorldTransform);
+		Block->AActor::OnDestroyed.AddUniqueDynamic(this, &AStorageChestActor::OnPhysicsBlockDestroyed);
+		ShopSprite->SetVisibility(false);
+	}
+}
+
 void AStorageChestActor::UpdateBuriedCover()
 {
 	const ABlockBase* Cover = GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetBlockAtWorldLocation(GetActorLocation());
 	const FVector Offset = Cover != nullptr ? Cover->GetActorLocation() - GetActorLocation() : FVector::ZeroVector;
 	if (Cover == nullptr || Cover->IsBreaking() || FMath::Square(Offset.X) + FMath::Square(Offset.Z) > FMath::Square(12.f)) { RevealChest(); }
+}
+
+void AStorageChestActor::OnPhysicsBlockDestroyed(AActor* Actor)
+{
+	PhysicsBlock.Reset();
+	if (bIsBreaking == false) { TryBreakByExplosion(); }
 }

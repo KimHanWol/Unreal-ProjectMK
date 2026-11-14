@@ -1,0 +1,126 @@
+﻿{
+  "date_kst": "2026-11-15",
+  "build": {
+    "target": "ProjectMKEditor Win64 Development",
+    "result": "Succeeded",
+    "seconds": 40.49,
+    "log": "Saved/AgentLogs/Build.log"
+  },
+  "tests": {
+    "ProjectMK.PIE.MinePolish.ChestFallAndUnreadHover": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.55.06:253"
+    },
+    "ProjectMK.PIE.Crafting.PlaceableWorkbench": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.50.33:267"
+    },
+    "ProjectMK.PIE.Inventory.SeparateQuickSlotsAndWorldDrop": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.50.48:602"
+    },
+    "ProjectMK.PIE.Monster.SequentialSingleBlockDrilling": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.51.05:491"
+    },
+    "ProjectMK.PIE.Storage.BuriedLootAndGuaranteedPatterns": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.51.30:517"
+    },
+    "ProjectMK.PIE.Storage.PlacementTransferExplosionAndPersistence": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.51.44:776"
+    },
+    "ProjectMK.PIE.UI.DragSaleAndSkillHold": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.55.59:866"
+    },
+    "ProjectMK.PIE.UI.PopupScrollAndPassiveClassification": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.52.15:319"
+    },
+    "ProjectMK.PIE.World.FallingBlockStaysAtHeadContact": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.52.28:881"
+    },
+    "ProjectMK.PIE.World.OxygenWispFlight": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.56.14:190"
+    },
+    "ProjectMK.PIE.World.ProceduralDepthAndRewardEncounters": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.53.00:175"
+    },
+    "ProjectMK.PIE.World.SurfaceReliefAndMineDecoration": {
+      "result": "Success",
+      "log": "Saved/AgentLogs/MinePolish-regression-first.log",
+      "utc": "2026.11.14-15.53.10:886"
+    },
+    "ProjectMK.PIE.MinePolish.IceTraction": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.55.13:632"
+    },
+    "ProjectMK.PIE.MinePolish.VeinsAndProtectedFoundations": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.55.28:712"
+    },
+    "ProjectMK.PIE.Shop.GroundDrillingAndInteraction": {
+      "result": "Success",
+      "log": "Saved/Logs/ProjectMK.log",
+      "utc": "2026.11.14-15.55.44:639"
+    }
+  },
+  "native_runtime": {
+    "chest": "/Game/Level/UEDPIE_0_Main.Main:PersistentLevel.StorageChestActor_0",
+    "chest_position": [
+      1208.0,
+      -20.0,
+      -232.0
+    ],
+    "physics_body": "BP_Block_C",
+    "sprites": [
+      "/Game/Asset/StorageChestV2/S_StorageChest.S_StorageChest"
+    ],
+    "oxygen_size": 8.0,
+    "oxygen_arc": 14.0,
+    "save_protected": true,
+    "f_prompt_visible": true,
+    "f_key_opened_storage": true,
+    "f_prompt_hidden_outside_range": true
+  },
+  "screenshots": [
+    "Saved/AgentLogs/ui-20261115-005705.png",
+    "Saved/AgentLogs/ui-20261115-005738.png"
+  ],
+  "save_comparison": {
+    "MKSave.sav": {
+      "baseline_sha256": "19a29da639ad6b18943ae25d59e0a71c111c1a6d32601936503112574a56c642",
+      "final_sha256": "19a29da639ad6b18943ae25d59e0a71c111c1a6d32601936503112574a56c642",
+      "identical": true
+    },
+    "MKSave_Backup.sav": {
+      "baseline_sha256": "4ff8416a38309569feddaa80c35877d99c3c8288290947c029a9a8950d4ba33c",
+      "final_sha256": "4ff8416a38309569feddaa80c35877d99c3c8288290947c029a9a8950d4ba33c",
+      "identical": true
+    }
+  },
+  "notes": [
+    "Initial chest fall assertion checked before shake and fall completed; corrected the asynchronous test wait. Actual chest fell from Z -312 to -360 and settled after 1.5 seconds.",
+    "Unread hover initially rebuilt the shop list and invalidated recipe tooltip sources. Read-state updates now use a separate slot event; the original UI regression passes.",
+    "Oxygen visual test now expects the intended core and two trails instead of the old three trails.",
+    "Relic abilities, surface facility candidates and the underground relic shop remain design-only."
+  ]
+}

@@ -67,6 +67,7 @@ void UPlaytestWidget::BindEvents()
 	ReturnButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnReturnClicked);
 	SpawnMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnSpawnMonsterClicked);
 	HitMonsterButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnHitMonsterClicked);
+	SpawnChestButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnSpawnChestClicked);
 	DeleteSaveButton->OnClicked.AddUniqueDynamic(this, &UPlaytestWidget::OnDeleteSaveClicked);
 }
 
@@ -85,6 +86,7 @@ void UPlaytestWidget::UnbindEvents()
 	ReturnButton->OnClicked.RemoveAll(this);
 	SpawnMonsterButton->OnClicked.RemoveAll(this);
 	HitMonsterButton->OnClicked.RemoveAll(this);
+	SpawnChestButton->OnClicked.RemoveAll(this);
 	DeleteSaveButton->OnClicked.RemoveAll(this);
 }
 
@@ -153,6 +155,9 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	DetailsPanel->AddChildToVerticalBox(MonsterRow);
 	SpawnMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "SpawnMonster", "몬스터 소환"), NSLOCTEXT("Playtest", "SpawnMonsterHint", "이번 플레이 저장 중단 · 주변에 DataTable 몬스터 1마리 소환"));
 	HitMonsterButton = AddActionButton(MonsterRow, NSLOCTEXT("Playtest", "HitMonster", "몬스터 자극"), NSLOCTEXT("Playtest", "HitMonsterHint", "소환한 몬스터에게 10 피해 · 분노 드릴링 확인"));
+	UHorizontalBox* ChestRow = WidgetTree->ConstructWidget<UHorizontalBox>();
+	DetailsPanel->AddChildToVerticalBox(ChestRow);
+	SpawnChestButton = AddActionButton(ChestRow, NSLOCTEXT("Playtest", "SpawnChest", "상자 설치"), NSLOCTEXT("Playtest", "SpawnChestHint", "주변 빈 바닥에 보관 상자를 설치합니다. 이번 플레이는 저장하지 않습니다."));
 	UHorizontalBox* SaveRow = WidgetTree->ConstructWidget<UHorizontalBox>();
 	DetailsPanel->AddChildToVerticalBox(SaveRow)->SetPadding(FMargin(0.f, 8.f, 0.f, 0.f));
 	UButton* SaveButton = nullptr;
@@ -398,6 +403,23 @@ void UPlaytestWidget::OnHitMonsterClicked()
 		FGameplayAbilityUtils::ApplyDamage(TestMonster->GetAbilitySystemComponent(), GetOwnerAbilitySystemComponent(), 10.f);
 		FeedbackText->SetText(NSLOCTEXT("Playtest", "MonsterHit", "몬스터에게 10 피해를 줬습니다. 분노 상태에서는 주변을 무작위로 드릴링합니다."));
 	}
+}
+
+void UPlaytestWidget::OnSpawnChestClicked()
+{
+	if (TryStartPlaytestSession() == false) { return; }
+	AMKCharacter* Player = GetLocalPlayerCharacter();
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	for (int32 Offset : { 2, -2, 3, -3, 0 })
+	{
+		if (Level->TryPlaceStorageChest(TEXT("StorageChest"), Player->GetActorLocation() + FVector(Offset * 16.f, 0.f, 0.f)))
+		{
+			FeedbackText->SetText(NSLOCTEXT("Playtest", "ChestPlaced", "보관 상자 설치 완료 · 가까이에서 F"));
+			return;
+		}
+	}
+	const bool bGiven = GetLocalInventoryComponent()->AddItem(TEXT("StorageChest"), 1);
+	FeedbackText->SetText(bGiven ? NSLOCTEXT("Playtest", "ChestGiven", "빈 바닥이 없어 상자 아이템을 지급했습니다.") : NSLOCTEXT("Playtest", "ChestFull", "상자를 놓을 바닥이나 인벤토리 공간이 필요합니다."));
 }
 
 void UPlaytestWidget::OnDeleteSaveClicked()

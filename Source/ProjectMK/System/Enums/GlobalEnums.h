@@ -128,3 +128,11 @@ enum class EMineStructurePattern : uint8
 	HarvestSlab,
 	BaitTrap,
 };
+
+UENUM(BlueprintType)
+enum class EOreVeinShape : uint8
+{
+	Branch,
+	Cluster,
+	Crescent,
+};

@@ -86,6 +86,8 @@ public:
 	void SetMineableState(bool bInIsMineableState);
 
 	bool IsMineable();
+	bool CanFall();
+	bool IsFalling() const;
 
 	bool TryDestroyByExplosion();
 	void ApplyCushion();

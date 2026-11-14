@@ -55,6 +55,10 @@ struct FBlockDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	bool bIsMineable = true;
 
+	/** 보관 상자처럼 드릴 대상은 아니지만 지지를 잃으면 낙하하는 설치물 */
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bFallsWhenUnmineable = false;
+
 	UPROPERTY(EditAnywhere, BlueprintReadWrite)
 	TArray<FBlockSpawnableItemData> SpawnableItemDataList;
 

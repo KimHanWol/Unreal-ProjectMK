@@ -32,13 +32,14 @@ core_material.set_editor_property('two_sided', True)
 uv = editing.create_material_expression(core_material, unreal.MaterialExpressionTextureCoordinate, -600, 0)
 color = editing.create_material_expression(core_material, unreal.MaterialExpressionVertexColor, -600, 200)
 core = editing.create_material_expression(core_material, unreal.MaterialExpressionCustom, -300, 0)
-core.set_editor_property('description', 'Pixel stepped sky-blue oxygen core')
+core.set_editor_property('description', 'Small stepped cyan oxygen bubble')
 core.set_editor_property('output_type', unreal.CustomMaterialOutputType.CMOT_FLOAT4)
 core.set_editor_property('code', '''
-float2 P = floor(UV * 32.0) - 15.5;
+float2 P = floor(UV * 16.0) - 7.5;
 float R = length(P);
-float A = R < 10.0 ? 0.95 : (R < 12.0 ? 0.30 : (R < 14.0 ? 0.08 : 0.0));
-float3 C = R < 3.0 ? float3(0.88, 1.0, 1.0) : (R < 7.0 ? float3(0.38, 0.86, 1.0) : float3(0.10, 0.58, 0.88));
+float A = R < 4.5 ? 0.30 : (R < 6.0 ? 0.90 : 0.0);
+float3 C = R < 4.5 ? float3(0.30, 0.73, 0.85) : float3(0.26, 0.78, 0.92);
+if (P.x < -1.0 && P.y < -1.0 && R > 3.0 && R < 5.5) { C = float3(0.70, 0.94, 0.96); A = 0.95; }
 return float4(C * Tint, A * TintAlpha);
 ''')
 inputs = []

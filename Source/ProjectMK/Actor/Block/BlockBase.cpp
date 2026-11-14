@@ -555,6 +555,14 @@ bool ABlockBase::IsMineable()
 	return BlockDataTableRow->bIsMineable && bIsMineableState;
 }
 
+bool ABlockBase::CanFall()
+{
+	const auto* Row = UDataManager::Get(this)->GetBlockDataTableRow(GetTileIndex());
+	return Row != nullptr && (Row->bIsMineable || Row->bFallsWhenUnmineable) && bIsMineableState && bIsDestroying == false && IsSupportAnchor() == false;
+}
+
+bool ABlockBase::IsFalling() const { return bIsMineableState == false && bIsDestroying == false; }
+
 bool ABlockBase::TryDestroyByExplosion()
 {
 	// 떨어지는 중인 블록은 낙하 그룹이 관리하므로 폭발 대상에서 뺀다.
