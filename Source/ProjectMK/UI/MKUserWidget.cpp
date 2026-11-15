@@ -324,7 +324,8 @@ UBorder* UMKUserWidget::BuildModalBackdrop()
 
 UBorder* UMKUserWidget::BuildItemIconFrame(UImage*& OutIcon, const float IconSize, const FName BrushName)
 {
-	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), BrushName);
+	const FName WidgetName = MakeUniqueObjectName(WidgetTree, UBorder::StaticClass(), BrushName);
+	UBorder* Frame = WidgetTree->ConstructWidget<UBorder>(UBorder::StaticClass(), WidgetName);
 	if (BrushName.IsNone()) { Frame->SetBrush(FSlateNoResource()); }
 	else { ApplyBorderStyle(Frame, BrushName); }
 	Frame->SetPadding(FMargin(FMKUILayout::SpaceS));
