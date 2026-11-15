@@ -68,11 +68,28 @@ namespace
 					for (const auto& Facility : Town->GetFacilities()) { if (Facility.IsValid() && Facility->GetFacilityKind() == EMineFacilityKind::QuestBoard) { Board = Facility; } }
 					if (Test->TestNotNull(TEXT("The noticeboard is an actual interactable facility"), Board.Get()) == false) { return Finish(); }
 					Player->SetActorLocation(Board->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
-					Settings->TownFacilities.HuntQuests[0].RequiredCount = 2;
+					const int64 BoardNow = FDateTime::UtcNow().ToUnixTimestamp();
+					Settings->TownFacilities.BoardOfferChance = 0.f;
+					Town->UpdateBoardOffers(BoardNow);
+					for (int32 Slot=0;Slot<4;++Slot) { Test->TestNull(TEXT("An empty board has no fallback notice"),Town->GetBoardQuestDefinition(Slot)); }
+					for (auto& Quest : Settings->TownFacilities.HuntQuests) { Quest.RequiredCount=2; Quest.MinimumDepth=0; }
+					Settings->TownFacilities.HuntQuests[3].MinimumDepth=9999;
+					Settings->TownFacilities.BoardOfferChance=1.f; Town->ClearQuestCooldownsForPlaytest(); Town->UpdateBoardOffers(BoardNow);
+					int32 Posted=0;
+					for (int32 Slot=0;Slot<4;++Slot) { const auto* Quest=Town->GetBoardQuestDefinition(Slot); if(Quest){++Posted;Test->TestEqual(TEXT("Every posted contract already meets its depth condition"),Quest->MinimumDepth,0);} }
+					Test->TestEqual(TEXT("Ineligible contracts leave genuinely empty spaces"),Posted,3);
+					Settings->TownFacilities.HuntQuests[3].MinimumDepth=0; Town->ClearQuestCooldownsForPlaytest(); Town->UpdateBoardOffers(BoardNow);
 					Town->BeginResidentConversation(Player, Board.Get());
 					Test->TestTrue(TEXT("The noticeboard offers a contract immediately"), Town->TryQuestAction(Player, Board.Get()));
 					Settings->TownFacilities.HuntQuests[1].MinimumDepth=0;
 					Test->TestTrue(TEXT("A second paper can accept an independent contract"),Town->TryQuestAction(Player,Board.Get(),1));
+					Test->TestTrue(TEXT("Another notice can be accepted before abandoning it"),Town->TryQuestAction(Player,Board.Get(),3));
+					Test->TestTrue(TEXT("An accepted bounty has an explicit abandon action"),Town->TryAbandonBoardQuest(Player,Board.Get(),3));
+					Test->TestNull(TEXT("Abandoning removes that paper without a default replacement"),Town->GetBoardQuestDefinition(3));
+					Town->UpdateBoardOffers(BoardNow+1000);
+					Test->TestNotNull(TEXT("Accepted first notice never expires"),Town->GetBoardQuestDefinition(0));
+					Test->TestNotNull(TEXT("Accepted second notice never expires"),Town->GetBoardQuestDefinition(1));
+					Test->TestNull(TEXT("An ignored notice expires without user interaction"),Town->GetBoardQuestDefinition(2));
 					TArray<UUserWidget*> HUDs; UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World,HUDs,UHUDWidget::StaticClass(),false);
 					Test->TestTrue(TEXT("The dedicated board popup opens"),CastChecked<UHUDWidget>(HUDs[0])->OpenFacility(Board.Get()));
 					TArray<UUserWidget*> Papers; UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World,Papers,UBountyNoticeWidget::StaticClass(),false);
@@ -107,6 +124,14 @@ namespace
 					}
 					Test->TestTrue(TEXT("The left lumberyard has a single continuous enclosure, a right-side shed and two entrance lamps"), Beds == 1 && Lamps == 2 && Sheds == 1);
 					if (Forest->GetTrees().IsEmpty() || Forest->GetTrees()[0].Pieces.IsEmpty()) { Test->AddError(TEXT("Tree blocks did not grow")); return Finish(); }
+					Test->TestEqual(TEXT("Trees begin with one trunk and one leaf"),Forest->GetTrees()[0].Pieces.Num(),2);
+					Test->TestEqual(TEXT("New trees start at their first growth stage"),Forest->GetTrees()[0].GrowthStage,1);
+					for (int32 Stage=2;Stage<=4;++Stage) { Forest->UpdateTrees(FDateTime::UtcNow().ToUnixTimestamp()+Stage*Settings->Forestry.GrowthStageSeconds); Test->TestEqual(TEXT("Growth advances by one stage at a time"),Forest->GetTrees()[0].GrowthStage,Stage); }
+					int32 MatureTrunks=0;
+					const auto MatureSave = Forest->GetSaveData();
+					for (const auto& Piece:MatureSave[0].Pieces) { MatureTrunks+=Piece.BlockKey==TEXT("TreeTrunk"); }
+					Test->TestEqual(TEXT("A mature tree has four trunk cells"),MatureTrunks,4);
+					Test->TestTrue(TEXT("Trunks withstand substantially more drilling"),UDataManager::Get(World)->GetBlockDataTableRow(TEXT("TreeTrunk"))->BlockDurability>=120.f);
 					OriginalPieces = Forest->GetTrees()[0].Pieces.Num();
 					UPaperSprite* FirstLeaf = nullptr;
 					const auto CanopySnapshot = Forest->GetSaveData();
@@ -166,6 +191,18 @@ namespace
 			const float Elapsed = World->GetTimeSeconds() - ChangedAt;
 			if (Mode == 0 && Elapsed > 2.f)
 			{
+				TArray<UUserWidget*> Papers; UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World,Papers,UBountyNoticeWidget::StaticClass(),false);
+				if (Test->TestEqual(TEXT("Four independent notice widgets remain available"),Papers.Num(),4))
+				{
+					TArray<UUserWidget*> Visible;
+					for (auto* Paper : Papers)
+					{
+						if (Paper->GetVisibility()==ESlateVisibility::Collapsed) { continue; }
+						Visible.Add(Paper);
+						Test->TestTrue(TEXT("Every visible paper receives a real cell area"),Paper->GetCachedGeometry().GetLocalSize().X>250.f && Paper->GetCachedGeometry().GetLocalSize().Y>150.f);
+					}
+					for (int32 I=0;I<Visible.Num();++I) { for (int32 J=I+1;J<Visible.Num();++J) { Test->TestTrue(TEXT("Independent papers never overlap at the same origin"),(Visible[I]->GetCachedGeometry().GetAbsolutePosition()-Visible[J]->GetCachedGeometry().GetAbsolutePosition()).Size()>100.f); } }
+				}
 				Test->TestFalse(TEXT("A natural six-block fall kills the monster"), FallingMonster.IsValid());
 				Test->TestTrue(TEXT("The fall kill completes the same board contract"), Town->CanUseQuestAction(Board.Get(), Player));
 				Test->TestTrue(TEXT("A completed hunt grants its reward"), Town->TryQuestAction(Player, Board.Get()));
@@ -198,15 +235,16 @@ namespace
 				Test->TestEqual(TEXT("Unsupported weak leaves fall and shatter"), Leaves, 0);
 				int32 Trunks = 0;
 				for (const auto& Block : Forest->GetTrees()[0].Pieces) { Trunks += Block.IsValid() && Block->IsBreaking()==false && Block->GetTileIndex()==TrunkTile; }
-				Test->TestTrue(TEXT("Fallen upper trunks survive and must be mined separately"),Trunks>0);
-				Test->TestTrue(TEXT("Distant background layers keep scrolling instead of stopping at a small clamp"), ParallaxSample.IsValid() && ParallaxSample->GetActorLocation().X < BeforeParallax.X - 3.f);
+				Test->TestEqual(TEXT("The falling upper tree clears together when it hits the ground"),Trunks,0);
+				Test->TestTrue(TEXT("Town backdrops remain fixed when the player moves"), ParallaxSample.IsValid() && ParallaxSample->GetActorLocation().Equals(BeforeParallax,0.01f));
 				Test->TestNotNull(TEXT("Tree collapse preserves the root soil"), Level->GetBlockAtPosition(FVector2D(Forest->GetTrees()[0].Column, Surface)));
 				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid()) { Block->Destroy(); } }
 				ChangedAt = World->GetTimeSeconds(); Step = 3; return false;
 			}
 			if (Mode == 1 && Step == 3 && Elapsed > 3.5f)
 			{
-				Test->TestEqual(TEXT("A fully cleared tree regrows after the configured delay"), Forest->GetSaveData()[0].Pieces.Num(), OriginalPieces);
+				Test->TestEqual(TEXT("A fully cleared tree restarts as a sapling"), Forest->GetSaveData()[0].GrowthStage,1);
+				Test->TestEqual(TEXT("Regrowth begins small rather than restoring a complete tree"),Forest->GetSaveData()[0].Pieces.Num(),2);
 				FStorageChestSaveData LegacyChest; LegacyChest.Id = FGuid(1541,14,Surface,0x44454348u); LegacyChest.Location = FVector(14.5f * 16.f, -20.f, -(Surface + 0.5f) * 16.f);
 				FInventorySlotData StoredOre; StoredOre.ItemUID = TEXT("Ore_Iron"); StoredOre.ItemCount = 5; LegacyChest.Slots = { StoredOre };
 				ABlockBase* OriginalFloor = Level->GetBlockAtPosition(FVector2D(14, Surface));

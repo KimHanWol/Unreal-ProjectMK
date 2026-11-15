@@ -104,10 +104,9 @@ namespace
 					const bool bAtAuthoredPosition = Columns.ContainsByPredicate([&](int32 Column)
 					{
 						const float BaseX = (Fixture.Settings->MineableLevelGeneration.StartColumn + Column + 0.5f)*16.f;
-						const float ShiftedX = BaseX - (Fixture.Player->GetActorLocation().X-BaseX)*Fixture.Settings->TownFacilities.BackgroundParallaxStrength;
-						return FMath::IsNearlyEqual(static_cast<float>(It->GetActorLocation().X),BaseX,0.1f) || FMath::IsNearlyEqual(static_cast<float>(It->GetActorLocation().X),ShiftedX,0.1f);
+						return FMath::IsNearlyEqual(static_cast<float>(It->GetActorLocation().X),BaseX,0.1f);
 					});
-					Test->TestTrue(TEXT("Every district sprite matches a configured position or its continuous parallax offset"),bAtAuthoredPosition && It->GetRenderComponent()->GetSprite()!=nullptr);
+					Test->TestTrue(TEXT("Every district sprite stays at its authored ground position"),bAtAuthoredPosition && It->GetRenderComponent()->GetSprite()!=nullptr);
 					Test->TestFalse(TEXT("Background houses never collide with the player"), It->GetActorEnableCollision());
 				}
 				Test->TestEqual(TEXT("The configured village and industrial layers fill their districts"), VillageCount, Fixture.Settings->TownFacilities.VillageBackdropColumns.Num() + Fixture.Settings->TownFacilities.IndustrialBackdropColumns.Num() + Fixture.Settings->TownFacilities.ForestryBackdropColumns.Num());

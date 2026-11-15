@@ -13,6 +13,9 @@ struct FManagedTree
 {
 	int32 Column = 0;
 	int64 RegrowAt = 0;
+	int32 GrowthStage = 0;
+	int32 ExpectedPieceCount = 0;
+	bool bHarvested = false;
 	TArray<TWeakObjectPtr<ABlockBase>> Pieces;
 	TWeakObjectPtr<UPaperSpriteComponent> StatusLamp;
 };
@@ -26,6 +29,8 @@ public:
 	void GenerateTrees();
 	void ClearTrees();
 	void RestoreTrees(const TArray<FTreeSaveData>& Saved);
+	void NotifyTreeLanded(ABlockBase* Piece);
+	void UpdateTrees(int64 Now);
 	TArray<FTreeSaveData> GetSaveData() const;
 	const TArray<FManagedTree>& GetTrees() const;
 private:

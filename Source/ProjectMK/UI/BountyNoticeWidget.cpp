@@ -2,6 +2,11 @@
 
 #include "Blueprint/WidgetTree.h"
 #include "Components/Button.h"
+#include "Components/Border.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "PaperSprite.h"
+#include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 #include "Components/HorizontalBox.h"
 #include "Components/HorizontalBoxSlot.h"
 #include "Components/Image.h"
@@ -16,7 +21,13 @@ TSharedRef<SWidget> UBountyNoticeWidget::RebuildWidget()
 {
 	if (WidgetTree->RootWidget == nullptr)
 	{
-		UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>(); WidgetTree->RootWidget = Column;
+		UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(); WidgetTree->RootWidget = Root;
+		UImage* Paper = WidgetTree->ConstructWidget<UImage>();
+		const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
+		FSlateBrush Brush; Brush.SetResourceObject(Style != nullptr ? Style->TownSprites.FindRef(TEXT("BountyPaper")) : nullptr);
+		Brush.ImageSize = FVector2D(320.f,192.f); Brush.DrawAs = ESlateBrushDrawType::Box; Brush.Margin = FMargin(32.f/320.f,32.f/192.f);
+		Paper->SetBrush(Brush); Paper->SetVisibility(ESlateVisibility::HitTestInvisible); auto* PaperLayout = Root->AddChildToOverlay(Paper); PaperLayout->SetHorizontalAlignment(HAlign_Fill); PaperLayout->SetVerticalAlignment(VAlign_Fill);
+		UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>(); auto* ContentLayout = Root->AddChildToOverlay(Column); ContentLayout->SetPadding(FMargin(24.f,28.f,24.f,20.f)); ContentLayout->SetHorizontalAlignment(HAlign_Fill); ContentLayout->SetVerticalAlignment(VAlign_Fill);
 		UHorizontalBox* Heading = WidgetTree->ConstructWidget<UHorizontalBox>(); Column->AddChildToVerticalBox(Heading)->SetPadding(FMargin(0.f,0.f,0.f,12.f));
 		USizeBox* PortraitSize = WidgetTree->ConstructWidget<USizeBox>(); PortraitSize->SetWidthOverride(54.f); PortraitSize->SetHeightOverride(54.f);
 		Portrait = WidgetTree->ConstructWidget<UImage>(); PortraitSize->SetContent(Portrait); Heading->AddChildToHorizontalBox(PortraitSize)->SetPadding(FMargin(0.f,0.f,18.f,0.f));
@@ -32,6 +43,10 @@ TSharedRef<SWidget> UBountyNoticeWidget::RebuildWidget()
 		Footer->AddChildToHorizontalBox(BuildActionButton(Button,ButtonText,FText::GetEmpty(),128.f,38.f));
 		Action = Button; ActionLabel = ButtonText;
 		Action->OnClicked.AddUniqueDynamic(this,&UBountyNoticeWidget::OnAction);
+		UButton* Abandon = nullptr; UTextBlock* AbandonLabel = nullptr;
+		AbandonFrame = BuildActionButton(Abandon,AbandonLabel,NSLOCTEXT("Board","Abandon","포기"),72.f,38.f);
+		Footer->AddChildToHorizontalBox(AbandonFrame)->SetPadding(FMargin(8.f,0.f,0.f,0.f));
+		Abandon->OnClicked.AddUniqueDynamic(this,&UBountyNoticeWidget::OnAbandon);
 	}
 	return Super::RebuildWidget();
 }
@@ -41,19 +56,18 @@ void UBountyNoticeWidget::SetContract(AMineFacilityActor* Board, int32 Index)
 	if (Title == nullptr) { return; }
 	const auto* Town = GetWorld()->GetSubsystem<UTownProgressSubsystem>();
 	const auto* Quest = Town->GetBoardQuestDefinition(Index); const auto* State = Town->GetBoardQuestState(Index);
-	if (Quest == nullptr)
-	{
-		Title->SetText(NSLOCTEXT("Board","Pending","의뢰 준비 중")); Objective->SetText(FText::GetEmpty()); Portrait->SetVisibility(ESlateVisibility::Hidden); Action->SetVisibility(ESlateVisibility::Collapsed); Reward->SetText(FText::GetEmpty()); return;
-	}
+	SetVisibility(Quest != nullptr ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	if (Quest == nullptr) { return; }
 	const auto* Monster = UDataManager::Get(this)->GetMonsterDataTableRow(Quest->TargetMonster);
 	Portrait->SetBrushResourceObject(Monster != nullptr ? Monster->Sprite.LoadSynchronous() : nullptr); Portrait->SetVisibility(Monster != nullptr && Monster->Sprite.IsNull() == false ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Hidden);
 	Title->SetText(Quest->Title);
 	Objective->SetText(FText::Format(NSLOCTEXT("Board","Objective","{0} 퇴치\n{1} / {2}"),Monster != nullptr ? Monster->DisplayName : FText::FromName(Quest->TargetMonster),FText::AsNumber(State != nullptr ? State->MonsterKillProgress : 0),FText::AsNumber(Quest->RequiredCount)));
 	Reward->SetText(FText::AsNumber(Quest->RewardCoins));
 	FText Label = Town->GetQuestActionLabel(Board,Index);
-	if (Quest->MinimumDepth > Town->GetMaximumDepth()) { Label = FText::Format(NSLOCTEXT("Board","ReachDepth","{0}m 탐사 필요"),FText::AsNumber(Quest->MinimumDepth)); }
-	else if (Label.IsEmpty()) { Label = NSLOCTEXT("Board","Preparing","준비 중"); }
 	ActionLabel->SetText(Label); Action->SetVisibility(ESlateVisibility::Visible); Action->SetIsEnabled(Town->CanUseQuestAction(Board,GetLocalPlayerCharacter(),Index));
+	AbandonFrame->SetVisibility(State != nullptr && State->bActive ? ESlateVisibility::Visible : ESlateVisibility::Collapsed);
 }
 
 void UBountyNoticeWidget::OnAction() { OnChosen.ExecuteIfBound(); }
+
+void UBountyNoticeWidget::OnAbandon() { OnAbandoned.ExecuteIfBound(); }

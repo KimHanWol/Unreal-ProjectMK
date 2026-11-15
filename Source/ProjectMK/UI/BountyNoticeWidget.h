@@ -14,12 +14,15 @@ protected:
 public:
 	void SetContract(AMineFacilityActor* Board, int32 Index);
 	FSimpleDelegate OnChosen;
+	FSimpleDelegate OnAbandoned;
 private:
 	UFUNCTION() void OnAction();
+	UFUNCTION() void OnAbandon();
 	UPROPERTY(Transient) TObjectPtr<class UImage> Portrait;
 	UPROPERTY(Transient) TObjectPtr<class UTextBlock> Title;
 	UPROPERTY(Transient) TObjectPtr<class UTextBlock> Objective;
 	UPROPERTY(Transient) TObjectPtr<class UTextBlock> Reward;
 	UPROPERTY(Transient) TObjectPtr<class UTextBlock> ActionLabel;
 	UPROPERTY(Transient) TObjectPtr<class UButton> Action;
+	UPROPERTY(Transient) TObjectPtr<class USizeBox> AbandonFrame;
 };

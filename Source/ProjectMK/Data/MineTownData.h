@@ -59,6 +59,7 @@ struct FTownQuestState
 	UPROPERTY() int32 MonsterKillProgress = 0;
 	UPROPERTY() int32 CompletedCount = 0;
 	UPROPERTY() int64 NextOfferAt = 0;
+	UPROPERTY() int64 OfferExpiresAt = 0;
 };
 
 USTRUCT(BlueprintType)
@@ -85,9 +86,8 @@ struct FTownFacilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 ElevatorColumn = 94;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 RailFactoryColumn = 108;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> VillageBackdropColumns = {46, 54, 62, 70, 78};
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> IndustrialBackdropColumns = {96, 107};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> IndustrialBackdropColumns = {100, 110};
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> ForestryBackdropColumns = {5,19};
-	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "0.45")) float BackgroundParallaxStrength = 0.18f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 VillageNoticeColumn = 66;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "1")) float QuestOfferChance = 0.25f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) int32 MinimumSmallTalkCount = 2;
@@ -97,6 +97,10 @@ struct FTownFacilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 GuaranteedRelicQuestCount = 3;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FTownQuestDefinition> Quests;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<FTownQuestDefinition> HuntQuests;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 BoardRollIntervalSeconds = 30;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "1")) float BoardOfferChance = 0.35f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 BoardNoticeMinSeconds = 120;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 BoardNoticeMaxSeconds = 300;
 };
 
 USTRUCT(BlueprintType)
@@ -114,6 +118,9 @@ struct FTreeSaveData
 	UPROPERTY() int32 Column = 0;
 	UPROPERTY() int32 GroundRow = INDEX_NONE;
 	UPROPERTY() int64 RegrowAt = 0;
+	UPROPERTY() int32 GrowthStage = 0;
+	UPROPERTY() int32 ExpectedPieceCount = 0;
+	UPROPERTY() bool bHarvested = false;
 	UPROPERTY() TArray<FTreePieceSaveData> Pieces;
 };
 
@@ -127,6 +134,7 @@ struct FForestrySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardEndColumn = 35;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "3")) int32 PlatformHeight = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 RegrowSeconds = 90;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 GrowthStageSeconds = 25;
 };
 
 USTRUCT(BlueprintType)

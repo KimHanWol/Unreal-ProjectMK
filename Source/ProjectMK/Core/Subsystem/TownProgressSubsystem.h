@@ -28,6 +28,8 @@ public:
 	bool TryTravel(AMKCharacter* Player, AMineFacilityActor* Source, int32 Depth);
 	void BeginResidentConversation(AMKCharacter* Player, AMineFacilityActor* Resident);
 	bool TryQuestAction(AMKCharacter* Player, AMineFacilityActor* Resident, int32 BoardSlot = 0);
+	bool TryAbandonBoardQuest(AMKCharacter* Player, AMineFacilityActor* Board, int32 Slot);
+	void UpdateBoardOffers(int64 Now);
 	void NotifyMonsterDefeated(FName MonsterKey);
 	int32 GetMaximumDepth() const;
 	bool HasRelic(FName Key) const;
@@ -42,12 +44,10 @@ public:
 private:
 	void LoadProgress();
 	void GenerateVillageBackdrop();
-	void UpdateBackdrop(AMKCharacter* Player);
 	const FTownQuestDefinition* GetQuestDefinition(int32 Resident) const;
 	void OnTravelStep();
 	TArray<TWeakObjectPtr<AMineFacilityActor>> Facilities;
 	TArray<TWeakObjectPtr<AActor>> VillageScenery;
-	TArray<FVector> SceneryBaseLocations;
 	TWeakObjectPtr<AMKCharacter> Traveler;
 	TWeakObjectPtr<AMineFacilityActor> TravelDestination;
 	FTimerHandle TravelTimer;

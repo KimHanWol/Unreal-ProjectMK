@@ -1597,6 +1597,13 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 			if (bHasImpact)
 			{
 				const auto ColumnSnapshot = VerticalBlockData.FallingBlocks;
+				if (VerticalBlockData.bLandedOnCharacter == false)
+				{
+					for (const auto& Piece : ColumnSnapshot)
+					{
+						if (Piece.IsValid()) { Piece->GetWorld()->GetSubsystem<UForestrySubsystem>()->NotifyTreeLanded(Piece.Get()); }
+					}
+				}
 				for (const auto& Piece : ColumnSnapshot)
 				{
 					const auto* Row = Piece.IsValid() ? UDataManager::Get(Piece.Get())->GetBlockDataTableRow(Piece->GetTileIndex()) : nullptr;

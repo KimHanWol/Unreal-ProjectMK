@@ -25,12 +25,12 @@ void UTownProgressSubsystem::Tick(float DeltaSeconds)
 {
 	if (GetWorld()->IsGameWorld() == false) { return; }
 	AMKCharacter* Player = Cast<AMKCharacter>(UGameplayStatics::GetPlayerCharacter(this, 0));
-	if (Player != nullptr) { UpdateBackdrop(Player); }
 	UpdateTime += DeltaSeconds;
 	if (UpdateTime < 0.5f) { return; }
 	UpdateTime = 0.f;
 	if (Player == nullptr) { return; }
 	LoadProgress();
+	UpdateBoardOffers(FDateTime::UtcNow().ToUnixTimestamp());
 	const int32 Surface = UDataManager::Get(this)->GetGameSettingDataAsset()->SurfaceBlockPositionY;
 	const int32 Depth = FMath::Max(0, FMath::FloorToInt(UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Player->GetActorLocation()).Y) - Surface);
 	if (Depth > MaximumDepth) { MaximumDepth = Depth; bProgressDirty = true; OnTownProgressChanged.Broadcast(); }
@@ -81,7 +81,7 @@ void UTownProgressSubsystem::ClearFacilities()
 	if (Traveler.IsValid()) { Traveler->SetMenuInputBlocked(false); }
 	Traveler.Reset(); TravelDestination.Reset(); TravelStep = 0;
 	for (const auto& Scenery : VillageScenery) { if (Scenery.IsValid()) { Scenery->Destroy(); } }
-	VillageScenery.Reset(); SceneryBaseLocations.Reset();
+	VillageScenery.Reset();
 }
 
 void UTownProgressSubsystem::WriteSaveData(UMKSaveGame* Save) const
@@ -164,14 +164,8 @@ void UTownProgressSubsystem::BeginResidentConversation(AMKCharacter* Player, AMi
 	const int32 Index = Resident->GetFacilityKind() == EMineFacilityKind::QuestBoard ? 2 : (Resident->GetFacilityKind() == EMineFacilityKind::HouseA ? 0 : 1);
 	if (Index == 2)
 	{
-		const auto& List = UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities.HuntQuests;
-		const int64 Now = FDateTime::UtcNow().ToUnixTimestamp();
-		for (int32 Slot = 0; Slot < FMath::Min(4,List.Num()); ++Slot)
-		{
-			FTownQuestState& Entry = Quests[2+Slot];
-			if (Entry.bActive == false && Now >= Entry.NextOfferAt) { Entry.bOffered = true; Entry.OfferedQuestIndex = Slot; }
-		}
-		bProgressDirty = true; OnTownProgressChanged.Broadcast(); Player->TrySaveGame(); return;
+		UpdateBoardOffers(FDateTime::UtcNow().ToUnixTimestamp());
+		return;
 	}
 	FTownQuestState& State = Quests[Index];
 	if (State.bActive || State.bOffered) { return; }
@@ -201,7 +195,7 @@ bool UTownProgressSubsystem::TryQuestAction(AMKCharacter* Player, AMineFacilityA
 	const FTownQuestDefinition* Definition = GetQuestDefinition(Index);
 	if (Definition == nullptr || CanUseQuestAction(Resident, Player, BoardSlot) == false) { return false; }
 	FTownQuestState& Quest = Quests[Index];
-	if (Quest.bActive == false) { Quest.bActive = true; Quest.MonsterKillProgress = 0; }
+	if (Quest.bActive == false) { Quest.bActive = true; Quest.MonsterKillProgress = 0; Quest.OfferExpiresAt = 0; }
 	else
 	{
 		UInventoryComponent* Inventory = Player->FindComponentByClass<UInventoryComponent>();
@@ -215,6 +209,62 @@ bool UTownProgressSubsystem::TryQuestAction(AMKCharacter* Player, AMineFacilityA
 		if (Index < 2 && (Random.FRand() < Town.QuestRelicChance || Quest.CompletedCount >= FMath::Max(1, Town.GuaranteedRelicQuestCount))) { OwnedRelics.Add(TEXT("SteadyBelt")); }
 	}
 	bProgressDirty = true; OnTownProgressChanged.Broadcast(); Player->TrySaveGame(); return true;
+}
+
+bool UTownProgressSubsystem::TryAbandonBoardQuest(AMKCharacter* Player, AMineFacilityActor* Board, int32 Slot)
+{
+	if (Player == nullptr || Board == nullptr || Board->GetFacilityKind() != EMineFacilityKind::QuestBoard || Board->CanInteract(Player) == false || Slot < 0 || Slot >= 4) { return false; }
+	LoadProgress();
+	FTownQuestState& State = Quests[Slot + 2];
+	if (State.bActive == false) { return false; }
+	State.bActive = false; State.bOffered = false; State.OfferedQuestIndex = INDEX_NONE; State.MonsterKillProgress = 0; State.OfferExpiresAt = 0;
+	State.NextOfferAt = FDateTime::UtcNow().ToUnixTimestamp() + UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities.QuestCooldownSeconds;
+	bProgressDirty = true; OnTownProgressChanged.Broadcast(); Player->TrySaveGame();
+	return true;
+}
+
+void UTownProgressSubsystem::UpdateBoardOffers(int64 Now)
+{
+	LoadProgress();
+	const auto& Settings = UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities;
+	bool bChanged = false;
+	TSet<int32> Posted;
+	for (int32 Slot = 0; Slot < 4; ++Slot)
+	{
+		FTownQuestState& State = Quests[Slot + 2];
+		if (State.bActive) { Posted.Add(State.OfferedQuestIndex); continue; }
+		const auto* Definition = Settings.HuntQuests.IsValidIndex(State.OfferedQuestIndex) ? &Settings.HuntQuests[State.OfferedQuestIndex] : nullptr;
+		if (State.bOffered && (Definition == nullptr || Definition->MinimumDepth > MaximumDepth || (State.OfferExpiresAt != 0 && Now >= State.OfferExpiresAt)))
+		{
+			State.bOffered = false; State.OfferedQuestIndex = INDEX_NONE; State.OfferExpiresAt = 0;
+			State.NextOfferAt = Now + FMath::Max(1, Settings.BoardRollIntervalSeconds); bChanged = true;
+		}
+		if (State.bOffered)
+		{
+			if (State.OfferExpiresAt == 0) { State.OfferExpiresAt = Now + FMath::Max(1, Settings.BoardNoticeMaxSeconds); bChanged = true; }
+			Posted.Add(State.OfferedQuestIndex);
+		}
+	}
+	for (int32 Slot = 0; Slot < 4; ++Slot)
+	{
+		FTownQuestState& State = Quests[Slot + 2];
+		if (State.bActive || State.bOffered || Now < State.NextOfferAt) { continue; }
+		FRandomStream Random(GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetLastGenerationSeed() ^ ((Slot + 1) * 11213 + ++State.ConversationCount * 73693));
+		const int32 Interval = FMath::Max(1, Settings.BoardRollIntervalSeconds);
+		State.NextOfferAt = Now + Random.RandRange(Interval, Interval * 2);
+		bChanged = true;
+		TArray<int32> Eligible;
+		for (int32 Index = 0; Index < Settings.HuntQuests.Num(); ++Index)
+		{
+			const auto& Quest = Settings.HuntQuests[Index];
+			if (Quest.MinimumDepth <= MaximumDepth && Posted.Contains(Index) == false && UDataManager::Get(this)->GetMonsterDataTableRow(Quest.TargetMonster) != nullptr) { Eligible.Add(Index); }
+		}
+		if (Eligible.IsEmpty() || Random.FRand() >= Settings.BoardOfferChance) { continue; }
+		State.bOffered = true; State.OfferedQuestIndex = Eligible[Random.RandRange(0, Eligible.Num() - 1)]; State.MonsterKillProgress = 0;
+		State.OfferExpiresAt = Now + Random.RandRange(FMath::Max(1, Settings.BoardNoticeMinSeconds), FMath::Max(Settings.BoardNoticeMinSeconds, Settings.BoardNoticeMaxSeconds));
+		Posted.Add(State.OfferedQuestIndex);
+	}
+	if (bChanged) { bProgressDirty = true; OnTownProgressChanged.Broadcast(); }
 }
 
 void UTownProgressSubsystem::NotifyMonsterDefeated(FName MonsterKey)
@@ -270,7 +320,12 @@ FText UTownProgressSubsystem::GetQuestActionLabel(const AMineFacilityActor* Faci
 {
 	const int32 Index = Facility->GetFacilityKind() == EMineFacilityKind::QuestBoard ? 2 + FMath::Clamp(BoardSlot,0,3) : (Facility->GetFacilityKind() == EMineFacilityKind::HouseA ? 0 : 1);
 	if (GetQuestDefinition(Index) == nullptr) { return FText::GetEmpty(); }
-	return Quests.IsValidIndex(Index) && Quests[Index].bActive ? NSLOCTEXT("Town", "TurnIn", "보상 받기") : NSLOCTEXT("Town", "Accept", "의뢰 수락");
+	if (Quests.IsValidIndex(Index) && Quests[Index].bActive)
+	{
+		if (Index >= 2 && Quests[Index].MonsterKillProgress < GetQuestDefinition(Index)->RequiredCount) { return NSLOCTEXT("Town", "HuntInProgress", "진행 중"); }
+		return NSLOCTEXT("Town", "TurnIn", "보상 받기");
+	}
+	return NSLOCTEXT("Town", "Accept", "의뢰 수락");
 }
 
 bool UTownProgressSubsystem::CanUseQuestAction(const AMineFacilityActor* Facility, AMKCharacter* Player, int32 BoardSlot) const
@@ -281,15 +336,15 @@ bool UTownProgressSubsystem::CanUseQuestAction(const AMineFacilityActor* Facilit
 	if (Definition == nullptr || Definition->MinimumDepth > MaximumDepth) { return false; }
 	if (Quests[Index].bActive && Index >= 2) { return Quests[Index].MonsterKillProgress >= Definition->RequiredCount; }
 	if (Quests[Index].bActive) { return Player->FindComponentByClass<UInventoryComponent>()->GetItemCount(Definition->RequiredItem) >= Definition->RequiredCount; }
-	return Quests[Index].NextOfferAt <= FDateTime::UtcNow().ToUnixTimestamp();
+	return Index >= 2 ? Quests[Index].bOffered : Quests[Index].NextOfferAt <= FDateTime::UtcNow().ToUnixTimestamp();
 }
 
 const FTownQuestDefinition* UTownProgressSubsystem::GetBoardQuestDefinition(int32 Slot) const
 {
-	const auto& List = UDataManager::Get(const_cast<UTownProgressSubsystem*>(this))->GetGameSettingDataAsset()->TownFacilities.HuntQuests;
+	if (Slot < 0 || Slot >= 4) { return nullptr; }
+	const FTownQuestDefinition* Definition = GetQuestDefinition(2 + Slot);
 	const FTownQuestState* State = GetBoardQuestState(Slot);
-	const int32 Index = State != nullptr && List.IsValidIndex(State->OfferedQuestIndex) ? State->OfferedQuestIndex : Slot;
-	return Slot >= 0 && Slot < 4 && List.IsValidIndex(Index) ? &List[Index] : nullptr;
+	return Definition != nullptr && (State->bActive || Definition->MinimumDepth <= MaximumDepth) ? Definition : nullptr;
 }
 
 const FTownQuestState* UTownProgressSubsystem::GetBoardQuestState(int32 Slot) const { return Slot >= 0 && Slot < 4 && Quests.IsValidIndex(2+Slot) ? &Quests[2+Slot] : nullptr; }
@@ -316,42 +371,30 @@ void UTownProgressSubsystem::GenerateVillageBackdrop()
 		const int32 Column = Settings->MineableLevelGeneration.StartColumn + Offset;
 		if (Sprite == nullptr || Column < Settings->MineableLevelGeneration.StartColumn || Offset >= Settings->MineableLevelGeneration.WidthInBlocks) { return; }
 		float Floor = -GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(Column) * 16.f;
-		const int32 Radius = FMath::CeilToInt(Sprite->GetSourceSize().X / Sprite->GetPixelsPerUnrealUnit() / 32.f);
-		for (int32 X = Column - Radius; X <= Column + Radius; ++X) { Floor = Key == TEXT("IndustrialBackdrop") ? FMath::Max(Floor,-GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(X)*16.f) : FMath::Min(Floor,-GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(X)*16.f); }
-		Floor += Key == TEXT("IndustrialBackdrop") ? 12.f : -2.f;
-		const FVector Location((Column + 0.5f) * 16.f, -80.f, Floor + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f);
+		const int32 Radius = FMath::FloorToInt(Sprite->GetSourceSize().X / Sprite->GetPixelsPerUnrealUnit() / 32.f);
+		for (int32 X = Column - Radius; X <= Column + Radius; ++X)
+		{
+			Floor = FMath::Min(Floor, -GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(X) * 16.f);
+		}
+		Floor -= 1.f;
+		const FVector Location((Column + 0.5f) * 16.f, -84.f - VillageScenery.Num() * 2.f, Floor + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f);
 		APaperSpriteActor* Actor = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
 		if (Actor == nullptr) { return; }
-		Actor->SetActorEnableCollision(false); Actor->Tags.Add(TEXT("VillageScenery"));
+		Actor->SetActorEnableCollision(false); Actor->Tags.Add(TEXT("VillageScenery")); Actor->Tags.Add(Key);
 		Actor->SetActorTickEnabled(false);
-		auto* Render = Actor->GetRenderComponent(); Render->SetMobility(EComponentMobility::Movable); Render->SetSprite(Sprite); Render->SetCollisionEnabled(ECollisionEnabled::NoCollision); Render->SetTranslucentSortPriority(-8); Render->SetComponentTickEnabled(false);
+		auto* Render = Actor->GetRenderComponent(); Render->SetMobility(EComponentMobility::Movable); Render->SetSprite(Sprite); Render->SetCollisionEnabled(ECollisionEnabled::NoCollision); Render->SetTranslucentSortPriority(-20 - VillageScenery.Num()); Render->SetComponentTickEnabled(false);
 		if (Key == TEXT("IndustrialBackdrop"))
 		{
 			Render->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial")));
 			Render->SetSpriteColor(FLinearColor(0.8f, 0.9f, 0.9f, 0.62f));
 		}
 		if (VillageScenery.Num() % 2 != 0) { Render->SetRelativeScale3D(FVector(-1.f, 1.f, 1.f)); }
-		VillageScenery.Add(Actor); SceneryBaseLocations.Add(Location);
+		VillageScenery.Add(Actor);
 	};
 	for (int32 Column : Settings->TownFacilities.VillageBackdropColumns) { Place(TEXT("VillageBackdrop"), Column); }
 	for (int32 Column : Settings->TownFacilities.IndustrialBackdropColumns) { Place(TEXT("IndustrialBackdrop"), Column); }
 	for (int32 Column : Settings->TownFacilities.ForestryBackdropColumns) { Place(TEXT("ForestBackdrop"),Column); }
 
-}
-
-void UTownProgressSubsystem::UpdateBackdrop(AMKCharacter* Player)
-{
-	const float Strength = FMath::Clamp(UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities.BackgroundParallaxStrength, 0.f, 0.45f);
-	for (int32 Index = 0; Index < VillageScenery.Num(); ++Index)
-	{
-		if (VillageScenery[Index].IsValid() && SceneryBaseLocations.IsValidIndex(Index))
-		{
-			const FVector Base = SceneryBaseLocations[Index];
-			const float Offset = (Player->GetActorLocation().X - Base.X) * -Strength;
-			const FVector Location = Base + FVector(Offset, 0.f, 0.f);
-			if (VillageScenery[Index]->GetActorLocation().Equals(Location, 0.001f) == false) { VillageScenery[Index]->SetActorLocation(Location); }
-		}
-	}
 }
 
 const FTownQuestDefinition* UTownProgressSubsystem::GetQuestDefinition(int32 Resident) const

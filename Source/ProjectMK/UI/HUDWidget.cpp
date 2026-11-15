@@ -189,7 +189,7 @@ bool UHUDWidget::OpenFacility(AMineFacilityActor* Facility)
 	if (StorageChestWindow != nullptr) { StorageChestWindow->CloseChest(); }
 	CastChecked<UFacilityMenuContents>(Menu->GetCurrentContents())->SetFacility(Facility);
 	Menu->SetWindowTitle(Facility->GetFacilityName());
-	Menu->SetPreferredFrameSize(Facility->GetFacilityKind()==EMineFacilityKind::QuestBoard ? FVector2D(900.f,780.f) : FVector2D(660.f,650.f));
+	Menu->SetPreferredFrameSize(Facility->GetFacilityKind()==EMineFacilityKind::QuestBoard ? FVector2D(1120.f,760.f) : FVector2D(660.f,650.f));
 	return true;
 }
 

@@ -94,18 +94,26 @@ void UFacilityMenuContents::BuildDefaultWidgetTree()
 {
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
 	UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(); WidgetTree->RootWidget = Root;
-	Root->AddChildToOverlay(Column); DefaultContents = Column;
-	UScaleBox* BoardScale = WidgetTree->ConstructWidget<UScaleBox>(); BoardScale->SetStretch(EStretch::ScaleToFit); Root->AddChildToOverlay(BoardScale); BoardContents = BoardScale;
-	USizeBox* BoardSize = WidgetTree->ConstructWidget<USizeBox>(); BoardSize->SetWidthOverride(800.f); BoardSize->SetHeightOverride(600.f); BoardScale->SetContent(BoardSize);
-	UCanvasPanel* BoardCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(); BoardSize->SetContent(BoardCanvas);
-	UImage* BoardArt = WidgetTree->ConstructWidget<UImage>(); const auto* BoardStyle = UDataManager::Get(this)->GetVisualStyleDataAsset();
-	BoardArt->SetBrushResourceObject(BoardStyle != nullptr ? BoardStyle->TownSprites.FindRef(TEXT("BountyBoard")) : nullptr);
-	auto* BoardArtSlot = BoardCanvas->AddChildToCanvas(BoardArt); BoardArtSlot->SetSize(FVector2D(800.f,600.f));
+	auto* DefaultLayout = Root->AddChildToOverlay(Column); DefaultLayout->SetHorizontalAlignment(HAlign_Fill); DefaultLayout->SetVerticalAlignment(VAlign_Fill); DefaultContents = Column;
+	UOverlay* BoardRoot = WidgetTree->ConstructWidget<UOverlay>(); auto* BoardLayout = Root->AddChildToOverlay(BoardRoot); BoardLayout->SetHorizontalAlignment(HAlign_Fill); BoardLayout->SetVerticalAlignment(VAlign_Fill); BoardContents = BoardRoot;
+	UImage* BoardArt = WidgetTree->ConstructWidget<UImage>();
+	const auto* BoardStyle = UDataManager::Get(this)->GetVisualStyleDataAsset();
+	UPaperSprite* BoardSprite = BoardStyle != nullptr ? BoardStyle->TownSprites.FindRef(TEXT("BountyBoard")) : nullptr;
+	FSlateBrush BoardBrush; BoardBrush.SetResourceObject(BoardSprite); BoardBrush.ImageSize = FVector2D(768.f,432.f);
+	BoardBrush.DrawAs = ESlateBrushDrawType::Box; BoardBrush.Margin = FMargin(56.f/768.f,56.f/432.f);
+	BoardArt->SetBrush(BoardBrush); BoardArt->SetVisibility(ESlateVisibility::HitTestInvisible); auto* ArtLayout = BoardRoot->AddChildToOverlay(BoardArt); ArtLayout->SetHorizontalAlignment(HAlign_Fill); ArtLayout->SetVerticalAlignment(VAlign_Fill);
+	UCanvasPanel* BoardCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(); auto* CanvasLayout = BoardRoot->AddChildToOverlay(BoardCanvas); CanvasLayout->SetHorizontalAlignment(HAlign_Fill); CanvasLayout->SetVerticalAlignment(VAlign_Fill); CanvasLayout->SetPadding(FMargin(56.f,32.f));
 	for (int32 Index = 0; Index < 4; ++Index)
 	{
 		UBountyNoticeWidget* Notice = CreateWidget<UBountyNoticeWidget>(this); Notices.Add(Notice);
-		auto* NoticeLayout = BoardCanvas->AddChildToCanvas(Notice); NoticeLayout->SetPosition(FVector2D(Index%2 == 0 ? 82.f : 436.f,Index<2 ? 94.f : 342.f)); NoticeLayout->SetSize(FVector2D(286.f,190.f));
+		auto* NoticeLayout = BoardCanvas->AddChildToCanvas(Notice);
+		const float X = (Index % 2) * 0.5f, Y = (Index / 2) * 0.5f;
+		NoticeLayout->SetAnchors(FAnchors(X,Y,X+0.5f,Y+0.5f)); NoticeLayout->SetOffsets(FMargin(16.f));
 		Notice->OnChosen.BindUObject(this,&UFacilityMenuContents::ApplyAction,Index);
+		Notice->OnAbandoned.BindLambda([this,Index]()
+		{
+			if (Facility.IsValid()) { GetWorld()->GetSubsystem<UTownProgressSubsystem>()->TryAbandonBoardQuest(GetLocalPlayerCharacter(),Facility.Get(),Index); }
+		});
 	}
 	USizeBox* Preview = WidgetTree->ConstructWidget<USizeBox>();
 	Preview->SetWidthOverride(256.f); Preview->SetHeightOverride(192.f);
