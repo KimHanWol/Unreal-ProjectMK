@@ -102,7 +102,7 @@ namespace
 					Test->TestTrue(TEXT("Village scenery has a real sprite at its authored position"), It->GetActorLocation().X > 100.f && It->GetRenderComponent()->GetSprite() != nullptr);
 					Test->TestFalse(TEXT("Background houses never collide with the player"), It->GetActorEnableCollision());
 				}
-				Test->TestEqual(TEXT("The village has two background house groups and an industrial layer"), VillageCount, 3);
+				Test->TestEqual(TEXT("The configured village and industrial layers fill their districts"), VillageCount, Fixture.Settings->TownFacilities.VillageBackdropColumns.Num() + Fixture.Settings->TownFacilities.IndustrialBackdropColumns.Num());
 				Test->TestFalse(TEXT("Unvisited elevator depths stay locked"), Town->CanTravelToDepth(32));
 				Test->TestTrue(TEXT("The surface station explains construction before unlock"), Town->GetDialogue(Surface.Get(), Fixture.Player).ToString().Contains(TEXT("공사 중")));
 				Fixture.Player->GetAbilitySystemComponent()->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), 1000.f);

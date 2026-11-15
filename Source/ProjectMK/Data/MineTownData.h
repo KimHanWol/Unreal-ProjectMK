@@ -72,7 +72,9 @@ struct FTownFacilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 HouseBColumn = 62;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 ElevatorColumn = 94;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 RailFactoryColumn = 108;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> VillageBackdropColumns = {49, 61};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> VillageBackdropColumns = {7, 23, 38, 49, 60, 72, 83};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> IndustrialBackdropColumns = {96, 107};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "0.45")) float BackgroundParallaxStrength = 0.18f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 VillageNoticeColumn = 66;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "1")) float QuestOfferChance = 0.25f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) int32 MinimumSmallTalkCount = 2;
@@ -97,6 +99,7 @@ struct FTreeSaveData
 {
 	GENERATED_BODY()
 	UPROPERTY() int32 Column = 0;
+	UPROPERTY() int32 GroundRow = INDEX_NONE;
 	UPROPERTY() int64 RegrowAt = 0;
 	UPROPERTY() TArray<FTreePieceSaveData> Pieces;
 };
@@ -107,6 +110,9 @@ struct FForestrySettings
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) bool bEnabled = true;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> Columns = { 14, 22, 30 };
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardStartColumn = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardEndColumn = 35;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "3")) int32 PlatformHeight = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 RegrowSeconds = 90;
 };
 

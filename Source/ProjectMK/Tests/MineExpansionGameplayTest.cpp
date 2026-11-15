@@ -8,6 +8,7 @@
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PaperSprite.h"
+#include "PaperSpriteActor.h"
 #include "PaperSpriteComponent.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "UObject/StrongObjectPtr.h"
@@ -84,8 +85,26 @@ namespace
 				if (Mode == 1)
 				{
 					Test->TestEqual(TEXT("Three configured lumber stands grow"), Forest->GetTrees().Num(), 3);
+					int32 Beds = 0, Lamps = 0, Sheds = 0;
+					for (TActorIterator<APaperSpriteActor> It(World); It; ++It)
+					{
+						if (It->ActorHasTag(TEXT("LumberyardScenery")) == false) { continue; }
+						Beds += It->ActorHasTag(TEXT("PlantingBed")); Lamps += It->ActorHasTag(TEXT("LanternPost")); Sheds += It->ActorHasTag(TEXT("Lumberyard"));
+						Test->TestFalse(TEXT("Yard scenery never obstructs the player"), It->GetActorEnableCollision());
+					}
+					Test->TestTrue(TEXT("The lumberyard contains its workshop, three planting beds and four lamps"), Beds == 3 && Lamps == 4 && Sheds == 1);
 					if (Forest->GetTrees().IsEmpty() || Forest->GetTrees()[0].Pieces.IsEmpty()) { Test->AddError(TEXT("Tree blocks did not grow")); return Finish(); }
 					OriginalPieces = Forest->GetTrees()[0].Pieces.Num();
+					UPaperSprite* FirstLeaf = nullptr;
+					const auto CanopySnapshot = Forest->GetSaveData();
+					for (const auto& Piece : CanopySnapshot[0].Pieces)
+					{
+						if (Piece.BlockKey.ToString().StartsWith(TEXT("TreeLeaves_")) == false) { continue; }
+						UPaperSprite* Sprite = UDataManager::Get(World)->GetBlockDataTableRow(Piece.BlockKey)->TileSprite.LoadSynchronous();
+						if (FirstLeaf == nullptr) { FirstLeaf = Sprite; }
+						Test->TestTrue(TEXT("Canopy cells share one continuous source image at native block size"), Sprite != nullptr && Sprite->GetSourceTexture() == FirstLeaf->GetSourceTexture() && Sprite->GetSourceSize().Equals(FVector2D(32.f,32.f)));
+					}
+					Test->TestNotNull(TEXT("The connected canopy uses atlas pieces"), FirstLeaf);
 					Forest->GetTrees()[0].Pieces.Last()->Destroy();
 					ChangedAt = World->GetTimeSeconds(); Step = 1; return false;
 				}
@@ -144,9 +163,15 @@ namespace
 			{
 				Test->TestEqual(TEXT("A partially cut tree does not regrow after the delay"), Forest->GetSaveData()[0].Pieces.Num(), OriginalPieces - 1);
 				TStrongObjectPtr<UMKSaveGame> Snapshot(NewObject<UMKSaveGame>()); Snapshot->Trees = Forest->GetSaveData();
+				// Simulate a stored tree whose planting platform moved up by one block.
+				++Snapshot->Trees[0].GroundRow;
+				for (auto& Piece : Snapshot->Trees[0].Pieces) { Piece.Location.Z -= 16.f; }
 				TArray<uint8> Bytes; UGameplayStatics::SaveGameToMemory(Snapshot.Get(), Bytes);
 				TStrongObjectPtr<UMKSaveGame> Reloaded(CastChecked<UMKSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes))); Forest->RestoreTrees(Reloaded->Trees);
 				Test->TestEqual(TEXT("Partial tree state survives serialization and reconstruction"), Forest->GetSaveData()[0].Pieces.Num(), OriginalPieces - 1);
+				for (int32 I = 0; I < Reloaded->Trees[0].Pieces.Num(); ++I) { Test->TestEqual(TEXT("Saved canopy region identity is retained"), Forest->GetSaveData()[0].Pieces[I].BlockKey, Reloaded->Trees[0].Pieces[I].BlockKey); }
+				for (TActorIterator<APaperSpriteActor> It(World); It; ++It) { if (It->ActorHasTag(TEXT("VillageScenery"))) { ParallaxSample = *It; BeforeParallax = It->GetActorLocation(); break; } }
+				Player->SetActorLocation(Player->GetActorLocation() + FVector(32.f, 0.f, 0.f));
 				const auto Pieces = Forest->GetTrees()[0].Pieces;
 				FGameplayAbilityUtils::ApplyDamageToDurability(Pieces[0]->GetAbilitySystemComponent(), nullptr, 1000.f);
 				ChangedAt = World->GetTimeSeconds(); Step = 2; return false;
@@ -155,9 +180,10 @@ namespace
 			{
 				int32 WoodCount = 0; for (TActorIterator<AItemBase> It(World); It; ++It) { if (It->GetItemKey() == TEXT("Wood")) { WoodCount += It->GetItemCount(); } }
 				Test->TestTrue(TEXT("Manual trunk mining produces actual Wood drops"), WoodCount >= 2);
-				int32 Leaves = 0; const int32 LeafTile = UDataManager::Get(World)->GetBlockDataTableRow(TEXT("TreeLeaves"))->TileIndex;
-				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid() && Block->GetTileIndex() == LeafTile && Block->IsBreaking() == false) { ++Leaves; } }
+				int32 Leaves = 0; const int32 TrunkTile = UDataManager::Get(World)->GetBlockDataTableRow(TEXT("TreeTrunk"))->TileIndex;
+				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid() && Block->GetTileIndex() != TrunkTile && Block->IsBreaking() == false) { ++Leaves; } }
 				Test->TestEqual(TEXT("Unsupported weak leaves fall and shatter"), Leaves, 0);
+				Test->TestTrue(TEXT("Distant background layers keep scrolling instead of stopping at a small clamp"), ParallaxSample.IsValid() && ParallaxSample->GetActorLocation().X < BeforeParallax.X - 3.f);
 				Test->TestNotNull(TEXT("Tree collapse preserves the root soil"), Level->GetBlockAtPosition(FVector2D(Forest->GetTrees()[0].Column, Surface)));
 				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid()) { Block->Destroy(); } }
 				ChangedAt = World->GetTimeSeconds(); Step = 3; return false;
@@ -165,6 +191,17 @@ namespace
 			if (Mode == 1 && Step == 3 && Elapsed > 3.5f)
 			{
 				Test->TestEqual(TEXT("A fully cleared tree regrows after the configured delay"), Forest->GetSaveData()[0].Pieces.Num(), OriginalPieces);
+				FStorageChestSaveData LegacyChest; LegacyChest.Id = FGuid(1541,14,Surface,0x44454348u); LegacyChest.Location = FVector(14.5f * 16.f, -20.f, -(Surface + 0.5f) * 16.f);
+				FInventorySlotData StoredOre; StoredOre.ItemUID = TEXT("Ore_Iron"); StoredOre.ItemCount = 5; LegacyChest.Slots = { StoredOre };
+				ABlockBase* OriginalFloor = Level->GetBlockAtPosition(FVector2D(14, Surface));
+				Level->RestoreStorageChests({ LegacyChest }, {});
+				AStorageChestActor* MovedChest = nullptr;
+				for (TActorIterator<AStorageChestActor> It(World); It; ++It) { if (It->GetChestId() == LegacyChest.Id) { MovedChest = *It; } }
+				Test->TestTrue(TEXT("An old stocked road prop moves outside the planting yard without losing its cargo"), MovedChest != nullptr && MovedChest->GetActorLocation().X > (Settings->Forestry.YardEndColumn + 1) * 16.f && MovedChest->GetItemSlots()[0].ItemCount == 5);
+				Test->TestTrue(TEXT("Restored props never cut a hole in a planting foundation"), OriginalFloor != nullptr && Level->GetBlockAtPosition(FVector2D(14, Surface)) == OriginalFloor);
+				LegacyChest.Id = FGuid(1541,22,Surface,0x44454348u); LegacyChest.Slots.Reset();
+				Level->RestoreStorageChests({ LegacyChest }, {});
+				Test->TestTrue(TEXT("Empty old road decoration chests stay removed from the facility"), Level->GetDestroyedStorageChestIds().Contains(LegacyChest.Id));
 				const auto* Recipe = UDataManager::Get(World)->GetShopRecipeDataTableRow(TEXT("RailRecipe"));
 				Test->TestTrue(TEXT("Transport crafting uses harvested wood"), Recipe != nullptr && Recipe->RequiredItems.ContainsByPredicate([](const auto& Ingredient) { return Ingredient.ItemKey == TEXT("Wood"); }));
 				return Finish();
@@ -214,7 +251,7 @@ namespace
 		FAutomationTestBase* Test; int32 Mode; double Started; int32 Step = 0; float ChangedAt = 0.f; int32 Surface = 0; int32 OriginalPieces = 0; int32 Cycles = 0;
 		UWorld* World = nullptr; AMKCharacter* Player = nullptr; UGameSettingDataAsset* Settings = nullptr; ULevelManagerSubsystem* Level = nullptr; UTownProgressSubsystem* Town = nullptr; UForestrySubsystem* Forest = nullptr; UMineTransportSubsystem* Network = nullptr;
 		FMineableLevelGenerationSettings SavedGeneration; FTownFacilitySettings SavedTown; FForestrySettings SavedForestry;
-		TStrongObjectPtr<UMKSaveGame> Progress; TStrongObjectPtr<UMKTooltipBase> Tooltip; TWeakObjectPtr<AMineFacilityActor> Board; TWeakObjectPtr<AMKMonster> FallingMonster;
+		TStrongObjectPtr<UMKSaveGame> Progress; TStrongObjectPtr<UMKTooltipBase> Tooltip; TWeakObjectPtr<AMineFacilityActor> Board; TWeakObjectPtr<AMKMonster> FallingMonster; TWeakObjectPtr<AActor> ParallaxSample; FVector BeforeParallax;
 	};
 }
 

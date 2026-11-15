@@ -2025,6 +2025,8 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 	for (TActorIterator<APlayerStart> It(GetWorld()); It; ++It) { ProtectedSpawnColumn = FMath::FloorToInt(It->GetActorLocation().X / BLOCK_SIZE); break; }
 	SurfaceRows.Reset();
 	const int32 MaximumRise = FMath::Clamp(Settings.SurfaceReliefHeight, 0, 3);
+	const auto& Forestry = DataManager->GetGameSettingDataAsset()->Forestry;
+	const bool bHasYard = Forestry.bEnabled && Width >= 112;
 	for (int32 X = Settings.StartColumn; X < Settings.StartColumn + Width; ++X)
 	{
 		int32 Raise = 0;
@@ -2037,6 +2039,7 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 			Raise = FMath::Max(Raise, FMath::Min(FMath::Min(FMath::Clamp(Rise.HeightInBlocks, 1, 3), MaximumRise), 1 + EdgeDistance / 3));
 		}
 		if (MaximumRise == 0 || (X >= FMath::Min(ShopColumn, ProtectedSpawnColumn) - 6 && X <= FMath::Max(ShopColumn, ProtectedSpawnColumn) + 6)) { Raise = 0; }
+		if (bHasYard && X - Settings.StartColumn >= Forestry.YardStartColumn && X - Settings.StartColumn <= Forestry.YardEndColumn) { Raise = FMath::Clamp(Forestry.PlatformHeight, 0, MaximumRise); }
 		SurfaceRows.Add(X, Surface - Raise);
 	}
 	for (int32 X = Settings.StartColumn + 1; X < Settings.StartColumn + Width; ++X) { SurfaceRows[X] = FMath::Max(SurfaceRows[X], SurfaceRows[X - 1] - 1); }
@@ -2082,7 +2085,12 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 					: FMath::Clamp((Y - Surface - Boundary + Blend * 0.5f) / Blend, 0.f, 1.f);
 				if (Sample <= FMath::SmoothStep(0.f, 1.f, Alpha)) { TileIndex = DataManager->GetBlockDataTableRow(Layer.BlockKey)->TileIndex; }
 			}
-			const bool bRaisedFoundation = Foundation != nullptr && GetSurfaceRow(X) < Surface && Y <= Surface + 1;
+			const int32 Offset = X - Settings.StartColumn;
+			const bool bInYard = bHasYard && Offset >= Forestry.YardStartColumn && Offset <= Forestry.YardEndColumn;
+			bool bYardFoundation = bInYard && Y == GetSurfaceRow(X) && FMath::Abs(Offset - (Forestry.YardStartColumn + 3)) <= 3;
+			for (int32 TreeColumn : Forestry.Columns) { bYardFoundation |= bInYard && Y == GetSurfaceRow(X) && (FMath::Abs(Offset - TreeColumn) <= 2 || FMath::Abs(Offset - (TreeColumn - 4)) <= 1); }
+			bYardFoundation |= bInYard && Y == GetSurfaceRow(X) && FMath::Abs(Offset - (Forestry.YardEndColumn - 1)) <= 1;
+			const bool bRaisedFoundation = Foundation != nullptr && (bYardFoundation || (bInYard == false && GetSurfaceRow(X) < Surface && Y <= Surface + 1));
 			BaseTerrainLayout.Add(Cell, bRaisedFoundation ? Foundation->TileIndex : (Y == GetSurfaceRow(X) && Grass != nullptr ? Grass->TileIndex : TileIndex));
 		}
 	}
@@ -2152,6 +2160,11 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 				if (GetBlockAtPosition(FVector2D(Floor.X + X, Floor.Y - Y)) != nullptr) { return false; }
 			}
 		}
+		if (Floor.Y == GetSurfaceRow(Floor.X) && FMath::Abs(Floor.X - Settings.ShopColumn) <= HalfWidth + 4) { return false; }
+		for (const auto& Chest : StorageChests)
+		{
+			if (Chest.IsValid() && FMath::Abs(Chest->GetActorLocation().X - (Floor.X + 0.5f) * BLOCK_SIZE) < (HalfWidth + 1.5f) * BLOCK_SIZE && FMath::Abs(Chest->GetActorLocation().Z + Floor.Y * BLOCK_SIZE) < 24.f) { return false; }
+		}
 		for (const auto& Existing : MineDecorationActors)
 		{
 			if (FMath::Abs(Existing.Key.X - Floor.X) < 3 && FMath::Abs(Existing.Key.Y - Floor.Y) < 3) { return false; }
@@ -2166,7 +2179,7 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 			Chest.Location = FVector((Floor.X + 0.5f) * BLOCK_SIZE, -20.f, -(Floor.Y - 0.5f) * BLOCK_SIZE);
 			return SpawnStorageChest(Chest) != nullptr;
 		}
-		const float Scale = Kind == TEXT("LanternPost") ? 1.15f : 1.f;
+		const float Scale = 1.f;
 		const FVector Location((Floor.X + 0.5f) * BLOCK_SIZE, -32.f, -Floor.Y * BLOCK_SIZE + Source.Y * 0.25f * Scale);
 		APaperSpriteActor* Decoration = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
 		if (Decoration == nullptr) { return false; }
@@ -2202,6 +2215,14 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		if (FMath::Abs(Column - ShopColumn) <= 4 || FMath::Abs(Column - ProtectedSpawnColumn) <= 2) { continue; }
 		const FIntPoint Floor(Column, GetSurfaceRow(Column));
 		if (Place(Kinds[Index++ % UE_ARRAY_COUNT(Kinds)], Floor) == false) { Place(TEXT("LanternPost"), Floor); }
+	}
+	for (int32 Column = Settings.StartColumn + 4; Column < End - 3; Column += 8)
+	{
+		for (int32 Offset : { 0, -1, 1, -2, 2 })
+		{
+			const int32 Candidate = Column + Offset;
+			if (Candidate >= Settings.StartColumn + 2 && Candidate < End - 2 && Place(TEXT("LanternPost"), FIntPoint(Candidate, GetSurfaceRow(Candidate)))) { break; }
+		}
 	}
 	int32 UndergroundCount = 0;
 	for (const FGeneratedMineStructure& Structure : GeneratedStructures)
@@ -3747,7 +3768,41 @@ void ULevelManagerSubsystem::RestoreStorageChests(const TArray<FStorageChestSave
 		Restored.Add(Data.Id);
 		const auto* Existing = StorageChests.FindByPredicate([&](const TWeakObjectPtr<AStorageChestActor>& Chest) { return Chest.IsValid() && Chest->GetChestId() == Data.Id; });
 		if (Existing != nullptr) { (*Existing)->Destroy(); }
-		SpawnStorageChest(Data);
+		FStorageChestSaveData RestoredData = Data;
+		const auto* Settings = UDataManager::Get(this)->GetGameSettingDataAsset();
+		const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(Data.Location);
+		const int32 Offset = FMath::RoundToInt(Cell.X) - Settings->MineableLevelGeneration.StartColumn;
+		// Old automatically placed roadside chests must not carve holes in the new lumberyard platform.
+		if (Data.Id.D == 0x44454348u && Data.bBuried == false && Data.MountedCartId.IsValid() == false && Settings->Forestry.bEnabled && Settings->MineableLevelGeneration.WidthInBlocks >= 112 &&
+			Offset >= Settings->Forestry.YardStartColumn && Offset <= Settings->Forestry.YardEndColumn && FMath::Abs(Cell.Y - Settings->SurfaceBlockPositionY) <= 4.f)
+		{
+			if (Data.Slots.ContainsByPredicate([](const auto& Slot) { return Slot.ItemUID.IsNone() == false && Slot.ItemCount > 0; }) == false)
+			{
+				DestroyedStorageChestIds.AddUnique(Data.Id); continue;
+			}
+			const int32 FallbackColumn = Settings->MineableLevelGeneration.StartColumn + Settings->Forestry.YardEndColumn + 3;
+			float HighestZ = -GetSurfaceRow(FallbackColumn) * BLOCK_SIZE - BLOCK_SIZE * 0.5f;
+			for (ABlockBase* Block : BlockList) { if (::IsValid(Block) && FMath::Abs(Block->GetActorLocation().X - (FallbackColumn + 0.5f) * BLOCK_SIZE) < BLOCK_SIZE * 0.5f) { HighestZ = FMath::Max(HighestZ, Block->GetActorLocation().Z); } }
+			RestoredData.Location = FVector((FallbackColumn + 0.5f) * BLOCK_SIZE, -20.f, HighestZ + BLOCK_SIZE);
+			for (int32 Candidate = Settings->Forestry.YardEndColumn + 3; Candidate < Settings->MineableLevelGeneration.WidthInBlocks - 2; ++Candidate)
+			{
+				const int32 Column = Settings->MineableLevelGeneration.StartColumn + Candidate;
+				const int32 Floor = GetSurfaceRow(Column);
+				if (GetWorld()->GetSubsystem<UTownProgressSubsystem>()->IsSurfaceSiteReserved(Column, 1) || FMath::Abs(Column - Settings->MineableLevelGeneration.ShopColumn) <= 5) { continue; }
+				if (GetBlockAtPosition(FVector2D(Column, Floor - 1)) != nullptr) { continue; }
+				const FVector Location((Column + 0.5f) * BLOCK_SIZE, -20.f, -(Floor - 0.5f) * BLOCK_SIZE);
+				bool bOccupied = false;
+				for (const auto& Decoration : MineDecorationActors)
+				{
+					if (Decoration.Value.IsValid() == false) { continue; }
+					FVector Origin, Extent; Decoration.Value->GetActorBounds(false, Origin, Extent);
+					bOccupied |= FMath::Abs(Origin.X - Location.X) < Extent.X + 12.f && FMath::Abs(Decoration.Value->GetActorLocation().Z - Location.Z) < 64.f;
+				}
+				for (const auto& Chest : StorageChests) { bOccupied |= Chest.IsValid() && FVector::DistSquared(Chest->GetActorLocation(), Location) < FMath::Square(24.f); }
+				if (bOccupied == false) { RestoredData.Location = Location; break; }
+			}
+		}
+		SpawnStorageChest(RestoredData);
 	}
 }
 

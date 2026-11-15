@@ -1,0 +1,108 @@
+﻿{
+    "props":  [
+                  {
+                      "file":  "Content/Asset/LumberyardV1/Source/Lumberyard.png",
+                      "name":  "Lumberyard"
+                  },
+                  {
+                      "file":  "Content/Asset/LumberyardV1/Source/LanternPost.png",
+                      "name":  "LanternPost"
+                  },
+                  {
+                      "file":  "Content/Asset/LumberyardV1/Source/PlantingBed.png",
+                      "name":  "PlantingBed"
+                  }
+              ],
+    "leaves":  [
+                   {
+                       "y":  0,
+                       "pixels":  74,
+                       "name":  "TreeLeaves_0_0",
+                       "x":  0
+                   },
+                   {
+                       "y":  0,
+                       "pixels":  558,
+                       "name":  "TreeLeaves_1_0",
+                       "x":  1
+                   },
+                   {
+                       "y":  0,
+                       "pixels":  890,
+                       "name":  "TreeLeaves_2_0",
+                       "x":  2
+                   },
+                   {
+                       "y":  0,
+                       "pixels":  449,
+                       "name":  "TreeLeaves_3_0",
+                       "x":  3
+                   },
+                   {
+                       "y":  0,
+                       "pixels":  70,
+                       "name":  "TreeLeaves_4_0",
+                       "x":  4
+                   },
+                   {
+                       "y":  1,
+                       "pixels":  683,
+                       "name":  "TreeLeaves_0_1",
+                       "x":  0
+                   },
+                   {
+                       "y":  1,
+                       "pixels":  1024,
+                       "name":  "TreeLeaves_1_1",
+                       "x":  1
+                   },
+                   {
+                       "y":  1,
+                       "pixels":  1024,
+                       "name":  "TreeLeaves_2_1",
+                       "x":  2
+                   },
+                   {
+                       "y":  1,
+                       "pixels":  1024,
+                       "name":  "TreeLeaves_3_1",
+                       "x":  3
+                   },
+                   {
+                       "y":  1,
+                       "pixels":  664,
+                       "name":  "TreeLeaves_4_1",
+                       "x":  4
+                   },
+                   {
+                       "y":  2,
+                       "pixels":  485,
+                       "name":  "TreeLeaves_0_2",
+                       "x":  0
+                   },
+                   {
+                       "y":  2,
+                       "pixels":  759,
+                       "name":  "TreeLeaves_1_2",
+                       "x":  1
+                   },
+                   {
+                       "y":  2,
+                       "pixels":  959,
+                       "name":  "TreeLeaves_2_2",
+                       "x":  2
+                   },
+                   {
+                       "y":  2,
+                       "pixels":  708,
+                       "name":  "TreeLeaves_3_2",
+                       "x":  3
+                   },
+                   {
+                       "y":  2,
+                       "pixels":  545,
+                       "name":  "TreeLeaves_4_2",
+                       "x":  4
+                   }
+               ]
+}

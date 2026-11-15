@@ -109,6 +109,8 @@ bool UTownProgressSubsystem::IsSurfaceSiteReserved(int32 Column, int32 HalfWidth
 {
 	const auto* Settings = UDataManager::Get(const_cast<UTownProgressSubsystem*>(this))->GetGameSettingDataAsset();
 	if (Settings->TownFacilities.bEnabled == false || Settings->MineableLevelGeneration.WidthInBlocks < 112) { return false; }
+	const int32 Offset = Column - Settings->MineableLevelGeneration.StartColumn;
+	if (Settings->Forestry.bEnabled && Offset >= Settings->Forestry.YardStartColumn - HalfWidth - 1 && Offset <= Settings->Forestry.YardEndColumn + HalfWidth + 1) { return true; }
 	const auto& Town = Settings->TownFacilities;
 	const auto* Style = UDataManager::Get(const_cast<UTownProgressSubsystem*>(this))->GetVisualStyleDataAsset();
 	for (const auto& Site : { TPair<FName, int32>(TEXT("HouseA"), Town.HouseAColumn), TPair<FName, int32>(TEXT("HouseB"), Town.HouseBColumn), TPair<FName, int32>(TEXT("Elevator"), Town.ElevatorColumn), TPair<FName, int32>(TEXT("RailFactory"), Town.RailFactoryColumn), TPair<FName, int32>(TEXT("VillageNotice"), Town.VillageNoticeColumn) })
@@ -303,22 +305,25 @@ void UTownProgressSubsystem::GenerateVillageBackdrop()
 			Render->SetMaterial(0, LoadObject<UMaterialInterface>(nullptr, TEXT("/Paper2D/TranslucentUnlitSpriteMaterial.TranslucentUnlitSpriteMaterial")));
 			Render->SetSpriteColor(FLinearColor(0.8f, 0.9f, 0.9f, 0.62f));
 		}
+		if (VillageScenery.Num() % 2 != 0) { Render->SetRelativeScale3D(FVector(-1.f, 1.f, 1.f)); }
 		VillageScenery.Add(Actor); SceneryBaseLocations.Add(Location);
 	};
 	for (int32 Column : Settings->TownFacilities.VillageBackdropColumns) { Place(TEXT("VillageBackdrop"), Column); }
-	Place(TEXT("IndustrialBackdrop"), (Settings->TownFacilities.ElevatorColumn + Settings->TownFacilities.RailFactoryColumn) / 2);
+	for (int32 Column : Settings->TownFacilities.IndustrialBackdropColumns) { Place(TEXT("IndustrialBackdrop"), Column); }
 
 }
 
 void UTownProgressSubsystem::UpdateBackdrop(AMKCharacter* Player)
 {
+	const float Strength = FMath::Clamp(UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities.BackgroundParallaxStrength, 0.f, 0.45f);
 	for (int32 Index = 0; Index < VillageScenery.Num(); ++Index)
 	{
 		if (VillageScenery[Index].IsValid() && SceneryBaseLocations.IsValidIndex(Index))
 		{
 			const FVector Base = SceneryBaseLocations[Index];
-			const float Offset = FMath::Clamp((Player->GetActorLocation().X - Base.X) * -0.035f, -12.f, 12.f);
-			VillageScenery[Index]->SetActorLocation(Base + FVector(Offset, 0.f, 0.f));
+			const float Offset = (Player->GetActorLocation().X - Base.X) * -Strength;
+			const FVector Location = Base + FVector(Offset, 0.f, 0.f);
+			if (VillageScenery[Index]->GetActorLocation().Equals(Location, 0.001f) == false) { VillageScenery[Index]->SetActorLocation(Location); }
 		}
 	}
 }

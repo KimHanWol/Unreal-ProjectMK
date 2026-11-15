@@ -5,6 +5,7 @@
 #include "ProjectMK/Data/MineTownData.h"
 #include "ForestrySubsystem.generated.h"
 
+class AActor;
 class ABlockBase;
 
 struct FManagedTree
@@ -26,8 +27,11 @@ public:
 	TArray<FTreeSaveData> GetSaveData() const;
 	const TArray<FManagedTree>& GetTrees() const;
 private:
+	void GenerateYardScenery();
 	bool TryGrowTree(FManagedTree& Tree);
 	void OnGrowthTimer();
 	TArray<FManagedTree> Trees;
+	TArray<TWeakObjectPtr<AActor>> YardScenery;
+	TMap<int32, FName> TreeBlockKeys;
 	FTimerHandle GrowthTimer;
 };
