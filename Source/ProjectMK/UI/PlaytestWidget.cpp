@@ -138,7 +138,7 @@ void UPlaytestWidget::BuildDefaultWidgetTree()
 	Panel->AddChildToVerticalBox(DetailsPanel);
 
 	UTextBlock* Controls = WidgetTree->ConstructWidget<UTextBlock>();
-	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · W 지지대 등반\nF 상호작용 · F 홀드 회수\nC 제작 · K 스킬 · 1~8 아이템 사용"));
+	Controls->SetText(NSLOCTEXT("Playtest", "Controls", "A/D 이동 · WASD 방향 채굴\nSpace 비행 · W 지지대 등반\nF 상호작용\nC 제작 · K 스킬 · 1~8 아이템 사용"));
 	ApplyTextRole(Controls, EMKTextRole::Body, true);
 	Controls->SetColorAndOpacity(FSlateColor(FLinearColor(0.6f, 0.8f, 0.9f)));
 	DetailsPanel->AddChildToVerticalBox(Controls)->SetPadding(FMargin(0.f, 0.f, 0.f, FMKUILayout::SpaceS));
@@ -444,7 +444,7 @@ void UPlaytestWidget::OnRailKitClicked()
 	UInventoryComponent* Inventory = GetLocalInventoryComponent();
 	Inventory->ApplySavedInventorySlots({}); Inventory->ApplySavedQuickSlots({});
 	for (const auto& Entry : { TPair<FName, int32>(TEXT("Rail"), 20), {TEXT("SupportBeam"), 20}, {TEXT("MineCart"), 1}, {TEXT("AutoMineCart"), 1}, {TEXT("StorageChest"), 3} }) { Inventory->AddItem(Entry.Key, Entry.Value); }
-	FeedbackText->SetText(NSLOCTEXT("Playtest", "RailKitReady", "철도 세트 지급 · 퀵슬롯에 장착해 사용하세요. 지지대는 W 등반, 설치물은 F 홀드 회수."));
+	FeedbackText->SetText(NSLOCTEXT("Playtest", "RailKitReady", "철도 세트를 지급했습니다."));
 }
 
 void UPlaytestWidget::OnVisitStationClicked()

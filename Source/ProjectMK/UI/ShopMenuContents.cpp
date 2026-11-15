@@ -120,7 +120,15 @@ void UShopMenuContents::SetMerchantDialogue(const FText& Dialogue)
 void UShopMenuContents::SetCatalogKey(FName Key)
 {
 	CatalogKey = Key;
-	SetMerchantDialogue(Key == TEXT("RailFactory") ? NSLOCTEXT("Town", "FactoryStock", "철도와 열차를 준비했습니다. 설계도를 배우면 작업대에서도 제작할 수 있어요.") : NSLOCTEXT("Shop", "SaleHint", "광물을 놓아 판매 · 우클릭으로 전부 판매"));
+	if (Key == TEXT("RailFactory"))
+	{
+		const FText Lines[] = {
+			NSLOCTEXT("Town", "FactoryStock", "철도와 열차를 준비했습니다. 설계도를 배우면 작업대에서도 제작할 수 있어요."),
+			NSLOCTEXT("Town", "FactorySlope", "경사에 놓은 수레는 스스로 굴러가니 바퀴를 잘 살펴보세요."),
+			NSLOCTEXT("Town", "FactoryRecovery", "설치물을 거둘 때는 F를 꾹 눌러보세요. 상자, 열차, 철도 순서로 정리하면 됩니다.") };
+		SetMerchantDialogue(Lines[FMath::RandRange(0, UE_ARRAY_COUNT(Lines) - 1)]);
+	}
+	else { SetMerchantDialogue(NSLOCTEXT("Shop", "SaleHint", "광물을 놓아 판매 · 우클릭으로 전부 판매")); }
 	RefreshRecipeSlotList();
 }
 

@@ -662,7 +662,7 @@ void AMKCharacter::UpdateInteractionPrompt()
 	}
 	if (::IsValid(InteractionPromptComponent))
 	{
-		const bool bShowPrompt = Target != nullptr;
+		const bool bShowPrompt = Target != nullptr && Target->ShouldShowInteractionPrompt();
 		InteractionPromptComponent->SetVisibility(bShowPrompt);
 		if (UInteractionPromptWidget* Prompt = Cast<UInteractionPromptWidget>(InteractionPromptComponent->GetUserWidgetObject()))
 		{

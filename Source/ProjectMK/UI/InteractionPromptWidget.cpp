@@ -43,8 +43,8 @@ void UInteractionPromptWidget::SetRecoveryState(float Progress, bool bAvailable,
 	RecoveryProgress = bAvailable ? FMath::Clamp(Progress, 0.f, 1.f) : 0.f;
 	if (RecoveryHint != nullptr)
 	{
-		RecoveryHint->SetText(BlockedReason.IsEmpty() ? NSLOCTEXT("Interaction", "HoldToRecover", "길게 눌러 회수") : BlockedReason);
-		RecoveryHint->SetVisibility(bAvailable ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
+		RecoveryHint->SetText(FText::GetEmpty());
+		RecoveryHint->SetVisibility(ESlateVisibility::Collapsed);
 	}
 }
 

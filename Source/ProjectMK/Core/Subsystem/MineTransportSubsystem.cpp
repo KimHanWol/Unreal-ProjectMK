@@ -1,6 +1,8 @@
 ﻿#include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 
 #include "ProjectMK/Actor/Block/BlockBase.h"
+#include "ProjectMK/Actor/Spawnable/ItemBase.h"
+#include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Actor/Transport/RailTrackActor.h"
 #include "ProjectMK/Actor/Transport/MineCartActor.h"
@@ -10,6 +12,8 @@
 void UMineTransportSubsystem::Tick(float DeltaSeconds)
 {
 	if (GetWorld()->IsGameWorld() == false || bClearing) { return; }
+	SupportCheckTime += DeltaSeconds;
+	if (SupportCheckTime >= 0.1f) { SupportCheckTime = 0.f; UpdateUnsupportedRails(); }
 	float Remaining = FMath::Min(DeltaSeconds, 0.25f);
 	while (Remaining > KINDA_SMALL_NUMBER)
 	{
@@ -39,15 +43,19 @@ bool UMineTransportSubsystem::TryPlaceRail(AMKCharacter* Player)
 	ABlockBase* Ground = Level->GetBlockBelowWorldLocation(Player->GetActorLocation());
 	if (Ground == nullptr) { return false; }
 	const FVector2D Cell = UMKBlueprintFunctionLibrary::GetBlockPosition(Ground);
-	const FIntPoint Start(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y));
-	const float Facing = FMath::Abs(Player->GetCharacterDirection().X) > 0.1f ? Player->GetCharacterDirection().X : Player->GetHorizontalFacingSign();
-	const int32 Direction = Facing < 0.f ? -1 : 1;
-	const int32 Vertical = Player->GetCharacterDirection().Z > 0.5f ? -1 : (Player->GetCharacterDirection().Z < -0.5f ? 1 : 0);
-	for (int32 Offset : { Vertical, Vertical == 0 ? -1 : 0, 1 })
+	const FIntPoint CellNode(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y));
+	// Each placed piece spans this ground cell. Prefer an existing free boundary endpoint.
+	for (const auto& Existing : Rails)
 	{
-		if (TryPlaceRailSegment(Start, Start + FIntPoint(Direction, Offset))) { return true; }
+		if (Existing.IsValid() == false) { continue; }
+		for (const FIntPoint& Node : { Existing->GetSaveData().Start, Existing->GetSaveData().End })
+		{
+			if (GetNodeDegree(Node) != 1 || FMath::Abs(Node.Y - CellNode.Y) > 1) { continue; }
+			if (Node.X == CellNode.X && TryPlaceRailSegment(Node, CellNode + FIntPoint(1, 0))) { return true; }
+			if (Node.X == CellNode.X + 1 && TryPlaceRailSegment(CellNode, Node)) { return true; }
+		}
 	}
-	return false;
+	return TryPlaceRailSegment(CellNode, CellNode + FIntPoint(1, 0));
 }
 
 bool UMineTransportSubsystem::TryPlaceRailSegment(const FIntPoint& Start, const FIntPoint& End, FGuid Id, bool bKeepEndDisconnected)
@@ -55,13 +63,7 @@ bool UMineTransportSubsystem::TryPlaceRailSegment(const FIntPoint& Start, const 
 	if (FMath::Abs(Start.X - End.X) != 1 || FMath::Abs(Start.Y - End.Y) > 1 || GetNodeDegree(Start) >= 2 || GetNodeDegree(End) >= 2) { return false; }
 	for (const auto& Existing : Rails) { if (Existing.IsValid() && ((Existing->GetSaveData().Start == Start && Existing->GetSaveData().End == End) || (Existing->GetSaveData().Start == End && Existing->GetSaveData().End == Start))) { return false; } }
 	const bool bDisconnect = bKeepEndDisconnected || AreNodesConnected(Start, End);
-	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
-	for (const FIntPoint& Node : { Start, End })
-	{
-		ABlockBase* Floor = Level->GetBlockAtPosition(FVector2D(Node));
-		ABlockBase* Above = Level->GetBlockAtPosition(FVector2D(Node.X, Node.Y - 1));
-		if (Floor == nullptr || Floor->IsBreaking() || (Above != nullptr && Above->GetRecoveryItemKey() != TEXT("SupportBeam"))) { return false; }
-	}
+	if (IsNodeSupported(Start) == false || IsNodeSupported(End) == false) { return false; }
 	for (const auto& Existing : Rails)
 	{
 		if (Existing.IsValid() == false) { continue; }
@@ -170,7 +172,7 @@ bool UMineTransportSubsystem::HasCartOnLine(const ARailTrackActor* Rail) const
 
 bool UMineTransportSubsystem::HasRailAtSupport(FIntPoint Cell) const
 {
-	for (const auto& Rail : Rails) { if (Rail.IsValid() && (Rail->GetSaveData().Start == Cell || Rail->GetSaveData().End == Cell)) { return true; } }
+	for (const auto& Rail : Rails) { if (Rail.IsValid() && (Rail->GetSaveData().Start == Cell || Rail->GetSaveData().End == Cell || Rail->GetSaveData().Start == Cell + FIntPoint(1, 0) || Rail->GetSaveData().End == Cell + FIntPoint(1, 0))) { return true; } }
 	return false;
 }
 
@@ -186,6 +188,41 @@ TArray<FRailSaveData> UMineTransportSubsystem::GetRailSaveData() const { TArray<
 TArray<FMineCartSaveData> UMineTransportSubsystem::GetCartSaveData() const { TArray<FMineCartSaveData> Result; for (const auto& Cart : Carts) { if (Cart.IsValid()) { Result.Add(Cart->GetSaveData()); } } return Result; }
 const TArray<TWeakObjectPtr<ARailTrackActor>>& UMineTransportSubsystem::GetRails() const { return Rails; }
 const TArray<TWeakObjectPtr<AMineCartActor>>& UMineTransportSubsystem::GetCarts() const { return Carts; }
+
+bool UMineTransportSubsystem::IsNodeSupported(FIntPoint Node) const
+{
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	for (int32 Column : { Node.X - 1, Node.X })
+	{
+		ABlockBase* Floor = Level->GetBlockAtPosition(FVector2D(Column, Node.Y));
+		ABlockBase* Above = Level->GetBlockAtPosition(FVector2D(Column, Node.Y - 1));
+		if (Floor != nullptr && Floor->IsBreaking() == false && Floor->IsFalling() == false &&
+			(Above == nullptr || Above->IsClimbableSupport())) { return true; }
+	}
+	return false;
+}
+
+void UMineTransportSubsystem::UpdateUnsupportedRails()
+{
+	const auto Snapshot = Rails;
+	for (const auto& Rail : Snapshot)
+	{
+		if (Rail.IsValid() == false || (IsNodeSupported(Rail->GetSaveData().Start) && IsNodeSupported(Rail->GetSaveData().End))) { continue; }
+		const auto CartSnapshot = Carts;
+		for (const auto& Cart : CartSnapshot)
+		{
+			if (Cart.IsValid() == false || Cart->GetRail() != Rail.Get()) { continue; }
+			if (AStorageChestActor* Cargo = Cart->GetCargo()) { Cargo->TryBreakByExplosion(); }
+			if (AItemBase* Drop = GetWorld()->SpawnActor<AItemBase>(AItemBase::StaticClass(), Cart->GetActorLocation(), FRotator::ZeroRotator))
+			{
+				Drop->InitializeItemBase(Cart->GetSaveData().bAutomatic ? TEXT("AutoMineCart") : TEXT("MineCart"));
+			}
+			Cart->Destroy();
+		}
+		if (AItemBase* Drop = GetWorld()->SpawnActor<AItemBase>(AItemBase::StaticClass(), Rail->GetActorLocation(), FRotator::ZeroRotator)) { Drop->InitializeItemBase(TEXT("Rail")); }
+		Rail->Destroy();
+	}
+}
 
 bool UMineTransportSubsystem::AreNodesConnected(FIntPoint A, FIntPoint B) const
 {

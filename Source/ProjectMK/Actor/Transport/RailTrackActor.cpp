@@ -54,7 +54,7 @@ void ARailTrackActor::InitializeRail(const FRailSaveData& Data)
 	const FVector A = GetStartWorld(), B = GetEndWorld();
 	const FVector Direction = B - A;
 	SetActorLocation((A + B) * 0.5f);
-	SetActorRotation(Direction.Rotation());
+	SetActorRotation(FQuat(FVector::RightVector, -FMath::Atan2(Direction.Z, Direction.X)));
 	InteractionBox->SetBoxExtent(FVector(Direction.Size() * 0.5f, 14.f, 5.f));
 	const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
 	UPaperSprite* Sprite = Style != nullptr ? Style->TownSprites.FindRef(TEXT("Rail")) : nullptr;
@@ -66,10 +66,10 @@ void ARailTrackActor::InitializeRail(const FRailSaveData& Data)
 }
 
 void ARailTrackActor::UpdateEndCaps(bool bStart, bool bEnd) { StartCap->SetVisibility(bStart); EndCap->SetVisibility(bEnd); }
-FVector ARailTrackActor::GetStartWorld() const { return FVector((RailData.Start.X + 0.5f) * 16.f, -20.f, -RailData.Start.Y * 16.f + 0.5f); }
+FVector ARailTrackActor::GetStartWorld() const { return FVector(RailData.Start.X * 16.f, -20.f, -RailData.Start.Y * 16.f + 2.f); }
 FVector ARailTrackActor::GetEndWorld() const
 {
-	const FVector End((RailData.End.X + 0.5f) * 16.f, -20.f, -RailData.End.Y * 16.f + 0.5f);
+	const FVector End(RailData.End.X * 16.f, -20.f, -RailData.End.Y * 16.f + 2.f);
 	return RailData.bEndDisconnected ? End - (End - GetStartWorld()).GetSafeNormal() * 5.f : End;
 }
 const FRailSaveData& ARailTrackActor::GetSaveData() const { return RailData; }

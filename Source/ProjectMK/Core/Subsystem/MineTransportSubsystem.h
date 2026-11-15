@@ -37,11 +37,14 @@ public:
 	const TArray<TWeakObjectPtr<ARailTrackActor>>& GetRails() const;
 	const TArray<TWeakObjectPtr<AMineCartActor>>& GetCarts() const;
 private:
+	bool IsNodeSupported(FIntPoint Node) const;
+	void UpdateUnsupportedRails();
 	bool AreNodesConnected(FIntPoint A, FIntPoint B) const;
 	int32 GetNodeDegree(FIntPoint Node) const;
 	void UpdateEndCaps();
 	TArray<TWeakObjectPtr<ARailTrackActor>> Rails;
 	TArray<TWeakObjectPtr<AMineCartActor>> Carts;
+	float SupportCheckTime = 0.f;
 	bool bClearing = false;
 	bool bDirty = false;
 };

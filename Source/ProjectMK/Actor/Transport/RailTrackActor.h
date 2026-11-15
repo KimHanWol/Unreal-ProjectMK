@@ -16,6 +16,7 @@ class PROJECTMK_API ARailTrackActor : public AActor, public IInteractable
 public:
 	ARailTrackActor();
 	virtual bool CanInteract(AActor* Interactor) override;
+	virtual bool ShouldShowInteractionPrompt() const override { return false; }
 	virtual FName GetRecoveryItemKey() const override;
 	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 protected:
