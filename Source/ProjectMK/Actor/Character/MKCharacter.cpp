@@ -35,6 +35,7 @@
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
 #include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 #include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
+#include "ProjectMK/Core/Subsystem/ForestrySubsystem.h"
 #include "ProjectMK/Data/DataAsset/GameplayEffectDataAsset.h"
 #include "ProjectMK/Data/DataAsset/GameSettingDataAsset.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
@@ -396,6 +397,7 @@ bool AMKCharacter::TrySaveGame()
 	}
 
 	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->WriteSaveData(SaveGame);
+	SaveGame->Trees = GetWorld()->GetSubsystem<UForestrySubsystem>()->GetSaveData();
 	SaveGame->Rails = GetWorld()->GetSubsystem<UMineTransportSubsystem>()->GetRailSaveData();
 	SaveGame->MineCarts = GetWorld()->GetSubsystem<UMineTransportSubsystem>()->GetCartSaveData();
 	return SaveGameSubsystem->TrySaveGameToSlot();

@@ -29,6 +29,12 @@ struct FMonsterDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Stats", meta = (ClampMin = "1.0"))
 	float MaxHealth = 80.f;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fall", meta = (ClampMin = "0"))
+	float MinimumFallDamageSpeed = 180.f;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Fall", meta = (ClampMin = "0"))
+	float FallDamagePerSpeed = 0.6f;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Wander", meta = (ClampMin = "0.0", Units = "cm/s"))
 	float MoveSpeed = 20.f;
 

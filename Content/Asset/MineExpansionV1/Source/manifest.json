@@ -1,0 +1,32 @@
+﻿[
+    {
+        "width":  192,
+        "name":  "Shop",
+        "file":  "Content/Asset/MineExpansionV1/Source/Shop.png",
+        "height":  168
+    },
+    {
+        "width":  512,
+        "name":  "IndustrialBackdrop",
+        "file":  "Content/Asset/MineExpansionV1/Source/IndustrialBackdrop.png",
+        "height":  160
+    },
+    {
+        "width":  32,
+        "name":  "TreeTrunk",
+        "file":  "Content/Asset/MineExpansionV1/Source/TreeTrunk.png",
+        "height":  32
+    },
+    {
+        "width":  32,
+        "name":  "TreeLeaves",
+        "file":  "Content/Asset/MineExpansionV1/Source/TreeLeaves.png",
+        "height":  32
+    },
+    {
+        "width":  32,
+        "name":  "Wood",
+        "file":  "Content/Asset/MineExpansionV1/Source/Wood.png",
+        "height":  32
+    }
+]

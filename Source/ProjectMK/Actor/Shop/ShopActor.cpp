@@ -93,7 +93,7 @@ void AShopActor::InitializeShop(const FIntPoint& TileSize)
 	{
 		ShopSprite->SetSprite(Sprite);
 		const FVector2D SourceSize = Sprite->GetSourceSize() / Sprite->GetPixelsPerUnrealUnit();
-		const float Scale = FMath::Min(TileSize.X / FMath::Max(1.f, SourceSize.X), TileSize.Y / FMath::Max(1.f, SourceSize.Y)) * VisualSizeInTiles;
+		const float Scale = TileSize.X * VisualSizeInTiles / FMath::Max(1.f, SourceSize.X);
 		const float VisualHeight = SourceSize.Y * Scale;
 		const float BaseZ = GetActorLocation().Z - TileSize.Y * 0.5f;
 		FHitResult GroundHit;

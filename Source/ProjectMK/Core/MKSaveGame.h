@@ -22,6 +22,7 @@ public:
 	UPROPERTY() int32 MaximumReachedDepth = 0;
 	UPROPERTY() TArray<FTownQuestState> TownQuests;
 	UPROPERTY() TSet<FName> OwnedRelics;
+	UPROPERTY() TArray<FTreeSaveData> Trees;
 	UPROPERTY() TArray<FRailSaveData> Rails;
 	UPROPERTY() TArray<FMineCartSaveData> MineCarts;
 	UPROPERTY() TArray<FInstalledStructureSaveData> InstalledStructures;

@@ -59,6 +59,12 @@ struct FBlockDataTableRow : public FTableRowBase
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bFallsWhenUnmineable = false;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bDropOnCollapse = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bDamagesTerrainOnImpact = true;
+
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))
 	FName RecoveryItemKey = NAME_None;
 

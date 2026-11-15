@@ -28,6 +28,7 @@ public:
 	bool TryTravel(AMKCharacter* Player, AMineFacilityActor* Source, int32 Depth);
 	void BeginResidentConversation(AMKCharacter* Player, AMineFacilityActor* Resident);
 	bool TryQuestAction(AMKCharacter* Player, AMineFacilityActor* Resident);
+	void NotifyMonsterDefeated(FName MonsterKey);
 	int32 GetMaximumDepth() const;
 	bool HasRelic(FName Key) const;
 	FText GetDialogue(const AMineFacilityActor* Facility, AMKCharacter* Player) const;
@@ -39,9 +40,16 @@ public:
 private:
 	void LoadProgress();
 	void GenerateVillageBackdrop();
+	void UpdateBackdrop(AMKCharacter* Player);
 	const FTownQuestDefinition* GetQuestDefinition(int32 Resident) const;
+	void OnTravelStep();
 	TArray<TWeakObjectPtr<AMineFacilityActor>> Facilities;
 	TArray<TWeakObjectPtr<AActor>> VillageScenery;
+	TArray<FVector> SceneryBaseLocations;
+	TWeakObjectPtr<AMKCharacter> Traveler;
+	TWeakObjectPtr<AMineFacilityActor> TravelDestination;
+	FTimerHandle TravelTimer;
+	int32 TravelStep = 0;
 	TArray<FTownQuestState> Quests;
 	TSet<FName> OwnedRelics;
 	int32 MaximumDepth = 0;

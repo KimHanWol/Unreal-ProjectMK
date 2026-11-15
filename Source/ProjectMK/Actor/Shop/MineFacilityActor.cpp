@@ -51,12 +51,13 @@ FText AMineFacilityActor::GetFacilityName() const
 	{
 	case EMineFacilityKind::Elevator: return NSLOCTEXT("Town", "Elevator", "광산 엘리베이터");
 	case EMineFacilityKind::RailFactory: return NSLOCTEXT("Town", "RailFactory", "철도 공장");
+	case EMineFacilityKind::QuestBoard: return NSLOCTEXT("Town", "QuestBoard", "퇴치 의뢰 게시판");
 	case EMineFacilityKind::HouseA: return NSLOCTEXT("Town", "MinerResident", "광부의 집 · 광부");
 	default: return NSLOCTEXT("Town", "MechanicResident", "정비공의 집 · 정비공");
 	}
 }
 FName AMineFacilityActor::GetArtKey() const
 {
-	static const FName Keys[] = { TEXT("Elevator"), TEXT("RailFactory"), TEXT("HouseA"), TEXT("HouseB") };
+	static const FName Keys[] = { TEXT("Elevator"), TEXT("RailFactory"), TEXT("HouseA"), TEXT("HouseB"), TEXT("VillageNotice") };
 	return Keys[static_cast<int32>(FacilityKind)];
 }

@@ -14,6 +14,7 @@
 #include "ProjectMK/Actor/Transport/MineCartActor.h"
 #include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 #include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
+#include "ProjectMK/Core/Subsystem/ForestrySubsystem.h"
 #include "ProjectMK/Actor/Shop/StorageChestActor.h"
 #include "GameFramework/PlayerStart.h"
 #include "PaperSpriteActor.h"
@@ -906,6 +907,15 @@ namespace
 		AddRandomRewardCells(PatternStamp, LeftPillarCells, 0.5f, RandomStream);
 		AddRandomRewardCells(PatternStamp, RightPillarCells, 0.5f, RandomStream);
 		FinalizeEnclosedStamp(PatternStamp, 0, 0, true);
+		// A mineable floor above a drop shaft provides a second solution besides collapsing the ceiling.
+		for (int32 X = RoomMinX - 1; X <= RoomMaxX + 1; ++X)
+		{
+			PatternStamp.RockAnchorCells.Remove(FIntPoint(X, RoomMaxY + 1));
+			PatternStamp.TargetCells.Add(FIntPoint(X, RoomMaxY + 1));
+		}
+		AddRectangleCells(PatternStamp.RequiredEmptyCells, RoomMinX - 1, RoomMaxY + 2, RoomMaxX + 1, RoomMaxY + 7);
+		AddRectangleCells(PatternStamp.RockAnchorCells, RoomMinX - 1, RoomMaxY + 8, RoomMaxX + 1, RoomMaxY + 8);
+		AddRectangleCells(PatternStamp.ReservedCells, RoomMinX - 1, RoomMaxY + 1, RoomMaxX + 1, RoomMaxY + 8);
 		return PatternStamp;
 	}
 
@@ -1500,9 +1510,13 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 				{
 					if (ULevelManagerSubsystem* LevelManagerSubsystem = World->GetSubsystem<ULevelManagerSubsystem>())
 					{
-						bHitBlockBroken = LevelManagerSubsystem->ApplyFallingImpactToSettledBlocks(
-							HitBlock,
-							CalculateFallingBlockImpactDamage(BottomBlock.Get(), VerticalBlockData.FallingVelocity));
+						const auto* FallingData = UDataManager::Get(BottomBlock.Get())->GetBlockDataTableRow(NearestFallingBlock->GetTileIndex());
+						if (FallingData == nullptr || FallingData->bDamagesTerrainOnImpact)
+						{
+							bHitBlockBroken = LevelManagerSubsystem->ApplyFallingImpactToSettledBlocks(
+								HitBlock,
+								CalculateFallingBlockImpactDamage(BottomBlock.Get(), VerticalBlockData.FallingVelocity));
+						}
 					}
 				}
 
@@ -1715,7 +1729,7 @@ bool FFallingBlockGroupData::TryDestroyFallingBlockOnImpact(
 	}
 
 	// 붕괴 충격으로 부서진 블록은 아이템을 드롭하지 않는다. 버텨서 착지한 블록은 드롭을 유지한다.
-	FallingBlock->SetItemDropEnabled(false);
+	FallingBlock->SetItemDropEnabled(Row != nullptr && Row->bDropOnCollapse);
 	FGameplayAbilityUtils::ApplyDamageToDurability(FallingAbilitySystemComponent, nullptr, ImpactDamage);
 
 	const float RemainingDurability = BlockAttributeSet->GetDurability();
@@ -1798,7 +1812,13 @@ void ULevelManagerSubsystem::GenerateWorldBlocks()
 	const USaveGameSubsystem* SaveGameSubsystem = USaveGameSubsystem::Get(this);
 	const UMKSaveGame* SaveGame = ::IsValid(SaveGameSubsystem) ? SaveGameSubsystem->GetSaveGame() : nullptr;
 	RegenerateMineableBlocks(::IsValid(SaveGame) ? SaveGame->GenerationSeed : INDEX_NONE);
-	if (::IsValid(SaveGame)) { RestoreInstalledStructures(SaveGame->InstalledStructures); GetWorld()->GetSubsystem<UMineTransportSubsystem>()->RestoreNetwork(SaveGame->Rails, SaveGame->MineCarts); RestoreStorageChests(SaveGame->StorageChests, SaveGame->DestroyedStorageChestIds); }
+	if (::IsValid(SaveGame)) { RestoreInstalledStructures(SaveGame->InstalledStructures); GetWorld()->GetSubsystem<UMineTransportSubsystem>()->RestoreNetwork(SaveGame->Rails, SaveGame->MineCarts); RestoreStorageChests(SaveGame->StorageChests, SaveGame->DestroyedStorageChestIds); GetWorld()->GetSubsystem<UForestrySubsystem>()->RestoreTrees(SaveGame->Trees); }
+}
+
+void ULevelManagerSubsystem::PreparePlayerArrival()
+{
+	LastVisibilityCell = FIntPoint(MAX_int32 / 2, MAX_int32 / 2);
+	UpdateBlockVisibility();
 }
 
 void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
@@ -1917,6 +1937,7 @@ void ULevelManagerSubsystem::RegenerateMineableBlocks(int32 GenerationSeed)
 	GenerateMineDecorations(GenerationSettings);
 	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->GenerateFacilities();
 	GenerateBuriedChests(GenerationSettings);
+	GetWorld()->GetSubsystem<UForestrySubsystem>()->GenerateTrees();
 	if (bDeferringTerrainEdges)
 	{
 		TRACE_CPUPROFILER_EVENT_SCOPE(MK_FinalizeTerrainEdges);
@@ -2145,7 +2166,8 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 			Chest.Location = FVector((Floor.X + 0.5f) * BLOCK_SIZE, -20.f, -(Floor.Y - 0.5f) * BLOCK_SIZE);
 			return SpawnStorageChest(Chest) != nullptr;
 		}
-		const FVector Location((Floor.X + 0.5f) * BLOCK_SIZE, -32.f, -Floor.Y * BLOCK_SIZE + Source.Y * 0.25f);
+		const float Scale = Kind == TEXT("LanternPost") ? 1.15f : 1.f;
+		const FVector Location((Floor.X + 0.5f) * BLOCK_SIZE, -32.f, -Floor.Y * BLOCK_SIZE + Source.Y * 0.25f * Scale);
 		APaperSpriteActor* Decoration = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
 		if (Decoration == nullptr) { return false; }
 		Decoration->Tags.Add(TEXT("MineDecoration"));
@@ -2154,6 +2176,7 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		UPaperSpriteComponent* Render = Decoration->GetRenderComponent();
 		Render->SetMobility(EComponentMobility::Movable);
 		Render->SetSprite(*Sprite);
+		Render->SetRelativeScale3D(FVector(Scale, 1.f, Scale));
 		Render->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Render->SetTranslucentSortPriority(-4);
 		Render->SetComponentTickEnabled(false);
@@ -2163,9 +2186,9 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 	};
 	const int32 End = Settings.StartColumn + FMath::Clamp(Settings.WidthInBlocks, 16, 512);
 	const int32 ShopColumn = FMath::Clamp(Settings.ShopColumn, Settings.StartColumn + 4, End - 5);
-	ProtectSurfaceFoundation(FIntPoint(ShopColumn, GetSurfaceRow(ShopColumn)), 2);
+	ProtectSurfaceFoundation(FIntPoint(ShopColumn, GetSurfaceRow(ShopColumn)), 3);
 	for (const auto& Feature : { TPair<FName, int32>(TEXT("LanternPost"), ProtectedSpawnColumn - 3),
-		TPair<FName, int32>(TEXT("Minecart"), ProtectedSpawnColumn + 4), TPair<FName, int32>(TEXT("SupplyCrates"), ShopColumn + 5),
+		TPair<FName, int32>(TEXT("Minecart"), ProtectedSpawnColumn + 4), TPair<FName, int32>(TEXT("SupplyCrates"), ShopColumn + 6),
 		TPair<FName, int32>(TEXT("MineEntrance"), ProtectedSpawnColumn - 8) })
 	{
 		if (Feature.Value >= Settings.StartColumn + 2 && Feature.Value < End - 2) { Place(Feature.Key, FIntPoint(Feature.Value, GetSurfaceRow(Feature.Value))); }
@@ -2393,6 +2416,7 @@ void ULevelManagerSubsystem::UpdateBlockVisibility()
 void ULevelManagerSubsystem::ClearGeneratedBlocks()
 {
 	TGuardValue<bool> ClearingGuard(bClearingGeneratedBlocks, true);
+	GetWorld()->GetSubsystem<UForestrySubsystem>()->ClearTrees();
 	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->ClearFacilities();
 	GetWorld()->GetSubsystem<UMineTransportSubsystem>()->ClearNetwork();
 	for (const auto& Chest : StorageChests) { if (Chest.IsValid()) { Chest->Destroy(); } }
@@ -2471,6 +2495,16 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 	for (const FIntPoint& Cell : TemplateCoordinates)
 	{
 		if (Cell.Y < SurfaceY + 2) { ReservedCoordinates.Add(Cell); }
+	}
+
+	const auto& Town = UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities;
+	if (Town.bEnabled && GenerationSettings.WidthInBlocks >= 112)
+	{
+		for (int32 Depth : Town.ElevatorDepths)
+		{
+			const int32 Column = GenerationSettings.StartColumn + Town.ElevatorColumn;
+			AddRectangleCells(ReservedCoordinates, Column - 6, SurfaceY + Depth - 10, Column + 6, SurfaceY + Depth + 3);
+		}
 	}
 
 	// 다양성을 우선한다. 모든 종류를 한 번씩 시도한 뒤, 다음 회차는 적게 배치된 종류부터 시도한다.
@@ -2740,7 +2774,7 @@ void ULevelManagerSubsystem::GenerateMineableLayout(
 			});
 			for (const FIntPoint& Cell : EmptyCells)
 			{
-				if (PatternStamp.RockAnchorCells.Contains(Cell + FIntPoint(0, 1)) && PatternStamp.RequiredEmptyCells.Contains(Cell - FIntPoint(0, 1)))
+				if ((Encounter.Purpose == EMineStructurePurpose::CombatTrap ? PatternStamp.TargetCells.Contains(Cell + FIntPoint(0, 1)) : PatternStamp.RockAnchorCells.Contains(Cell + FIntPoint(0, 1))) && PatternStamp.RequiredEmptyCells.Contains(Cell - FIntPoint(0, 1)))
 				{
 					Encounter.MonsterCell = Cell;
 					Encounter.bHasMonster = Encounter.Purpose == EMineStructurePurpose::CombatTrap;

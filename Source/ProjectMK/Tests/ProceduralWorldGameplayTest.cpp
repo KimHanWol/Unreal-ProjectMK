@@ -100,7 +100,8 @@ namespace
 				if (Encounter.Purpose == EMineStructurePurpose::CombatTrap)
 				{
 					Test->TestTrue(TEXT("Combat trap has a monster position"), Encounter.bHasMonster);
-					Test->TestEqual(TEXT("Monster stands on trap floor"), TileAt(Encounter.MonsterCell.X, Encounter.MonsterCell.Y + 1), Rock);
+					ABlockBase* Floor = Level->GetBlockAtPosition(FVector2D(Encounter.MonsterCell.X, Encounter.MonsterCell.Y + 1));
+					Test->TestTrue(TEXT("Monster trap floor can be mined for a fall attack"), Floor != nullptr && Floor->IsMineable());
 				}
 			}
 			Test->TestEqual(TEXT("Generation includes ore, shortcut, and combat purposes"), Purposes.Num(), 3);

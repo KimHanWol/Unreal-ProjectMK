@@ -186,6 +186,9 @@ public:
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Town")
 	FTownFacilitySettings TownFacilities;
 
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, Category = "Forestry")
+	FForestrySettings Forestry;
+
 	/** 산소가 즉시 최대치로 회복되는 지표면 블록 Y 좌표 */
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Oxygen")
 	int32 SurfaceBlockPositionY = 0;

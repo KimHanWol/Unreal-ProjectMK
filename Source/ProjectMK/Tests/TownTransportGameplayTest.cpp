@@ -93,7 +93,7 @@ namespace
 					if (Actor->GetFacilityKind() == EMineFacilityKind::RailFactory) { Factory = Actor; }
 					if (Actor->GetFacilityKind() == EMineFacilityKind::HouseA) { House = Actor; }
 				}
-				if (Test->TestTrue(TEXT("Two houses, factory and all three elevator stations exist"), Town->GetFacilities().Num() == 6 && Surface.IsValid() && Deep.IsValid() && Factory.IsValid() && House.IsValid()) == false) { Fixture.Restore(); return true; }
+				if (Test->TestTrue(TEXT("Two houses, quest board, factory and all three elevator stations exist"), Town->GetFacilities().Num() == 7 && Surface.IsValid() && Deep.IsValid() && Factory.IsValid() && House.IsValid()) == false) { Fixture.Restore(); return true; }
 				int32 VillageCount = 0;
 				for (TActorIterator<APaperSpriteActor> It(Fixture.World); It; ++It)
 				{
@@ -102,7 +102,7 @@ namespace
 					Test->TestTrue(TEXT("Village scenery has a real sprite at its authored position"), It->GetActorLocation().X > 100.f && It->GetRenderComponent()->GetSprite() != nullptr);
 					Test->TestFalse(TEXT("Background houses never collide with the player"), It->GetActorEnableCollision());
 				}
-				Test->TestEqual(TEXT("The village has two background house groups and a notice post"), VillageCount, 3);
+				Test->TestEqual(TEXT("The village has two background house groups and an industrial layer"), VillageCount, 3);
 				Test->TestFalse(TEXT("Unvisited elevator depths stay locked"), Town->CanTravelToDepth(32));
 				Test->TestTrue(TEXT("The surface station explains construction before unlock"), Town->GetDialogue(Surface.Get(), Fixture.Player).ToString().Contains(TEXT("공사 중")));
 				Fixture.Player->GetAbilitySystemComponent()->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), 1000.f);
@@ -110,7 +110,23 @@ namespace
 				Fixture.Player->SetActorLocation(Deep->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
 				ChangedAt = Fixture.World->GetTimeSeconds(); ++Step; return false;
 			}
-			if (Fixture.World->GetTimeSeconds() - ChangedAt < 0.7f) { return false; }
+			if (Fixture.World->GetTimeSeconds() - ChangedAt < (Step == 3 ? 1.5f : 0.7f)) { return false; }
+			if (Step == 2)
+			{
+				Test->TestTrue(TEXT("Fade travel arrives at the surface before returning"), FMath::Abs(Fixture.Player->GetActorLocation().Z - Surface->GetActorLocation().Z) < 20.f);
+				if (Town->TryTravel(Fixture.Player, Surface.Get(), 72) == false)
+				{
+					if (Fixture.World->GetTimeSeconds() - ChangedAt < 3.f) { return false; }
+					Test->AddError(TEXT("The surface elevator did not release the completed transition.")); Fixture.Restore(); return true;
+				}
+				Test->AddInfo(FString::Printf(TEXT("Return trip accepted after fade at %.2fs"), Fixture.World->GetTimeSeconds() - ChangedAt));
+				ChangedAt = Fixture.World->GetTimeSeconds(); Step = 3; return false;
+			}
+			if (Step == 3)
+			{
+				Test->TestTrue(TEXT("The second fade travel arrives underground"), FMath::Abs(Fixture.Player->GetActorLocation().Z - Deep->GetActorLocation().Z) < 20.f);
+				Fixture.Restore(); return true;
+			}
 			Test->TestTrue(TEXT("Reaching the real deep station records maximum depth"), Town->GetMaximumDepth() >= 72);
 			Test->TestTrue(TEXT("The factory unlocks after the configured depth"), Town->IsRailFactoryUnlocked());
 			Fixture.Player->SetActorLocation(Factory->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
@@ -151,9 +167,7 @@ namespace
 			Test->TestTrue(TEXT("Depth, quest completion and relic ownership survive save reload"), Town->GetMaximumDepth() >= 72 && Town->HasRelic(TEXT("SteadyBelt")) && Reloaded->TownQuests[0].CompletedCount == 3);
 			Fixture.Player->SetActorLocation(Deep->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
 			Test->TestTrue(TEXT("An unlocked underground station returns the player to the surface"), Town->TryTravel(Fixture.Player, Deep.Get(), 0));
-			Fixture.Player->SetActorLocation(Surface->GetActorLocation() + FVector(0.f, 0.f, -2.96f));
-			Test->TestTrue(TEXT("The surface elevator can return to the visited underground station"), Town->TryTravel(Fixture.Player, Surface.Get(), 72));
-			Fixture.Restore(); return true;
+			ChangedAt = Fixture.World->GetTimeSeconds(); Step = 2; return false;
 		}
 	private:
 		FAutomationTestBase* Test; double Started; int32 Step = 0; float ChangedAt = 0.f;

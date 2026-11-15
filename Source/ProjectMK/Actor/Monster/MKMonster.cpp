@@ -17,6 +17,7 @@
 #include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
+#include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 #include "ProjectMK/Helper/Utils/GameplayAbilityUtils.h"
 #include "ProjectMK/System/GlobalConstants.h"
 #include "ProjectMK/UI/MonsterStatusWidget.h"
@@ -109,6 +110,16 @@ void AMKMonster::BeginPlay()
 	GetWorld()->GetTimerManager().SetTimer(BehaviorTimerHandle, this, &AMKMonster::UpdateBehavior, 0.1f, true);
 }
 
+void AMKMonster::Landed(const FHitResult& Hit)
+{
+	const float ImpactSpeed = FMath::Max(0.f, -GetCharacterMovement()->Velocity.Z);
+	Super::Landed(Hit);
+	if (bInitialized && bIsDying == false && ImpactSpeed > MonsterData.MinimumFallDamageSpeed)
+	{
+		FGameplayAbilityUtils::ApplyDamage(AbilitySystemComponent, nullptr, (ImpactSpeed - MonsterData.MinimumFallDamageSpeed) * MonsterData.FallDamagePerSpeed);
+	}
+}
+
 void AMKMonster::EndPlay(const EEndPlayReason::Type EndPlayReason)
 {
 	if (UWorld* World = GetWorld())
@@ -158,6 +169,7 @@ void AMKMonster::OnDestroyed()
 		return;
 	}
 	bIsDying = true;
+	GetWorld()->GetSubsystem<UTownProgressSubsystem>()->NotifyMonsterDefeated(MonsterDataRowKey);
 	GetCharacterMovement()->StopMovementImmediately();
 	SetActorEnableCollision(false);
 	Destroy();

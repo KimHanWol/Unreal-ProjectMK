@@ -70,7 +70,7 @@ void UFacilityMenuContents::UpdateWidget()
 			Actions[Index]->SetIsEnabled(Town->CanTravelToDepth(Depth) && Depth != Facility->GetStationDepth());
 		}
 	}
-	else if (Facility->GetFacilityKind() == EMineFacilityKind::HouseA || Facility->GetFacilityKind() == EMineFacilityKind::HouseB)
+	else if (Facility->GetFacilityKind() == EMineFacilityKind::HouseA || Facility->GetFacilityKind() == EMineFacilityKind::HouseB || Facility->GetFacilityKind() == EMineFacilityKind::QuestBoard)
 	{
 		ActionFrames[0]->SetVisibility(Town->GetQuestActionLabel(Facility.Get()).IsEmpty() ? ESlateVisibility::Collapsed : ESlateVisibility::Visible);
 		Actions[0]->SetIsEnabled(Town->CanUseQuestAction(Facility.Get(), GetLocalPlayerCharacter()));

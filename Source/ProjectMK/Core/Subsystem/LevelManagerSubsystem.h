@@ -135,6 +135,7 @@ public:
 	//~UTickableWorldSubsystem
 
 	void GenerateWorldBlocks();
+	void PreparePlayerArrival();
 
 	UFUNCTION(BlueprintCallable, Category = "Level Generation")
 	void RegenerateMineableBlocks(int32 GenerationSeed = -1);
