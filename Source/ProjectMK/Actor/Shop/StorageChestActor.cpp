@@ -19,7 +19,7 @@ bool AStorageChestActor::CanInteract(AActor* Interactor)
 	return bIsBuried == false && bIsBreaking == false && (MountedCart.IsValid() || (PhysicsBlock.IsValid() && PhysicsBlock->IsFalling() == false)) && Super::CanInteract(Interactor);
 }
 
-int32 AStorageChestActor::GetInteractionPriority() const { return MountedCart.IsValid() ? 1 : 0; }
+int32 AStorageChestActor::GetInteractionPriority() const { return MountedCart.IsValid() ? 6 : 1; }
 
 FName AStorageChestActor::GetRecoveryItemKey() const { return ChestItemKey; }
 
@@ -62,7 +62,7 @@ void AStorageChestActor::InitializeChest(FGuid Id, FName ItemKey, bool bBuried, 
 	const FItemDataTableRow* Item = UDataManager::Get(this)->GetDataTableRow<FItemDataTableRow>(EDataTableType::Item, ItemKey);
 	UPaperSprite* Sprite = Item != nullptr ? Item->ItemIcon.LoadSynchronous() : nullptr;
 	ShopSprite->SetSprite(Sprite);
-	if (Sprite != nullptr) { ShopSprite->SetRelativeLocation(FVector(0.f, -12.f, -8.f + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f)); }
+	if (Sprite != nullptr) { ShopSprite->SetRelativeLocation(FVector(0.f, -3.f, -8.f + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f)); }
 	InteractionBox->SetBoxExtent(FVector(32.f, 32.f, 24.f));
 	bIsBuried = bBuried;
 	SetActorHiddenInGame(bBuried);
@@ -152,7 +152,7 @@ void AStorageChestActor::SetPhysicsBlock(ABlockBase* Block)
 		ShopSprite->SetVisibility(false);
 		if (UPaperSpriteComponent* Render = Block->FindComponentByClass<UPaperSpriteComponent>())
 		{
-			Render->SetRelativeLocation(FVector(0.f, -12.f, 0.f));
+			Render->SetRelativeLocation(FVector(0.f, -3.f, 0.f));
 			Render->SetTranslucentSortPriority(-4);
 		}
 	}
@@ -164,7 +164,8 @@ void AStorageChestActor::SetMountedCart(AMineCartActor* Cart)
 	if (Cart != nullptr)
 	{
 		AttachToActor(Cart, FAttachmentTransformRules::KeepWorldTransform);
-		SetActorRelativeLocation(FVector(0.f, 0.f, 12.f));
+		SetActorRelativeLocation(FVector(0.f, 0.f, Cart->GetCargoMountHeight()));
+		SetActorRelativeRotation(FRotator::ZeroRotator);
 		Cart->SetCargo(this);
 		ShopSprite->SetVisibility(true);
 	}

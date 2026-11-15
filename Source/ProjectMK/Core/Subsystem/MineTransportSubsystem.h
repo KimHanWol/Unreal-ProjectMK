@@ -29,7 +29,7 @@ public:
 	AMineCartActor* FindCart(FGuid Id) const;
 	bool HasCartOnLine(const ARailTrackActor* Rail) const;
 	bool HasRailAtSupport(FIntPoint Cell) const;
-	bool CanCartOccupy(const AMineCartActor* Cart, const FVector& Location) const;
+	bool CanCartOccupy(const AMineCartActor* Cart, const FVector& Location, const FQuat& Rotation = FQuat::Identity) const;
 	bool IsDirty() const;
 	void ClearDirty();
 	TArray<FRailSaveData> GetRailSaveData() const;
@@ -38,6 +38,7 @@ public:
 	const TArray<TWeakObjectPtr<AMineCartActor>>& GetCarts() const;
 private:
 	bool IsNodeSupported(FIntPoint Node) const;
+	bool IsRailCovered(const ARailTrackActor* Rail) const;
 	void UpdateUnsupportedRails();
 	bool AreNodesConnected(FIntPoint A, FIntPoint B) const;
 	int32 GetNodeDegree(FIntPoint Node) const;

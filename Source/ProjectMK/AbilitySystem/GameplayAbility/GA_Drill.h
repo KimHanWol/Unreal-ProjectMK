@@ -47,7 +47,6 @@ private:
 	void EnableDrill(bool bEnable);
 
 	float DrillingPower = 0.f;
-	float DrillingDistance = 0.f;
 
 	TWeakObjectPtr<AMKCharacter> SourceCharacter = nullptr;
 	TWeakObjectPtr<UAbilitySystemComponent> SourceASC = nullptr;

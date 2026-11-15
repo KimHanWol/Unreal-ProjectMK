@@ -5,6 +5,8 @@
 #include "PaperSpriteComponent.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
+#include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
+#include "ProjectMK/Actor/Block/BlockBase.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
 
 ARailTrackActor::ARailTrackActor()
@@ -17,6 +19,10 @@ ARailTrackActor::ARailTrackActor()
 	InteractionBox->SetCollisionResponseToChannel(ECC_Visibility, ECR_Overlap);
 	RailSprite = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("Rail"));
 	RailSprite->SetupAttachment(RootComponent);
+	Trestle = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("Trestle"));
+	Trestle->SetupAttachment(RootComponent);
+	Trestle->SetCollisionEnabled(ECollisionEnabled::NoCollision);
+	Trestle->SetUsingAbsoluteRotation(true);
 	StartCap = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("StartCap"));
 	StartCap->SetupAttachment(RootComponent);
 	EndCap = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("EndCap"));
@@ -25,7 +31,7 @@ ARailTrackActor::ARailTrackActor()
 	{
 		Render->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		Render->SetTranslucentSortPriority(-4);
-		Render->SetRelativeLocation(FVector(0.f, -10.f, 0.f));
+		Render->SetRelativeLocation(FVector(0.f, -18.f, 0.f));
 	}
 }
 
@@ -61,8 +67,16 @@ void ARailTrackActor::InitializeRail(const FRailSaveData& Data)
 	RailSprite->SetSprite(Sprite);
 	if (Sprite != nullptr) { RailSprite->SetRelativeScale3D(FVector(Direction.Size() / (Sprite->GetSourceSize().X / Sprite->GetPixelsPerUnrealUnit()), 1.f, 1.f)); }
 	for (auto* Cap : { StartCap.Get(), EndCap.Get() }) { Cap->SetSprite(Style != nullptr ? Style->TownSprites.FindRef(TEXT("RailEnd")) : nullptr); }
-	StartCap->SetRelativeLocation(FVector(-Direction.Size() * 0.5f, -9.5f, 1.f));
-	EndCap->SetRelativeLocation(FVector(Direction.Size() * 0.5f, -9.5f, 1.f));
+	StartCap->SetRelativeLocation(FVector(-Direction.Size() * 0.5f, -17.5f, 1.f));
+	EndCap->SetRelativeLocation(FVector(Direction.Size() * 0.5f, -17.5f, 1.f));
+	const bool bSlope = RailData.Start.Y != RailData.End.Y;
+	const int32 Column = RailData.Start.X;
+	const int32 Row = FMath::Min(RailData.Start.Y,RailData.End.Y);
+	ABlockBase* Support = GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetBlockAtPosition(FVector2D(Column,Row));
+	Trestle->SetSprite(Style != nullptr ? Style->TownSprites.FindRef(Direction.Z < 0.f ? TEXT("RailTrestleDown") : TEXT("RailTrestleUp")) : nullptr);
+	Trestle->SetWorldRotation(FRotator::ZeroRotator);
+	Trestle->SetWorldLocation(FVector((Column+0.5f)*16.f,-46.f,-(Row+0.5f)*16.f));
+	Trestle->SetVisibility(bSlope && (Support == nullptr || Support->IsClimbableSupport() == false));
 }
 
 void ARailTrackActor::UpdateEndCaps(bool bStart, bool bEnd) { StartCap->SetVisibility(bStart); EndCap->SetVisibility(bEnd); }

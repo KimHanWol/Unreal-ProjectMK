@@ -30,6 +30,7 @@ public:
 private:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> InteractionBox;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UPaperSpriteComponent> RailSprite;
+	UPROPERTY(VisibleAnywhere) TObjectPtr<UPaperSpriteComponent> Trestle;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UPaperSpriteComponent> StartCap;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UPaperSpriteComponent> EndCap;
 	FRailSaveData RailData;

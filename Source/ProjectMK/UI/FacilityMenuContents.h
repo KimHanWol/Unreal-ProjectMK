@@ -36,5 +36,8 @@ private:
 	UPROPERTY(Transient) TArray<TObjectPtr<UButton>> Actions;
 	UPROPERTY(Transient) TArray<TObjectPtr<UTextBlock>> Labels;
 	UPROPERTY(Transient) TArray<TObjectPtr<USizeBox>> ActionFrames;
+	UPROPERTY(Transient) TObjectPtr<UWidget> DefaultContents;
+	UPROPERTY(Transient) TObjectPtr<UWidget> BoardContents;
+	UPROPERTY(Transient) TArray<TObjectPtr<class UBountyNoticeWidget>> Notices;
 	TArray<int32> Destinations;
 };

@@ -35,6 +35,7 @@ public:
 
 	UMKMenuContentsBase* GetCurrentContents() const;
 	void SetWindowTitle(const FText& Title);
+	void SetPreferredFrameSize(const FVector2D& Size);
 	bool IsMenuOpen() const;
 	bool IsMenuOpen(EMenuContentsType InMenuContentsType) const;
 
@@ -68,4 +69,5 @@ private:
 
 	UPROPERTY(VisibleAnywhere, BlueprintReadOnly, Category = "Menu", meta = (AllowPrivateAccess = "true"))
 	EMenuContentsType CurrentMenuContentsType = EMenuContentsType::None;
+	FVector2D PreferredFrameSize = FVector2D::ZeroVector;
 };

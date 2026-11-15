@@ -173,6 +173,12 @@ void UMKMenuBase::CloseMenu()
 UMKMenuContentsBase* UMKMenuBase::GetCurrentContents() const { return CurrentMenuContents; }
 void UMKMenuBase::SetWindowTitle(const FText& Title) { if (MenuTitle != nullptr) { MenuTitle->SetText(Title); } }
 
+void UMKMenuBase::SetPreferredFrameSize(const FVector2D& Size)
+{
+	PreferredFrameSize=Size;
+	UpdateFrameSize(CurrentMenuContentsType);
+}
+
 bool UMKMenuBase::IsMenuOpen() const
 {
 	return IsVisible();
@@ -282,7 +288,7 @@ void UMKMenuBase::UpdateFrameSize(EMenuContentsType InMenuContentsType)
 		{
 			const float Scale = FMath::Max(0.1f, UWidgetLayoutLibrary::GetViewportScale(this));
 			const FVector2D Available = UWidgetLayoutLibrary::GetViewportSize(this) / Scale;
-			const FVector2D Preferred = InMenuContentsType == EMenuContentsType::Facility ? FVector2D(660.f, 650.f) : FVector2D(InMenuContentsType == EMenuContentsType::Shop ? 1100.f : 1000.f, 820.f);
+			const FVector2D Preferred = InMenuContentsType == EMenuContentsType::Facility ? (PreferredFrameSize.IsNearlyZero() ? FVector2D(660.f,650.f) : PreferredFrameSize) : FVector2D(InMenuContentsType == EMenuContentsType::Shop ? 1100.f : 1000.f, 820.f);
 			Layout->SetAnchors(FAnchors(0.5f));
 			Layout->SetAlignment(FVector2D(0.5f));
 			Layout->SetAutoSize(false);

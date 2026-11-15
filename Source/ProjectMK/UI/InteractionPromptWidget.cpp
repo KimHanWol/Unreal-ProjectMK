@@ -25,16 +25,18 @@ int32 UInteractionPromptWidget::NativePaint(const FPaintArgs& Args, const FGeome
 {
 	const int32 Layer = Super::NativePaint(Args, Geometry, CullingRect, DrawElements, LayerId, Style, bEnabled);
 	if (RecoveryProgress <= 0.f) { return Layer; }
-	TArray<FVector2D> Track, Progress;
 	const FVector2D Center(Geometry.GetLocalSize().X * 0.5f, 18.f);
-	for (int32 Index = 0; Index <= 40; ++Index)
+	const TArray<FVector2D> Track = { Center + FVector2D(0.f,-16.f), Center + FVector2D(16.f,-16.f), Center + FVector2D(16.f,16.f), Center + FVector2D(-16.f,16.f), Center + FVector2D(-16.f,-16.f), Center + FVector2D(0.f,-16.f) };
+	TArray<FVector2D> Progress = { Track[0] };
+	float Remaining = RecoveryProgress * 128.f;
+	for (int32 Index = 1; Index < Track.Num() && Remaining > 0.f; ++Index)
 	{
-		const float Angle = -HALF_PI + 2.f * PI * Index / 40.f;
-		Track.Add(Center + FVector2D(FMath::Cos(Angle), FMath::Sin(Angle)) * 16.f);
-		if (Index / 40.f <= RecoveryProgress) { Progress.Add(Track.Last()); }
+		const float Length = FVector2D::Distance(Track[Index-1],Track[Index]);
+		Progress.Add(FMath::Lerp(Track[Index-1],Track[Index],FMath::Min(1.f,Remaining/Length)));
+		Remaining -= Length;
 	}
-	FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Track, ESlateDrawEffect::None, FLinearColor(0.02f, 0.04f, 0.05f), false, 5.f);
-	if (Progress.Num() > 1) { FSlateDrawElement::MakeLines(DrawElements, Layer + 2, Geometry.ToPaintGeometry(), Progress, ESlateDrawEffect::None, FLinearColor(0.45f, 0.9f, 0.76f), false, 3.f); }
+	FSlateDrawElement::MakeLines(DrawElements, Layer + 1, Geometry.ToPaintGeometry(), Track, ESlateDrawEffect::None, FLinearColor(0.08f,0.055f,0.025f), false, 4.f);
+	if (Progress.Num() > 1) { FSlateDrawElement::MakeLines(DrawElements, Layer + 2, Geometry.ToPaintGeometry(), Progress, ESlateDrawEffect::None, FLinearColor(0.94f,0.68f,0.26f), false, 2.f); }
 	return Layer + 2;
 }
 

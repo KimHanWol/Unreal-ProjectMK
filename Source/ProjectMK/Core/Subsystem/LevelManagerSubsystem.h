@@ -143,6 +143,7 @@ public:
 
 	void SetBlockDebugNumbersEnabled(bool bEnabled);
 	int32 GetTileSize();
+	bool IsBlockShaking(const ABlockBase* Block) const;
 	const TArray<TObjectPtr<ABlockBase>>& GetBlocks() const;
 	const TArray<FGeneratedMineStructure>& GetGeneratedStructures() const;
 	const TArray<FGeneratedOreVein>& GetGeneratedOreVeins() const;
@@ -210,6 +211,7 @@ private:
 	bool CheckBlockIsAllDisconnected(ABlockBase* StartBlock, TArray<ABlockBase*>& OutDisconnectedBlocks, TArray<ABlockBase*>& DFSCheckedBlocks, int32 DebugCount);
 
 	void QueueCollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
+	bool TryStabilizeShakingGroup(FFallingBlockGroupData& Group);
 	void ProcessPendingCollapseBlocks();
 	void CollapseBlocks(const TArray<ABlockBase*>& CollapsingBlocks);
 	void SnapBlocks(const TArray<TWeakObjectPtr<ABlockBase>>& FallFinishedBlockList, bool bPreserveContactPosition = false);

@@ -99,10 +99,18 @@ namespace
 				{
 					if (It->ActorHasTag(TEXT("VillageScenery")) == false) { continue; }
 					++VillageCount;
-					Test->TestTrue(TEXT("Village scenery has a real sprite at its authored position"), It->GetActorLocation().X > 100.f && It->GetRenderComponent()->GetSprite() != nullptr);
+					TArray<int32> Columns = Fixture.Settings->TownFacilities.VillageBackdropColumns;
+					Columns.Append(Fixture.Settings->TownFacilities.IndustrialBackdropColumns); Columns.Append(Fixture.Settings->TownFacilities.ForestryBackdropColumns);
+					const bool bAtAuthoredPosition = Columns.ContainsByPredicate([&](int32 Column)
+					{
+						const float BaseX = (Fixture.Settings->MineableLevelGeneration.StartColumn + Column + 0.5f)*16.f;
+						const float ShiftedX = BaseX - (Fixture.Player->GetActorLocation().X-BaseX)*Fixture.Settings->TownFacilities.BackgroundParallaxStrength;
+						return FMath::IsNearlyEqual(static_cast<float>(It->GetActorLocation().X),BaseX,0.1f) || FMath::IsNearlyEqual(static_cast<float>(It->GetActorLocation().X),ShiftedX,0.1f);
+					});
+					Test->TestTrue(TEXT("Every district sprite matches a configured position or its continuous parallax offset"),bAtAuthoredPosition && It->GetRenderComponent()->GetSprite()!=nullptr);
 					Test->TestFalse(TEXT("Background houses never collide with the player"), It->GetActorEnableCollision());
 				}
-				Test->TestEqual(TEXT("The configured village and industrial layers fill their districts"), VillageCount, Fixture.Settings->TownFacilities.VillageBackdropColumns.Num() + Fixture.Settings->TownFacilities.IndustrialBackdropColumns.Num());
+				Test->TestEqual(TEXT("The configured village and industrial layers fill their districts"), VillageCount, Fixture.Settings->TownFacilities.VillageBackdropColumns.Num() + Fixture.Settings->TownFacilities.IndustrialBackdropColumns.Num() + Fixture.Settings->TownFacilities.ForestryBackdropColumns.Num());
 				Test->TestFalse(TEXT("Unvisited elevator depths stay locked"), Town->CanTravelToDepth(32));
 				Test->TestTrue(TEXT("The surface station explains construction before unlock"), Town->GetDialogue(Surface.Get(), Fixture.Player).ToString().Contains(TEXT("공사 중")));
 				Fixture.Player->GetAbilitySystemComponent()->SetNumericAttributeBase(UAttributeSet_Character::GetCoinAttribute(), 1000.f);
@@ -195,22 +203,19 @@ namespace
 			if (Step == 2 && Elapsed > 2.2f)
 			{
 				Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::W, IE_Released, 0.f));
-				Test->AddInfo(FString::Printf(TEXT("Support climb %.2f -> %.2f, mode %d"), StartZ, Fixture.Player->GetActorLocation().Z, Fixture.Player->GetCharacterMovement()->MovementMode.GetValue()));
-				Test->TestTrue(TEXT("Holding real W climbs a three-block support column"), Fixture.Player->GetActorLocation().Z > StartZ + 44.f);
-				Test->TestTrue(TEXT("The player stands on the support top without entering flight"), Fixture.Player->GetCharacterMovement()->IsMovingOnGround());
-				ABlockBase* Floor = Fixture.Level->GetBlockBelowWorldLocation(Fixture.Player->GetActorLocation());
-				Test->TestTrue(TEXT("The support is standable and cannot be drilled"), Floor != nullptr && Floor->IsClimbableSupport() && Floor->IsMineable() == false);
-				Fixture.Player->FindComponentByClass<UInventoryComponent>()->AddItem(TEXT("SupportBeam"), 1);
-				Test->TestTrue(TEXT("A new support can be placed while standing on a support"), Fixture.Player->GetConsumableComponent()->TryUseItem(TEXT("SupportBeam")));
-				StartZ = Fixture.Player->GetActorLocation().Z; ChangedAt = Fixture.World->GetTimeSeconds(); ++Step; return false;
+				Test->TestTrue(TEXT("W alone no longer climbs support columns"),FMath::Abs(Fixture.Player->GetActorLocation().Z-StartZ)<2.f);
+				Fixture.Player->SetActorLocation(FVector(56.5f*16.f,-20.f,-(Fixture.Settings->SurfaceBlockPositionY-3)*16.f+20.f));
+				Fixture.Player->GetCharacterMovement()->SetMovementMode(MOVE_Falling);
+				ChangedAt=Fixture.World->GetTimeSeconds(); Step=3; return false;
 			}
-			if (Step == 3 && Elapsed > 0.2f) { Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::W, IE_Pressed, 1.f)); ChangedAt = Fixture.World->GetTimeSeconds(); ++Step; return false; }
-			if (Step == 4 && Elapsed > 1.f)
+			if (Step==3 && Elapsed>1.f)
 			{
-				Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::W, IE_Released, 0.f));
-				Test->TestTrue(TEXT("The placed fourth support can be climbed and stood upon"), Fixture.Player->GetActorLocation().Z > StartZ + 14.f && Fixture.Player->GetCharacterMovement()->IsMovingOnGround());
-				Test->TestEqual(TEXT("Every placed support is included in the installation save"), Fixture.Level->GetInstalledStructureSaveData().Num(), 4);
-				FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir() / TEXT("AgentLogs/support-climb-prototype.png"), true, false);
+				Test->TestTrue(TEXT("Support tops remain standable using flight or falling"),Fixture.Player->GetCharacterMovement()->IsMovingOnGround());
+				ABlockBase* Top=Fixture.Level->GetBlockAtPosition(FVector2D(56,Fixture.Settings->SurfaceBlockPositionY-3));
+				Test->TestTrue(TEXT("Support is non-drillable and has no idle F hint"),Top!=nullptr && Top->IsMineable()==false && Top->ShouldShowInteractionPrompt()==false);
+				Fixture.Player->FindComponentByClass<UInventoryComponent>()->AddItem(TEXT("SupportBeam"),1);
+				Test->TestTrue(TEXT("Another support can be installed while standing on the stack"),Fixture.Player->GetConsumableComponent()->TryUseItem(TEXT("SupportBeam")));
+				Test->TestEqual(TEXT("Support stack persists"),Fixture.Level->GetInstalledStructureSaveData().Num(),4);
 				Fixture.Restore(); return true;
 			}
 			return false;
@@ -229,7 +234,7 @@ bool FTownPrototypeTest::RunTest(const FString& Parameters)
 	return true;
 }
 
-IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSupportClimbTest, "ProjectMK.PIE.Transport.SupportClimbAndStack", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FSupportClimbTest, "ProjectMK.PIE.Transport.SupportPlatformsAndStack", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
 bool FSupportClimbTest::RunTest(const FString& Parameters)
 {
 	ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false));

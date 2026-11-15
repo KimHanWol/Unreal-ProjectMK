@@ -183,6 +183,9 @@ class PROJECTMK_API UGameSettingDataAsset : public UMKDataAssetBase
 	GENERATED_BODY()
 
 public:
+	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Transport")
+	FMineTransportSettings MineTransport;
+
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Town")
 	FTownFacilitySettings TownFacilities;
 
@@ -271,9 +274,6 @@ public:
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Interaction", meta = (ClampMin = "0.2"))
 	float StructureRecoveryHoldDuration = 0.8f;
-
-	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Movement|Support", meta = (ClampMin = "1"))
-	float SupportClimbSpeed = 32.f;
 
 	UPROPERTY(EditDefaultsOnly, BlueprintReadOnly, Category = "Shop", meta = (ClampMin = "1.0"))
 	float ShopBuybackLifetime = 300.f;

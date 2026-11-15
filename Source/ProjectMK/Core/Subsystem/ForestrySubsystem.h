@@ -7,12 +7,14 @@
 
 class AActor;
 class ABlockBase;
+class UPaperSpriteComponent;
 
 struct FManagedTree
 {
 	int32 Column = 0;
 	int64 RegrowAt = 0;
 	TArray<TWeakObjectPtr<ABlockBase>> Pieces;
+	TWeakObjectPtr<UPaperSpriteComponent> StatusLamp;
 };
 
 UCLASS()
@@ -29,6 +31,7 @@ public:
 private:
 	void GenerateYardScenery();
 	bool TryGrowTree(FManagedTree& Tree);
+	void UpdateTreeStatus(FManagedTree& Tree);
 	void OnGrowthTimer();
 	TArray<FManagedTree> Trees;
 	TArray<TWeakObjectPtr<AActor>> YardScenery;

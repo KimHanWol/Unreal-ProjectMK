@@ -103,13 +103,6 @@ FName ABlockBase::GetRecoveryItemKey() const
 
 FText ABlockBase::GetRecoveryBlockedReason(AActor* Interactor) const
 {
-	if (IsClimbableSupport())
-	{
-		const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
-		ABlockBase* Above = GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetBlockAtPosition(Cell + FVector2D(0.f, -1.f));
-		if (Above != nullptr && Above->IsClimbableSupport()) { return NSLOCTEXT("Support", "UpperSupportFirst", "위 지지대를 먼저 회수하세요"); }
-		if (GetWorld()->GetSubsystem<UMineTransportSubsystem>()->HasRailAtSupport(FIntPoint(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y)))) { return NSLOCTEXT("Support", "RailFirst", "철도를 먼저 회수하세요"); }
-	}
 	return IInteractable::GetRecoveryBlockedReason(Interactor);
 }
 
@@ -339,7 +332,7 @@ void ABlockBase::InitializeBlock(FBlockTileData InBlockTileData)
 				SupportTopCollision->SetCollisionResponseToAllChannels(ECR_Ignore);
 				SupportTopCollision->RegisterComponent();
 			}
-			PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -40.f, 0.f));
+			PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -26.f, 0.f));
 			PaperSpriteComponent->SetTranslucentSortPriority(-6);
 			SupportTopCollision->SetCollisionEnabled(ECollisionEnabled::QueryOnly);
 		}

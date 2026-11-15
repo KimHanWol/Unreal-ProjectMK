@@ -27,13 +27,15 @@ public:
 	bool CanTravelToDepth(int32 Depth) const;
 	bool TryTravel(AMKCharacter* Player, AMineFacilityActor* Source, int32 Depth);
 	void BeginResidentConversation(AMKCharacter* Player, AMineFacilityActor* Resident);
-	bool TryQuestAction(AMKCharacter* Player, AMineFacilityActor* Resident);
+	bool TryQuestAction(AMKCharacter* Player, AMineFacilityActor* Resident, int32 BoardSlot = 0);
 	void NotifyMonsterDefeated(FName MonsterKey);
 	int32 GetMaximumDepth() const;
 	bool HasRelic(FName Key) const;
 	FText GetDialogue(const AMineFacilityActor* Facility, AMKCharacter* Player) const;
-	FText GetQuestActionLabel(const AMineFacilityActor* Facility) const;
-	bool CanUseQuestAction(const AMineFacilityActor* Facility, AMKCharacter* Player) const;
+	FText GetQuestActionLabel(const AMineFacilityActor* Facility, int32 BoardSlot = 0) const;
+	bool CanUseQuestAction(const AMineFacilityActor* Facility, AMKCharacter* Player, int32 BoardSlot = 0) const;
+	const FTownQuestDefinition* GetBoardQuestDefinition(int32 Slot) const;
+	const FTownQuestState* GetBoardQuestState(int32 Slot) const;
 	const TArray<TWeakObjectPtr<AMineFacilityActor>>& GetFacilities() const;
 	DECLARE_MULTICAST_DELEGATE(FOnTownProgressChanged);
 	FOnTownProgressChanged OnTownProgressChanged;

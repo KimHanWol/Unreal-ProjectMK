@@ -5,6 +5,11 @@
 #include "Components/Image.h"
 #include "Components/SizeBox.h"
 #include "Components/ScaleBox.h"
+#include "Components/CanvasPanel.h"
+#include "Components/CanvasPanelSlot.h"
+#include "Components/Overlay.h"
+#include "Components/OverlaySlot.h"
+#include "ProjectMK/UI/BountyNoticeWidget.h"
 #include "PaperSprite.h"
 #include "Components/TextBlock.h"
 #include "Components/VerticalBox.h"
@@ -53,6 +58,11 @@ void UFacilityMenuContents::UpdateWidget()
 {
 	if (Facility.IsValid() == false || Dialogue == nullptr) { return; }
 	UTownProgressSubsystem* Town = GetWorld()->GetSubsystem<UTownProgressSubsystem>();
+	const bool bBoard = Facility->GetFacilityKind() == EMineFacilityKind::QuestBoard;
+	DefaultContents->SetVisibility(bBoard ? ESlateVisibility::Collapsed : ESlateVisibility::SelfHitTestInvisible);
+	BoardContents->SetVisibility(bBoard ? ESlateVisibility::SelfHitTestInvisible : ESlateVisibility::Collapsed);
+	if (bBoard) { for (int32 Index = 0; Index < Notices.Num(); ++Index) { Notices[Index]->SetContract(Facility.Get(),Index); } return; }
+
 	Dialogue->SetText(Town->GetDialogue(Facility.Get(), GetLocalPlayerCharacter()));
 	const auto* Art = UDataManager::Get(this)->GetVisualStyleDataAsset();
 	UPaperSprite* Sprite = Art != nullptr ? Art->TownSprites.FindRef(Facility->GetArtKey()) : nullptr;
@@ -83,7 +93,20 @@ void UFacilityMenuContents::SetFacility(AMineFacilityActor* Actor) { Facility = 
 void UFacilityMenuContents::BuildDefaultWidgetTree()
 {
 	UVerticalBox* Column = WidgetTree->ConstructWidget<UVerticalBox>();
-	WidgetTree->RootWidget = Column;
+	UOverlay* Root = WidgetTree->ConstructWidget<UOverlay>(); WidgetTree->RootWidget = Root;
+	Root->AddChildToOverlay(Column); DefaultContents = Column;
+	UScaleBox* BoardScale = WidgetTree->ConstructWidget<UScaleBox>(); BoardScale->SetStretch(EStretch::ScaleToFit); Root->AddChildToOverlay(BoardScale); BoardContents = BoardScale;
+	USizeBox* BoardSize = WidgetTree->ConstructWidget<USizeBox>(); BoardSize->SetWidthOverride(800.f); BoardSize->SetHeightOverride(600.f); BoardScale->SetContent(BoardSize);
+	UCanvasPanel* BoardCanvas = WidgetTree->ConstructWidget<UCanvasPanel>(); BoardSize->SetContent(BoardCanvas);
+	UImage* BoardArt = WidgetTree->ConstructWidget<UImage>(); const auto* BoardStyle = UDataManager::Get(this)->GetVisualStyleDataAsset();
+	BoardArt->SetBrushResourceObject(BoardStyle != nullptr ? BoardStyle->TownSprites.FindRef(TEXT("BountyBoard")) : nullptr);
+	auto* BoardArtSlot = BoardCanvas->AddChildToCanvas(BoardArt); BoardArtSlot->SetSize(FVector2D(800.f,600.f));
+	for (int32 Index = 0; Index < 4; ++Index)
+	{
+		UBountyNoticeWidget* Notice = CreateWidget<UBountyNoticeWidget>(this); Notices.Add(Notice);
+		auto* NoticeLayout = BoardCanvas->AddChildToCanvas(Notice); NoticeLayout->SetPosition(FVector2D(Index%2 == 0 ? 82.f : 436.f,Index<2 ? 94.f : 342.f)); NoticeLayout->SetSize(FVector2D(286.f,190.f));
+		Notice->OnChosen.BindUObject(this,&UFacilityMenuContents::ApplyAction,Index);
+	}
 	USizeBox* Preview = WidgetTree->ConstructWidget<USizeBox>();
 	Preview->SetWidthOverride(256.f); Preview->SetHeightOverride(192.f);
 	Column->AddChildToVerticalBox(Preview)->SetHorizontalAlignment(HAlign_Center);
@@ -115,7 +138,7 @@ void UFacilityMenuContents::ApplyAction(int32 Index)
 	{
 		if (Destinations.IsValidIndex(Index) && Town->TryTravel(GetLocalPlayerCharacter(), Facility.Get(), Destinations[Index])) { GetHUDWidget()->CloseFacility(); }
 	}
-	else { Town->TryQuestAction(GetLocalPlayerCharacter(), Facility.Get()); }
+	else { Town->TryQuestAction(GetLocalPlayerCharacter(), Facility.Get(),Index); }
 	UpdateWidget();
 }
 

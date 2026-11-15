@@ -27,6 +27,7 @@ public:
 	bool OpenChest(AStorageChestActor* Chest);
 	UFUNCTION()
 	void CloseChest();
+	bool TryStoreStack(EItemContainer Container, int32 Index);
 
 private:
 	void BuildDefaultWidgetTree();

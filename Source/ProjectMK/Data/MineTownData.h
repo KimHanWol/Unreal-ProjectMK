@@ -36,6 +36,18 @@ struct FMineCartSaveData
 };
 
 USTRUCT(BlueprintType)
+struct FMineTransportSettings
+{
+	GENERATED_BODY()
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) float AutomaticSpeed = 18.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) float ManualTopSpeed = 70.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) float PushInitialAcceleration = 18.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) float PushRunningAcceleration = 110.f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0.1")) float PushWarmupSeconds = 0.9f;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0")) float GravityAcceleration = 100.f;
+};
+
+USTRUCT(BlueprintType)
 struct FTownQuestState
 {
 	GENERATED_BODY()
@@ -72,8 +84,9 @@ struct FTownFacilitySettings
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 HouseBColumn = 62;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 ElevatorColumn = 94;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 RailFactoryColumn = 108;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> VillageBackdropColumns = {7, 23, 38, 49, 60, 72, 83};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> VillageBackdropColumns = {46, 54, 62, 70, 78};
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> IndustrialBackdropColumns = {96, 107};
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> ForestryBackdropColumns = {5,19};
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "0.45")) float BackgroundParallaxStrength = 0.18f;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 VillageNoticeColumn = 66;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "1")) float QuestOfferChance = 0.25f;
@@ -109,8 +122,8 @@ struct FForestrySettings
 {
 	GENERATED_BODY()
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) bool bEnabled = true;
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> Columns = { 14, 22, 30 };
-	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardStartColumn = 3;
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) TArray<int32> Columns = { 5, 13, 21 };
+	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardStartColumn = 0;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly) int32 YardEndColumn = 35;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "0", ClampMax = "3")) int32 PlatformHeight = 1;
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (ClampMin = "1")) int32 RegrowSeconds = 90;

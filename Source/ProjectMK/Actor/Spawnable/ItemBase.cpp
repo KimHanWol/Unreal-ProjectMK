@@ -34,7 +34,7 @@ AItemBase::AItemBase()
 
 	PaperSpriteComponent = CreateDefaultSubobject<UPaperSpriteComponent>(TEXT("PaperSprite"));
 	PaperSpriteComponent->SetupAttachment(RootComponent);
-	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, -30.f, 0.f));
+	PaperSpriteComponent->SetRelativeLocation(FVector(0.f, 24.f, 0.f));
 	PaperSpriteComponent->SetTranslucentSortPriority(10);
 	PaperSpriteComponent->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 	BaseSpriteRelativeLocation = PaperSpriteComponent->GetRelativeLocation();

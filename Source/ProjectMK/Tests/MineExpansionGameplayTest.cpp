@@ -5,6 +5,11 @@
 #include "Components/Image.h"
 #include "Engine/World.h"
 #include "EngineUtils.h"
+#include "UnrealClient.h"
+#include "Misc/Paths.h"
+#include "Blueprint/WidgetBlueprintLibrary.h"
+#include "ProjectMK/UI/HUDWidget.h"
+#include "ProjectMK/UI/BountyNoticeWidget.h"
 #include "GameFramework/CharacterMovementComponent.h"
 #include "Kismet/GameplayStatics.h"
 #include "PaperSprite.h"
@@ -66,6 +71,13 @@ namespace
 					Settings->TownFacilities.HuntQuests[0].RequiredCount = 2;
 					Town->BeginResidentConversation(Player, Board.Get());
 					Test->TestTrue(TEXT("The noticeboard offers a contract immediately"), Town->TryQuestAction(Player, Board.Get()));
+					Settings->TownFacilities.HuntQuests[1].MinimumDepth=0;
+					Test->TestTrue(TEXT("A second paper can accept an independent contract"),Town->TryQuestAction(Player,Board.Get(),1));
+					TArray<UUserWidget*> HUDs; UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World,HUDs,UHUDWidget::StaticClass(),false);
+					Test->TestTrue(TEXT("The dedicated board popup opens"),CastChecked<UHUDWidget>(HUDs[0])->OpenFacility(Board.Get()));
+					TArray<UUserWidget*> Papers; UWidgetBlueprintLibrary::GetAllWidgetsOfClass(World,Papers,UBountyNoticeWidget::StaticClass(),false);
+					Test->TestEqual(TEXT("Four reusable paper widgets are present"),Papers.Num(),4);
+					FScreenshotRequest::RequestScreenshot(FPaths::ProjectSavedDir()/TEXT("AgentLogs/bounty-board-revision.png"),true,false);
 					Test->TestFalse(TEXT("A contract cannot reward before kills"), Town->CanUseQuestAction(Board.Get(), Player));
 					Town->NotifyMonsterDefeated(TEXT("UnknownMonster"));
 					AMKMonster* Removed = World->SpawnActor<AMKMonster>(AMKMonster::StaticClass(), Player->GetActorLocation() + FVector(60.f, 0.f, 0.f), FRotator::ZeroRotator); Removed->Destroy();
@@ -75,6 +87,7 @@ namespace
 					FGameplayAbilityUtils::ApplyDamage(Killed->GetAbilitySystemComponent(), nullptr, 1000.f);
 					TStrongObjectPtr<UMKSaveGame> Snapshot(NewObject<UMKSaveGame>()); Town->WriteSaveData(Snapshot.Get());
 					Test->TestEqual(TEXT("Actual death records exactly one kill"), Snapshot->TownQuests[2].MonsterKillProgress, 1);
+					Test->TestEqual(TEXT("The second paper tracks that same real kill independently"),Snapshot->TownQuests[3].MonsterKillProgress,1);
 					TArray<uint8> Bytes; UGameplayStatics::SaveGameToMemory(Snapshot.Get(), Bytes);
 					TStrongObjectPtr<UMKSaveGame> Reloaded(CastChecked<UMKSaveGame>(UGameplayStatics::LoadGameFromMemory(Bytes))); Town->RestoreProgress(Reloaded.Get());
 					Test->TestEqual(TEXT("The active hunt survives a real save serialization"), Reloaded->TownQuests[2].MonsterKillProgress, 1);
@@ -89,10 +102,10 @@ namespace
 					for (TActorIterator<APaperSpriteActor> It(World); It; ++It)
 					{
 						if (It->ActorHasTag(TEXT("LumberyardScenery")) == false) { continue; }
-						Beds += It->ActorHasTag(TEXT("PlantingBed")); Lamps += It->ActorHasTag(TEXT("LanternPost")); Sheds += It->ActorHasTag(TEXT("Lumberyard"));
+						Beds += It->ActorHasTag(TEXT("LumberyardEnclosure")); Lamps += It->ActorHasTag(TEXT("LanternPost")); Sheds += It->ActorHasTag(TEXT("Lumberyard"));
 						Test->TestFalse(TEXT("Yard scenery never obstructs the player"), It->GetActorEnableCollision());
 					}
-					Test->TestTrue(TEXT("The lumberyard contains its workshop, three planting beds and four lamps"), Beds == 3 && Lamps == 4 && Sheds == 1);
+					Test->TestTrue(TEXT("The left lumberyard has a single continuous enclosure, a right-side shed and two entrance lamps"), Beds == 1 && Lamps == 2 && Sheds == 1);
 					if (Forest->GetTrees().IsEmpty() || Forest->GetTrees()[0].Pieces.IsEmpty()) { Test->AddError(TEXT("Tree blocks did not grow")); return Finish(); }
 					OriginalPieces = Forest->GetTrees()[0].Pieces.Num();
 					UPaperSprite* FirstLeaf = nullptr;
@@ -183,6 +196,9 @@ namespace
 				int32 Leaves = 0; const int32 TrunkTile = UDataManager::Get(World)->GetBlockDataTableRow(TEXT("TreeTrunk"))->TileIndex;
 				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid() && Block->GetTileIndex() != TrunkTile && Block->IsBreaking() == false) { ++Leaves; } }
 				Test->TestEqual(TEXT("Unsupported weak leaves fall and shatter"), Leaves, 0);
+				int32 Trunks = 0;
+				for (const auto& Block : Forest->GetTrees()[0].Pieces) { Trunks += Block.IsValid() && Block->IsBreaking()==false && Block->GetTileIndex()==TrunkTile; }
+				Test->TestTrue(TEXT("Fallen upper trunks survive and must be mined separately"),Trunks>0);
 				Test->TestTrue(TEXT("Distant background layers keep scrolling instead of stopping at a small clamp"), ParallaxSample.IsValid() && ParallaxSample->GetActorLocation().X < BeforeParallax.X - 3.f);
 				Test->TestNotNull(TEXT("Tree collapse preserves the root soil"), Level->GetBlockAtPosition(FVector2D(Forest->GetTrees()[0].Column, Surface)));
 				for (const auto& Block : Forest->GetTrees()[0].Pieces) { if (Block.IsValid()) { Block->Destroy(); } }

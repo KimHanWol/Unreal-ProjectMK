@@ -127,6 +127,10 @@ void AMKCharacter::BeginPlay()
 	SpawnTransform = GetActorTransform();
 
 	Apply2DCameraOverrides();
+	GetCharacterMovement()->SetPlaneConstraintNormal(FVector::RightVector);
+	GetCharacterMovement()->SetPlaneConstraintOrigin(FVector(0.f, -20.f, 0.f));
+	GetCharacterMovement()->SetPlaneConstraintEnabled(true);
+	GetCharacterMovement()->SnapUpdatedComponentToPlane();
 
 	if (::IsValid(AbilitySystemComponent))
 	{
@@ -178,6 +182,7 @@ void AMKCharacter::SetupPlayerInputComponent(UInputComponent* PlayerInputCompone
 	PlayerInputComponent->BindAction("Fly", IE_Released, this, &AMKCharacter::OnFinishFly);
 	PlayerInputComponent->BindAction("Interact", IE_Pressed, this, &AMKCharacter::OnInteract);
 	PlayerInputComponent->BindAction("Interact", IE_Released, this, &AMKCharacter::OnFinishInteract);
+	PlayerInputComponent->BindAxisKey(EKeys::MouseWheelAxis, this, &AMKCharacter::OnDrillWheel);
 
 	for (int32 SlotIndex = 0; SlotIndex < QuickSlotInputCount; ++SlotIndex)
 	{
@@ -195,7 +200,7 @@ void AMKCharacter::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	UpdateOxygen();
-	UpdateSupportClimbing();
+	UpdateSupportPlatforms();
 	UpdateGroundTraction();
 	UpdateInteractionPrompt();
 
@@ -436,6 +441,19 @@ void AMKCharacter::SetDrillingVector(const FVector& InDrillingVector)
 	DrillingVector = InDrillingVector;
 }
 
+void AMKCharacter::AdjustDrillReach(int32 Delta)
+{
+	if (bIsMenuInputBlocked || GetMaximumDrillCells() <= 1) { return; }
+	SelectedDrillCells = FMath::Clamp(GetSelectedDrillCells()+Delta,1,GetMaximumDrillCells());
+}
+
+int32 AMKCharacter::GetMaximumDrillCells() const
+{
+	return AttributeSet_Character != nullptr ? FMath::Max(1,FMath::CeilToInt(AttributeSet_Character->GetDrillingDistance()/16.f)) : 1;
+}
+
+int32 AMKCharacter::GetSelectedDrillCells() const { return FMath::Clamp(SelectedDrillCells,1,GetMaximumDrillCells()); }
+
 FVector AMKCharacter::GetCharacterDirection() const
 {
 	return CharacterDir;
@@ -585,8 +603,7 @@ void AMKCharacter::TryDrill()
 		return;
 	}
 
-	const bool bClimbInput = CharacterDir.Z > 0.5f && FindClimbableSupport() != nullptr;
-	if (CharacterDir != FVector::ZeroVector && bClimbInput == false && ClimbingSupport.IsValid() == false)
+	if (CharacterDir != FVector::ZeroVector)
 	{
 		// TODO: 드릴 어빌리티 선택 방식을 명시적으로 정리
 		AbilitySystemComponent->TryActivateAbilityByClass(PrimaryDrillAbilityClass);
@@ -601,7 +618,7 @@ void AMKCharacter::TryDrill()
 	}
 }
 
-IInteractable* AMKCharacter::FindNearestInteractable()
+IInteractable* AMKCharacter::FindNearestInteractable(bool bRecoveryOnly)
 {
 	UWorld* World = GetWorld();
 	if (::IsValid(World) == false)
@@ -621,12 +638,14 @@ IInteractable* AMKCharacter::FindNearestInteractable()
 	{
 		AActor* OverlapActor = OverlapResult.GetActor();
 		IInteractable* Interactable = Cast<IInteractable>(OverlapActor);
-		if (Interactable == nullptr || Interactable->CanInteract(this) == false)
+		if (Interactable == nullptr || Interactable->CanInteract(this) == false ||
+			(bRecoveryOnly ? Interactable->GetRecoveryItemKey().IsNone() : Interactable->ShouldShowInteractionPrompt() == false))
 		{
 			continue;
 		}
 
 		const float DistanceSquared = FVector::DistSquared(GetActorLocation(), OverlapActor->GetActorLocation());
+		if (bRecoveryOnly && Interactable->GetRecoveryBlockedReason(this).IsEmpty() == false) { continue; }
 		if (Interactable->GetInteractionPriority() > HighestPriority || (Interactable->GetInteractionPriority() == HighestPriority && DistanceSquared < NearestDistanceSquared))
 		{
 			HighestPriority = Interactable->GetInteractionPriority();
@@ -647,30 +666,30 @@ bool AMKCharacter::TryInteractNearby()
 void AMKCharacter::UpdateInteractionPrompt()
 {
 	IInteractable* Target = bIsMenuInputBlocked == false ? FindNearestInteractable() : nullptr;
+	IInteractable* Recovery = Cast<IInteractable>(HeldInteractionActor.Get());
 	float Progress = 0.f;
-	if (HeldInteractionActor.IsValid() && bInteractionHoldConsumed == false)
+	if (Recovery != nullptr && bInteractionHoldConsumed == false)
 	{
-		if (Target == nullptr || Cast<AActor>(Target) != HeldInteractionActor.Get()) { ClearInteractionHold(); }
+		if (bIsMenuInputBlocked || Recovery->CanInteract(this) == false) { ClearInteractionHold(); Recovery = nullptr; }
 		else
 		{
 			Progress = FMath::Clamp((GetWorld()->GetTimeSeconds() - InteractionHoldStartedAt) / GetGameSettings()->StructureRecoveryHoldDuration, 0.f, 1.f);
 			if (Progress >= 1.f)
 			{
 				bInteractionHoldConsumed = true;
-				if (Target->TryRecover(this) == false) { USoundManager::TryPlaySFX(this, ESFXType::Item_UseFailed); }
-				Target = FindNearestInteractable();
+				if (Recovery->TryRecover(this) == false) { USoundManager::TryPlaySFX(this, ESFXType::Item_UseFailed); }
+				Progress = 0.f; Target = FindNearestInteractable();
 			}
 		}
 	}
 	if (::IsValid(InteractionPromptComponent))
 	{
-		const bool bShowPrompt = Target != nullptr && Target->ShouldShowInteractionPrompt();
+		const bool bShowPrompt = (Target != nullptr && Target->ShouldShowInteractionPrompt()) || Progress > 0.f;
 		InteractionPromptComponent->SetVisibility(bShowPrompt);
 		if (UInteractionPromptWidget* Prompt = Cast<UInteractionPromptWidget>(InteractionPromptComponent->GetUserWidgetObject()))
 		{
 			Prompt->SetVisibility(bShowPrompt ? ESlateVisibility::HitTestInvisible : ESlateVisibility::Collapsed);
-			const bool bRecoverable = Target != nullptr && Target->GetRecoveryItemKey().IsNone() == false;
-			Prompt->SetRecoveryState(Progress, bRecoverable, bRecoverable ? Target->GetRecoveryBlockedReason(this) : FText::GetEmpty());
+			Prompt->SetRecoveryState(Progress, Recovery != nullptr, FText::GetEmpty());
 		}
 	}
 }
@@ -678,6 +697,7 @@ void AMKCharacter::UpdateInteractionPrompt()
 void AMKCharacter::ClearInteractionHold()
 {
 	HeldInteractionActor.Reset();
+	TappedInteractionActor.Reset();
 	InteractionHoldStartedAt = 0.f;
 	bInteractionHoldConsumed = false;
 }
@@ -740,72 +760,15 @@ void AMKCharacter::UpdateGroundTraction()
 	bUsingIceTraction = bOnIce;
 }
 
-void AMKCharacter::UpdateSupportClimbing()
-{
-	UMKCharacterMovementComponent* Movement = Cast<UMKCharacterMovementComponent>(GetCharacterMovement());
-	if (Movement == nullptr) { return; }
-	const float Feet = GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
-	const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
-	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
-	for (int32 X = -1; X <= 1; ++X)
-	{
-		for (int32 Y = -2; Y <= 2; ++Y)
-		{
-			if (ABlockBase* Block = Level->GetBlockAtPosition(Cell + FVector2D(X, Y))) { Block->UpdateSupportTopCollision(Feet, Movement->MovementMode == MOVE_Custom); }
-		}
-	}
-	const bool bClimbInput = CharacterDir.Z > 0.5f && FMath::Abs(CharacterDir.X) < 0.1f && bIsFlying == false && IsKnockedBack() == false && bIsMenuInputBlocked == false;
-	ABlockBase* Next = bClimbInput ? FindClimbableSupport() : nullptr;
-	if (Next == nullptr)
-	{
-		if (ClimbingSupport.IsValid() && bClimbInput && Feet >= ClimbingSupport->GetActorLocation().Z + 7.5f)
-		{
-			const float Top = ClimbingSupport->GetActorLocation().Z + 8.f;
-			ClearSupportClimbing();
-			SetActorLocation(FVector(GetActorLocation().X, GetActorLocation().Y, Top + GetCapsuleComponent()->GetScaledCapsuleHalfHeight() + 0.05f));
-			Movement->SetMovementMode(MOVE_Walking);
-		}
-		else { ClearSupportClimbing(); }
-		return;
-	}
-	if (ClimbingSupport.IsValid() == false)
-	{
-		for (ABlockBase* Block : Level->GetBlocks())
-		{
-			if (::IsValid(Block) && Block->IsClimbableSupport() && FMath::Abs(Block->GetActorLocation().X - Next->GetActorLocation().X) < 0.5f)
-			{
-				GetCapsuleComponent()->IgnoreActorWhenMoving(Block, true); IgnoredClimbSupports.Add(Block);
-			}
-		}
-		SetDrillingVector(FVector::ZeroVector);
-	}
-	ClimbingSupport = Next;
-	SetActorLocation(FVector(Next->GetActorLocation().X, GetActorLocation().Y, GetActorLocation().Z));
-	Movement->SetClimbSpeed(GetGameSettings()->SupportClimbSpeed);
-	Movement->SetMovementMode(MOVE_Custom, UMKCharacterMovementComponent::SupportClimbMode);
-}
-
-void AMKCharacter::ClearSupportClimbing()
-{
-	for (const auto& Block : IgnoredClimbSupports) { if (Block.IsValid()) { GetCapsuleComponent()->IgnoreActorWhenMoving(Block.Get(), false); Block->UpdateSupportTopCollision(GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight(), false); } }
-	IgnoredClimbSupports.Reset(); ClimbingSupport.Reset();
-	if (GetCharacterMovement()->MovementMode == MOVE_Custom) { GetCharacterMovement()->SetMovementMode(MOVE_Falling); }
-}
-
-ABlockBase* AMKCharacter::FindClimbableSupport() const
+void AMKCharacter::UpdateSupportPlatforms()
 {
 	const float Feet = GetActorLocation().Z - GetCapsuleComponent()->GetScaledCapsuleHalfHeight();
 	const FVector2D Cell = UMKBlueprintFunctionLibrary::ConvertWorldPositionToBlockPosition(GetActorLocation());
 	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
-	for (int32 Y = -1; Y <= 2; ++Y)
+	for (int32 X = -1; X <= 1; ++X) { for (int32 Y = -2; Y <= 2; ++Y)
 	{
-		for (int32 X = -1; X <= 1; ++X)
-		{
-			ABlockBase* Block = Level->GetBlockAtPosition(Cell + FVector2D(X, Y));
-			if (Block != nullptr && Block->IsClimbableSupport() && FMath::Abs(Block->GetActorLocation().X - GetActorLocation().X) < 11.f && Feet >= Block->GetActorLocation().Z - 10.f && Feet < Block->GetActorLocation().Z + 7.8f) { return Block; }
-		}
-	}
-	return nullptr;
+		if (ABlockBase* Block = Level->GetBlockAtPosition(Cell + FVector2D(X, Y))) { Block->UpdateSupportTopCollision(Feet, false); }
+	} }
 }
 
 void AMKCharacter::UpdateFlyingVerticalVelocity() const
@@ -1216,7 +1179,6 @@ void AMKCharacter::OnMoveRight(float Value)
 
 void AMKCharacter::OnFly()
 {
-	ClearSupportClimbing();
 	bIsFlying = true;
 	USoundManager::TryPlaySFX(this, ESFXType::Floating);
 	if (IsKnockedBack()) { return; }
@@ -1251,22 +1213,22 @@ void AMKCharacter::OnFinishFly()
 void AMKCharacter::OnInteract()
 {
 	ClearInteractionHold();
-	IInteractable* Target = bIsMenuInputBlocked == false ? FindNearestInteractable() : nullptr;
-	if (Target == nullptr) { return; }
-	if (Target->GetRecoveryItemKey().IsNone()) { Target->TryInteract(this); return; }
-	HeldInteractionActor = Cast<AActor>(Target);
+	if (bIsMenuInputBlocked) { return; }
+	TappedInteractionActor = Cast<AActor>(FindNearestInteractable());
+	HeldInteractionActor = Cast<AActor>(FindNearestInteractable(true));
 	InteractionHoldStartedAt = GetWorld()->GetTimeSeconds();
 }
 
 void AMKCharacter::OnFinishInteract()
 {
-	IInteractable* Target = Cast<IInteractable>(HeldInteractionActor.Get());
-	const float Elapsed = GetWorld()->GetTimeSeconds() - InteractionHoldStartedAt;
+	IInteractable* TapTarget = Cast<IInteractable>(TappedInteractionActor.Get());
+	const bool bWasRecovery = HeldInteractionActor.IsValid() && GetWorld()->GetTimeSeconds() - InteractionHoldStartedAt >= GetGameSettings()->StructureRecoveryHoldDuration;
+	IInteractable* Recovery = Cast<IInteractable>(HeldInteractionActor.Get());
 	const bool bConsumed = bInteractionHoldConsumed;
 	ClearInteractionHold();
-	if (Target == nullptr || bConsumed || bIsMenuInputBlocked) { return; }
-	if (Elapsed < GetGameSettings()->StructureRecoveryHoldDuration) { Target->TryInteract(this); }
-	else { Target->TryRecover(this); }
+	if (bConsumed || bIsMenuInputBlocked) { return; }
+	if (bWasRecovery && Recovery != nullptr) { Recovery->TryRecover(this); }
+	else if (TapTarget != nullptr) { TapTarget->TryInteract(this); }
 }
 
 void AMKCharacter::OnQuickSlot(int32 SlotIndex)
@@ -1275,6 +1237,11 @@ void AMKCharacter::OnQuickSlot(int32 SlotIndex)
 	{
 		ConsumableComponent->TryUseQuickSlot(SlotIndex);
 	}
+}
+
+void AMKCharacter::OnDrillWheel(float Value)
+{
+	if (FMath::Abs(Value) > KINDA_SMALL_NUMBER) { AdjustDrillReach(Value > 0.f ? 1 : -1); }
 }
 
 void AMKCharacter::OnItemCollectRangeChanged(const FOnAttributeChangeData& Data)

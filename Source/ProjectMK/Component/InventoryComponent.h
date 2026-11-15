@@ -71,6 +71,7 @@ public:
 	void ApplySavedQuickSlots(const TArray<FInventorySlotData>& SavedSlots);
 	bool CanGainItem(FName ItemUID, int32 ItemCount);
 	bool TryCollectWorldItem(AItemBase* ItemActor);
+	bool TryTransferItemStack(int32 SourceSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer, AStorageChestActor* SourceStorage = nullptr, AStorageChestActor* TargetStorage = nullptr);
 	bool TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer = EItemContainer::Inventory, EItemContainer TargetContainer = EItemContainer::Inventory, AStorageChestActor* SourceStorage = nullptr, AStorageChestActor* TargetStorage = nullptr);
 	bool TryRemoveItemFromSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);
 	bool TryDropItemSlot(EItemContainer Container, int32 SlotIndex, int32 Count, AStorageChestActor* Storage = nullptr);

@@ -63,6 +63,12 @@ struct FBlockDataTableRow : public FTableRowBase
 	bool bDropOnCollapse = false;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bTakesCollapseDamage = true;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
+	bool bBreakOnCollapseImpact = false;
+
+	UPROPERTY(EditAnywhere, BlueprintReadOnly)
 	bool bDamagesTerrainOnImpact = true;
 
 	UPROPERTY(EditAnywhere, BlueprintReadOnly, meta = (GetOptions = "ProjectMK.MKBlueprintFunctionLibrary.GetItemRowNames"))

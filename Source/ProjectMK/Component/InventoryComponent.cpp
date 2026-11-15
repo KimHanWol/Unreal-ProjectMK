@@ -282,6 +282,30 @@ bool UInventoryComponent::TryCollectWorldItem(AItemBase* ItemActor)
 	return true;
 }
 
+bool UInventoryComponent::TryTransferItemStack(int32 SourceSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer, AStorageChestActor* SourceStorage, AStorageChestActor* TargetStorage)
+{
+	if (SourceContainer == TargetContainer && SourceStorage == TargetStorage) { return false; }
+	const auto& Source = GetItemSlots(SourceContainer,SourceStorage);
+	if (Source.IsValidIndex(SourceSlotIndex) == false || Source[SourceSlotIndex].IsEmpty()) { return false; }
+	const FName Key = Source[SourceSlotIndex].ItemUID;
+	bool bMoved = false;
+	for (int32 Pass = 0; Pass < 2; ++Pass)
+	{
+		const int32 Count = GetItemSlots(TargetContainer,TargetStorage).Num();
+		for (int32 Index = 0; Index < Count; ++Index)
+		{
+			const auto& Current = GetItemSlots(SourceContainer,SourceStorage);
+			if (Current.IsValidIndex(SourceSlotIndex) == false || Current[SourceSlotIndex].IsEmpty()) { return bMoved; }
+			const auto& Target = GetItemSlots(TargetContainer,TargetStorage);
+			if ((Pass == 0 && Target[Index].IsEmpty() == false && Target[Index].ItemUID == Key) || (Pass == 1 && Target[Index].IsEmpty()))
+			{
+				bMoved |= TryMoveItemSlot(SourceSlotIndex,Index,SourceContainer,TargetContainer,SourceStorage,TargetStorage);
+			}
+		}
+	}
+	return bMoved;
+}
+
 bool UInventoryComponent::TryMoveItemSlot(int32 SourceSlotIndex, int32 TargetSlotIndex, EItemContainer SourceContainer, EItemContainer TargetContainer, AStorageChestActor* SourceStorage, AStorageChestActor* TargetStorage)
 {
 	UpdateInventorySlotDataList();

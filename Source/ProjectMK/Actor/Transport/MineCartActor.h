@@ -19,6 +19,7 @@ public:
 	AMineCartActor();
 	virtual bool CanInteract(AActor* Interactor) override;
 	virtual bool ShouldShowInteractionPrompt() const override { return false; }
+	virtual int32 GetInteractionPriority() const override { return 5; }
 	virtual FName GetRecoveryItemKey() const override;
 	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 protected:
@@ -32,10 +33,14 @@ public:
 	FGuid GetCartId() const;
 	FMineCartSaveData GetSaveData() const;
 	float GetSpeed() const;
+	float GetCargoMountHeight() const;
+	static FVector CalculateRailDirection(const ARailTrackActor* Rail, float Alpha);
+	static FVector CalculateRailPosition(const ARailTrackActor* Rail, float Alpha);
 private:
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UBoxComponent> CartBody;
 	UPROPERTY(VisibleAnywhere) TObjectPtr<UPaperSpriteComponent> CartSprite;
 	TWeakObjectPtr<ARailTrackActor> CurrentRail;
 	TWeakObjectPtr<AStorageChestActor> Cargo;
 	FMineCartSaveData CartData;
+	float PushTime = 0.f;
 };

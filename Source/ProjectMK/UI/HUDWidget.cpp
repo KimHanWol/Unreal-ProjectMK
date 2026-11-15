@@ -17,6 +17,7 @@
 #include "ProjectMK/UI/StorageChestWidget.h"
 #include "ProjectMK/UI/FacilityMenuContents.h"
 #include "ProjectMK/UI/RecipeInfoWidget.h"
+#include "ProjectMK/UI/DrillReachWidget.h"
 #include "ProjectMK/Core/Manager/DataManager.h"
 #include "ProjectMK/Core/Subsystem/TownProgressSubsystem.h"
 #include "ProjectMK/Data/DataAsset/VisualStyleDataAsset.h"
@@ -45,6 +46,7 @@ void UHUDWidget::NativeConstruct()
 	RelicIcon->SetBrushResourceObject(Style != nullptr ? Style->TownSprites.FindRef(TEXT("SteadyBelt")) : nullptr);
 	RelicBadge->SetInfoContent(BadgeFrame); RelicBadge->SetItem(TEXT("Relic_SteadyBelt"));
 	RelicBadge->AddToViewport(2); RelicBadge->SetDesiredSizeInViewport(FVector2D(32.f)); RelicBadge->SetVisibility(ESlateVisibility::Collapsed);
+	DrillReach = CreateWidget<UDrillReachWidget>(this); DrillReach->AddToViewport(2); DrillReach->SetDesiredSizeInViewport(FVector2D(144.f,48.f));
 	SetVisibility(ESlateVisibility::Visible);
 	DropQuantityDialog = CreateWidget<UItemQuantityDialog>(this);
 	DropQuantityDialog->AddToViewport(200);
@@ -76,6 +78,7 @@ void UHUDWidget::NativeConstruct()
 void UHUDWidget::NativeDestruct()
 {
 	if (::IsValid(RelicBadge)) { RelicBadge->RemoveFromParent(); }
+	if (::IsValid(DrillReach)) { DrillReach->RemoveFromParent(); }
 	if (::IsValid(StorageChestWindow)) { StorageChestWindow->RemoveFromParent(); }
 	if (::IsValid(Menu)) { Menu->RemoveFromParent(); }
 	if (::IsValid(Tooltip)) { Tooltip->RemoveFromParent(); }
@@ -93,6 +96,7 @@ void UHUDWidget::NativeTick(const FGeometry& MyGeometry, float InDeltaTime)
 	Super::NativeTick(MyGeometry, InDeltaTime);
 	UpdatePortraitCapture();
 	UpdateRelicBadge();
+	UpdateDrillReach();
 
 	if (::IsValid(HoveredTooltipSource) == false || ::IsValid(Tooltip) == false || Tooltip->IsVisible() == false)
 	{
@@ -185,6 +189,7 @@ bool UHUDWidget::OpenFacility(AMineFacilityActor* Facility)
 	if (StorageChestWindow != nullptr) { StorageChestWindow->CloseChest(); }
 	CastChecked<UFacilityMenuContents>(Menu->GetCurrentContents())->SetFacility(Facility);
 	Menu->SetWindowTitle(Facility->GetFacilityName());
+	Menu->SetPreferredFrameSize(Facility->GetFacilityKind()==EMineFacilityKind::QuestBoard ? FVector2D(900.f,780.f) : FVector2D(660.f,650.f));
 	return true;
 }
 
@@ -197,6 +202,11 @@ bool UHUDWidget::OpenStorageChest(AStorageChestActor* Chest)
 }
 
 void UHUDWidget::CloseStorageChest() { if (::IsValid(StorageChestWindow)) { StorageChestWindow->CloseChest(); } }
+
+bool UHUDWidget::TryStoreInOpenChest(EItemContainer Container, int32 Index)
+{
+	return StorageChestWindow != nullptr && StorageChestWindow->TryStoreStack(Container,Index);
+}
 
 bool UHUDWidget::IsMenuVisible() const
 {
@@ -295,6 +305,16 @@ void UHUDWidget::UpdateRelicBadge()
 		const FVector2D Screen = ProfileWidget->GetCachedGeometry().LocalToAbsolute(FVector2D(144.f, 16.f));
 		RelicBadge->SetPositionInViewport(UWidgetLayoutLibrary::GetViewportWidgetGeometry(this).AbsoluteToLocal(Screen), false);
 	}
+}
+
+void UHUDWidget::UpdateDrillReach()
+{
+	AMKCharacter* Player = GetLocalPlayerCharacter();
+	if (DrillReach == nullptr || ProfileWidget == nullptr || Player == nullptr) { return; }
+	DrillReach->SetReach(Player->GetSelectedDrillCells(),Player->GetMaximumDrillCells());
+	const FGeometry& Geometry = ProfileWidget->GetCachedGeometry();
+	const FVector2D Screen = Geometry.LocalToAbsolute(FVector2D(Geometry.GetLocalSize().X+8.f,Geometry.GetLocalSize().Y-52.f));
+	DrillReach->SetPositionInViewport(UWidgetLayoutLibrary::GetViewportWidgetGeometry(this).AbsoluteToLocal(Screen),false);
 }
 
 void UHUDWidget::UpdateTooltipWidget()

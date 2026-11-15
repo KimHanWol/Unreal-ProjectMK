@@ -67,6 +67,13 @@ void UStorageChestWidget::CloseChest()
 	if (UHUDWidget* HUD = GetHUDWidget()) { HUD->SetHoveredSlot(nullptr); }
 }
 
+bool UStorageChestWidget::TryStoreStack(EItemContainer Container, int32 Index)
+{
+	if (IsVisible() == false || StorageChest.IsValid() == false || Container == EItemContainer::Storage) { return false; }
+	if (GetLocalInventoryComponent()->TryTransferItemStack(Index,Container,EItemContainer::Storage,nullptr,StorageChest.Get())) { GetLocalPlayerCharacter()->TrySaveGame(); }
+	return true;
+}
+
 void UStorageChestWidget::BuildDefaultWidgetTree()
 {
 	UCanvasPanel* Canvas = WidgetTree->ConstructWidget<UCanvasPanel>();
@@ -133,23 +140,7 @@ void UStorageChestWidget::SetChest(AStorageChestActor* Chest)
 void UStorageChestWidget::TransferStack(int32 Index)
 {
 	if (StorageChest.IsValid() == false) { return; }
-	UInventoryComponent* Inventory = GetLocalInventoryComponent();
-	const auto& Source = Inventory->GetItemSlots(EItemContainer::Storage, StorageChest.Get());
-	if (Source.IsValidIndex(Index) == false || Source[Index].IsEmpty()) { return; }
-	const FName Key = Source[Index].ItemUID;
-	bool bMoved = false;
-	for (int32 Pass = 0; Pass < 2; ++Pass)
-	{
-		const auto& Target = Inventory->GetItemSlots(EItemContainer::Inventory);
-		for (int32 TargetIndex = 0; TargetIndex < Target.Num() && Source[Index].IsEmpty() == false; ++TargetIndex)
-		{
-			if ((Pass == 0 && Target[TargetIndex].IsEmpty() == false && Target[TargetIndex].ItemUID == Key) || (Pass == 1 && Target[TargetIndex].IsEmpty()))
-			{
-				bMoved |= Inventory->TryMoveItemSlot(Index, TargetIndex, EItemContainer::Storage, EItemContainer::Inventory, StorageChest.Get());
-			}
-		}
-	}
-	if (bMoved) { GetLocalPlayerCharacter()->TrySaveGame(); }
+	if (GetLocalInventoryComponent()->TryTransferItemStack(Index,EItemContainer::Storage,EItemContainer::Inventory,StorageChest.Get())) { GetLocalPlayerCharacter()->TrySaveGame(); }
 }
 
 void UStorageChestWidget::RefreshSlots()

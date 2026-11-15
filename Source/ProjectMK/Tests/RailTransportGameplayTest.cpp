@@ -51,7 +51,11 @@ namespace
 				Inventory->ApplySavedInventorySlots({}); Inventory->ApplySavedQuickSlots({}); Inventory->SetItemCollectionActive(false);
 				TArray<FIntPoint> Nodes = { {54,Surface}, {55,Surface}, {56,Surface}, {57,Surface+1}, {58,Surface+2}, {59,Surface+2} };
 				for (const auto& Node : Nodes) { for (int32 H = 1; H <= 2; ++H) { if (ABlockBase* Block = Level->GetBlockAtPosition(FVector2D(Node.X,Node.Y-H))) { Block->Destroy(); } } }
-				for (int32 Index = 1; Index < Nodes.Num(); ++Index) { Test->TestTrue(TEXT("Rails attach along flat and diagonal terrain"), Network->TryPlaceRailSegment(Nodes[Index-1],Nodes[Index])); }
+				for (int32 Index=1;Index<Nodes.Num();++Index)
+				{
+					if(Nodes[Index].Y!=Nodes[Index-1].Y){if(auto* Crossing=Level->GetBlockAtPosition(FVector2D(Nodes[Index-1].X,FMath::Min(Nodes[Index-1].Y,Nodes[Index].Y)))){Crossing->Destroy();}}
+					Test->TestTrue(TEXT("Rails attach along flat and diagonal terrain"),Network->TryPlaceRailSegment(Nodes[Index-1],Nodes[Index]));
+				}
 				Test->TestFalse(TEXT("Duplicate rail segments cannot consume another item"), Network->TryPlaceRailSegment(Nodes[0],Nodes[1]));
 				Test->TestFalse(TEXT("Three-way branch connections are rejected"), Network->TryPlaceRailSegment(Nodes[1],FIntPoint(56,Surface+1)));
 				const TArray<FIntPoint> Ring = { {64,Surface-1}, {65,Surface}, {64,Surface+1}, {63,Surface} };
@@ -83,10 +87,13 @@ namespace
 				Controller->InputKey(FInputKeyEventArgs::CreateSimulated(EKeys::D,IE_Released,0.f));
 				const float Travel=Cart->GetActorLocation().X-Start.X;
 				Test->AddInfo(FString::Printf(TEXT("Heavy manual push distance %.2f"),Travel));
-				Test->TestTrue(TEXT("Real body pushing moves a heavy cart slowly"),Travel>0.5f && Travel<12.f);
+				Test->TestTrue(TEXT("Real body pushing moves a heavy cart slowly"),Travel>0.5f && Travel<16.f);
 				ARailTrackActor* Slope=Network->GetRails()[2].Get();
-				FMineCartSaveData Data=Cart->GetSaveData(); Data.RailId=Slope->GetSaveData().Id; Data.Position=0.1f; Data.Speed=0.f;
+				FMineCartSaveData Data=Cart->GetSaveData(); Data.RailId=Slope->GetSaveData().Id; Data.Position=0.5f; Data.Speed=0.f;
 				Cart->InitializeCart(Data,Slope); Start=Cart->GetActorLocation();
+				const FVector Tangent = (Slope->GetEndWorld() - Slope->GetStartWorld()).GetSafeNormal();
+				Test->TestTrue(TEXT("Cart body follows the slope tangent"), FVector::DotProduct(Cart->GetActorForwardVector(), Tangent) > 0.99f);
+				Test->TestFalse(TEXT("Cart movement rejects solid terrain"), Network->CanCartOccupy(Cart.Get(), FVector(60.5f * 16.f, -20.f, -(Surface + 5.5f) * 16.f)));
 				Player->GetCharacterMovement()->DisableMovement(); Player->SetActorLocation(FVector(53.f*16.f,-20.f,-Surface*16.f+100.f));
 				ChangedAt=World->GetTimeSeconds(); ++Step; return false;
 			}

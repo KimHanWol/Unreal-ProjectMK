@@ -58,6 +58,7 @@ public:
 	ABlockBase();
 	virtual UAbilitySystemComponent* GetAbilitySystemComponent() const override;
 	virtual bool CanInteract(AActor* Interactor) override;
+	virtual bool ShouldShowInteractionPrompt() const override { return false; }
 	virtual FName GetRecoveryItemKey() const override;
 	virtual FText GetRecoveryBlockedReason(AActor* Interactor) const override;
 

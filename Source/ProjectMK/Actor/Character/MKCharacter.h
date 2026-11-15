@@ -55,6 +55,9 @@ public:
 	bool TrySaveGame();
 	void SetMenuInputBlocked(bool bBlocked);
 	void SetDrillingVector(const FVector& InDrillingVector);
+	void AdjustDrillReach(int32 Delta);
+	int32 GetMaximumDrillCells() const;
+	int32 GetSelectedDrillCells() const;
 
 	FVector GetCharacterDirection() const;
 	float GetHorizontalFacingSign() const;
@@ -74,16 +77,14 @@ private:
 	float CalculateCurrentMoveSpeed() const;
 
 	void TryDrill();
-	IInteractable* FindNearestInteractable();
+	IInteractable* FindNearestInteractable(bool bRecoveryOnly = false);
 	bool TryInteractNearby();
 	void UpdateInteractionPrompt();
 	void ClearInteractionHold();
 
 	void UpdateHorizontalMovement();
 	void UpdateGroundTraction();
-	void UpdateSupportClimbing();
-	void ClearSupportClimbing();
-	ABlockBase* FindClimbableSupport() const;
+	void UpdateSupportPlatforms();
 	void UpdateFlyingVerticalVelocity() const;
 
 	void Apply2DCameraOverrides();
@@ -120,6 +121,7 @@ private:
 	void OnInteract();
 	void OnFinishInteract();
 	void OnQuickSlot(int32 SlotIndex);
+	void OnDrillWheel(float Value);
 
 	void OnItemCollectRangeChanged(const FOnAttributeChangeData& Data);
 	void OnInventoryChanged();
@@ -183,7 +185,9 @@ protected:
 
 	bool bIsFlying = false;
 	TWeakObjectPtr<AActor> HeldInteractionActor;
+	TWeakObjectPtr<AActor> TappedInteractionActor;
 	float InteractionHoldStartedAt = 0.f;
+	int32 SelectedDrillCells = MAX_int32;
 	bool bInteractionHoldConsumed = false;
 
 private:
@@ -203,8 +207,6 @@ private:
 	bool bIsApplyingInitialEffects = false;
 	bool bIsMenuInputBlocked = false;
 	bool bUsingIceTraction = false;
-	TWeakObjectPtr<ABlockBase> ClimbingSupport;
-	TArray<TWeakObjectPtr<ABlockBase>> IgnoredClimbSupports;
 	float SavedGroundFriction = 8.f;
 	float SavedBrakingDeceleration = 2048.f;
 	float SavedBrakingFriction = 0.f;

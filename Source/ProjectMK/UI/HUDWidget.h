@@ -14,6 +14,7 @@ class UImage;
 class UStorageChestWidget;
 class AMineFacilityActor;
 class URecipeInfoWidget;
+class UDrillReachWidget;
 
 UCLASS()
 class PROJECTMK_API UHUDWidget : public UMKUserWidget
@@ -34,6 +35,7 @@ public:
 	void CloseFacility();
 	bool OpenStorageChest(AStorageChestActor* Chest);
 	void CloseStorageChest();
+	bool TryStoreInOpenChest(EItemContainer Container, int32 Index);
 	bool IsMenuVisible() const;
 	UMKTooltipBase* GetTooltipWidget() const;
 	void SetHoveredSlot(UMKSlotBase* HoveredSlot);
@@ -45,6 +47,7 @@ public:
 private:
 	void UpdatePortraitCapture();
 	void UpdateRelicBadge();
+	void UpdateDrillReach();
 	void UpdateTooltipWidget();
 	void UpdateTooltipPosition();
 	void OnDropConfirmed(FName ItemKey, int32 Count);
@@ -73,6 +76,7 @@ protected:
 	TObjectPtr<UImage> PortraitImage;
 	UPROPERTY(Transient)
 	TObjectPtr<URecipeInfoWidget> RelicBadge;
+	UPROPERTY(Transient) TObjectPtr<UDrillReachWidget> DrillReach;
 	UPROPERTY(Transient)
 	TObjectPtr<UUserWidget> ProfileWidget;
 	EItemContainer PendingDropContainer = EItemContainer::Inventory;

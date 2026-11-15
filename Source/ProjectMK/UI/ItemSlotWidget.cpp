@@ -118,6 +118,10 @@ void UItemSlotWidget::UnbindEvents()
 
 FReply UItemSlotWidget::NativeOnPreviewMouseButtonDown(const FGeometry& InGeometry, const FPointerEvent& InMouseEvent)
 {
+	if (bIsSlotLocked == false && HasItem() && InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton && SlotContainer != EItemContainer::Storage)
+	{
+		if (UHUDWidget* HUD = GetHUDWidget()) { if (HUD->TryStoreInOpenChest(SlotContainer,SlotIndex)) { return FReply::Handled(); } }
+	}
 	if (bIsSlotLocked == false && HasItem() && InMouseEvent.GetEffectingButton() == EKeys::RightMouseButton && OnSecondaryAction.IsBound())
 	{
 		OnSecondaryAction.Broadcast(SlotContainer, SlotIndex, CurrentItemKey);

@@ -1420,6 +1420,7 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 		const FVector MoveVector(0.f, 0.f, -VerticalBlockData.FallingVelocity * DeltaTime);
 		FVector RemainingMoveVector = MoveVector;
 		bool bShouldFinishFalling = false;
+		bool bHasImpact = false;
 		// 낙하 블록 파괴와 부딪힌 블록 파괴가 한 프레임에 여러 번 일어날 수 있다.
 		const int32 MaximumCollisionIterationCount = (VerticalBlockData.FallingBlocks.Num() * 2) + 4;
 		int32 CollisionIterationCount = 0;
@@ -1483,12 +1484,14 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 					FallingBlock->SetActorLocation(FallingBlock->GetActorLocation() + ContactMoveVector);
 				}
 			}
+			bHasImpact = true;
 			VerticalBlockData.FallenDistance += FMath::Max(0.f, -ContactMoveVector.Z);
 			RemainingMoveVector.Z -= ContactMoveVector.Z;
 
 			if (::IsValid(HitBlock) && HitBlock->IsCushioned())
 			{
 				// 완충 젤 위로 떨어진 블록은 충격 없이 착지해 드롭을 유지한다.
+				bHasImpact = false;
 				bShouldFinishFalling = true;
 			}
 			else if (AMKMonster* Monster = Cast<AMKMonster>(HitActor))
@@ -1591,6 +1594,19 @@ void FFallingBlockGroupData::Tick_FallBlocks(float DeltaTime)
 
 		if (bShouldFinishFalling)
 		{
+			if (bHasImpact)
+			{
+				const auto ColumnSnapshot = VerticalBlockData.FallingBlocks;
+				for (const auto& Piece : ColumnSnapshot)
+				{
+					const auto* Row = Piece.IsValid() ? UDataManager::Get(Piece.Get())->GetBlockDataTableRow(Piece->GetTileIndex()) : nullptr;
+					if (Row != nullptr && Row->bBreakOnCollapseImpact)
+					{
+						TryDestroyFallingBlockOnImpact(Piece.Get(),Piece.Get(),VerticalBlockData.FallingVelocity);
+						VerticalBlockData.FallingBlocks.Remove(Piece); VerticalBlockData.BlockOriginPositionMap.Remove(Piece);
+					}
+				}
+			}
 			VerticalBlockData.bFallFinished = true;
 		}
 	}
@@ -1705,7 +1721,7 @@ bool FFallingBlockGroupData::TryDestroyFallingBlockOnImpact(
 		return false;
 	}
 	const auto* Row = UDataManager::Get(WorldContextObject)->GetBlockDataTableRow(FallingBlock->GetTileIndex());
-	if (Row != nullptr && Row->bFallsWhenUnmineable && Row->bIsMineable == false) { return false; }
+	if (Row != nullptr && (Row->bTakesCollapseDamage == false || (Row->bFallsWhenUnmineable && Row->bIsMineable == false))) { return false; }
 
 	UAbilitySystemComponent* FallingAbilitySystemComponent = FallingBlock->GetAbilitySystemComponent();
 	const UAttributeSet_Block* BlockAttributeSet = ::IsValid(FallingAbilitySystemComponent)
@@ -1722,7 +1738,7 @@ bool FFallingBlockGroupData::TryDestroyFallingBlockOnImpact(
 		return true;
 	}
 
-	const float ImpactDamage = CalculateFallingBlockImpactDamage(WorldContextObject, FallingVelocity);
+	const float ImpactDamage = Row != nullptr && Row->bBreakOnCollapseImpact ? CurrentDurability : CalculateFallingBlockImpactDamage(WorldContextObject, FallingVelocity);
 	if (ImpactDamage <= 0.f)
 	{
 		return false;
@@ -1792,6 +1808,7 @@ void ULevelManagerSubsystem::Tick(float DeltaTime)
 
 		if (FallingBlockGroupData.IsShaking())
 		{
+			if (TryStabilizeShakingGroup(FallingBlockGroupData)) { FallingBlockGroupList.RemoveAt(Index); continue; }
 			FallingBlockGroupData.Tick_ShakeBlocks(DeltaTime);
 		}
 		else
@@ -1962,6 +1979,16 @@ int32 ULevelManagerSubsystem::GetTileSize()
 	return static_cast<int32>(BLOCK_SIZE);
 }
 
+bool ULevelManagerSubsystem::IsBlockShaking(const ABlockBase* Block) const
+{
+	for (const auto& Group : FallingBlockGroupList)
+	{
+		if (Group.ShakeTime >= Group.ShakeDuration) { continue; }
+		for (const auto& Pair : Group.FallingBlockMap) { if (Pair.Value.FallingBlocks.ContainsByPredicate([Block](const auto& Entry){return Entry.Get()==Block;})) { return true; } }
+	}
+	return false;
+}
+
 const TArray<TObjectPtr<ABlockBase>>& ULevelManagerSubsystem::GetBlocks() const
 {
 	return BlockList;
@@ -2087,7 +2114,7 @@ void ULevelManagerSubsystem::BuildTerrainLayout(UDataManager* DataManager, const
 			}
 			const int32 Offset = X - Settings.StartColumn;
 			const bool bInYard = bHasYard && Offset >= Forestry.YardStartColumn && Offset <= Forestry.YardEndColumn;
-			bool bYardFoundation = bInYard && Y == GetSurfaceRow(X) && FMath::Abs(Offset - (Forestry.YardStartColumn + 3)) <= 3;
+			bool bYardFoundation = bInYard && Y == GetSurfaceRow(X) && FMath::Abs(Offset - (Forestry.YardEndColumn - 7)) <= 3;
 			for (int32 TreeColumn : Forestry.Columns) { bYardFoundation |= bInYard && Y == GetSurfaceRow(X) && (FMath::Abs(Offset - TreeColumn) <= 2 || FMath::Abs(Offset - (TreeColumn - 4)) <= 1); }
 			bYardFoundation |= bInYard && Y == GetSurfaceRow(X) && FMath::Abs(Offset - (Forestry.YardEndColumn - 1)) <= 1;
 			const bool bRaisedFoundation = Foundation != nullptr && (bYardFoundation || (bInYard == false && GetSurfaceRow(X) < Surface && Y <= Surface + 1));
@@ -2207,21 +2234,23 @@ void ULevelManagerSubsystem::GenerateMineDecorations(const FMineableLevelGenerat
 		if (Feature.Value >= Settings.StartColumn + 2 && Feature.Value < End - 2) { Place(Feature.Key, FIntPoint(Feature.Value, GetSurfaceRow(Feature.Value))); }
 	}
 	FRandomStream Random(LastGenerationSeed ^ 0x4d494e45);
-	const FName Kinds[] = { TEXT("MineEntrance"), TEXT("Minecart"), TEXT("SupplyCrates"), TEXT("LanternPost"), TEXT("ToolRack") };
+	const FName Kinds[] = { TEXT("MineEntrance"), TEXT("Minecart"), TEXT("SupplyCrates"), TEXT("ToolRack") };
 	int32 Index = 0;
 	for (int32 X = Settings.StartColumn + 5; X < End - 4; X += FMath::Max(6, Settings.SurfaceDecorationSpacing))
 	{
 		const int32 Column = X + Random.RandRange(-2, 2);
 		if (FMath::Abs(Column - ShopColumn) <= 4 || FMath::Abs(Column - ProtectedSpawnColumn) <= 2) { continue; }
 		const FIntPoint Floor(Column, GetSurfaceRow(Column));
-		if (Place(Kinds[Index++ % UE_ARRAY_COUNT(Kinds)], Floor) == false) { Place(TEXT("LanternPost"), Floor); }
+		Place(Kinds[Index++ % UE_ARRAY_COUNT(Kinds)], Floor);
 	}
-	for (int32 Column = Settings.StartColumn + 4; Column < End - 3; Column += 8)
+	const auto& TownLights = UDataManager::Get(this)->GetGameSettingDataAsset()->TownFacilities;
+	const TArray<int32> LightColumns = {ShopColumn-5,ShopColumn+5,Settings.StartColumn+TownLights.HouseAColumn-5,Settings.StartColumn+TownLights.HouseBColumn+5,Settings.StartColumn+TownLights.ElevatorColumn-7,Settings.StartColumn+TownLights.RailFactoryColumn+6};
+	for (int32 Column : LightColumns)
 	{
-		for (int32 Offset : { 0, -1, 1, -2, 2 })
+		for (int32 Offset : {0,-1,1})
 		{
-			const int32 Candidate = Column + Offset;
-			if (Candidate >= Settings.StartColumn + 2 && Candidate < End - 2 && Place(TEXT("LanternPost"), FIntPoint(Candidate, GetSurfaceRow(Candidate)))) { break; }
+			const int32 Candidate = Column+Offset;
+			if (Candidate >= Settings.StartColumn+2 && Candidate < End-2 && Place(TEXT("LanternPost"),FIntPoint(Candidate,GetSurfaceRow(Candidate)))) { break; }
 		}
 	}
 	int32 UndergroundCount = 0;
@@ -3217,6 +3246,37 @@ void ULevelManagerSubsystem::QueueCollapseBlocks(const TArray<ABlockBase*>& Coll
 	{
 		PendingCollapseBlockLists.Add(MoveTemp(PendingCollapsingBlocks));
 	}
+}
+
+bool ULevelManagerSubsystem::TryStabilizeShakingGroup(FFallingBlockGroupData& Group)
+{
+	const auto Blocks = Group.GetFallingBlocks();
+	TSet<ABlockBase*> Members(Blocks);
+	bool bSupported = false;
+	for (ABlockBase* Block : Blocks)
+	{
+		if (Block == nullptr) { continue; }
+		for (const auto& Neighbor : FBlockUtils::GetSurroundBlocks(this,Block))
+		{
+			if (Neighbor == nullptr || Members.Contains(Neighbor) || Neighbor->IsFalling() || Neighbor->IsBreaking()) { continue; }
+			TArray<ABlockBase*> Disconnected, Checked;
+			if (CheckBlockIsAllDisconnected(Neighbor,Disconnected,Checked,0) == false) { bSupported = true; break; }
+		}
+		if (bSupported) { break; }
+	}
+	if (bSupported == false) { return false; }
+	for (auto& Pair : Group.FallingBlockMap)
+	{
+		for (const auto& Block : Pair.Value.FallingBlocks)
+		{
+			if (Block.IsValid())
+			{
+				if (const FVector* Origin = Pair.Value.BlockOriginPositionMap.Find(Block)) { Block->SetActorLocation(*Origin); }
+			}
+		}
+		SnapBlocks(Pair.Value.FallingBlocks);
+	}
+	return true;
 }
 
 void ULevelManagerSubsystem::ProcessPendingCollapseBlocks()

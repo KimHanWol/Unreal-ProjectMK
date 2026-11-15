@@ -8,6 +8,8 @@
 #include "ProjectMK/Actor/Transport/MineCartActor.h"
 #include "ProjectMK/Core/Subsystem/LevelManagerSubsystem.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "Engine/OverlapResult.h"
+#include "ProjectMK/Core/Manager/DataManager.h"
 
 void UMineTransportSubsystem::Tick(float DeltaSeconds)
 {
@@ -40,10 +42,27 @@ bool UMineTransportSubsystem::TryPlaceRail(AMKCharacter* Player)
 {
 	if (Player == nullptr) { return false; }
 	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
-	ABlockBase* Ground = Level->GetBlockBelowWorldLocation(Player->GetActorLocation());
+	ABlockBase* Ground = Level->GetBlockAtWorldLocation(Player->GetActorLocation());
+	if (Ground == nullptr || Ground->IsClimbableSupport() == false) { Ground = Level->GetBlockBelowWorldLocation(Player->GetActorLocation()); }
 	if (Ground == nullptr) { return false; }
 	const FVector2D Cell = UMKBlueprintFunctionLibrary::GetBlockPosition(Ground);
 	const FIntPoint CellNode(FMath::RoundToInt(Cell.X), FMath::RoundToInt(Cell.Y));
+	if (Ground->IsClimbableSupport())
+	{
+		for (const auto& Existing : Rails)
+		{
+			if (Existing.IsValid() == false) { continue; }
+			const auto& Edge = Existing->GetSaveData();
+			for (const FIntPoint& Node : {Edge.Start,Edge.End})
+			{
+				if (GetNodeDegree(Node) != 1 || Node.Y != CellNode.Y) { continue; }
+				const FIntPoint Other = Node == Edge.Start ? Edge.End : Edge.Start;
+				if (Node.Y <= Other.Y) { continue; }
+				const int32 Step = Node.X > Other.X ? -1 : 1;
+				if ((Node.X == CellNode.X || Node.X == CellNode.X+1) && TryPlaceRailSegment(Node, Node + FIntPoint(Step,1))) { return true; }
+			}
+		}
+	}
 	// Each placed piece spans this ground cell. Prefer an existing free boundary endpoint.
 	for (const auto& Existing : Rails)
 	{
@@ -87,8 +106,10 @@ bool UMineTransportSubsystem::TryPlaceCart(AMKCharacter* Player, bool bAutomatic
 		if (Rail.IsValid() == false || FVector::DistSquared(Player->GetActorLocation(), FMath::ClosestPointOnSegment(Player->GetActorLocation(), Rail->GetStartWorld(), Rail->GetEndWorld())) > FMath::Square(36.f)) { continue; }
 		for (float Alpha : { 0.5f, 0.1f, 0.9f })
 		{
-			const FVector Location = FMath::Lerp(Rail->GetStartWorld(), Rail->GetEndWorld(), Alpha) + FVector(0.f, 0.f, 5.5f);
-			if (FMath::Abs(Location.X - Player->GetActorLocation().X) < 17.f || CanCartOccupy(nullptr, Location) == false) { continue; }
+			const FVector Location = AMineCartActor::CalculateRailPosition(Rail.Get(),Alpha);
+			const FVector Direction = AMineCartActor::CalculateRailDirection(Rail.Get(),Alpha);
+			const FQuat Rotation(FVector::RightVector,-FMath::Atan2(Direction.Z,Direction.X));
+			if ((FMath::Abs(Location.X-Player->GetActorLocation().X)<12.f && FMath::Abs(Location.Z-Player->GetActorLocation().Z)<12.f) || CanCartOccupy(nullptr,Location,Rotation)==false) { continue; }
 			AMineCartActor* Cart = GetWorld()->SpawnActor<AMineCartActor>();
 			if (Cart == nullptr) { return false; }
 			FMineCartSaveData Data; Data.Id = FGuid::NewGuid(); Data.RailId = Rail->GetSaveData().Id; Data.Position = Alpha; Data.bAutomatic = bAutomatic;
@@ -115,7 +136,7 @@ void UMineTransportSubsystem::RestoreNetwork(const TArray<FRailSaveData>& SavedR
 		{
 			for (int32 Height = 1; Height <= 2; ++Height)
 			{
-				if (ABlockBase* Block = Level->GetBlockAtPosition(FVector2D(Node.X, Node.Y - Height))) { if (Block->IsMineable()) { Block->SetItemDropEnabled(false); Block->Destroy(); } }
+				if (ABlockBase* Block = Level->GetBlockAtPosition(FVector2D(Node.X, Node.Y - Height))) { if (Block->IsMineable() && Block->IsClimbableSupport() == false) { Block->SetItemDropEnabled(false); Block->Destroy(); } }
 			}
 		}
 		TryPlaceRailSegment(Edge.Start, Edge.End, Edge.Id, Edge.bEndDisconnected);
@@ -176,9 +197,26 @@ bool UMineTransportSubsystem::HasRailAtSupport(FIntPoint Cell) const
 	return false;
 }
 
-bool UMineTransportSubsystem::CanCartOccupy(const AMineCartActor* Cart, const FVector& Location) const
+bool UMineTransportSubsystem::CanCartOccupy(const AMineCartActor* Cart, const FVector& Location, const FQuat& Rotation) const
 {
 	for (const auto& Other : Carts) { if (Other.IsValid() && Other.Get() != Cart && FVector::DistSquared(Other->GetActorLocation(), Location) < FMath::Square(23.f)) { return false; } }
+	FCollisionQueryParams Params(SCENE_QUERY_STAT(MineCartClearance),false);
+	if (Cart != nullptr) { Params.AddIgnoredActor(Cart); if (Cart->GetCargo() != nullptr) { Params.AddIgnoredActor(Cart->GetCargo()); } }
+	TArray<FOverlapResult> Hits;
+	FCollisionObjectQueryParams Objects; Objects.AddObjectTypesToQuery(ECC_WorldStatic); Objects.AddObjectTypesToQuery(ECC_WorldDynamic); Objects.AddObjectTypesToQuery(ECC_Pawn);
+	GetWorld()->OverlapMultiByObjectType(Hits,Location,Rotation,Objects,FCollisionShape::MakeBox(FVector(9.f,6.f,4.4f)),Params);
+	for (const auto& Hit : Hits)
+	{
+		if (AMKCharacter* Player = Cast<AMKCharacter>(Hit.GetActor()))
+		{
+			// A touching pusher must be able to separate from the cart. Approaching pawns always stop it.
+			if (Cart != nullptr && FVector::DotProduct(Location-Cart->GetActorLocation(),Player->GetActorLocation()-Cart->GetActorLocation()) < 0.f) { continue; }
+			return false;
+		}
+		ABlockBase* Block = Cast<ABlockBase>(Hit.GetActor());
+		const auto* Row = Block != nullptr ? UDataManager::Get(const_cast<UMineTransportSubsystem*>(this))->GetBlockDataTableRow(Block->GetTileIndex()) : nullptr;
+		if (Row != nullptr && Row->bHasCollision && Row->bIsPassableByCharacter == false && Block->IsBreaking() == false) { return false; }
+	}
 	return true;
 }
 
@@ -195,9 +233,35 @@ bool UMineTransportSubsystem::IsNodeSupported(FIntPoint Node) const
 	for (int32 Column : { Node.X - 1, Node.X })
 	{
 		ABlockBase* Floor = Level->GetBlockAtPosition(FVector2D(Column, Node.Y));
+		if (Floor == nullptr)
+		{
+			TArray<FOverlapResult> Hits;
+			GetWorld()->OverlapMultiByObjectType(Hits,FVector((Column+0.5f)*16.f,-20.f,-(Node.Y+0.5f)*16.f),FQuat::Identity,FCollisionObjectQueryParams::AllObjects,FCollisionShape::MakeBox(FVector(2.f,8.f,2.f)));
+			for (const auto& Hit : Hits)
+			{
+				ABlockBase* Candidate=Cast<ABlockBase>(Hit.GetActor());
+				if (Candidate!=nullptr && Level->IsBlockShaking(Candidate)) { Floor=Candidate;break; }
+			}
+		}
 		ABlockBase* Above = Level->GetBlockAtPosition(FVector2D(Column, Node.Y - 1));
-		if (Floor != nullptr && Floor->IsBreaking() == false && Floor->IsFalling() == false &&
+		if (Floor != nullptr && Floor->IsBreaking() == false && (Floor->IsFalling() == false || Level->IsBlockShaking(Floor)) &&
 			(Above == nullptr || Above->IsClimbableSupport())) { return true; }
+	}
+	return false;
+}
+
+bool UMineTransportSubsystem::IsRailCovered(const ARailTrackActor* Rail) const
+{
+	for (float Alpha : {0.15f,0.5f,0.85f})
+	{
+		const FVector Position = FMath::Lerp(Rail->GetStartWorld(),Rail->GetEndWorld(),Alpha) + FVector(0.f,0.f,2.f);
+		TArray<FOverlapResult> Hits;
+		GetWorld()->OverlapMultiByObjectType(Hits,Position,FQuat::Identity,FCollisionObjectQueryParams::AllObjects,FCollisionShape::MakeBox(FVector(0.3f,8.f,0.3f)));
+		for (const auto& Hit : Hits)
+		{
+			ABlockBase* Block = Cast<ABlockBase>(Hit.GetActor());
+			if (Block != nullptr && Block->IsBreaking() == false && Block->IsClimbableSupport() == false) { return true; }
+		}
 	}
 	return false;
 }
@@ -207,7 +271,7 @@ void UMineTransportSubsystem::UpdateUnsupportedRails()
 	const auto Snapshot = Rails;
 	for (const auto& Rail : Snapshot)
 	{
-		if (Rail.IsValid() == false || (IsNodeSupported(Rail->GetSaveData().Start) && IsNodeSupported(Rail->GetSaveData().End))) { continue; }
+		if (Rail.IsValid() == false || (IsNodeSupported(Rail->GetSaveData().Start) && IsNodeSupported(Rail->GetSaveData().End) && IsRailCovered(Rail.Get()) == false)) { continue; }
 		const auto CartSnapshot = Carts;
 		for (const auto& Cart : CartSnapshot)
 		{

@@ -34,7 +34,7 @@ void UForestrySubsystem::GenerateTrees()
 	} }
 	for (int32 Offset : Settings->Forestry.Columns)
 	{
-		if (Offset < Settings->Forestry.YardStartColumn + 9 || Offset > Settings->Forestry.YardEndColumn - 3 || Offset >= Settings->MineableLevelGeneration.WidthInBlocks - 3) { continue; }
+		if (Offset < Settings->Forestry.YardStartColumn + 3 || Offset > Settings->Forestry.YardEndColumn - 9 || Offset >= Settings->MineableLevelGeneration.WidthInBlocks - 3) { continue; }
 		FManagedTree& Tree = Trees.AddDefaulted_GetRef();
 		Tree.Column = Settings->MineableLevelGeneration.StartColumn + Offset;
 		TryGrowTree(Tree);
@@ -60,8 +60,18 @@ void UForestrySubsystem::RestoreTrees(const TArray<FTreeSaveData>& Saved)
 	const auto* Settings = UDataManager::Get(this)->GetGameSettingDataAsset();
 	for (const auto& Record : Saved)
 	{
-		if (Settings->Forestry.bEnabled == false || Settings->MineableLevelGeneration.WidthInBlocks < 112 || Settings->Forestry.Columns.Contains(Record.Column - Settings->MineableLevelGeneration.StartColumn) == false || Record.Column - Settings->MineableLevelGeneration.StartColumn < Settings->Forestry.YardStartColumn + 9 || Record.Column - Settings->MineableLevelGeneration.StartColumn > Settings->Forestry.YardEndColumn - 3) { continue; }
-		FManagedTree& Tree = Trees.AddDefaulted_GetRef(); Tree.Column = Record.Column; Tree.RegrowAt = Record.RegrowAt;
+		if (Settings->Forestry.bEnabled == false || Settings->MineableLevelGeneration.WidthInBlocks < 112) { continue; }
+		int32 Column = Record.Column;
+		const int32 PreviousOffset = Column - Settings->MineableLevelGeneration.StartColumn;
+		if (Settings->Forestry.Columns.Contains(PreviousOffset) == false)
+		{
+			// Version 1 saves used road plots 14/22/30. Preserve their partial harvest on the new left-hand plots.
+			const TArray<int32> LegacyColumns = {14,22,30};
+			const int32 Index = LegacyColumns.IndexOfByKey(PreviousOffset);
+			if (Settings->Forestry.Columns.IsValidIndex(Index) == false) { continue; }
+			Column = Settings->MineableLevelGeneration.StartColumn + Settings->Forestry.Columns[Index];
+		}
+		FManagedTree& Tree = Trees.AddDefaulted_GetRef(); Tree.Column = Column; Tree.RegrowAt = Record.RegrowAt;
 		const int32 GroundRow = Level->GetSurfaceRow(Tree.Column);
 		int32 SavedGroundRow = Record.GroundRow;
 		if (SavedGroundRow == INDEX_NONE)
@@ -77,7 +87,7 @@ void UForestrySubsystem::RestoreTrees(const TArray<FTreeSaveData>& Saved)
 			}
 			SavedGroundRow = Settings->SurfaceBlockPositionY - Raise;
 		}
-		const FVector Shift(0.f, 0.f, (SavedGroundRow - GroundRow) * 16.f);
+		const FVector Shift((Column-Record.Column)*16.f, 0.f, (SavedGroundRow - GroundRow) * 16.f);
 		for (const auto& Piece : Record.Pieces)
 		{
 			const FVector Location = Piece.Location + Shift;
@@ -129,27 +139,32 @@ void UForestrySubsystem::GenerateYardScenery()
 	const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
 	if (Style == nullptr || Trees.IsEmpty()) { return; }
 	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
-	auto Place = [&](FName Key, int32 Offset)
+	auto Place = [&](FName Key, float Offset, float Layer, float BaseOffset)
 	{
 		UPaperSprite* Sprite = Key == TEXT("LanternPost") ? Style->MineDecorations.FindRef(Key) : Style->TownSprites.FindRef(Key);
-		if (Sprite == nullptr) { return; }
-		const int32 Column = Settings->MineableLevelGeneration.StartColumn + Offset;
-		const float Floor = -Level->GetSurfaceRow(Column) * 16.f;
-		const FVector Location((Column + 0.5f) * 16.f, -28.f, Floor + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f);
-		APaperSpriteActor* Actor = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
-		if (Actor == nullptr) { return; }
+		if (Sprite == nullptr) { return static_cast<APaperSpriteActor*>(nullptr); }
+		const float Column = Settings->MineableLevelGeneration.StartColumn + Offset;
+		const float Floor = -Level->GetSurfaceRow(FMath::FloorToInt(Column)) * 16.f;
+		const FVector Location((Column+0.5f)*16.f,Layer,Floor+BaseOffset+(Key == TEXT("TreeStatus") ? 2.5f : Sprite->GetSourceSize().Y/Sprite->GetPixelsPerUnrealUnit()*0.5f));
+		APaperSpriteActor* Actor = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(),Location,FRotator::ZeroRotator);
+		if (Actor == nullptr) { return Actor; }
 		Actor->Tags.Add(TEXT("LumberyardScenery")); Actor->Tags.Add(Key); Actor->SetActorEnableCollision(false); Actor->SetActorTickEnabled(false);
-		auto* Render = Actor->GetRenderComponent(); Render->SetMobility(EComponentMobility::Movable); Render->SetSprite(Sprite); Render->SetCollisionEnabled(ECollisionEnabled::NoCollision); Render->SetTranslucentSortPriority(-4); Render->SetComponentTickEnabled(false);
-		YardScenery.Add(Actor);
+		auto* Render = Actor->GetRenderComponent(); Render->SetMobility(EComponentMobility::Movable); Render->SetSprite(Sprite); Render->SetCollisionEnabled(ECollisionEnabled::NoCollision); Render->SetComponentTickEnabled(false);
+
+		YardScenery.Add(Actor); return Actor;
 	};
-	Place(TEXT("Lumberyard"), Settings->Forestry.YardStartColumn + 3);
-	for (const auto& Tree : Trees)
+	Place(TEXT("LumberyardEnclosure"),Settings->Forestry.YardStartColumn+13.f,-10.f,-18.f);
+	Place(TEXT("Lumberyard"),Settings->Forestry.YardEndColumn-7.f,-52.f,0.f);
+	Place(TEXT("LanternPost"),Settings->Forestry.YardStartColumn+1.f,-52.f,0.f);
+	Place(TEXT("LanternPost"),Settings->Forestry.YardEndColumn-1.f,-52.f,0.f);
+	for (int32 Index = 0; Index < Trees.Num(); ++Index)
 	{
-		const int32 Offset = Tree.Column - Settings->MineableLevelGeneration.StartColumn;
-		Place(TEXT("PlantingBed"), Offset);
-		Place(TEXT("LanternPost"), Offset - 4);
+		auto& Tree = Trees[Index];
+		const float LampPixels[] = {145.f,383.f,622.f};
+		const float LampColumn = Settings->Forestry.YardStartColumn + 13.f + (LampPixels[FMath::Min(Index,2)]-384.f)/32.f;
+		APaperSpriteActor* Lamp = Place(TEXT("TreeStatus"),LampColumn,-8.f,12.f);
+		if (Lamp != nullptr) { Tree.StatusLamp = Lamp->GetRenderComponent(); UpdateTreeStatus(Tree); }
 	}
-	Place(TEXT("LanternPost"), Settings->Forestry.YardEndColumn - 1);
 }
 
 bool UForestrySubsystem::TryGrowTree(FManagedTree& Tree)
@@ -186,6 +201,15 @@ bool UForestrySubsystem::TryGrowTree(FManagedTree& Tree)
 	Tree.RegrowAt = 0; return true;
 }
 
+void UForestrySubsystem::UpdateTreeStatus(FManagedTree& Tree)
+{
+	if (Tree.StatusLamp.IsValid() == false) { return; }
+	int32 Remaining = 0;
+	for (const auto& Piece : Tree.Pieces) { Remaining += Piece.IsValid() && Piece->IsBreaking() == false; }
+	const FLinearColor Color = Remaining == 0 ? FLinearColor(0.8f,0.5f,0.12f) : (Remaining >= 17 ? FLinearColor(0.2f,0.8f,0.35f) : FLinearColor(0.85f,0.18f,0.1f));
+	Tree.StatusLamp->SetSpriteColor(Color);
+}
+
 void UForestrySubsystem::OnGrowthTimer()
 {
 	bool bChanged = false;
@@ -193,6 +217,7 @@ void UForestrySubsystem::OnGrowthTimer()
 	for (auto& Tree : Trees)
 	{
 		Tree.Pieces.RemoveAll([](const auto& Block) { return Block.IsValid() == false; });
+		UpdateTreeStatus(Tree);
 		if (Tree.Pieces.IsEmpty() == false) { continue; }
 		if (Tree.RegrowAt == 0) { Tree.RegrowAt = Now + UDataManager::Get(this)->GetGameSettingDataAsset()->Forestry.RegrowSeconds; bChanged = true; }
 		else if (Now >= Tree.RegrowAt) { bChanged |= TryGrowTree(Tree); }

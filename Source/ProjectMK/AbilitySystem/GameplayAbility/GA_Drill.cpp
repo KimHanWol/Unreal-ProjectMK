@@ -98,7 +98,6 @@ void UGA_Drill::ActivateAbility(const FGameplayAbilitySpecHandle Handle, const F
 	}
 
 	DrillingPower = CharacterAttributeSet->GetDrillingPower();
-	DrillingDistance = CharacterAttributeSet->GetDrillingDistance();
 
 	UAbilityTask_Tick* TickTask = UAbilityTask_Tick::CreateTickTask(this);
 	TickTask->OnTick.AddDynamic(this, &UGA_Drill::Tick);
@@ -237,7 +236,7 @@ void UGA_Drill::Tick_UpdateTarget()
 	}
 	const FVector2D FirstBlockPosition = UMKBlueprintFunctionLibrary::GetBlockPosition(FirstHitBlock);
 	const FVector2D BlockDirection(SourceCharDir.X, -SourceCharDir.Z);
-	const int32 DrillStepCount = FMath::Max(1, FMath::CeilToInt(DrillingDistance / BLOCK_SIZE));
+	const int32 DrillStepCount = SourceCharacter->GetSelectedDrillCells();
 	const FVector RangeTraceStart = FirstHitBlock->GetActorLocation();
 	const FVector RangeTraceEnd = RangeTraceStart + (SourceCharDir * ((DrillStepCount - 1) * BLOCK_SIZE));
 	if (FSkillDebugUtils::IsSkillDebugEnabled())
