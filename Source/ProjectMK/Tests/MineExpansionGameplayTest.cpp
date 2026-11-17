@@ -58,7 +58,8 @@ namespace
 				auto& Generation = Settings->MineableLevelGeneration;
 				Generation.StartColumn = 0; Generation.WidthInBlocks = 128; Generation.DepthInBlocks = 24; Generation.SurfaceReliefHeight = 0; Generation.FallingStructureCount = 0;
 				Generation.EmptyBlockRatio = 0.f; Generation.RockBlockRatio = 0.f; Generation.bGenerateDecorations = false; Generation.BuriedChestMaxCount = 0;
-				Settings->Forestry.bEnabled = Mode == 1; Settings->Forestry.RegrowSeconds = 2;
+				Settings->Forestry.bEnabled = Mode == 1 || Mode == 4; Settings->Forestry.RegrowSeconds = 2;
+				if (Mode == 4) { Settings->Forestry.GrowthStageSeconds = 1; }
 				Level->RegenerateMineableBlocks(1541);
 				Player->GetCharacterMovement()->DisableMovement(); Player->SetActorLocation(FVector(40.5f * 16.f, -20.f, -Settings->SurfaceBlockPositionY * 16.f + 10.f));
 				Player->FindComponentByClass<UInventoryComponent>()->SetItemCollectionActive(false);
@@ -181,6 +182,10 @@ namespace
 					for (int32 X = 41; X <= 46; ++X) { for (int32 Y = Surface; Y <= Surface + 4; ++Y) { if (auto* Block = Level->GetBlockAtPosition(FVector2D(X, Y))) { Block->Destroy(); } } }
 					ChangedAt = World->GetTimeSeconds(); Step = 1; return false;
 				}
+				if (Mode == 4)
+				{
+					ChangedAt = World->GetTimeSeconds(); Step = 1; return false;
+				}
 				if (Mode == 3)
 				{
 					Tooltip.Reset(CreateWidget<UMKTooltipBase>(World->GetFirstPlayerController(), UMKTooltipBase::StaticClass()));
@@ -273,6 +278,49 @@ namespace
 				Test->TestEqual(TEXT("All stored cargo drops without being lost"), CargoDrops.FindRef(TEXT("Ore_Iron")), 5);
 				return Finish();
 			}
+			if (Mode == 4 && Step == 1 && Elapsed > 5.2f)
+			{
+				for (const auto& Tree : Forest->GetTrees())
+				{
+					Test->TestEqual(TEXT("A tree reaches maturity while physics runs between growth stages"),Tree.GrowthStage,4);
+					Test->TestFalse(TEXT("An untouched growing tree is never marked as harvested"),Tree.bHarvested);
+					Test->TestEqual(TEXT("Growth retains every expected tree cell across real frames"),Tree.Pieces.Num(),Tree.ExpectedPieceCount);
+				}
+				auto Saved = Forest->GetSaveData();
+				// The former migration marked a complete two-trunk canopy as a harvested mature tree.
+				auto& Legacy = Saved[0];
+				Legacy.Pieces.RemoveAll([&](const auto& Piece) { return Piece.BlockKey==TEXT("TreeTrunk") && Piece.Location.Z>-(Legacy.GroundRow-2+0.5f)*16.f; });
+				for (auto& Piece:Legacy.Pieces) { if(Piece.BlockKey!=TEXT("TreeTrunk")){Piece.Location.Z-=32.f;} }
+				Legacy.ExpectedPieceCount=Legacy.Pieces.Num(); Legacy.bHarvested=true;
+				Saved[1].Pieces.Pop(); Saved[1].bHarvested=true;
+				Forest->RestoreTrees(Saved);
+				Test->TestFalse(TEXT("The incomplete legacy maturity metadata is repaired rather than treated as harvest"),Forest->GetTrees()[0].bHarvested);
+				Test->TestTrue(TEXT("A real partial harvest remains blocked"),Forest->GetTrees()[1].bHarvested);
+				ChangedAt=World->GetTimeSeconds(); Step=2; return false;
+			}
+			if (Mode == 4 && Step == 2 && Elapsed > 2.5f)
+			{
+				Test->TestEqual(TEXT("The repaired legacy tree restores all four trunk cells and canopy"),Forest->GetTrees()[0].Pieces.Num(),17);
+				Test->TestFalse(TEXT("A repaired untouched legacy tree stays healthy across physics ticks"),Forest->GetTrees()[0].bHarvested);
+				Test->TestTrue(TEXT("A genuinely cut tree is still a red blocked plot"),Forest->GetTrees()[1].bHarvested);
+				auto Saved=Forest->GetSaveData();
+				Player->SetActorLocation(Saved[2].Pieces[0].Location);
+				Forest->RestoreTrees(Saved);
+				Test->TestEqual(TEXT("A pawn blocking reconstruction never loses a saved tree piece"),Forest->GetSaveData()[2].Pieces.Num(),17);
+				Test->TestFalse(TEXT("An occupied reconstruction is not a harvest"),Forest->GetSaveData()[2].bHarvested);
+				ChangedAt=World->GetTimeSeconds(); Step=3; return false;
+			}
+			if (Mode == 4 && Step == 3 && Elapsed > 0.6f)
+			{
+				Player->SetActorLocation(FVector(40.5f*16.f,-20.f,-Surface*16.f+10.f));
+				ChangedAt=World->GetTimeSeconds(); Step=4; return false;
+			}
+			if (Mode == 4 && Step == 4 && Elapsed > 1.5f)
+			{
+				Test->TestEqual(TEXT("Reconstruction finishes after the pawn leaves"),Forest->GetTrees()[2].Pieces.Num(),17);
+				Test->TestFalse(TEXT("The reconstructed tree remains healthy"),Forest->GetTrees()[2].bHarvested);
+				return Finish();
+			}
 			if (Mode == 3)
 			{
 				if (Step == 2)
@@ -328,5 +376,10 @@ IMPLEMENT_SIMPLE_AUTOMATION_TEST(FTooltipResourceTest, "ProjectMK.PIE.Expansion.
 bool FTooltipResourceTest::RunTest(const FString& Parameters)
 {
 	ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false)); ADD_LATENT_AUTOMATION_COMMAND(FMineExpansionCommand(this, 3)); ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand()); return true;
+}
+IMPLEMENT_SIMPLE_AUTOMATION_TEST(FForestryTemporalTest, "ProjectMK.PIE.Expansion.UntouchedTreeGrowthAcrossFrames", EAutomationTestFlags::EditorContext | EAutomationTestFlags::EngineFilter)
+bool FForestryTemporalTest::RunTest(const FString& Parameters)
+{
+	ADD_LATENT_AUTOMATION_COMMAND(FStartPIECommand(false)); ADD_LATENT_AUTOMATION_COMMAND(FMineExpansionCommand(this, 4)); ADD_LATENT_AUTOMATION_COMMAND(FEndPlayMapCommand()); return true;
 }
 #endif

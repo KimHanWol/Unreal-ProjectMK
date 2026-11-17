@@ -78,6 +78,9 @@ void UForestrySubsystem::RestoreTrees(const TArray<FTreeSaveData>& Saved)
 		Tree.GrowthStage = Record.GrowthStage > 0 ? Record.GrowthStage : (Record.Pieces.IsEmpty() ? 0 : 4);
 		Tree.ExpectedPieceCount = Record.ExpectedPieceCount > 0 ? Record.ExpectedPieceCount : Record.Pieces.Num();
 		Tree.bHarvested = Record.bHarvested || (Record.GrowthStage == 0 && Record.Pieces.Num() > 0 && Record.Pieces.Num() < 17);
+		// Earlier migration inferred stage 4 from untracked short trees and froze their current count as the expected count.
+		const bool bMisclassifiedMature = Tree.GrowthStage == 4 && (Tree.ExpectedPieceCount == 10 || Tree.ExpectedPieceCount == 15) && Tree.ExpectedPieceCount == Record.Pieces.Num();
+		if (bMisclassifiedMature) { Tree.GrowthStage = 3; Tree.bHarvested = false; Tree.RegrowAt = 0; }
 		const int32 GroundRow = Level->GetSurfaceRow(Tree.Column);
 		int32 SavedGroundRow = Record.GroundRow;
 		if (SavedGroundRow == INDEX_NONE)
@@ -107,18 +110,13 @@ void UForestrySubsystem::RestoreTrees(const TArray<FTreeSaveData>& Saved)
 			}
 			const auto* Row = UDataManager::Get(this)->GetBlockDataTableRow(Key);
 			if (Row == nullptr || TreeBlockKeys.FindRef(Row->TileIndex) != Key) { continue; }
-			if (ABlockBase* Cover = Level->GetBlockAtWorldLocation(Location))
-			{
-				if (Cover->IsMineable() == false) { continue; }
-				Cover->SetItemDropEnabled(false); Cover->Destroy();
-			}
-			if (Level->TryPlaceBlock(Key, Location)) { Tree.Pieces.Add(Level->GetBlockAtWorldLocation(Location)); }
+			FTreePieceSaveData& Pending = Tree.PendingPieces.AddDefaulted_GetRef(); Pending.BlockKey = Key; Pending.Location = Location;
 		}
 		if (Record.GrowthStage == 0 && Record.Pieces.Num() >= 17 && Tree.bHarvested == false)
 		{
-			Tree.GrowthStage = 3;
-			TryGrowTree(Tree);
+			Tree.GrowthStage = 3; Tree.RegrowAt = 0;
 		}
+		TryRestoreTreePieces(Tree);
 	}
 	if (Trees.IsEmpty() && Settings->Forestry.bEnabled && Settings->MineableLevelGeneration.WidthInBlocks >= 112) { GenerateTrees(); return; }
 	GenerateYardScenery();
@@ -148,6 +146,11 @@ void UForestrySubsystem::UpdateTrees(int64 Now)
 	const auto& Settings = UDataManager::Get(this)->GetGameSettingDataAsset()->Forestry;
 	for (auto& Tree : Trees)
 	{
+		if (Tree.PendingPieces.IsEmpty() == false)
+		{
+			if (TryRestoreTreePieces(Tree) == false) { UpdateTreeStatus(Tree); continue; }
+			bChanged = true;
+		}
 		Tree.Pieces.RemoveAll([](const auto& Block) { return Block.IsValid() == false || Block->IsBreaking(); });
 		if (Tree.Pieces.Num() < Tree.ExpectedPieceCount) { Tree.bHarvested = true; }
 		if (Tree.Pieces.IsEmpty())
@@ -181,6 +184,7 @@ TArray<FTreeSaveData> UForestrySubsystem::GetSaveData() const
 			if (Key.IsNone()) { continue; }
 			FTreePieceSaveData& Piece = Record.Pieces.AddDefaulted_GetRef(); Piece.BlockKey = Key; Piece.Location = Block->GetActorLocation();
 		}
+		Record.Pieces.Append(Tree.PendingPieces);
 		Record.bHarvested |= Record.Pieces.Num() < Tree.ExpectedPieceCount;
 	}
 	return Saved;
@@ -221,6 +225,24 @@ void UForestrySubsystem::GenerateYardScenery()
 	}
 }
 
+bool UForestrySubsystem::TryRestoreTreePieces(FManagedTree& Tree)
+{
+	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
+	for (const auto& Piece : Tree.PendingPieces)
+	{
+		ABlockBase* Cover = Level->GetBlockAtWorldLocation(Piece.Location);
+		if ((Cover != nullptr && (Cover->IsMineable() == false || Cover->IsFalling())) || (Cover == nullptr && Level->IsBlockCellEmpty(Piece.Location) == false)) { return false; }
+		if (GetWorld()->OverlapAnyTestByObjectType(Piece.Location, FQuat::Identity, FCollisionObjectQueryParams(ECC_Pawn), FCollisionShape::MakeBox(FVector(7.2f)))) { return false; }
+	}
+	Tree.PendingPieces.RemoveAll([&](const FTreePieceSaveData& Piece)
+	{
+		if (ABlockBase* Cover = Level->GetBlockAtWorldLocation(Piece.Location)) { Cover->SetItemDropEnabled(false); Cover->Destroy(); }
+		if (Level->TryPlaceBlock(Piece.BlockKey,Piece.Location) == false) { return false; }
+		Tree.Pieces.Add(Level->GetBlockAtWorldLocation(Piece.Location)); return true;
+	});
+	return Tree.PendingPieces.IsEmpty();
+}
+
 bool UForestrySubsystem::TryGrowTree(FManagedTree& Tree)
 {
 	ULevelManagerSubsystem* Level = GetWorld()->GetSubsystem<ULevelManagerSubsystem>();
@@ -242,6 +264,7 @@ bool UForestrySubsystem::TryGrowTree(FManagedTree& Tree)
 	{
 		ABlockBase* Existing = Level->GetBlockAtPosition(FVector2D(Part.Key));
 		if (Existing != nullptr && Tree.Pieces.Contains(Existing) == false) { return false; }
+		if (Existing == nullptr && Level->IsBlockCellEmpty(FVector((Part.Key.X+0.5f)*16.f,-20.f,-(Part.Key.Y+0.5f)*16.f)) == false) { return false; }
 		const FVector Center((Part.Key.X + 0.5f) * 16.f, -20.f, -(Part.Key.Y + 0.5f) * 16.f);
 		if (GetWorld()->OverlapAnyTestByObjectType(Center, FQuat::Identity, FCollisionObjectQueryParams(ECC_Pawn), FCollisionShape::MakeBox(FVector(7.2f)))) { return false; }
 	}
@@ -249,19 +272,20 @@ bool UForestrySubsystem::TryGrowTree(FManagedTree& Tree)
 	Tree.Pieces.Reset();
 	for (const auto& Part : Shape)
 	{
-		const FVector Center((Part.Key.X + 0.5f) * 16.f, -20.f, -(Part.Key.Y + 0.5f) * 16.f);
-		if (Level->TryPlaceBlock(Part.Value, Center)) { Tree.Pieces.Add(Level->GetBlockAtPosition(FVector2D(Part.Key))); }
+		FTreePieceSaveData& Piece = Tree.PendingPieces.AddDefaulted_GetRef(); Piece.BlockKey = Part.Value;
+		Piece.Location = FVector((Part.Key.X+0.5f)*16.f,-20.f,-(Part.Key.Y+0.5f)*16.f);
 	}
-	Tree.GrowthStage = Stage; Tree.ExpectedPieceCount = Shape.Num(); Tree.bHarvested = Tree.Pieces.Num() < Shape.Num();
+	Tree.GrowthStage = Stage; Tree.ExpectedPieceCount = Shape.Num(); Tree.bHarvested = false;
 	Tree.RegrowAt = FDateTime::UtcNow().ToUnixTimestamp() + UDataManager::Get(this)->GetGameSettingDataAsset()->Forestry.GrowthStageSeconds;
-	return Tree.bHarvested == false;
+	TryRestoreTreePieces(Tree);
+	return true;
 }
 
 void UForestrySubsystem::UpdateTreeStatus(FManagedTree& Tree)
 {
 	if (Tree.StatusLamp.IsValid() == false) { return; }
 	const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
-	const bool bDebris = Tree.bHarvested && Tree.Pieces.ContainsByPredicate([](const auto& Piece) { return Piece.IsValid() && Piece->IsBreaking() == false; });
+	const bool bDebris = Tree.bHarvested && (Tree.PendingPieces.IsEmpty() == false || Tree.Pieces.ContainsByPredicate([](const auto& Piece) { return Piece.IsValid() && Piece->IsBreaking() == false; }));
 	if (Style != nullptr) { Tree.StatusLamp->SetSprite(Style->TownSprites.FindRef(bDebris ? TEXT("TreeStatusRed") : TEXT("TreeStatusGreen"))); }
 }
 

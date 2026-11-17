@@ -17,6 +17,7 @@ struct FManagedTree
 	int32 ExpectedPieceCount = 0;
 	bool bHarvested = false;
 	TArray<TWeakObjectPtr<ABlockBase>> Pieces;
+	TArray<FTreePieceSaveData> PendingPieces;
 	TWeakObjectPtr<UPaperSpriteComponent> StatusLamp;
 };
 
@@ -35,6 +36,7 @@ public:
 	const TArray<FManagedTree>& GetTrees() const;
 private:
 	void GenerateYardScenery();
+	bool TryRestoreTreePieces(FManagedTree& Tree);
 	bool TryGrowTree(FManagedTree& Tree);
 	void UpdateTreeStatus(FManagedTree& Tree);
 	void OnGrowthTimer();

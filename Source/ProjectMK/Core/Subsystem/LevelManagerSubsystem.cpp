@@ -2161,7 +2161,7 @@ void ULevelManagerSubsystem::UpdateWorldBackgrounds(const FMineableLevelGenerati
 		Component->SetCollisionEnabled(ECollisionEnabled::NoCollision);
 		It->SetActorScale3D(FVector::OneVector);
 		const FVector RelativeCenter = Component->GetTileCenterPosition(0, 0, 0, false);
-		It->SetActorLocation(FVector(Left + TileWidth * 0.5f, -100.f, GroundZ + (bSurface ? 0.5f : -0.5f) * TileHeight) - RelativeCenter);
+		It->SetActorLocation(FVector(Left + TileWidth * 0.5f, MKRenderDepth::WorldBackgroundY, GroundZ + (bSurface ? 0.5f : -0.5f) * TileHeight) - RelativeCenter);
 		for (int32 Y = 0; Y < Rows; ++Y)
 		{
 			for (int32 X = 0; X < Columns; ++X)

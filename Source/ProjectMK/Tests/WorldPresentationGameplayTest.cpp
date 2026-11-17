@@ -9,6 +9,7 @@
 #include "Engine/World.h"
 #include "EngineUtils.h"
 #include "PaperTileMapActor.h"
+#include "PaperSpriteActor.h"
 #include "SceneView.h"
 #include "Tests/AutomationEditorCommon.h"
 #include "ProjectMK/Actor/Character/MKCharacter.h"
@@ -112,6 +113,10 @@ namespace
 			{
 				if (It->ActorHasTag(TEXT("ArtBackground")) == false) { continue; }
 				++BackgroundCount;
+				for (TActorIterator<APaperSpriteActor> Scenery(World); Scenery; ++Scenery)
+				{
+					if (Scenery->ActorHasTag(TEXT("VillageScenery"))) { Test->TestTrue(TEXT("Every district backdrop stays distinctly in front of the global art background"),Scenery->GetActorLocation().Y-It->GetActorLocation().Y>32.f); }
+				}
 				FVector Center, Half;
 				It->GetActorBounds(false, Center, Half);
 				Test->TestTrue(TEXT("Background covers the generated world's left and right edges"), Center.X - Half.X <= Generation.StartColumn * 16.f

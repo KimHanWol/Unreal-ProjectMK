@@ -20,6 +20,7 @@
 #include "ProjectMK/Core/Subsystem/MineTransportSubsystem.h"
 #include "ProjectMK/Core/Subsystem/SaveGameSubsystem.h"
 #include "ProjectMK/Helper/MKBlueprintFunctionLibrary.h"
+#include "ProjectMK/System/GlobalConstants.h"
 
 void UTownProgressSubsystem::Tick(float DeltaSeconds)
 {
@@ -365,6 +366,7 @@ void UTownProgressSubsystem::GenerateVillageBackdrop()
 	const auto* Settings = UDataManager::Get(this)->GetGameSettingDataAsset();
 	const auto* Style = UDataManager::Get(this)->GetVisualStyleDataAsset();
 	if (Style == nullptr) { return; }
+	const int32 LayerCount = Settings->TownFacilities.VillageBackdropColumns.Num() + Settings->TownFacilities.IndustrialBackdropColumns.Num() + Settings->TownFacilities.ForestryBackdropColumns.Num();
 	auto Place = [&](FName Key, int32 Offset)
 	{
 		UPaperSprite* Sprite = Style->TownSprites.FindRef(Key);
@@ -377,7 +379,8 @@ void UTownProgressSubsystem::GenerateVillageBackdrop()
 			Floor = FMath::Min(Floor, -GetWorld()->GetSubsystem<ULevelManagerSubsystem>()->GetSurfaceRow(X) * 16.f);
 		}
 		Floor -= 1.f;
-		const FVector Location((Column + 0.5f) * 16.f, -84.f - VillageScenery.Num() * 2.f, Floor + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f);
+		const float LayerY = FMath::Lerp(MKRenderDepth::TownBackdropNearY, MKRenderDepth::TownBackdropFarY, static_cast<float>(VillageScenery.Num()) / FMath::Max(1,LayerCount-1));
+		const FVector Location((Column + 0.5f) * 16.f, LayerY, Floor + Sprite->GetSourceSize().Y / Sprite->GetPixelsPerUnrealUnit() * 0.5f);
 		APaperSpriteActor* Actor = GetWorld()->SpawnActor<APaperSpriteActor>(APaperSpriteActor::StaticClass(), Location, FRotator::ZeroRotator);
 		if (Actor == nullptr) { return; }
 		Actor->SetActorEnableCollision(false); Actor->Tags.Add(TEXT("VillageScenery")); Actor->Tags.Add(Key);
